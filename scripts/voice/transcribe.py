@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 import sys
 import time
-import math
 import wave
 import io
+import os
+import subprocess
 import threading
 import signal
 import gc
 import numpy as np
 import sounddevice as sd
-import speech_recognition as sr
 
 SAMPLE_RATE = 16000
 CHANNELS = 1
-SILENCE_TIMEOUT = 4.0  # 4 seconds of silence post-speech auto stop
-SILENCE_RMS_THRESHOLD = 0.005 # Ultra-sensitive threshold so soft speech phonemes are NEVER missed!
+SILENCE_TIMEOUT = 3.5  # 3.5 seconds silence auto stop
 
-class VoiceTranscriber:
+WHISPER_CLI = "/home/valse-de-anshu/.config/quickshell/ballade/scripts/voice/whisper.cpp/build/bin/whisper-cli"
+WHISPER_MODEL = "/home/valse-de-anshu/.config/quickshell/ballade/scripts/voice/whisper.cpp/models/ggml-base.en.bin"
+TEMP_WAV = "/tmp/qs_whisper_input.wav"
+
+class WhisperTranscriber:
     def __init__(self):
-        self.recognizer = sr.Recognizer()
-        self.recognizer.dynamic_energy_threshold = True
-        self.recognizer.energy_threshold = 150
-        self.recognizer.pause_threshold = 0.8
-        
         self.audio_frames = []
         self.is_recording = True
         self.speech_started = False
@@ -30,19 +28,35 @@ class VoiceTranscriber:
         self.start_time = time.time()
         self.lock = threading.Lock()
 
+        self.frame_count = 0
+        self.calibrating_frames = 5
+        self.ambient_sum = 0.0
+        self.ambient_rms = 0.01
+        self.speech_threshold = 0.025
+
     def audio_callback(self, indata, frames, time_info, status):
         if not self.is_recording:
             return
         
-        # Calculate RMS volume for visualizer
         rms = float(np.sqrt(np.mean(indata**2)))
-        vol = min(1.0, max(0.0, rms * 15.0))
+
+        if self.frame_count < self.calibrating_frames:
+            self.frame_count += 1
+            self.ambient_sum += rms
+            if self.frame_count == self.calibrating_frames:
+                avg_rms = self.ambient_sum / self.calibrating_frames
+                self.ambient_rms = max(0.004, avg_rms)
+                self.speech_threshold = max(0.015, self.ambient_rms * 1.8)
+            return
+
+        norm_vol = max(0.0, (rms - self.ambient_rms) * 18.0)
+        vol = min(1.0, norm_vol)
         print(f"VOLUME:{vol:.2f}", flush=True)
 
         with self.lock:
             self.audio_frames.append(indata.copy())
 
-        if rms > SILENCE_RMS_THRESHOLD:
+        if rms > self.speech_threshold:
             self.speech_started = True
             self.last_speech_time = time.time()
 
@@ -51,14 +65,12 @@ class VoiceTranscriber:
             time.sleep(0.2)
             current_time = time.time()
 
-            # Auto-stop after 4 seconds of silence post-speech
             if self.speech_started and (current_time - self.last_speech_time > SILENCE_TIMEOUT):
                 print("STATUS:SILENCE_TIMEOUT", flush=True)
                 self.is_recording = False
                 break
 
-            # Safety cap: 60s max recording
-            if (current_time - self.start_time > 60.0):
+            if (current_time - self.start_time > 45.0):
                 self.is_recording = False
                 break
 
@@ -67,9 +79,14 @@ class VoiceTranscriber:
         monitor_thread = threading.Thread(target=self.monitor_silence)
         monitor_thread.start()
 
+        device_id = 'pulse'
         try:
-            # device=None captures system default microphone (PipeWire/PulseAudio default)
-            with sd.InputStream(device=None, samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='float32', callback=self.audio_callback):
+            sd.check_input_settings(device='pulse', samplerate=SAMPLE_RATE, channels=CHANNELS)
+        except Exception:
+            device_id = None
+
+        try:
+            with sd.InputStream(device=device_id, samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='float32', callback=self.audio_callback):
                 while self.is_recording:
                     time.sleep(0.1)
         except Exception as e:
@@ -77,9 +94,9 @@ class VoiceTranscriber:
             self.is_recording = False
 
         monitor_thread.join()
-        self.process_final_audio()
+        self.process_with_whisper()
 
-    def process_final_audio(self):
+    def process_with_whisper(self):
         try:
             with self.lock:
                 if not self.audio_frames:
@@ -88,35 +105,54 @@ class VoiceTranscriber:
                 full_audio_np = np.concatenate(self.audio_frames, axis=0)
                 self.audio_frames.clear()
 
-            # Convert float32 [-1, 1] to 16-bit PCM WAV
-            audio_int16 = (np.clip(full_audio_np, -1.0, 1.0) * 32767).astype(np.int16)
-            
-            wav_io = io.BytesIO()
-            with wave.open(wav_io, 'wb') as wf:
+            # Normalize audio gain
+            max_val = np.max(np.abs(full_audio_np))
+            if max_val > 0.0005:
+                boosted_audio = (full_audio_np / max_val) * 0.85
+            else:
+                boosted_audio = full_audio_np
+
+            audio_int16 = (np.clip(boosted_audio, -1.0, 1.0) * 32767).astype(np.int16)
+
+            # Save to temporary WAV file
+            with wave.open(TEMP_WAV, 'wb') as wf:
                 wf.setnchannels(CHANNELS)
-                wf.setsampwidth(2) # 16-bit PCM
+                wf.setsampwidth(2)
                 wf.setframerate(SAMPLE_RATE)
                 wf.writeframes(audio_int16.tobytes())
+
+            # Execute whisper-cli binary
+            cmd = [
+                WHISPER_CLI,
+                "-m", WHISPER_MODEL,
+                "-f", TEMP_WAV,
+                "-nt",
+                "--no-timestamps",
+                "-l", "en"
+            ]
+
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            text = res.stdout.strip()
             
-            wav_io.seek(0)
-            
-            with sr.AudioFile(wav_io) as source:
-                self.recognizer.adjust_for_ambient_noise(source, duration=0.2)
-                audio_data = self.recognizer.record(source)
-                
-                try:
-                    text = self.recognizer.recognize_google(audio_data, language="en-US")
-                    if text and text.strip():
-                        print(f"FINAL:{text.strip()}", flush=True)
-                    else:
-                        print("STATUS:NO_SPEECH_RECOGNIZED", flush=True)
-                except sr.UnknownValueError:
+            if text:
+                clean_lines = [line.strip() for line in text.split('\n') if line.strip() and not line.strip().startswith('[')]
+                final_text = ' '.join(clean_lines).strip()
+                if final_text:
+                    print(f"FINAL:{final_text}", flush=True)
+                else:
                     print("STATUS:NO_SPEECH_RECOGNIZED", flush=True)
-                except Exception as e:
-                    print(f"ERROR:{str(e)}", flush=True)
-                    
-            del full_audio_np, audio_int16, wav_io
+            else:
+                print("STATUS:NO_SPEECH_RECOGNIZED", flush=True)
+
+            del full_audio_np, boosted_audio, audio_int16
+        except Exception as e:
+            print(f"ERROR:{str(e)}", flush=True)
         finally:
+            if os.path.exists(TEMP_WAV):
+                try:
+                    os.remove(TEMP_WAV)
+                except Exception:
+                    pass
             self.cleanup()
 
     def cleanup(self):
@@ -125,7 +161,7 @@ class VoiceTranscriber:
         gc.collect()
 
 if __name__ == "__main__":
-    transcriber = VoiceTranscriber()
+    transcriber = WhisperTranscriber()
 
     def signal_handler(sig, frame):
         transcriber.is_recording = False
