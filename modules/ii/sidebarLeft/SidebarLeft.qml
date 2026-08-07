@@ -135,6 +135,29 @@ Scope { // Scope
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             color: "transparent"
 
+            // Sidebar-wide shortcuts — Shortcut items fire at window scope
+            // regardless of which child has keyboard focus
+            Shortcut {
+                sequences: [StandardKey.Cancel, "Escape"]
+                enabled: panelWindow.visible
+                onActivated: panelWindow.hide()
+            }
+            Shortcut {
+                sequence: "Ctrl+O"
+                enabled: panelWindow.visible
+                onActivated: root.toggleExtend()
+            }
+            Shortcut {
+                sequence: "Ctrl+P"
+                enabled: panelWindow.visible
+                onActivated: root.togglePin()
+            }
+            Shortcut {
+                sequence: "Ctrl+D"
+                enabled: panelWindow.visible
+                onActivated: root.toggleDetach()
+            }
+
             anchors {
                 top: true
                 left: true
@@ -228,22 +251,6 @@ Scope { // Scope
                     anchors.fill: parent
                     onClicked: (mouse) => { mouse.accepted = true }
                 }
-
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) {
-                        panelWindow.hide();
-                    }
-                    if (event.modifiers === Qt.ControlModifier) {
-                        if (event.key === Qt.Key_O) {
-                            root.toggleExtend();
-                        } else if (event.key === Qt.Key_D) {
-                            root.toggleDetach();
-                        } else if (event.key === Qt.Key_P) {
-                            root.togglePin();
-                        }
-                        event.accepted = true;
-                    }
-                }
             }
         }
     }
@@ -327,8 +334,20 @@ Scope { // Scope
         description: "Detach left sidebar into a window/Attach it back"
 
         onPressed: {
-            root.detach = !root.detach;
+            root.toggleDetach();
         }
+    }
+
+    CompositorGlobalShortcut {
+        name: "sidebarLeftToggleExtend"
+        description: "Toggle sidebar extended width"
+        onPressed: root.toggleExtend()
+    }
+
+    CompositorGlobalShortcut {
+        name: "sidebarLeftTogglePin"
+        description: "Pin/unpin the left sidebar"
+        onPressed: root.togglePin()
     }
 
 }

@@ -683,20 +683,8 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                                     return;
                                 }
                                 event.accepted = false; // No image, let text pasting proceed
-                            } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_O) {
-                                // Ctrl+O to expand sidebar width
-                                root.scopeRoot?.toggleExtend();
-                                event.accepted = true;
-                            } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_P) {
-                                // Ctrl+P to pin sidebar
-                                root.scopeRoot?.togglePin();
-                                event.accepted = true;
-                            } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_D) {
-                                // Ctrl+D to detach sidebar
-                                root.scopeRoot?.toggleDetach();
-                                event.accepted = true;
                             } else if (event.key === Qt.Key_Escape) {
-                                // Esc to detach file
+                                // Esc to clear attached file (window-level Shortcut handles sidebar close)
                                 if (Ai.pendingFilePath.length > 0) {
                                     Ai.attachFile("");
                                     event.accepted = true;
