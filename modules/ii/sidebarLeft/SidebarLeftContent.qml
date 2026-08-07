@@ -73,7 +73,6 @@ Item {
                 id: swipeView
                 anchors.fill: parent
                 spacing: 10
-                currentIndex: tabBar.currentIndex
 
                 clip: true
                 layer.enabled: true
@@ -85,39 +84,25 @@ Item {
                     }
                 }
 
-                contentChildren: [
-                    ...(root.aiChatEnabled ? [aiChat.createObject()] : []),
-                    ...(root.translatorEnabled ? [translator.createObject()] : []),
-                    ...(root.mediaEnabled ? [media.createObject()] : []),
-                    ...((root.tabButtonList.length === 0 || (!root.aiChatEnabled && !root.translatorEnabled && root.animeCloset)) ? [placeholder.createObject()] : []),
-                    ...(root.animeEnabled ? [anime.createObject()] : []),
-                ]
-            }
-        }
-
-        Component {
-            id: aiChat
-            AiChat {}
-        }
-        Component {
-            id: translator
-            Translator {}
-        }
-        Component {
-            id: media
-            SidebarPlayerControl {}
-        }
-        Component {
-            id: anime
-            Anime {}
-        }
-        Component {
-            id: placeholder
-            Item {
-                StyledText {
-                    anchors.centerIn: parent
-                    text: root.animeCloset ? Translation.tr("Nothing") : Translation.tr("Enjoy your empty sidebar...")
-                    color: Appearance.colors.colSubtext
+                Loader {
+                    active: root.aiChatEnabled
+                    visible: active
+                    sourceComponent: Component { AiChat {} }
+                }
+                Loader {
+                    active: root.translatorEnabled
+                    visible: active
+                    sourceComponent: Component { Translator {} }
+                }
+                Loader {
+                    active: root.mediaEnabled
+                    visible: active
+                    sourceComponent: Component { SidebarPlayerControl {} }
+                }
+                Loader {
+                    active: root.animeEnabled && !root.animeCloset
+                    visible: active
+                    sourceComponent: Component { Anime {} }
                 }
             }
         }

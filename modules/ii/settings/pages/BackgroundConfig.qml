@@ -919,6 +919,15 @@ ContentPage {
                         Config.options.background.widgets.customImage.enable = checked;
                     }
                 }
+                ConfigInput {
+                    Layout.fillWidth: true
+                    buttonIcon: "image"
+                    text: Translation.tr("Image File Path")
+                    value: Config.options.background.widgets.customImage.path ?? ""
+                    onValueChanged: {
+                        Config.options.background.widgets.customImage.path = value;
+                    }
+                }
                 ConfigSelectionShapeArray {
                     currentValue: Config.options.background.widgets.customImage.shape
                     shapeColor: Appearance.colors.colPrimary

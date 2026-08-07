@@ -435,7 +435,7 @@ ContentPage {
                         },
                         {
                             displayName: Translation.tr("Niri Like"),
-                            icon: "mobiledata_arrows",
+                            icon: "view_carousel",
                             value: "niri"
                         }
                     ]

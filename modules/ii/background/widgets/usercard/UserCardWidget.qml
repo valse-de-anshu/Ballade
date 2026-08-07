@@ -13,10 +13,10 @@ import qs.modules.ii.background.widgets
 AbstractBackgroundWidget {
     id: root
     configEntryName: "userCard"
-    implicitWidth: 276
-    implicitHeight: 252
+    implicitWidth: 320
+    implicitHeight: 270
 
-    property int cardWidth: 276
+    property int cardWidth: 320
     property int blurMargin: 18   
     property int avatarSize: 64
     property string hostname: SystemInfo.hostname
@@ -126,7 +126,7 @@ AbstractBackgroundWidget {
             id: contentBox
             x: root.blurMargin
             y: root.avatarSize / 2 + root.blurMargin + 30
-            width: 240
+            width: 284
             color: Appearance.colors.colPrimaryContainer
             radius: Appearance.rounding.large
             implicitHeight: contentColumn.implicitHeight + 30

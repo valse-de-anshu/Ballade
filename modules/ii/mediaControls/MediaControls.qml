@@ -55,10 +55,11 @@ Scope {
 
     Process {
         id: cavaProc
-        running: mediaControlsLoader.active
+        running: (MprisController.activePlayer?.isPlaying ?? false) || mediaControlsLoader.active
         onRunningChanged: {
             if (!cavaProc.running) {
                 root.visualizerPoints = [];
+                GlobalStates.visualizerPoints = [];
             }
         }
         command: ["cava", "-p", `${FileUtils.trimFileProtocol(Directories.scriptPath)}/cava/raw_output_config.txt`]
@@ -67,6 +68,7 @@ Scope {
                 // Parse `;`-separated values into the visualizerPoints array
                 let points = data.split(";").map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
                 root.visualizerPoints = points;
+                GlobalStates.visualizerPoints = points;
             }
         }
     }

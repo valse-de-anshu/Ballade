@@ -22,6 +22,31 @@ Singleton {
     property string logo: ""
     property string desktopEnvironment: ""
     property string windowingSystem: ""
+    property string kernelVersion: "Linux"
+    property string cpu: "Processor"
+    property string gpu: "Graphics"
+    property string memory: "RAM"
+    property string disk: "Storage"
+    property string shell: "Bash"
+    property string packages: "Packages"
+
+    Process {
+        id: fetchSysDetails
+        running: true
+        command: ["bash", "-c", "uname -r; lscpu | grep 'Model name' | cut -d: -f2 | xargs; free -h | awk '/Mem:/{print $2}'; df -h / | awk 'NR==2{print $2}'; basename \"$SHELL\"; pacman -Q 2>/dev/null | wc -l"]
+        stdout: StdioCollector {
+            id: sysCollector
+            onStreamFinished: {
+                const lines = sysCollector.text.trim().split("\n")
+                if (lines.length >= 1 && lines[0].length > 0) root.kernelVersion = lines[0]
+                if (lines.length >= 2 && lines[1].length > 0) root.cpu = lines[1]
+                if (lines.length >= 3 && lines[2].length > 0) root.memory = lines[2]
+                if (lines.length >= 4 && lines[3].length > 0) root.disk = lines[3]
+                if (lines.length >= 5 && lines[4].length > 0) root.shell = lines[4]
+                if (lines.length >= 6 && lines[5].length > 0) root.packages = lines[5] + " pkgs"
+            }
+        }
+    }
 
     Timer {
         triggeredOnStart: true
