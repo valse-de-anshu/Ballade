@@ -9,7 +9,7 @@ import QtQuick.Layouts
  */
 Rectangle {
     id: root
-    default property alias groupData: rowLayout.data
+    default property alias data: rowLayout.data
     property alias uniformCellSizes: rowLayout.uniformCellSizes
     property real spacing: 5
     property real padding: 0
@@ -26,12 +26,7 @@ Rectangle {
         return total + rowLayout.spacing * (rowLayout.children.length - 1);
     }
 
-    topLeftRadius: rowLayout.children.length > 0 ? (rowLayout.children[0].radius + padding) : 
-        Appearance?.rounding?.small
-    bottomLeftRadius: topLeftRadius
-    topRightRadius: rowLayout.children.length > 0 ? (rowLayout.children[rowLayout.children.length - 1].radius + padding) : 
-        Appearance?.rounding?.small
-    bottomRightRadius: topRightRadius
+    radius: Appearance.rounding.normal
 
     color: "transparent"
     width: root.contentWidth + padding * 2
