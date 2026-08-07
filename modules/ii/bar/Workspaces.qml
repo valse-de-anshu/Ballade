@@ -9,26 +9,28 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 
 ButtonMouseArea {
     id: root
 
+    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(root.QsWindow.window?.screen)
     WorkspaceModel {
         id: wsModel
-        screen: root.QsWindow.window?.screen
+        monitor: root.monitor
     }
 
     property bool vertical: Config.options.bar.vertical
     property bool superPressAndHeld: false // Relevant modifications at bottom of file
 
-    property real workspaceButtonWidth: Config.options.bar.cornerStyle === 3 ? 30 : 26
+    property real workspaceButtonWidth: 26
     property real activeWorkspaceMargin: 2
     property real activeWorkspaceSize: workspaceButtonWidth - activeWorkspaceMargin * 2
     property real workspaceIconSize: workspaceButtonWidth * 0.69
     property real workspaceIconSizeShrinked: workspaceButtonWidth * 0.55
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
-    property int workspaceIndexInGroup: (wsModel.activeNumber - 1) % wsModel.shownCount
+    property int workspaceIndexInGroup: (monitor?.activeWorkspace?.id - 1) % wsModel.shownCount
     property real specialTextSize: workspaceButtonWidth * 0.5
 
     Layout.alignment: vertical ? Qt.AlignHCenter : Qt.AlignVCenter
@@ -44,7 +46,7 @@ ButtonMouseArea {
     }
 
     // Interactions
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton
     hoverEnabled: true
     property int hoverIndex: {
         const position = root.vertical ? mouseY : mouseX;
@@ -52,19 +54,26 @@ ButtonMouseArea {
     }
 
     function switchWorkspaceToHovered() {
-        WM.switchWorkspace(wsModel.getWorkspaceIdAt(hoverIndex));
+        Hyprland.dispatch(`hl.dsp.focus({workspace = ${wsModel.getWorkspaceIdAt(hoverIndex)}})`);
     }
+
+    function toggleSpecial() {
+        Hyprland.dispatch(`hl.dsp.workspace.toggle_special("special")`);
+    }
+
     onPressed: mouse => {
         if (mouse.button == Qt.LeftButton)
             switchWorkspaceToHovered();
         else if (mouse.button == Qt.RightButton)
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        else if (mouse.button == Qt.BackButton) 
+            toggleSpecial()
     }
     onWheel: event => {
         if (event.angleDelta.y < 0)
-            WM.switchWorkspaceRelative("next");
+            Hyprland.dispatch(`hl.dsp.focus({workspace = "r+1"})`);
         else if (event.angleDelta.y > 0)
-            WM.switchWorkspaceRelative("prev");
+            Hyprland.dispatch(`hl.dsp.focus({workspace = "r-1"})`);
     }
 
     // Indications
@@ -374,42 +383,10 @@ ButtonMouseArea {
         FadeLoader {
             shown: !wsNum.showingNumbers
             anchors.centerIn: parent
-            Loader {
+            Circle {
                 anchors.centerIn: parent
-                sourceComponent: (Config.options?.bar.workspaces.indicatorStyle ?? "dot") === "icon" ? iconComponent : dotComponent
-
-                Component {
-                    id: dotComponent
-                    Circle {
-                        anchors.centerIn: parent
-                        diameter: root.workspaceButtonWidth * 0.18
-                        color: wsNum.contentColor
-                    }
-                }
-
-                Component {
-                    id: iconComponent
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        iconSize: root.workspaceButtonWidth * 0.50
-                        color: wsNum.contentColor
-                        text: {
-                            switch (wsNum.wsId) {
-                                case 1:  return "code"
-                                case 2:  return "public"
-                                case 3:  return "music_note"
-                                case 4:  return "edit_square"
-                                case 5:  return "image"
-                                case 6:  return "forum"
-                                case 7:  return "browser_updated"
-                                case 8:  return "finance_mode"
-                                case 9:  return "monitor"
-                                case 10: return "analytics"
-                                default: return "circle"
-                            }
-                        }
-                    }
-                }
+                diameter: root.workspaceButtonWidth * 0.18
+                color: wsNum.contentColor
             }
         }
         FadeLoader {

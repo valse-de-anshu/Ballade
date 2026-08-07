@@ -1,178 +1,50 @@
-import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
+import qs.services
 import QtQuick
 import QtQuick.Layouts
 
-BarWidgetSwitcherArea {
+MouseArea {
     id: root
+    property bool borderless: Config.options.bar.borderless
     property bool alwaysShowAllResources: false
-    horizontalExtraPadding: 12
-
+    implicitWidth: rowLayout.implicitWidth + rowLayout.anchors.leftMargin + rowLayout.anchors.rightMargin
+    implicitHeight: Appearance.sizes.barHeight
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
 
-    rowDefault: Component {
-        RowLayout {
-            spacing: 0
-            Resource {
-                iconName: "memory"
-                shown: Config.options.bar.resources.alwaysShowRam
-                percentage: ResourceUsage.memoryUsedPercentage
-                warningThreshold: Config.options.bar.resources.memoryWarningThreshold
-            }
-            Resource {
-                iconName: "planner_review"
-                shown: Config.options.bar.resources.alwaysShowCpu
-                percentage: ResourceUsage.cpuUsage
-                Layout.leftMargin: shown ? 6 : 0
-                warningThreshold: Config.options.bar.resources.cpuWarningThreshold
-            }
-            Resource {
-                iconName: "thermostat"
-                shown: Config.options.bar.resources.alwaysShowCpuTemp
-                percentage: ResourceUsage.cpuTemp / 100
-                Layout.leftMargin: shown ? 6 : 0
-            }
-            Resource {
-                iconName: "hard_drive"
-                shown: Config.options.bar.resources.alwaysShowDisk
-                percentage: ResourceUsage.diskUsedPercentage
-                Layout.leftMargin: shown ? 6 : 0
-            }
-            Resource {
-                iconName: "swap_horiz"
-                shown: Config.options.bar.resources.alwaysShowSwap
-                percentage: ResourceUsage.swapUsedPercentage
-                Layout.leftMargin: shown ? 6 : 0
-                warningThreshold: Config.options.bar.resources.swapWarningThreshold
-            }
-        }
-    }
+    RowLayout {
+        id: rowLayout
 
-    rowMaterial: Component {
-        RowLayout {
-            spacing: 0
-            Resource {
-                iconName: "memory"
-                shown: Config.options.bar.resources.alwaysShowRam
-                percentage: ResourceUsage.memoryUsedPercentage
-                warningThreshold: Config.options.bar.resources.memoryWarningThreshold
-            }
-            Resource {
-                iconName: "planner_review"
-                shown: Config.options.bar.resources.alwaysShowCpu
-                percentage: ResourceUsage.cpuUsage
-                Layout.leftMargin: shown ? 6 : 0
-                warningThreshold: Config.options.bar.resources.cpuWarningThreshold
-            }
-            Resource {
-                iconName: "thermostat"
-                shown: Config.options.bar.resources.alwaysShowCpuTemp
-                percentage: ResourceUsage.cpuTemp / 100
-                Layout.leftMargin: shown ? 6 : 0
-            }
-            Resource {
-                iconName: "hard_drive"
-                shown: Config.options.bar.resources.alwaysShowDisk
-                percentage: ResourceUsage.diskUsedPercentage
-                Layout.leftMargin: shown ? 6 : 0
-            }
-            Resource {
-                iconName: "swap_horiz"
-                shown: Config.options.bar.resources.alwaysShowSwap
-                percentage: ResourceUsage.swapUsedPercentage
-                Layout.leftMargin: shown ? 6 : 0
-                warningThreshold: Config.options.bar.resources.swapWarningThreshold
-            }
-        }
-    }
+        spacing: 0
+        anchors.fill: parent
+        anchors.leftMargin: 4
+        anchors.rightMargin: 4
 
-    colDefault: Component {
-        ColumnLayout {
-            spacing: 7
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "memory"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowRam
-                percentage: ResourceUsage.memoryUsedPercentage
-                warningThreshold: Config.options.bar.resources.memoryWarningThreshold
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "planner_review"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowCpu
-                percentage: ResourceUsage.cpuUsage
-                warningThreshold: Config.options.bar.resources.cpuWarningThreshold
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "thermostat"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowCpuTemp
-                percentage: ResourceUsage.cpuTemp / 100
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "hard_drive"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowDisk
-                percentage: ResourceUsage.diskUsedPercentage
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "swap_horiz"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowSwap
-                percentage: ResourceUsage.swapUsedPercentage
-                warningThreshold: Config.options.bar.resources.swapWarningThreshold
-            }
+        Resource {
+            iconName: "memory"
+            percentage: ResourceUsage.memoryUsedPercentage
+            warningThreshold: Config.options.bar.resources.memoryWarningThreshold
         }
-    }
 
-    colMaterial: Component {
-        ColumnLayout {
-            spacing: 7
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "memory"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowRam
-                percentage: ResourceUsage.memoryUsedPercentage
-                warningThreshold: Config.options.bar.resources.memoryWarningThreshold
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "planner_review"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowCpu
-                percentage: ResourceUsage.cpuUsage
-                warningThreshold: Config.options.bar.resources.cpuWarningThreshold
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "thermostat"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowCpuTemp
-                percentage: ResourceUsage.cpuTemp / 100
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "hard_drive"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowDisk
-                percentage: ResourceUsage.diskUsedPercentage
-            }
-            Resource {
-                Layout.alignment: Qt.AlignHCenter
-                iconName: "swap_horiz"
-                vertical: true
-                visible: Config.options.bar.resources.alwaysShowSwap
-                percentage: ResourceUsage.swapUsedPercentage
-                warningThreshold: Config.options.bar.resources.swapWarningThreshold
-            }
+        Resource {
+            iconName: "swap_horiz"
+            percentage: ResourceUsage.swapUsedPercentage
+            shown: (Config.options.bar.resources.alwaysShowSwap && percentage > 0) || 
+                (MprisController.activePlayer?.trackTitle == null) ||
+                root.alwaysShowAllResources
+            Layout.leftMargin: shown ? 6 : 0
+            warningThreshold: Config.options.bar.resources.swapWarningThreshold
         }
+
+        Resource {
+            iconName: "planner_review"
+            percentage: ResourceUsage.cpuUsage
+            shown: Config.options.bar.resources.alwaysShowCpu || 
+                !(MprisController.activePlayer?.trackTitle?.length > 0) ||
+                root.alwaysShowAllResources
+            Layout.leftMargin: shown ? 6 : 0
+            warningThreshold: Config.options.bar.resources.cpuWarningThreshold
+        }
+
     }
 
     ResourcesPopup {
