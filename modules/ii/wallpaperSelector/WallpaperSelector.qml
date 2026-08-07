@@ -41,16 +41,6 @@ Scope {
             implicitWidth: Appearance.sizes.wallpaperSelectorWidth
 
             Component.onCompleted: {
-                GlobalFocusGrab.addDismissable(panelWindow);
-            }
-            Component.onDestruction: {
-                GlobalFocusGrab.removeDismissable(panelWindow);
-            }
-            Connections {
-                target: GlobalFocusGrab
-                function onDismissed() {
-                    GlobalStates.wallpaperSelectorOpen = false;
-                }
             }
 
             WallpaperSelectorContent {

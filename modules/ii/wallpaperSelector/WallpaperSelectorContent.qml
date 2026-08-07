@@ -99,12 +99,14 @@ MouseArea {
             filterField.forceActiveFocus();
             event.accepted = true;
         } else {
-            if (event.text.length > 0) {
+            if (event.modifiers === Qt.NoModifier && event.text.length > 0) {
                 filterField.text += event.text;
                 filterField.cursorPosition = filterField.text.length;
                 filterField.forceActiveFocus();
+                event.accepted = true;
+            } else {
+                event.accepted = false;
             }
-            event.accepted = true;
         }
     }
 
