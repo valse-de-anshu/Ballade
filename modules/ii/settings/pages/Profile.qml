@@ -42,12 +42,6 @@ ContentPage {
         hostnameSetProc.running = true
     }
 
-    Connections {
-        target: SystemInfo
-        function onHostnameChanged() {
-            hostnameField.value = Qt.binding(() => SystemInfo.hostname)
-        }
-    }
 
     ColumnLayout {
         id: mainLayout

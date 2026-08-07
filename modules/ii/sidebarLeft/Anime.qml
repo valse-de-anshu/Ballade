@@ -529,7 +529,7 @@ Item {
                         StyledSwitch {
                             id: nsfwSwitch
                             enabled: Booru.currentProvider !== "zerochan"
-                            scale: 0.6
+                            switchScale: 0.6
                             Layout.alignment: Qt.AlignVCenter
                             checked: (Persistent.states.booru.allowNsfw && Booru.currentProvider !== "zerochan")
                             onCheckedChanged: {

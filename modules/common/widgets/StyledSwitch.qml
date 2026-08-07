@@ -5,9 +5,9 @@ import QtQuick.Effects
 
 Switch {
     id: root
-    property real scale: 0.75
-    implicitHeight: 30 * root.scale
-    implicitWidth: 52 * root.scale
+    property real switchScale: 0.75
+    implicitHeight: 30 * root.switchScale
+    implicitWidth: 52 * root.switchScale
 
     property color activeColor: Appearance?.colors.colPrimaryContainer ?? "#cbc4cb"
     property color inactiveColor: Appearance?.m3colors.m3surfaceBright ?? "#3a3939"
@@ -34,9 +34,9 @@ Switch {
     }
 
     indicator: Rectangle {
-        readonly property real thumbSize: 26 * root.scale
-        readonly property real pad: 2 * root.scale
-        readonly property real stretchExtra: 4 * root.scale
+        readonly property real thumbSize: 26 * root.switchScale
+        readonly property real pad: 2 * root.switchScale
+        readonly property real stretchExtra: 4 * root.switchScale
 
         width: (root.pressed || root.down)
             ? thumbSize + stretchExtra
