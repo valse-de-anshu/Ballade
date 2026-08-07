@@ -4,6 +4,7 @@ import QtQuick
 Rectangle {
     id: root
     property string key
+    property color textColor: Appearance.colors.colOnLayer0
 
     property real horizontalPadding: 6
     property real verticalPadding: 1
@@ -37,6 +38,7 @@ Rectangle {
             anchors.centerIn: parent
             font.family: Appearance.font.family.monospace
             font.pixelSize: root.pixelSize
+            color: root.textColor
             text: key
         }
     }
