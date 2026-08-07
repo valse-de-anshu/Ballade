@@ -13,25 +13,7 @@ MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$SCRIPT_DIR/terminal/scheme-base.json"
 
 handle_kde_material_you_colors() {
-    # Check if Qt app theming is enabled in config
-    if [ -f "$SHELL_CONFIG_FILE" ]; then
-        enable_qt_apps=$(jq -r '.appearance.wallpaperTheming.enableQtApps' "$SHELL_CONFIG_FILE")
-        if [ "$enable_qt_apps" == "false" ]; then
-            return
-        fi
-    fi
-
-    # Map $type_flag to allowed scheme variants for kde-material-you-colors-wrapper.sh
-    local kde_scheme_variant=""
-    case "$type_flag" in
-        scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot)
-            kde_scheme_variant="$type_flag"
-            ;;
-        *)
-            kde_scheme_variant="scheme-tonal-spot" # default
-            ;;
-    esac
-    "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
+    return 0
 }
 
 pre_process() {
