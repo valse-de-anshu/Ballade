@@ -74,31 +74,31 @@ The following diagram illustrates how QuickShell components, services, IPC socke
 
 ```mermaid
 graph TD
-    subgraph Hyprland Compositor
-        HL[Hyprland Core IPC]
-        HL_RULES[custom/rules.lua<br>Opacity: 0.93 0.88]
-        HL_BLUR[custom/general.lua<br>Blur size:16 passes:4]
-        HL_ENV[custom/env.lua<br>qsConfig = ballade]
+    subgraph "Hyprland Compositor"
+        HL["Hyprland Core IPC"]
+        HL_RULES["custom/rules.lua - Opacity: 0.93 0.88"]
+        HL_BLUR["custom/general.lua - Blur size:16 passes:4"]
+        HL_ENV["custom/env.lua - qsConfig = ballade"]
     end
 
-    subgraph QuickShell Shell Engine (ballade)
-        SHELL[shell.qml] --> FAMILY[IllogicalImpulseFamily.qml]
+    subgraph "QuickShell Shell Engine (ballade)"
+        SHELL["shell.qml"] --> FAMILY["IllogicalImpulseFamily.qml"]
         
-        FAMILY --> BAR[modules/ii/bar/Bar.qml<br>Ditto ii Top Bar]
-        FAMILY --> SIDE_L[modules/ii/sidebarLeft/<br>end4-pC AI & Tools]
-        FAMILY --> SIDE_R[modules/ii/sidebarRight/<br>end4-pC Sliders & QuickToggles]
-        FAMILY --> SETTINGS[modules/ii/settings/Settings.qml<br>end4-pC Settings Overlay]
-        FAMILY --> WIDGETS[modules/ii/background/<br>Desktop Weather & Clock Widgets]
+        FAMILY --> BAR["modules/ii/bar/Bar.qml - Ditto ii Top Bar"]
+        FAMILY --> SIDE_L["modules/ii/sidebarLeft/ - end4-pC AI & Tools"]
+        FAMILY --> SIDE_R["modules/ii/sidebarRight/ - end4-pC Sliders & QuickToggles"]
+        FAMILY --> SETTINGS["modules/ii/settings/Settings.qml - end4-pC Settings Overlay"]
+        FAMILY --> WIDGETS["modules/ii/background/ - Desktop Weather & Clock Widgets"]
 
-        BAR --> MEDIA[modules/ii/bar/Media.qml<br>end4-pC Audio Visualizer]
-        MEDIA -->|On Left Click| POPUP[modules/ii/mediaControls/<br>ii Song Preview Popup]
+        BAR --> MEDIA["modules/ii/bar/Media.qml - end4-pC Audio Visualizer"]
+        MEDIA -->|On Left Click| POPUP["modules/ii/mediaControls/ - ii Song Preview Popup"]
 
-        SETTINGS -->|Writes options| CONFIG[modules/common/Config.qml]
-        CONFIG -->|FileView Adapter| JSON_FILE[(~/.config/illogical-impulse/config.json)]
+        SETTINGS -->|Writes options| CONFIG["modules/common/Config.qml"]
+        CONFIG -->|FileView Adapter| JSON_FILE[("~/.config/illogical-impulse/config.json")]
 
-        SIDE_L --> AI_SERV[services/Ai.qml<br>Gemini / Ollama / OpenAI]
-        SIDE_R --> MPRIS[services/MprisController.qml]
-        BAR --> WORKSPACE[modules/common/models/WorkspaceModel.qml]
+        SIDE_L --> AI_SERV["services/Ai.qml - Gemini / Ollama / OpenAI"]
+        SIDE_R --> MPRIS["services/MprisController.qml"]
+        BAR --> WORKSPACE["modules/common/models/WorkspaceModel.qml"]
     end
 
     HL_ENV -->|Sets Config Name| SHELL
