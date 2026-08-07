@@ -694,19 +694,6 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         }
                     }
                 }
-                VoiceMicButton {
-                    id: voiceMicButton
-                    Layout.alignment: Qt.AlignBottom
-                    Layout.rightMargin: 5
-                    targetTextField: messageInputField
-                    onTranscribed: text => {
-                        if (text && text.trim().length > 0) {
-                            root.handleInput(text);
-                            messageInputField.clear();
-                        }
-                    }
-                }
-
                 RippleButton { // Send button
                     id: sendButton
                     Layout.alignment: Qt.AlignBottom
