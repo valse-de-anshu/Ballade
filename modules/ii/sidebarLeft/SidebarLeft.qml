@@ -268,20 +268,28 @@ Scope { // Scope
             onVisibleChanged: {
                 if (!visible) GlobalStates.sidebarLeftOpen = false;
             }
-            
+
+            // Window-level shortcuts — fire regardless of which child has focus
+            Shortcut {
+                sequence: "Ctrl+O"
+                enabled: detachedSidebarRoot.visible
+                onActivated: root.toggleExtend()
+            }
+            Shortcut {
+                sequence: "Ctrl+P"
+                enabled: detachedSidebarRoot.visible
+                onActivated: root.togglePin()
+            }
+            Shortcut {
+                sequence: "Ctrl+D"
+                enabled: detachedSidebarRoot.visible
+                onActivated: root.toggleDetach()
+            }
+
             Rectangle {
                 id: detachedSidebarBackground
                 anchors.fill: parent
                 color: Appearance.colors.colLayer0
-
-                Keys.onPressed: (event) => {
-                    if (event.modifiers === Qt.ControlModifier) {
-                        if (event.key === Qt.Key_D) {
-                            root.toggleDetach();
-                        }
-                        event.accepted = true;
-                    }
-                }
             }
         }
     }
