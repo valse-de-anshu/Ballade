@@ -52,13 +52,39 @@ Scope {
                 }
                 property bool superShow: false
                 property bool mustShow: hoverRegion.containsMouse || superShow
+                property var thisMonitorData: HyprlandData.monitors.find(m => m.name === barRoot.screen?.name)
+                property bool monitorHasFullscreen: HyprlandData.workspaceById[thisMonitorData?.activeWorkspace?.id]?.hasfullscreen ?? false
+                property bool monitorHasSpecialOpen: (thisMonitorData?.specialWorkspace?.name ?? "") !== ""
                 exclusionMode: ExclusionMode.Ignore
-                exclusiveZone: (Config?.options.bar.autoHide.enable && (!mustShow || !Config?.options.bar.autoHide.pushWindows)) ? 0 :
-                    Appearance.sizes.baseBarHeight + (Config.options.bar.cornerStyle === 1 ? Appearance.sizes.hyprlandGapsOut : 0)
+                exclusiveZone: (Config?.options.bar.autoHide.enable && (!mustShow || !Config?.options.bar.autoHide.pushWindows)) ? 0 : Appearance.sizes.baseBarHeight + (Config.options.bar.cornerStyle === 1 ? Appearance.sizes.hyprlandGapsOut : 0) + (Config.options.bar.cornerStyle === 2 ? -6 : 0)
                 WlrLayershell.namespace: "quickshell:bar"
+                // Overlay layer only while special workspace sits on top of a fullscreen window on this monitor,
+                // else Top layer so fullscreen apps cover the bar as normal (Hyprland buries Top layer under fullscreen+special).
+                WlrLayershell.layer: (monitorHasFullscreen && monitorHasSpecialOpen) ? WlrLayer.Overlay : WlrLayer.Top
                 implicitHeight: Appearance.sizes.barHeight + Appearance.rounding.screenRounding
+                // When Overlay-layer, bar shares a layer with the screen-corner click zones (ScreenCorners.qml)
+                // and same-layer overlap is resolved by stacking, not layer priority - bar was winning and
+                // swallowing the tiny corner-open hit rects. Carve them out of the bar's own mask so clicks
+                // reach the corners underneath. Only relevant on the edge the bar and corners share.
+                property bool cutOutCornerOpenZones: (monitorHasFullscreen && monitorHasSpecialOpen) && (Config.options.bar.bottom === Config.options.sidebar.cornerOpen.bottom)
+                property int cornerOpenCutWidth: cutOutCornerOpenZones ? Config.options.sidebar.cornerOpen.cornerRegionWidth : 0
+                property int cornerOpenCutHeight: cutOutCornerOpenZones ? Config.options.sidebar.cornerOpen.cornerRegionHeight : 0
                 mask: Region {
                     item: hoverMaskRegion
+                    Region {
+                        intersection: Intersection.Subtract
+                        x: 0
+                        y: Config.options.bar.bottom ? (barRoot.height - barRoot.cornerOpenCutHeight) : 0
+                        width: barRoot.cornerOpenCutWidth
+                        height: barRoot.cornerOpenCutHeight
+                    }
+                    Region {
+                        intersection: Intersection.Subtract
+                        x: barRoot.width - barRoot.cornerOpenCutWidth
+                        y: Config.options.bar.bottom ? (barRoot.height - barRoot.cornerOpenCutHeight) : 0
+                        width: barRoot.cornerOpenCutWidth
+                        height: barRoot.cornerOpenCutHeight
+                    }
                 }
                 color: "transparent"
 
@@ -71,8 +97,9 @@ Scope {
                 }
 
                 margins {
+                    top: Config.options.bar.cornerStyle === 3 ? 5 : 0
                     right: (Config.options.interactions.deadPixelWorkaround.enable && barRoot.anchors.right) * -1
-                    bottom: (Config.options.interactions.deadPixelWorkaround.enable && barRoot.anchors.bottom) * -1
+                    bottom: (Config.options.interactions.deadPixelWorkaround.enable && barRoot.anchors.bottom) * -1 || Config.options.bar.cornerStyle === 3 ? 5 : 0
                 }
 
                 // Include in focus grab
@@ -98,6 +125,34 @@ Scope {
                             fill: barContent
                             topMargin: -Config.options.bar.autoHide.hoverRegionWidth
                             bottomMargin: -Config.options.bar.autoHide.hoverRegionWidth
+                        }
+                    }
+
+                    RoundCorner {
+                        id: leftPillCorner
+                        visible: barContent.centerOnly && showBarBackground && Config.options.bar.cornerStyle === 0
+                        x: barContent.centerPillX - implicitSize
+                        implicitSize: Appearance.rounding.screenRounding
+                        color: Appearance.colors.colLayer0
+                        corner: RoundCorner.CornerEnum.TopRight
+
+                        states: State {
+                            name: "bottom"
+                            when: Config.options.bar.bottom
+                            AnchorChanges {
+                                target: leftPillCorner
+                                anchors.top: undefined
+                                anchors.bottom: barContent.bottom
+                            }
+                            PropertyChanges {
+                                target: leftPillCorner
+                                corner: RoundCorner.CornerEnum.BottomRight
+                            }
+                        }
+                        AnchorChanges {
+                            target: leftPillCorner
+                            anchors.top: barContent.top
+                            anchors.bottom: undefined
                         }
                     }
 
@@ -141,6 +196,34 @@ Scope {
                         }
                     }
 
+                    RoundCorner {
+                        id: rightPillCorner
+                        visible: barContent.centerOnly && showBarBackground && Config.options.bar.cornerStyle === 0
+                        x: barContent.centerPillX + barContent.centerPillWidth
+                        implicitSize: Appearance.rounding.screenRounding
+                        color: Appearance.colors.colLayer0
+                        corner: RoundCorner.CornerEnum.TopLeft
+
+                        states: State {
+                            name: "bottom"
+                            when: Config.options.bar.bottom
+                            AnchorChanges {
+                                target: rightPillCorner
+                                anchors.top: undefined
+                                anchors.bottom: barContent.bottom
+                            }
+                            PropertyChanges {
+                                target: rightPillCorner
+                                corner: RoundCorner.CornerEnum.BottomLeft
+                            }
+                        }
+                        AnchorChanges {
+                            target: rightPillCorner
+                            anchors.top: barContent.top
+                            anchors.bottom: undefined
+                        }
+                    }
+                    
                     // Round decorators
                     Loader {
                         id: roundDecorators
@@ -151,7 +234,7 @@ Scope {
                             bottom: undefined
                         }
                         height: Appearance.rounding.screenRounding
-                        active: showBarBackground && Config.options.bar.cornerStyle === 0 // Hug
+                        active: showBarBackground && Config.options.bar.cornerStyle === 0 && !barContent.centerOnly// Hug
 
                         states: State {
                             name: "bottom"
@@ -231,7 +314,7 @@ Scope {
         }
     }
 
-    GlobalShortcut {
+    CompositorGlobalShortcut {
         name: "barToggle"
         description: "Toggles bar on press"
 
@@ -240,7 +323,7 @@ Scope {
         }
     }
 
-    GlobalShortcut {
+    CompositorGlobalShortcut {
         name: "barOpen"
         description: "Opens bar on press"
 
@@ -249,7 +332,7 @@ Scope {
         }
     }
 
-    GlobalShortcut {
+    CompositorGlobalShortcut {
         name: "barClose"
         description: "Closes bar on press"
 

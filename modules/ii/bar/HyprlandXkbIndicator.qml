@@ -1,34 +1,36 @@
 import QtQuick
+import QtQuick.Layouts
+import qs
 import qs.services
 import qs.modules.common
+import qs.modules.common.models
 import qs.modules.common.widgets
+import Quickshell.Io
+import Quickshell.Wayland
+import Quickshell.Hyprland
 
 Loader {
     id: root
     property bool vertical: false
     property color color: Appearance.colors.colOnSurfaceVariant
-    active: HyprlandXkb.layoutCodes.length > 1
-    visible: active
-
-    function abbreviateLayoutCode(fullCode) {
-    return fullCode.split(':').map(layout => {
-            const baseLayout = layout.split('-')[0];
-            return baseLayout.slice(0, 4);
-        }).join('\n');
-    }
 
     sourceComponent: Item {
-        implicitWidth: root.vertical ? null : layoutCodeText.implicitWidth
-        implicitHeight: root.vertical ? layoutCodeText.implicitHeight : null
+        implicitWidth: root.vertical ? null : rowLayout.implicitWidth + 8
+        implicitHeight: root.vertical ? rowLayout.implicitHeight + 6 : null
 
-        StyledText {
-            id: layoutCodeText
+        RowLayout {
+            id: rowLayout
             anchors.centerIn: parent
-            horizontalAlignment: Text.AlignHCenter
-            text: abbreviateLayoutCode(HyprlandXkb.currentLayoutCode)
-            font.pixelSize: text.includes("\n") ? Appearance.font.pixelSize.smallie : Appearance.font.pixelSize.small
-            color: root.color
-            animateChange: true
+            spacing: 5
+
+            StyledText {
+                id: layoutCodeText
+                horizontalAlignment: Text.AlignHCenter
+                text: WM.compositor === "niri" ? NiriXkb.currentLayoutCode : HyprlandXkb.currentLayoutCode
+                font.pixelSize: Appearance.font.pixelSize.small
+                color: Appearance.colors.colOnLayer0
+                animateChange: true
+            }
         }
     }
 }
