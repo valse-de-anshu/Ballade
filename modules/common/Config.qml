@@ -366,6 +366,18 @@ Singleton {
                 }
             }
 
+            property JsonObject cheatsheet: JsonObject {
+                property string superKey: "Super"
+                property bool useMacSymbol: false
+                property bool splitButtons: false
+                property bool useMouseSymbol: false
+                property bool useFnSymbol: false
+                property JsonObject fontSize: JsonObject {
+                    property int key: Appearance.font.pixelSize.smaller
+                    property int comment: Appearance.font.pixelSize.smaller
+                }
+            }
+
             property JsonObject bar: JsonObject {
                 property JsonObject autoHide: JsonObject {
                     property bool enable: false
