@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 import urllib.request
 import urllib.parse
 import json
@@ -31,6 +32,20 @@ def _parse_lrc(lrc_text: str) -> list:
             continue
     return sorted(lines, key=lambda x: x["time"])
 
+def _check_local_lrc(file_url: str) -> list:
+    if not file_url or not file_url.startswith("file://"):
+        return []
+    file_path = urllib.parse.unquote(file_url[7:])
+    base, _ = os.path.splitext(file_path)
+    lrc_path = base + ".lrc"
+    if os.path.exists(lrc_path):
+        try:
+            with open(lrc_path, 'r', encoding='utf-8', errors='ignore') as f:
+                return _parse_lrc(f.read())
+        except Exception:
+            pass
+    return []
+
 def _is_match(d: dict, title: str, artist: str) -> bool:
     if not d.get("syncedLyrics"):
         return False
@@ -53,7 +68,12 @@ def _is_match(d: dict, title: str, artist: str) -> bool:
                     any(word in r_artist for word in a.split() if len(word) > 3))
     return artist_match
 
-def fetch_lrclib(title: str, artist: str, duration: float) -> list:
+def fetch_lrclib(title: str, artist: str, duration: float, file_url: str = "") -> list:
+    # First priority: local .lrc file next to track
+    local_lyrics = _check_local_lrc(file_url)
+    if local_lyrics:
+        return local_lyrics
+
     title = _clean_str(title)
     artist = _clean_str(artist)
 
@@ -93,11 +113,12 @@ def main():
     title    = sys.argv[1] if len(sys.argv) > 1 else ""
     artist   = sys.argv[2] if len(sys.argv) > 2 else ""
     duration = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].replace('.', '', 1).isdigit() else 0.0
+    file_url = sys.argv[4] if len(sys.argv) > 4 else ""
 
     if not title:
         print("no_info", flush=True)
         sys.exit(0)
-    lines = fetch_lrclib(title, artist, duration)
+    lines = fetch_lrclib(title, artist, duration, file_url)
     if not lines:
         print("not_found", flush=True)
         sys.exit(0)
