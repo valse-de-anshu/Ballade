@@ -36,10 +36,32 @@ Item {
     readonly property bool animatedEntrance: WM.compositor !== "hyprland"
     readonly property bool sidebarOpen: GlobalStates.sidebarRightOpen
 
+    function filterDuplicatePlayers(players) {
+        if (!Config.options?.media?.filterDuplicatePlayers) {
+            return players
+        }
+        const seen = new Map()
+        for (const p of players) {
+            const track = p.trackTitle || ""
+            const artist = p.trackArtist || ""
+            const key = `${track}:::${artist}`
+
+            if (!seen.has(key)) {
+                seen.set(key, p)
+            } else {
+                const existing = seen.get(key)
+                if (p.isPlaying && !existing.isPlaying) {
+                    seen.set(key, p)
+                }
+            }
+        }
+        return Array.from(seen.values())
+    }
+
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property var realPlayers: MprisController.players
     readonly property var meaningfulPlayers: {
-        const preferred = Config.options.bar.media.preferredPlayer.trim().toLowerCase()
+        const preferred = Config.options.bar?.media?.preferredPlayer?.trim()?.toLowerCase() ?? ""
         if (preferred.length === 0) return filterDuplicatePlayers(realPlayers)
         const filtered = realPlayers.filter(p =>
             (p.identity ?? "").toLowerCase().includes(preferred) ||
