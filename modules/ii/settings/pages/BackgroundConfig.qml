@@ -919,7 +919,7 @@ ContentPage {
                         Config.options.background.widgets.customImage.enable = checked;
                     }
                 }
-                ConfigInput {
+                ConfigTextArea {
                     Layout.fillWidth: true
                     buttonIcon: "image"
                     text: Translation.tr("Image File Path")
