@@ -109,6 +109,34 @@ Variants {
 
         property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 
+        // ── Parallax ──────────────────────────────────────────────────────
+        property int workspaceChunkSize: Config?.options.bar.workspaces.shown ?? 10
+        property list<HyprlandWorkspace> relevantWindows_p: Hyprland.workspaces.values.filter(ws => ws.monitor && ws.monitor.name == monitor.name)
+        property int firstWorkspaceId_p: relevantWindows_p[0]?.id || 1
+        property int lastWorkspaceId_p: relevantWindows_p[relevantWindows_p.length - 1]?.id || 10
+        property int totalWorkspaces_p: Math.ceil(lastWorkspaceId_p / workspaceChunkSize) * workspaceChunkSize
+        property int workspaceIndex_p: (monitor.activeWorkspace?.id ?? 1) - 1
+        readonly property real parallaxZoom: Config.options.background.parallax?.workspaceZoom ?? 1.05
+        property real minSuitableScale_p: 1
+        property real scaledW: modelData.width  * minSuitableScale_p * parallaxZoom
+        property real scaledH: modelData.height * minSuitableScale_p * parallaxZoom
+        property real parallaxPixelsX: Math.max(0, scaledW - screen.width)
+
+        property real wallpaperFraction: {
+            if (totalWorkspaces_p <= 1) return 0.5;
+            return Math.max(0, Math.min(1, workspaceIndex_p / (totalWorkspaces_p - 1)));
+        }
+        property real usedFractionX: {
+            let f = wallpaperFraction;
+            let sidebarFraction = parallaxZoom / workspaceChunkSize / 2;
+            f += (sidebarFraction * GlobalStates.sidebarRightOpen - sidebarFraction * GlobalStates.sidebarLeftOpen);
+            return Math.max(0, Math.min(1, f));
+        }
+        property real parallaxX: -parallaxPixelsX * usedFractionX
+        property real parallaxY: (modelData.height - scaledH) / 2
+
+
+
         property string effectiveWallpaperPath: {
             if (GlobalStates.screenLocked && Config.options.background.lockWall !== "")
                 return Config.options.background.lockWall;
@@ -161,6 +189,9 @@ Variants {
         }
 
         Component.onCompleted: {
+            // parallax scale
+            bgRoot.minSuitableScale_p = Math.max(screen.width / modelData.width, screen.height / modelData.height);
+            // wallpaper setup
             previousWallpaper.source = ""
             wallpaper.source = bgRoot.wallpaperSafetyTriggered ? "" : bgRoot.wallpaperPath
             bgRoot.currentWallpaperSource = bgRoot.wallpaperPath
@@ -243,18 +274,25 @@ Variants {
 
             Image {
                 id: previousWallpaper
-                anchors.fill: parent
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
                 fillMode: Image.PreserveAspectCrop
                 cache: true
                 smooth: true
                 asynchronous: true
                 layer.enabled: true
                 visible: false
+                Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
             StyledImage {
                 id: wallpaper
-                anchors.fill: parent
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
                 fillMode: Image.PreserveAspectCrop
                 cache: true
                 smooth: true
@@ -266,11 +304,15 @@ Variants {
                         transitionAnim.restart()
                     }
                 }
+                Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
             ShaderEffect {
                 id: transitionEffect
-                anchors.fill: parent
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
                 visible: !blurLoader.active && bgRoot.wallpaperAnimation !== "" && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
                 property var fromImage: previousWallpaper
                 property var toImage: wallpaper
@@ -282,12 +324,16 @@ Variants {
                 fragmentShader: bgRoot.wallpaperAnimation !== ""
                     ? Qt.resolvedUrl(`shaders/${bgRoot.currentShader}.frag.qsb`)
                     : ""
+                Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
             Loader {
                 id: blurLoader
                 active: Config.options.lock.blur.enable && (GlobalStates.screenLocked || scaleAnim.running)
-                anchors.fill: parent
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
                 scale: GlobalStates.screenLocked ? Config.options.lock.blur.extraZoom : 1
                 Behavior on scale {
                     NumberAnimation {
