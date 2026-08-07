@@ -30,19 +30,28 @@ Item {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: 8
 
                 Item {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitWidth: 48
-                    implicitHeight: 48
+                    implicitWidth: 40
+                    implicitHeight: 40
 
                     MaterialLoadingIndicator {
                         anchors.fill: parent
                         loading: LyricsService.status === "loading"
                         colBg: root.indicatorColor
                         colShape: root.indicatorShapeColor
-                        implicitSize: 48
+                        implicitSize: 40
+                        visible: LyricsService.status === "loading"
+                    }
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "music_off"
+                        iconSize: 28
+                        color: root.dimColor
+                        visible: LyricsService.status !== "loading"
                     }
 
                     MouseArea {
@@ -50,6 +59,13 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: LyricsService.restartLyrics()
                     }
+                }
+
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: LyricsService.status === "loading" ? Translation.tr("Loading lyrics...") : Translation.tr("No lyrics available")
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: root.dimColor
                 }
             }
         }
