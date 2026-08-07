@@ -174,8 +174,6 @@ Column {
             spacing: 16
             Row {
                 id: modRow
-                Component.onCompleted: root.maxBindWidth = Math.max(root.maxBindWidth, implicitWidth)
-                width: root.maxBindWidth
                 spacing: 4
                 Repeater {
                     model: {
