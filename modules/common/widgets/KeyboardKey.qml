@@ -16,6 +16,8 @@ Rectangle {
     property color keyColor: Appearance.m3colors.m3surfaceContainerLow
     implicitWidth: keyFace.implicitWidth + borderWidth * 2
     implicitHeight: keyFace.implicitHeight + borderWidth * 2 + extraBottomBorderWidth
+    width: implicitWidth
+    height: implicitHeight
     radius: borderRadius
     color: borderColor
 
