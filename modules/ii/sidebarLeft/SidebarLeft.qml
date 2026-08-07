@@ -12,9 +12,14 @@ Scope { // Scope
     id: root
     property bool detach: false
     property bool pin: false
+    property bool extend: false
     property Component contentComponent: SidebarLeftContent {}
     property Item sidebarContent
     readonly property bool centerOnly: Config.options.bar.layouts.leftLayout.length === 0 && Config.options.bar.layouts.rightLayout.length === 0 && !Config.options.bar.vertical
+
+    function toggleExtend() {
+        root.extend = !root.extend;
+    }
 
     function toggleDetach() {
         root.detach = !root.detach;
@@ -115,8 +120,7 @@ Scope { // Scope
                 onTriggered: panelWindow.reallyVisible = false
             }
 
-            property bool extend: false
-            property real sidebarWidth: panelWindow.extend ? Appearance.sizes.sidebarWidthExtended : Appearance.sizes.sidebarWidth
+            property real sidebarWidth: root.extend ? Appearance.sizes.sidebarWidthExtended : Appearance.sizes.sidebarWidth
             property var contentParent: sidebarLeftBackground
 
             function hide() {

@@ -684,7 +684,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                                 event.accepted = false; // No image, let text pasting proceed
                             } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_O) {
                                 // Ctrl+O to expand sidebar width
-                                Config.options.sidebar.width = Config.options.sidebar.width > 450 ? 400 : 550;
+                                root.scopeRoot?.toggleExtend();
                                 event.accepted = true;
                             } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_P) {
                                 // Ctrl+P to pin sidebar
