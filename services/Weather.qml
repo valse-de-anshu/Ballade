@@ -83,10 +83,10 @@ Singleton {
     function getData() {
         let command = "curl -s wttr.in";
 
-        if (root.gpsActive && root.location.valid) {
-            command += `/${root.location.lat},${root.location.long}`;
-        } else {
+        if (root.city && root.city.trim().length > 0) {
             command += `/${formatCityName(root.city)}`;
+        } else if (root.gpsActive && root.location.valid) {
+            command += `/${root.location.lat},${root.location.long}`;
         }
 
         // format as json

@@ -147,6 +147,12 @@ Singleton {
     signal discardAll();
     signal timeout(id: var);
 
+    Process {
+        id: notifSoundProc
+        property string soundPath: Config.options.sounds.notificationSoundPath || "/home/valse-de-anshu/⁄Music/notification/1. Nakime Biwa sound effect.flac"
+        command: ["bash", "-c", `paplay --media-role=event "${soundPath}" || pw-play --media-role=event "${soundPath}" || canberra-gtk-play --file="${soundPath}"`]
+    }
+
 	NotificationServer {
         id: notifServer
         // actionIconsSupported: true
@@ -180,6 +186,13 @@ Singleton {
                 root.unread++;
             }
             root.notify(newNotifObject);
+
+            // Notification Sound Effect
+            if (!root.silent && (Config.options.sounds.notifications ?? true)) {
+                notifSoundProc.running = false
+                notifSoundProc.running = true
+            }
+
             // console.log(notifToString(newNotifObject));
             notifFileView.setText(stringifyList(root.list));
         }

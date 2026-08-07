@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -151,6 +152,54 @@ ContentPage {
                         onTriggered: {
                             Config.options.screenSnip.savePath = screenshotPathField.value;
                         }
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "notifications"
+            shape: MaterialShape.Shape.Superellipse
+            title: Translation.tr("Notifications & Audio")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Play sound on new notifications")
+                    checked: Config.options.sounds.notifications
+                    onCheckedChanged: {
+                        Config.options.sounds.notifications = checked;
+                    }
+                }
+
+                ConfigTextArea {
+                    id: notifSoundPathField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "music_note"
+                    text: Translation.tr("Notification Sound Path")
+                    value: Config.options.sounds.notificationSoundPath
+                    onValueChanged: notifSoundPathDebounceTimer.restart()
+
+                    Timer {
+                        id: notifSoundPathDebounceTimer
+                        interval: 600
+                        repeat: false
+                        onTriggered: {
+                            Config.options.sounds.notificationSoundPath = notifSoundPathField.value;
+                        }
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: notifSoundFileDialog.open()
                     }
                 }
             }
@@ -380,6 +429,18 @@ ContentPage {
         WorldMap {
             Layout.fillWidth: true
             Layout.preferredHeight: 300
+        }
+    }
+
+    FileDialog {
+        id: notifSoundFileDialog
+        title: Translation.tr("Select Notification Sound")
+        currentFolder: "file:///home/valse-de-anshu/Music/"
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            notifSoundPathField.value = path;
+            Config.options.sounds.notificationSoundPath = path;
         }
     }
 }

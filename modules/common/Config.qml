@@ -522,6 +522,7 @@ Singleton {
                     property string engine: "auto" // Run `trans -list-engines` for available engines. auto should use google
                     property string targetLanguage: "auto" // Run `trans -list-all` for available languages
                     property string sourceLanguage: "auto"
+                    property list<string> pinnedLanguages: ["auto", "english", "spanish", "french", "german", "hindi", "japanese"]
                 }
             }
 
@@ -745,6 +746,8 @@ Singleton {
             property JsonObject sounds: JsonObject {
                 property bool battery: false
                 property bool pomodoro: false
+                property bool notifications: true
+                property string notificationSoundPath: "/home/valse-de-anshu/⁄Music/notification/1. Nakime Biwa sound effect.flac"
                 property string theme: "freedesktop"
             }
 

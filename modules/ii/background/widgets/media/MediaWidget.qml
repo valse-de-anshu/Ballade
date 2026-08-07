@@ -90,11 +90,35 @@ AbstractBackgroundWidget {
         implicitWidth: root.widgetWidth
         implicitHeight: root.widgetHeight + (root.showLyrics ? 264 : 0)
         radius: Appearance.rounding?.verylarge ?? 30
-        color: Appearance.colors.colPrimaryContainer
+        color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
         clip: true
 
         Behavior on implicitHeight {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+        }
+
+        Image {
+            id: blurredArt
+            anchors.fill: parent
+            source: root.displayedArtFilePath
+            sourceSize.width: card.width
+            sourceSize.height: card.height
+            fillMode: Image.PreserveAspectCrop
+            cache: false
+            antialiasing: true
+            asynchronous: true
+            visible: root.displayedArtFilePath !== ""
+
+            layer.enabled: true
+            layer.effect: StyledBlurEffect {
+                source: blurredArt
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.45)
+                radius: card.radius
+            }
         }
 
         Column {
@@ -287,16 +311,26 @@ AbstractBackgroundWidget {
                 height: root.showLyrics ? 250 : 0
                 visible: root.showLyrics
 
-                Lyrics {
+                Rectangle {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    textAlignment: Text.AlignHCenter
-                    textColor: Appearance.colors.colOnPrimaryContainer
-                    activeColor: Appearance.colors.colPrimary
-                    dimColor: Appearance.colors.colSubtext
-                    indicatorColor: Appearance.colors.colPrimary
-                    indicatorShapeColor: Appearance.colors.colOnPrimary
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    anchors.bottomMargin: 8
+                    color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.55)
+                    radius: Appearance.rounding.normal
+                    border.width: 1
+                    border.color: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.85)
+
+                    Lyrics {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        textAlignment: Text.AlignHCenter
+                        textColor: Appearance.colors.colOnLayer0
+                        activeColor: Appearance.colors.colPrimary
+                        dimColor: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.4)
+                        indicatorColor: Appearance.colors.colPrimary
+                        indicatorShapeColor: Appearance.colors.colOnPrimary
+                    }
                 }
             }
         }

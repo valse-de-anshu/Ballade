@@ -14,6 +14,7 @@ Singleton {
     property string distroId: "unknown"
     property string distroIcon: "linux-symbolic"
     property string username: "user"
+    property string hostname: "hyprland"
     property string homeUrl: ""
     property string documentationUrl: ""
     property string supportUrl: ""
@@ -117,6 +118,18 @@ Singleton {
         stdout: SplitParser {
             onRead: data => {
                 root.username = data.trim()
+            }
+        }
+    }
+
+    Process {
+        id: getHostname
+        running: true
+        command: ["bash", "-c", "cat /etc/hostname 2>/dev/null || uname -n"]
+        stdout: SplitParser {
+            onRead: data => {
+                const trimmed = data.trim()
+                if (trimmed.length > 0) root.hostname = trimmed
             }
         }
     }

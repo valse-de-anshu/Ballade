@@ -33,7 +33,12 @@ Item {
     property int visualizerSmoothing: 2
     property real radius
 
-    property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+    property string displayedArtFilePath: {
+        if (!root.artUrl || root.artUrl.length == 0) return ""
+        if (root.artUrl.startsWith("file://")) return root.artUrl
+        if (root.downloaded) return Qt.resolvedUrl(artFilePath)
+        return ""
+    }
 
     Timer {
         running: root.player?.playbackState == MprisPlaybackState.Playing
@@ -45,6 +50,11 @@ Item {
     onArtFilePathChanged: {
         if (!root.artUrl || root.artUrl.length == 0) {
             root.artDominantColor = Appearance.m3colors.m3secondaryContainer
+            root.downloaded = false
+            return
+        }
+        if (root.artUrl.startsWith("file://")) {
+            root.downloaded = true
             return
         }
         coverArtDownloader.targetFile = root.artUrl
@@ -82,6 +92,39 @@ Item {
         color: ColorUtils.transparentize(artDominantColor, 0.9)
         radius: Appearance.rounding.normal
 
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: background.width
+                height: background.height
+                radius: background.radius
+            }
+        }
+
+        Image {
+            id: blurredArt
+            anchors.fill: parent
+            source: root.displayedArtFilePath
+            sourceSize.width: background.width
+            sourceSize.height: background.height
+            fillMode: Image.PreserveAspectCrop
+            cache: false
+            antialiasing: true
+            asynchronous: true
+            visible: root.displayedArtFilePath !== ""
+
+            layer.enabled: true
+            layer.effect: StyledBlurEffect {
+                source: blurredArt
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.45)
+                radius: Appearance.rounding.normal
+            }
+        }
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: parent.height * 0.04
@@ -98,85 +141,67 @@ Item {
             }
 
             // ── Album art ──
-            Rectangle {
-                id: artBackground
+            Item {
+                id: artContainer
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: Math.min(parent.width * 1, parent.height * 0.45)
-                Layout.preferredHeight: Layout.preferredWidth
-                radius: Appearance.rounding.normal
-                color: Appearance.colors.colPrimaryContainer
+                implicitWidth: Math.min(parent.width * 0.35, parent.height * 0.35)
+                implicitHeight: implicitWidth
+                Layout.bottomMargin: 10
 
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: artBackground.width
-                        height: artBackground.height
-                        radius: artBackground.radius
-                    }
-                }
-
-                StyledImage {
+                Image {
+                    id: coverArt
                     anchors.fill: parent
                     source: root.displayedArtFilePath
                     fillMode: Image.PreserveAspectCrop
                     cache: false
                     antialiasing: true
-                    sourceSize.width: artBackground.width * 2
-                    sourceSize.height: artBackground.height * 2
-                }
+                    asynchronous: true
 
-                MaterialSymbol {
-                    visible: MprisController.activePlayer === null
-                    anchors.centerIn: parent 
-                    fill: 1
-                    text: "music_note"
-                    color: Appearance.colors.colPrimary
-                    iconSize: Appearance.font.pixelSize.hugeass + 100
+                    layer.enabled: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: artContainer.implicitWidth
+                            height: artContainer.implicitHeight
+                            radius: Appearance.rounding.normal
+                        }
+                    }
                 }
             }
 
-            // ── Title & Artist ──
+            // ── Track info ──
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: 20
-                spacing: 5
+                spacing: 2
 
-                Item {
+                StyledText {
+                    id: titleText
                     Layout.fillWidth: true
-                    Layout.preferredHeight: titleText.implicitHeight
-                    clip: true
+                    font.pixelSize: Appearance.font.pixelSize.huge 
+                    font.bold: true
+                    color: blendedColors.colOnLayer0
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                    text: root.player?.trackTitle || "No media playing"
 
-                    StyledText {
-                        id: titleText
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        font.pixelSize: Appearance.font.pixelSize.huge
-                        font.weight: Font.Bold
-                        color: blendedColors.colOnLayer0
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                        text: StringUtils.cleanMusicTitle(root.player?.trackTitle) || "Play"
-
-                        Behavior on text {
-                            SequentialAnimation {
-                                NumberAnimation { target: titleText; property: "x"; to: -titleText.width; duration: 150; easing.type: Easing.InQuad }
-                                PropertyAction { target: titleText; property: "text" }
-                                NumberAnimation { target: titleText; property: "x"; from: titleText.width; to: 0; duration: 150; easing.type: Easing.OutQuad }
-                            }
+                    Behavior on text {
+                        SequentialAnimation {
+                            NumberAnimation { target: titleText; property: "x"; to: -titleText.width; duration: 150; easing.type: Easing.InQuad }
+                            PropertyAction { target: titleText; property: "text" }
+                            NumberAnimation { target: titleText; property: "x"; from: titleText.width; to: 0; duration: 150; easing.type: Easing.OutQuad }
                         }
                     }
                 }
 
                 Item {
+                    id: artistTextContainer
                     Layout.fillWidth: true
-                    Layout.preferredHeight: artistText.implicitHeight
+                    implicitHeight: artistText.implicitHeight
                     clip: true
 
                     StyledText {
                         id: artistText
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
+                        anchors.fill: parent
                         font.pixelSize: Appearance.font.pixelSize.large 
                         color: blendedColors.colSubtext
                         horizontalAlignment: Text.AlignHCenter
@@ -196,23 +221,34 @@ Item {
             }
 
             // ── Lyrics ──
-            Lyrics {
-                id: lyricsComp
-                opacity: MprisController.activePlayer !== null ? 1 : 0 
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                textAlignment: Text.AlignHCenter
-                textColor: blendedColors.colOnLayer0
-                activeColor: blendedColors.colPrimary
-                dimColor: blendedColors.colSubtext
-                indicatorColor: {
-                    let c = blendedColors.colPrimaryContainer
-                    return (c && c != "#000000" && c != "transparent") ? c : root.artDominantColor
-                }
-                indicatorShapeColor: {
-                    let c = blendedColors.colOnPrimaryContainer
-                    if (c && c != "#000000" && c != "#ffffff" && c != "transparent") return c
-                    return blendedColors.colPrimary || Appearance.colors.colPrimary
+                Layout.topMargin: 8
+                Layout.bottomMargin: 8
+                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.55)
+                radius: Appearance.rounding.normal
+                border.width: 1
+                border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.85)
+
+                Lyrics {
+                    id: lyricsComp
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    opacity: MprisController.activePlayer !== null ? 1 : 0 
+                    textAlignment: Text.AlignHCenter
+                    textColor: Appearance.colors.colOnPrimaryContainer
+                    activeColor: Appearance.colors.colPrimary
+                    dimColor: Appearance.colors.colSubtext
+                    indicatorColor: {
+                        let c = root.blendedColors.colPrimaryContainer
+                        return (c && c != "#000000" && c != "transparent") ? c : root.artDominantColor
+                    }
+                    indicatorShapeColor: {
+                        let c = root.blendedColors.colOnPrimaryContainer
+                        if (c && c != "#000000" && c != "#ffffff" && c != "transparent") return c
+                        return root.blendedColors.colPrimary || Appearance.colors.colPrimary
+                    }
                 }
             }
 

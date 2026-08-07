@@ -694,6 +694,19 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         }
                     }
                 }
+                VoiceMicButton {
+                    id: voiceMicButton
+                    Layout.alignment: Qt.AlignBottom
+                    Layout.rightMargin: 5
+                    targetTextField: messageInputField
+                    onTranscribed: text => {
+                        if (text && text.trim().length > 0) {
+                            root.handleInput(text);
+                            messageInputField.clear();
+                        }
+                    }
+                }
+
                 RippleButton { // Send button
                     id: sendButton
                     Layout.alignment: Qt.AlignBottom
@@ -732,16 +745,18 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 anchors.bottomMargin: 5
                 anchors.leftMargin: 10
                 anchors.rightMargin: 5
-                spacing: 4
+                spacing: 12
 
                 property var commandsShown: [
                     {
                         name: "",
+                        icon: "terminal",
                         sendDirectly: false,
                         dontAddSpace: true
                     },
                     {
                         name: "clear",
+                        icon: "delete",
                         sendDirectly: true
                     },
                 ]
@@ -767,13 +782,29 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 ButtonGroup {
                     // Command buttons
                     padding: 0
+                    spacing: 5
 
                     Repeater {
                         // Command buttons
                         model: commandButtonsRow.commandsShown
                         delegate: ApiCommandButton {
                             property string commandRepresentation: `${root.commandPrefix}${modelData.name}`
-                            buttonText: commandRepresentation
+                            buttonText: modelData.icon ? "" : commandRepresentation
+                            colBackground: modelData.icon ? "transparent" : Appearance.colors.colLayer2
+                            baseWidth: modelData.icon ? height : (contentItem.implicitWidth + horizontalPadding * 2)
+
+                            Loader {
+                                anchors.centerIn: parent
+                                active: modelData.icon !== undefined
+                                visible: active
+                                sourceComponent: MaterialSymbol {
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData.icon ?? ""
+                                    iconSize: Appearance.font.pixelSize.large
+                                    color: Appearance.m3colors.m3onSurface
+                                }
+                            }
+
                             downAction: () => {
                                 if (modelData.sendDirectly) {
                                     root.handleInput(commandRepresentation);

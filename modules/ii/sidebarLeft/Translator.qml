@@ -88,7 +88,7 @@ Item {
 
     Process {
         id: getLanguagesProc
-        command: ["trans", "-list-languages", "-no-bidi"]
+        command: ["trans", "-list-languages-english", "-no-bidi"]
         property list<string> bufferList: ["auto"]
         running: true
         stdout: SplitParser {
@@ -146,7 +146,7 @@ Item {
                     anchors.centerIn: parent
                     horizontalAlignment: Text.AlignHCenter
                     iconSize: Appearance.font.pixelSize.larger
-                    text: "close"
+                    text: "delete"
                     color: deleteButton.enabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colSubtext
                 }
                 onClicked: {

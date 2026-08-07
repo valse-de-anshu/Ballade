@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -7,6 +8,16 @@ import qs.modules.common.widgets
 ContentPage {
     id: page
     forceWidth: true
+
+    FileDialog {
+        id: bannerFileDialog
+        title: "Select Banner Image"
+        nameFilters: ["Image files (*.png *.jpg *.jpeg *.webp *.gif *.svg)", "All files (*)"]
+        onAccepted: {
+            let file = selectedFile.toString().replace(/^file:\/\//, "")
+            Config.options.sidebar.bannerImage = file
+        }
+    }
 
     function goTo(term) {
         const t = term.toLowerCase().trim()
@@ -214,6 +225,23 @@ ContentPage {
                     checked: Config.options.sidebar.banner
                     onCheckedChanged: {
                         Config.options.sidebar.banner = checked;
+                    }
+                }
+
+                ConfigTextArea {
+                    visible: Config.options.sidebar.banner
+                    buttonIcon: "image"
+                    text: Translation.tr("Banner image path")
+                    description: Translation.tr("Custom image file path for the right sidebar header banner")
+                    value: Config.options.sidebar.bannerImage
+                    placeholderText: "/path/to/banner.png"
+                    confirmButtonVisible: true
+                    confirmButtonIcon: "folder_open"
+                    onValueChanged: {
+                        Config.options.sidebar.bannerImage = value;
+                    }
+                    onConfirmClicked: {
+                        bannerFileDialog.open()
                     }
                 }
 

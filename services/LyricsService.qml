@@ -94,7 +94,7 @@ Singleton {
         const artist   = root.activePlayer?.trackArtist ?? ""
         const duration = root.activePlayer?.length       ?? 0
 
-        if (!title || !artist) { root.status = "no_info"; return }
+        if (!title) { root.status = "no_info"; return }
 
         lyricsProc.command = [
             "python3",
