@@ -74,14 +74,14 @@ The following diagram illustrates how QuickShell components, services, IPC socke
 
 ```mermaid
 graph TD
-    subgraph "Hyprland Compositor"
+    subgraph HyprlandCompositor ["Hyprland Compositor"]
         HL["Hyprland Core IPC"]
         HL_RULES["custom/rules.lua - Opacity: 0.93 0.88"]
         HL_BLUR["custom/general.lua - Blur size:16 passes:4"]
         HL_ENV["custom/env.lua - qsConfig = ballade"]
     end
 
-    subgraph "QuickShell Shell Engine (ballade)"
+    subgraph ShellEngine ["QuickShell Shell Engine (ballade)"]
         SHELL["shell.qml"] --> FAMILY["IllogicalImpulseFamily.qml"]
         
         FAMILY --> BAR["modules/ii/bar/Bar.qml - Ditto ii Top Bar"]
