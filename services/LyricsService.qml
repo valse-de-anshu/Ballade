@@ -15,8 +15,14 @@ Singleton {
 
     property var lyricsLines: []
     property int activeIndex: -1
-    property string status: "loading"
+    property string status: "loading"  // "loading" | "ok" | "not_found" | "no_info" | "error"
     property var slots: ["", "", "", "", "", "", ""]
+
+    // Track what we last searched so retries know what to re-run
+    property string _lastTitle:    ""
+    property string _lastArtist:   ""
+    property string _lastDuration: ""
+    property string _lastUrl:      ""
 
     readonly property int before: 3
     readonly property int after:  3
@@ -34,6 +40,7 @@ Singleton {
         return result
     }
 
+    // ── Sync timer: updates activeIndex every 300ms while playing ─────────────
     Timer {
         id: syncTimer
         interval: 300
@@ -53,14 +60,33 @@ Singleton {
         }
     }
 
+    // ── Auto-retry: if not_found, retry once after 8s (network may have been slow)
+    Timer {
+        id: retryTimer
+        interval: 8000
+        repeat: false
+        running: false
+        onTriggered: {
+            if (root.status === "not_found" || root.status === "error") {
+                root._runFetch(root._lastTitle, root._lastArtist,
+                               root._lastDuration, root._lastUrl)
+            }
+        }
+    }
+
+    // ── Process that runs lyrics.py ───────────────────────────────────────────
     Process {
         id: lyricsProc
         running: false
         stdout: SplitParser {
             onRead: data => {
                 const trimmed = data.trim()
-                if (trimmed === "not_found") { root.status = "not_found"; return }
-                if (trimmed === "no_info")   { root.status = "no_info";   return }
+                if (trimmed === "not_found") {
+                    root.status = "not_found"
+                    retryTimer.restart()   // auto-retry once
+                    return
+                }
+                if (trimmed === "no_info") { root.status = "no_info"; return }
 
                 const parts = trimmed.split("§")
                 if (parts.length < 3) return
@@ -73,8 +99,13 @@ Singleton {
                     if (!isNaN(t)) lines.push({ time: t, text: txt })
                 }
 
-                if (lines.length === 0) { root.status = "not_found"; return }
+                if (lines.length === 0) {
+                    root.status = "not_found"
+                    retryTimer.restart()
+                    return
+                }
 
+                retryTimer.stop()
                 root.lyricsLines = lines
                 root.activeIndex = -1
                 root.slots = root.buildSlots(-1)
@@ -83,7 +114,20 @@ Singleton {
         }
     }
 
+    // ── Internal: kick off the python process ─────────────────────────────────
+    function _runFetch(title, artist, duration, url) {
+        lyricsProc.running = false
+        lyricsProc.command = [
+            "python3",
+            `${Directories.scriptPath}/lyrics/lyrics.py`,
+            title, artist, duration, url
+        ]
+        lyricsProc.running = true
+    }
+
+    // ── Public: restart for a new track ──────────────────────────────────────
     function restartLyrics() {
+        retryTimer.stop()
         lyricsProc.running = false
         root.lyricsLines = []
         root.activeIndex = -1
@@ -92,19 +136,26 @@ Singleton {
 
         const title    = root.activePlayer?.trackTitle  ?? ""
         const artist   = root.activePlayer?.trackArtist ?? ""
-        const duration = root.activePlayer?.length       ?? 0
+        const duration = String(Math.floor(root.activePlayer?.length ?? 0))
         const url      = root.activePlayer?.trackUrl    ?? ""
 
         if (!title) { root.status = "no_info"; return }
 
-        lyricsProc.command = [
-            "python3",
-            `${Directories.scriptPath}/lyrics/lyrics.py`,
-            title, artist, String(Math.floor(duration)), url
-        ]
-        lyricsProc.running = true
+        // Save so retries can re-use them
+        root._lastTitle    = title
+        root._lastArtist   = artist
+        root._lastDuration = duration
+        root._lastUrl      = url
+
+        root._runFetch(title, artist, duration, url)
     }
 
+    // ── Public: manual reload from UI (force bypass cache would need --no-cache flag)
+    function reloadLyrics() {
+        root.restartLyrics()
+    }
+
+    // ── React to track changes ────────────────────────────────────────────────
     Connections {
         target: root.activePlayer
         function onTrackTitleChanged() { root.restartLyrics() }
