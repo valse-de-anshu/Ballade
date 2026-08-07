@@ -87,7 +87,7 @@ Item {
                 Loader {
                     active: root.aiChatEnabled
                     visible: active
-                    sourceComponent: Component { AiChat {} }
+                    sourceComponent: Component { AiChat { scopeRoot: root.scopeRoot } }
                 }
                 Loader {
                     active: root.translatorEnabled

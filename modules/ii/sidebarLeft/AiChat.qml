@@ -13,6 +13,7 @@ import Quickshell.Io
 
 Item {
     id: root
+    property var scopeRoot: null
     property real padding: 4
     property var inputField: messageInputField
     property string commandPrefix: "/"
