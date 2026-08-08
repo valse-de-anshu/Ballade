@@ -16,7 +16,7 @@ Item {
     readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || Translation.tr("No media")
 
     Layout.fillHeight: true
-    implicitWidth: rowLayout.implicitWidth + rowLayout.spacing * 2
+    implicitWidth: visualizer.implicitWidth + 16
     implicitHeight: Appearance.sizes.barHeight
 
     Timer {

@@ -114,9 +114,7 @@ ContentPage {
                 }
             }
             RowLayout {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.margins: 0
+                Layout.alignment: Qt.AlignRight
                 spacing: 8
                 RippleButton {
                     buttonText: Translation.tr("Update Dots")
