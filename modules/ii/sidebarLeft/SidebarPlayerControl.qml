@@ -16,9 +16,17 @@ import Quickshell.Services.Mpris
 Item {
     id: root
     property var player: MprisController.activePlayer
-    property var artUrl: player?.trackArtUrl ?? ""
+    property string effectiveArtUrl: {
+        const url = root.player?.trackUrl || ""
+        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+        if (ytMatch && ytMatch[1]) {
+            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
+        }
+        return root.player?.trackArtUrl ?? ""
+    }
+    
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
+    property string artFileName: Qt.md5(effectiveArtUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
     property color artDominantColor: Config.options.sidebar.media.artColors
         ? ColorUtils.mix(
@@ -34,15 +42,9 @@ Item {
     property real radius
 
     property string displayedArtFilePath: {
-        if (root.artUrl && root.artUrl.length > 0) {
-            if (root.artUrl.startsWith("file://")) return root.artUrl
-            if (root.downloaded) return Qt.resolvedUrl(artFilePath)
-        }
-        const url = root.player?.trackUrl || ""
-        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-        if (ytMatch && ytMatch[1]) {
-            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
-        }
+        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
+        if (effectiveArtUrl.startsWith("file://")) return effectiveArtUrl
+        if (downloaded) return Qt.resolvedUrl(artFilePath)
         return ""
     }
 
@@ -54,16 +56,16 @@ Item {
     }
 
     onArtFilePathChanged: {
-        if (!root.artUrl || root.artUrl.length == 0) {
+        if (!effectiveArtUrl || effectiveArtUrl.length == 0) {
             root.artDominantColor = Appearance.m3colors.m3secondaryContainer
             root.downloaded = false
             return
         }
-        if (root.artUrl.startsWith("file://")) {
+        if (effectiveArtUrl.startsWith("file://")) {
             root.downloaded = true
             return
         }
-        coverArtDownloader.targetFile = root.artUrl
+        coverArtDownloader.targetFile = effectiveArtUrl
         coverArtDownloader.artFilePath = root.artFilePath
         root.downloaded = false
         coverArtDownloader.running = true
@@ -71,9 +73,9 @@ Item {
 
     Process {
         id: coverArtDownloader
-        property string targetFile: root.artUrl
+        property string targetFile: root.effectiveArtUrl
         property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
+        command: ["bash", "-c", `[ -f '${artFilePath}' ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
         onExited: (exitCode, exitStatus) => { root.downloaded = true }
     }
 

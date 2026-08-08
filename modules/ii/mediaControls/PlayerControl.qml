@@ -15,9 +15,17 @@ import Quickshell.Services.Mpris
 Item { // Player instance
     id: root
     required property MprisPlayer player
-    property var artUrl: player?.trackArtUrl
+    property string effectiveArtUrl: {
+        const url = root.player?.trackUrl || ""
+        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+        if (ytMatch && ytMatch[1]) {
+            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
+        }
+        return root.player?.trackArtUrl ?? ""
+    }
+    
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
+    property string artFileName: Qt.md5(effectiveArtUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
     property color artDominantColor: ColorUtils.mix((colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
     property bool downloaded: false
@@ -26,7 +34,12 @@ Item { // Player instance
     property int visualizerSmoothing: 2 // Number of points to average for smoothing
     property real radius
 
-    property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+    property string displayedArtFilePath: {
+        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
+        if (effectiveArtUrl.startsWith("file://")) return effectiveArtUrl
+        if (downloaded) return Qt.resolvedUrl(artFilePath)
+        return ""
+    }
 
     component TrackChangeButton: RippleButton {
         implicitWidth: 24
@@ -60,13 +73,18 @@ Item { // Player instance
     }
 
     onArtFilePathChanged: {
-        if (root.artUrl.length == 0) {
+        if (!effectiveArtUrl || effectiveArtUrl.length == 0) {
             root.artDominantColor = Appearance.m3colors.m3secondaryContainer
             return;
         }
 
+        if (effectiveArtUrl.startsWith("file://")) {
+            root.downloaded = true
+            return
+        }
+
         // Binding does not work in Process
-        coverArtDownloader.targetFile = root.artUrl 
+        coverArtDownloader.targetFile = effectiveArtUrl 
         coverArtDownloader.artFilePath = root.artFilePath
         // Download
         root.downloaded = false
@@ -75,9 +93,9 @@ Item { // Player instance
 
     Process { // Cover art downloader
         id: coverArtDownloader
-        property string targetFile: root.artUrl
+        property string targetFile: root.effectiveArtUrl
         property string artFilePath: root.artFilePath
-        command: [ "bash", "-c", `[ -f ${artFilePath} ] || curl -4 -sSL '${targetFile}' -o '${artFilePath}'` ]
+        command: [ "bash", "-c", `[ -f '${artFilePath}' ] || curl -4 -sSL '${targetFile}' -o '${artFilePath}'` ]
         onExited: (exitCode, exitStatus) => {
             root.downloaded = true
         }

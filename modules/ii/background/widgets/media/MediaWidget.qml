@@ -23,9 +23,17 @@ AbstractBackgroundWidget {
 
     readonly property var playerList: MprisController.players
     property MprisPlayer currentPlayer: MprisController.activePlayer
-    property var artUrl: currentPlayer?.trackArtUrl
+    property string effectiveArtUrl: {
+        const url = root.currentPlayer?.trackUrl || ""
+        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+        if (ytMatch && ytMatch[1]) {
+            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
+        }
+        return root.currentPlayer?.trackArtUrl ?? ""
+    }
+
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
+    property string artFileName: Qt.md5(effectiveArtUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
 
     property real widgetWidth: 420
@@ -37,9 +45,10 @@ AbstractBackgroundWidget {
     property bool showLyrics: LyricsService.showCaptions
 
     property string displayedArtFilePath: {
-        if (!root.downloaded) return ""
-        if (root.artUrl && root.artUrl.startsWith("file://")) return root.artUrl
-        return root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
+        if (effectiveArtUrl.startsWith("file://")) return effectiveArtUrl
+        if (downloaded) return Qt.resolvedUrl(artFilePath)
+        return ""
     }
 
     implicitHeight: card.implicitHeight
@@ -48,15 +57,15 @@ AbstractBackgroundWidget {
     onArtFilePathChanged: updateArt()
 
     function updateArt() {
-        if (!root.artUrl || root.artUrl.length === 0) {
+        if (!effectiveArtUrl || effectiveArtUrl.length === 0) {
             root.downloaded = false
             return
         }
-        if (root.artUrl.startsWith("file://")) {
+        if (effectiveArtUrl.startsWith("file://")) {
             root.downloaded = true
             return
         }
-        coverArtDownloader.targetFile = root.artUrl
+        coverArtDownloader.targetFile = effectiveArtUrl
         coverArtDownloader.artFilePath = root.artFilePath
         root.downloaded = false
         coverArtDownloader.running = true
@@ -64,10 +73,10 @@ AbstractBackgroundWidget {
 
     Process {
         id: coverArtDownloader
-        property string targetFile: root.artUrl
+        property string targetFile: root.effectiveArtUrl
         property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
-        onExited: { root.downloaded = true }
+        command: ["bash", "-c", `[ -f '${artFilePath}' ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
+        onExited: (exitCode, exitStatus) => { root.downloaded = true }
     }
 
     StyledRectangularShadow {
