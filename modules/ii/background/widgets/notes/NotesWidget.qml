@@ -270,22 +270,30 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                Rectangle {
+                ScrollView {
+                    id: editScrollView
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: Appearance.rounding.normal
-                    color: Appearance.colors.colSurfaceContainerLow
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     TextArea {
                         id: editTextArea
-                        anchors.fill: parent
-                        anchors.margins: 8
+                        width: editScrollView.width
+                        padding: 8
                         text: root.editingText
-                        wrapMode: TextArea.Wrap
+                        wrapMode: Text.Wrap
                         placeholderText: "Type your note..."
                         color: Appearance.colors.colOnLayer0
-                        background: null
-                        onTextChanged: root.editingText = text
+                        background: Rectangle {
+                            radius: Appearance.rounding.normal
+                            color: Appearance.colors.colSurfaceContainerLow
+                        }
+                        onTextChanged: {
+                            root.editingText = text
+                            // Keep cursor in view as text grows
+                            cursorPosition = length
+                        }
                     }
                 }
             }
