@@ -25,7 +25,7 @@ Item { // Player instance
     }
     
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(effectiveArtUrl)
+    property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
     property color artDominantColor: ColorUtils.mix((colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
     property bool downloaded: false
@@ -36,7 +36,6 @@ Item { // Player instance
 
     property string displayedArtFilePath: {
         if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
-        if (effectiveArtUrl.startsWith("file://")) return effectiveArtUrl
         if (downloaded) return Qt.resolvedUrl(artFilePath)
         return ""
     }
@@ -78,11 +77,6 @@ Item { // Player instance
             return;
         }
 
-        if (effectiveArtUrl.startsWith("file://")) {
-            root.downloaded = true
-            return
-        }
-
         // Binding does not work in Process
         coverArtDownloader.targetFile = effectiveArtUrl 
         coverArtDownloader.artFilePath = root.artFilePath
@@ -95,7 +89,17 @@ Item { // Player instance
         id: coverArtDownloader
         property string targetFile: root.effectiveArtUrl
         property string artFilePath: root.artFilePath
-        command: [ "bash", "-c", `[ -f '${artFilePath}' ] || curl -4 -sSL '${targetFile}' -o '${artFilePath}'` ]
+        command: [ "bash", "-c", `
+            if [ -f '${artFilePath}' ]; then exit 0; fi
+            if [[ '${targetFile}' == file://* ]]; then
+                src_file="${targetFile#file://}"
+                for i in {1..20}; do
+                    if [ -s "$src_file" ]; then break; fi
+                    sleep 0.1
+                done
+            fi
+            curl -4 -sSL '${targetFile}' -o '${artFilePath}'
+        ` ]
         onExited: (exitCode, exitStatus) => {
             root.downloaded = true
         }

@@ -33,7 +33,7 @@ AbstractBackgroundWidget {
     }
 
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(effectiveArtUrl)
+    property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
 
     property real widgetWidth: 420
@@ -46,7 +46,6 @@ AbstractBackgroundWidget {
 
     property string displayedArtFilePath: {
         if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
-        if (effectiveArtUrl.startsWith("file://")) return effectiveArtUrl
         if (downloaded) return Qt.resolvedUrl(artFilePath)
         return ""
     }
@@ -61,10 +60,6 @@ AbstractBackgroundWidget {
             root.downloaded = false
             return
         }
-        if (effectiveArtUrl.startsWith("file://")) {
-            root.downloaded = true
-            return
-        }
         coverArtDownloader.targetFile = effectiveArtUrl
         coverArtDownloader.artFilePath = root.artFilePath
         root.downloaded = false
@@ -75,7 +70,17 @@ AbstractBackgroundWidget {
         id: coverArtDownloader
         property string targetFile: root.effectiveArtUrl
         property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `[ -f '${artFilePath}' ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
+        command: ["bash", "-c", `
+            if [ -f '${artFilePath}' ]; then exit 0; fi
+            if [[ '${targetFile}' == file://* ]]; then
+                src_file="${targetFile#file://}"
+                for i in {1..20}; do
+                    if [ -s "$src_file" ]; then break; fi
+                    sleep 0.1
+                done
+            fi
+            curl -sSL '${targetFile}' -o '${artFilePath}'
+        `]
         onExited: (exitCode, exitStatus) => { root.downloaded = true }
     }
 
