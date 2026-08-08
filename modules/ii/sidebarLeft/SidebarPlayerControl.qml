@@ -153,17 +153,17 @@ Item {
                     implicitWidth: 34
                     implicitHeight: 34
                     buttonRadius: Appearance.rounding.full
-                    colBackground: LyricsService.showCaptions
+                    colBackground: LyricsService.ccMode
                         ? blendedColors.colPrimary
                         : ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
                     colBackgroundHover: blendedColors.colPrimaryHover
                     colRipple: blendedColors.colPrimaryActive
-                    downAction: () => LyricsService.toggleCaptions()
+                    downAction: () => LyricsService.toggleCC()
                     contentItem: MaterialSymbol {
                         iconSize: 18
-                        fill: LyricsService.showCaptions ? 1 : 0
+                        fill: LyricsService.ccMode ? 1 : 0
                         horizontalAlignment: Text.AlignHCenter
-                        color: LyricsService.showCaptions
+                        color: LyricsService.ccMode
                             ? blendedColors.colOnPrimary
                             : blendedColors.colOnSecondaryContainer
                         text: "closed_caption"

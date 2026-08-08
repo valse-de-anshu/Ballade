@@ -228,19 +228,50 @@ AbstractBackgroundWidget {
                                 implicitWidth: root.buttonSize
                                 implicitHeight: root.buttonSize
                                 buttonRadius: Appearance.rounding?.full ?? 999
-                                colBackground: root.showLyrics
+                                colBackground: root.showLyrics && !LyricsService.ccMode
                                     ? Appearance.colors.colPrimary
                                     : "transparent"
                                 colBackgroundHover: Appearance.colors.colPrimaryContainerHover
                                 colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => { LyricsService.toggleCaptions() }
+                                downAction: () => {
+                                    if (LyricsService.ccMode) {
+                                        LyricsService.ccMode = false
+                                        LyricsService.restartLyrics()
+                                    }
+                                    root.showLyrics = !root.showLyrics
+                                }
 
                                 MaterialSymbol {
                                     anchors.centerIn: parent
                                     text: "lyrics"
                                     iconSize: root.buttonIconSize
-                                    fill: root.showLyrics ? 1 : 0
-                                    color: root.showLyrics
+                                    fill: root.showLyrics && !LyricsService.ccMode ? 1 : 0
+                                    color: root.showLyrics && !LyricsService.ccMode
+                                        ? Appearance.colors.colOnPrimary
+                                        : Appearance.colors.colOnPrimaryContainer
+                                }
+                            }
+
+                            RippleButton {
+                                implicitWidth: root.buttonSize
+                                implicitHeight: root.buttonSize
+                                buttonRadius: Appearance.rounding?.full ?? 999
+                                colBackground: LyricsService.ccMode
+                                    ? Appearance.colors.colPrimary
+                                    : "transparent"
+                                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                                colRipple: Appearance.colors.colPrimaryContainerActive
+                                downAction: () => {
+                                    LyricsService.toggleCC()
+                                    root.showLyrics = LyricsService.ccMode
+                                }
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "closed_caption"
+                                    iconSize: root.buttonIconSize
+                                    fill: LyricsService.ccMode ? 1 : 0
+                                    color: LyricsService.ccMode
                                         ? Appearance.colors.colOnPrimary
                                         : Appearance.colors.colOnPrimaryContainer
                                 }

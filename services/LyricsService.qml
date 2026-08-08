@@ -114,27 +114,24 @@ Singleton {
         }
     }
 
-    property bool showCaptions: true
+    property bool ccMode: false
+
+    function toggleCC() {
+        root.ccMode = !root.ccMode
+        root.restartLyrics()
+    }
 
     function toggleCaptions() {
-        root.showCaptions = !root.showCaptions
-        if (root.showCaptions) {
-            root.restartLyrics()
-        } else {
-            root.lyricsLines = []
-            root.activeIndex = -1
-            root.slots = ["", "", "", "", "", "", ""]
-            root.status = "disabled"
-        }
+        root.toggleCC()
     }
 
     // ── Internal: kick off the python process ─────────────────────────────────
-    function _runFetch(title, artist, duration, url) {
+    function _runFetch(title, artist, duration, url, mode) {
         lyricsProc.running = false
         lyricsProc.command = [
             "python3",
             `${Directories.scriptPath}/lyrics/lyrics.py`,
-            title, artist, duration, url
+            title, artist, duration, url, mode || "lyrics"
         ]
         lyricsProc.running = true
     }
@@ -146,12 +143,6 @@ Singleton {
         root.lyricsLines = []
         root.activeIndex = -1
         root.slots = ["", "", "", "", "", "", ""]
-
-        if (!root.showCaptions) {
-            root.status = "disabled"
-            return
-        }
-
         root.status = "loading"
 
         const title    = root.activePlayer?.trackTitle  ?? ""
@@ -167,7 +158,8 @@ Singleton {
         root._lastDuration = duration
         root._lastUrl      = url
 
-        root._runFetch(title, artist, duration, url)
+        const currentMode = root.ccMode ? "cc" : "lyrics"
+        root._runFetch(title, artist, duration, url, currentMode)
     }
 
     // ── Public: manual reload from UI (force bypass cache would need --no-cache flag)
@@ -178,10 +170,13 @@ Singleton {
     // ── React to track changes ────────────────────────────────────────────────
     Connections {
         target: root.activePlayer
-        function onTrackTitleChanged() { if (root.showCaptions) root.restartLyrics() }
+        function onTrackTitleChanged() {
+            root.ccMode = false // Always reset CC mode on new track/video
+            root.restartLyrics()
+        }
     }
 
     Component.onCompleted: {
-        if (root.showCaptions) root.restartLyrics()
+        root.restartLyrics()
     }
 }

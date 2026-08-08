@@ -367,7 +367,7 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
 
 # ─── Main waterfall ───────────────────────────────────────────────────────────
 
-def fetch_lyrics(title: str, artist: str, duration: float, file_url: str) -> list:
+def fetch_lyrics(title: str, artist: str, duration: float, file_url: str, mode: str = "lyrics") -> list:
     title  = _clean(title)
     artist = _clean(artist)
 
@@ -377,34 +377,34 @@ def fetch_lyrics(title: str, artist: str, duration: float, file_url: str) -> lis
         artist = parts[0].strip()
         title  = parts[1].strip()
 
-    # 1. Disk cache
+    # Explicit CC Mode: fetch YouTube video captions ONLY when requested via CC button
+    if mode == "cc":
+        return _from_youtube_cc(title, artist, file_url)
+
+    # Standard Lyrics Mode: fetch song lyrics automatically from music sources
     cached = _load_cache(title, artist)
     if cached:
         return cached
 
     lines = []
 
-    # 2. Embedded audio tag
+    # 1. Embedded audio tag
     if not lines:
         lines = _from_embedded(file_url)
 
-    # 3. Local .lrc file
+    # 2. Local .lrc file
     if not lines:
         lines = _from_local_lrc(file_url)
 
-    # 4. lrclib.net
+    # 3. lrclib.net
     if not lines:
         lines = _from_lrclib(title, artist, duration)
 
-    # 5. YouTube Closed Captions / Subtitles (yt-dlp)
-    if not lines:
-        lines = _from_youtube_cc(title, artist, file_url)
-
-    # 6. NetEase Cloud Music
+    # 4. NetEase Cloud Music
     if not lines:
         lines = _from_netease(title, artist)
 
-    # 7. Megalobiz
+    # 5. Megalobiz
     if not lines:
         lines = _from_megalobiz(title, artist)
 
@@ -425,12 +425,13 @@ def main():
     artist   = sys.argv[2] if len(sys.argv) > 2 else ""
     duration = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].replace('.','',1).isdigit() else 0.0
     file_url = sys.argv[4] if len(sys.argv) > 4 else ""
+    mode     = sys.argv[5] if len(sys.argv) > 5 else "lyrics"
 
     if not title:
         print("no_info", flush=True)
         sys.exit(0)
 
-    lines = fetch_lyrics(title, artist, duration, file_url)
+    lines = fetch_lyrics(title, artist, duration, file_url, mode)
 
     if not lines:
         print("not_found", flush=True)
