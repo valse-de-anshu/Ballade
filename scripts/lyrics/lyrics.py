@@ -343,8 +343,9 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
             out_tmpl = os.path.join(tmpdir, "sub.%(ext)s")
             cmd = [
                 "yt-dlp",
+                "--no-warnings",
                 "--write-auto-sub", "--write-sub",
-                "--sub-lang", "en.*,hi.*,ja.*",
+                "--sub-lang", "en,en-US,en-GB",
                 "--skip-download",
                 "-o", out_tmpl,
                 query

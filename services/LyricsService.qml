@@ -114,7 +114,7 @@ Singleton {
         }
     }
 
-    property bool showCaptions: false
+    property bool showCaptions: true
 
     function toggleCaptions() {
         root.showCaptions = !root.showCaptions
