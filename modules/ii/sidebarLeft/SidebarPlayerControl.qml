@@ -146,7 +146,11 @@ Item {
                     id: playerSelector
                     visible: MprisController.players.length > 1
                     Layout.fillWidth: true
-                    model: MprisController.players.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
+                    model: MprisController.players.map(p => {
+                        let name = p.identity ?? p.desktopEntry ?? "Unknown"
+                        if (name === "Mozilla Firefox") return "Zen Browser"
+                        return name
+                    })
                     currentIndex: Math.max(0, MprisController.players.indexOf(MprisController.activePlayer))
                     onCurrentIndexChanged: {
                         if (currentIndex >= 0 && currentIndex < MprisController.players.length) {
