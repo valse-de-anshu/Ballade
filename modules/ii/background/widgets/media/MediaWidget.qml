@@ -35,7 +35,10 @@ AbstractBackgroundWidget {
     }
     property var artUrl: currentPlayer?.trackArtUrl
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
+    property string artFileName: {
+        if (!artUrl || artUrl.length === 0) return ""
+        return Qt.btoa(artUrl).replace(/[^a-zA-Z0-9]/g, "_")
+    }
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
 
     property real widgetWidth: 420

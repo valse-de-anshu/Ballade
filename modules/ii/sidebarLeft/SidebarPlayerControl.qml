@@ -15,10 +15,13 @@ import Quickshell.Services.Mpris
 
 Item {
     id: root
-    property var player: Mpris.players.values[playerSelector.currentIndex] ?? Mpris.players.values[0]
+    property var player: MprisController.activePlayer
     property var artUrl: player?.trackArtUrl ?? ""
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(artUrl)
+    property string artFileName: {
+        if (!artUrl || artUrl.length === 0) return ""
+        return Qt.btoa(artUrl).replace(/[^a-zA-Z0-9]/g, "_")
+    }
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
     property color artDominantColor: Config.options.sidebar.media.artColors
         ? ColorUtils.mix(
@@ -133,11 +136,16 @@ Item {
             // ── Player selector ──
             StyledComboBox {
                 id: playerSelector
-                visible: Mpris.players.values.length > 1
+                visible: MprisController.players.length > 1
                 Layout.fillWidth: true
                 Layout.bottomMargin: 8
-                model: Mpris.players.values.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
-                currentIndex: 0
+                model: MprisController.players.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
+                currentIndex: Math.max(0, MprisController.players.indexOf(MprisController.activePlayer))
+                onActivated: (index) => {
+                    if (index >= 0 && index < MprisController.players.length) {
+                        MprisController.setActivePlayer(MprisController.players[index])
+                    }
+                }
             }
 
             // ── Album art ──
