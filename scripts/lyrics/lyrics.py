@@ -294,6 +294,76 @@ def _from_megalobiz(title: str, artist: str) -> list:
         pass
     return []
 
+# ─── Source 6: YouTube Closed Captions / Subtitles (yt-dlp) ───────────────────
+
+def _parse_vtt(vtt_text: str) -> list:
+    lines = []
+    blocks = vtt_text.split("\n\n")
+    for block in blocks:
+        block = block.strip()
+        if not block or block.startswith("WEBVTT") or block.startswith("Kind:") or block.startswith("Language:"):
+            continue
+        ts_match = re.search(r"(\d{2}):(\d{2}):(\d{2}\.\d+)\s*-->", block)
+        if not ts_match:
+            ts_match = re.search(r"(\d{2}):(\d{2}\.\d+)\s*-->", block)
+            if ts_match:
+                mins = int(ts_match.group(1))
+                secs = float(ts_match.group(2))
+                timestamp = mins * 60 + secs
+            else:
+                continue
+        else:
+            hrs = int(ts_match.group(1))
+            mins = int(ts_match.group(2))
+            secs = float(ts_match.group(3))
+            timestamp = hrs * 3600 + mins * 60 + secs
+
+        text_lines = [line.strip() for line in block.splitlines() if "-->" not in line and not line.isdigit()]
+        text = " ".join(text_lines).strip()
+        text = re.sub(r"<[^>]+>", "", text)
+        text = re.sub(r"^♪\s*|\s*♪$", "", text).strip()
+        if text and (not lines or lines[-1]["text"] != text):
+            lines.append({"time": timestamp, "text": text})
+    return sorted(lines, key=lambda x: x["time"])
+
+def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
+    query = ""
+    if "youtube.com" in file_url or "youtu.be" in file_url:
+        query = file_url
+    elif title and ("youtube" in artist.lower() or not artist or artist.lower() in ("unknown", "play")):
+        query = f"ytsearch1:{title}"
+    elif title:
+        query = f"ytsearch1:{title} {artist}"
+    else:
+        return []
+
+    import subprocess, tempfile
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_tmpl = os.path.join(tmpdir, "sub.%(ext)s")
+            cmd = [
+                "yt-dlp",
+                "--write-auto-sub", "--write-sub",
+                "--sub-lang", "en.*,hi.*,ja.*",
+                "--skip-download",
+                "-o", out_tmpl,
+                query
+            ]
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12)
+            for fname in os.listdir(tmpdir):
+                fpath = os.path.join(tmpdir, fname)
+                with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    if fname.endswith(".lrc"):
+                        parsed = _parse_lrc(content)
+                        if parsed: return parsed
+                    elif fname.endswith(".vtt"):
+                        parsed = _parse_vtt(content)
+                        if parsed: return parsed
+    except Exception:
+        pass
+    return []
+
 # ─── Main waterfall ───────────────────────────────────────────────────────────
 
 def fetch_lyrics(title: str, artist: str, duration: float, file_url: str) -> list:
@@ -325,11 +395,15 @@ def fetch_lyrics(title: str, artist: str, duration: float, file_url: str) -> lis
     if not lines:
         lines = _from_lrclib(title, artist, duration)
 
-    # 5. NetEase Cloud Music
+    # 5. YouTube Closed Captions / Subtitles (yt-dlp)
+    if not lines:
+        lines = _from_youtube_cc(title, artist, file_url)
+
+    # 6. NetEase Cloud Music
     if not lines:
         lines = _from_netease(title, artist)
 
-    # 6. Megalobiz
+    # 7. Megalobiz
     if not lines:
         lines = _from_megalobiz(title, artist)
 
