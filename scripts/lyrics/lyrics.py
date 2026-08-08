@@ -345,12 +345,12 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
                 "yt-dlp",
                 "--no-warnings", "--quiet", "--no-playlist",
                 "--write-auto-sub", "--write-sub",
-                "--sub-lang", "en,en-orig,en-US,en-GB",
+                "--sub-lang", "en.*",
                 "--skip-download",
                 "-o", out_tmpl,
                 query
             ]
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=45)
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
             for fname in os.listdir(tmpdir):
                 fpath = os.path.join(tmpdir, fname)
                 with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
