@@ -116,7 +116,7 @@ ContentPage {
                         anchors.margins: 8
                         iconText: "colorize"
                         onClicked: {
-                            Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--noswitch", "--color"]);
+                            Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} --noswitch --color`]);
                         }
                         StyledToolTip {
                             text: "Change accent color"
