@@ -17,10 +17,7 @@ Item { // Player instance
     required property MprisPlayer player
     property var artUrl: player?.trackArtUrl
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: {
-        if (!artUrl || artUrl.length === 0) return ""
-        return Qt.btoa(artUrl).replace(/[^a-zA-Z0-9]/g, "_")
-    }
+    property string artFileName: Qt.md5(artUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
     property color artDominantColor: ColorUtils.mix((colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
     property bool downloaded: false

@@ -114,6 +114,20 @@ Singleton {
         }
     }
 
+    property bool showCaptions: false
+
+    function toggleCaptions() {
+        root.showCaptions = !root.showCaptions
+        if (root.showCaptions) {
+            root.restartLyrics()
+        } else {
+            root.lyricsLines = []
+            root.activeIndex = -1
+            root.slots = ["", "", "", "", "", "", ""]
+            root.status = "disabled"
+        }
+    }
+
     // ── Internal: kick off the python process ─────────────────────────────────
     function _runFetch(title, artist, duration, url) {
         lyricsProc.running = false
@@ -132,6 +146,12 @@ Singleton {
         root.lyricsLines = []
         root.activeIndex = -1
         root.slots = ["", "", "", "", "", "", ""]
+
+        if (!root.showCaptions) {
+            root.status = "disabled"
+            return
+        }
+
         root.status = "loading"
 
         const title    = root.activePlayer?.trackTitle  ?? ""
@@ -158,8 +178,10 @@ Singleton {
     // ── React to track changes ────────────────────────────────────────────────
     Connections {
         target: root.activePlayer
-        function onTrackTitleChanged() { root.restartLyrics() }
+        function onTrackTitleChanged() { if (root.showCaptions) root.restartLyrics() }
     }
 
-    Component.onCompleted: root.restartLyrics()
+    Component.onCompleted: {
+        if (root.showCaptions) root.restartLyrics()
+    }
 }

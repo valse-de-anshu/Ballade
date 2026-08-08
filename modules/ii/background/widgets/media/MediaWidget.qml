@@ -22,23 +22,10 @@ AbstractBackgroundWidget {
     configEntryName: "media"
 
     readonly property var playerList: MprisController.players
-    property MprisPlayer currentPlayer: {
-        const preferred = Config.options.bar.media.preferredPlayer.trim().toLowerCase()
-        if (preferred.length === 0) return MprisController.activePlayer
-        const _ = MprisController.players.count
-        for (const p of MprisController.players) {
-            if ((p.identity ?? "").toLowerCase().includes(preferred) ||
-                (p.desktopEntry ?? "").toLowerCase().includes(preferred))
-                return p
-        }
-        return MprisController.activePlayer
-    }
+    property MprisPlayer currentPlayer: MprisController.activePlayer
     property var artUrl: currentPlayer?.trackArtUrl
     property string artDownloadLocation: Directories.coverArt
-    property string artFileName: {
-        if (!artUrl || artUrl.length === 0) return ""
-        return Qt.btoa(artUrl).replace(/[^a-zA-Z0-9]/g, "_")
-    }
+    property string artFileName: Qt.md5(artUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
 
     property real widgetWidth: 420
@@ -47,7 +34,7 @@ AbstractBackgroundWidget {
     property real buttonIconSize: 18
 
     property bool downloaded: false
-    property bool showLyrics: false
+    property bool showLyrics: LyricsService.showCaptions
 
     property string displayedArtFilePath: {
         if (!root.downloaded) return ""
@@ -246,7 +233,7 @@ AbstractBackgroundWidget {
                                     : "transparent"
                                 colBackgroundHover: Appearance.colors.colPrimaryContainerHover
                                 colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => { root.showLyrics = !root.showLyrics }
+                                downAction: () => { LyricsService.toggleCaptions() }
 
                                 MaterialSymbol {
                                     anchors.centerIn: parent
