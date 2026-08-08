@@ -166,37 +166,7 @@ ContentPage {
             }
         }
 
-        ContentSection {
-            icon: "splitscreen_add"
-            shape: MaterialShape.Shape.Cookie6Sided
-            title: Translation.tr("Bar layout")
 
-            GroupedList {
-                LayoutSection {
-                    sectionTitle: Config.options.bar.vertical ? Translation.tr("Top") : Translation.tr("Left")
-                    layout: Config.options.bar.layouts.leftLayout
-                    availableWidgets: page.availableFor()
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.leftLayout = list
-                }
-
-                LayoutSection {
-                    sectionTitle: Translation.tr("Center")
-                    layout: Config.options.bar.layouts.middleLayout
-                    availableWidgets: page.availableFor()
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.middleLayout = list
-                }
-
-                LayoutSection {
-                    sectionTitle: Config.options.bar.vertical ? Translation.tr("Bottom") : Translation.tr("Right")
-                    layout: Config.options.bar.layouts.rightLayout
-                    availableWidgets: page.availableFor()
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.rightLayout = list
-                }
-            }
-        }
 
         ContentSection {
             icon: "pivot_table_chart"

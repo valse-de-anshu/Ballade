@@ -93,6 +93,15 @@ AbstractBackgroundWidget {
         color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
         clip: true
 
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: card.width
+                height: card.height
+                radius: card.radius
+            }
+        }
+
         Behavior on implicitHeight {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
         }
