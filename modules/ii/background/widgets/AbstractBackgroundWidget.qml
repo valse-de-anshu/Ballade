@@ -97,11 +97,15 @@ AbstractWidget {
                 const output = leastBusyRegionOutputCollector.text;
                 // console.log("[Background] Least busy region output:", output)
                 if (output.length === 0) return;
-                const parsedContent = JSON.parse(output);
-                root.dominantColor = parsedContent.dominant_color || Appearance.colors.colPrimary;
-                if (root.placementStrategy === "free") return;
-                root.targetX = parsedContent.center_x * root.wallpaperScale - root.width / 2;
-                root.targetY  = parsedContent.center_y * root.wallpaperScale - root.height / 2;
+                try {
+                    const parsedContent = JSON.parse(output);
+                    root.dominantColor = parsedContent.dominant_color || Appearance.colors.colPrimary;
+                    if (root.placementStrategy === "free") return;
+                    root.targetX = parsedContent.center_x * root.wallpaperScale - root.width / 2;
+                    root.targetY  = parsedContent.center_y * root.wallpaperScale - root.height / 2;
+                } catch (e) {
+                    // Ignore non-JSON script output gracefully
+                }
             }
         }
     }
