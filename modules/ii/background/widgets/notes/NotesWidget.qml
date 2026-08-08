@@ -119,6 +119,19 @@ AbstractBackgroundWidget {
                     spacing: 6
                     model: Notes.list
 
+                    MouseArea {
+                        anchors.fill: parent
+                        z: -1
+                        propagateComposedEvents: true
+                        onWheel: (event) => {
+                            if (event.angleDelta.y < 0) {
+                                notesListView.flick(0, -500)
+                            } else if (event.angleDelta.y > 0) {
+                                notesListView.flick(0, 500)
+                            }
+                        }
+                    }
+
                     delegate: SwipeDelegate {
                         id: noteCard
                         required property var modelData
@@ -150,16 +163,37 @@ AbstractBackgroundWidget {
                             color: noteCard.bg
                             width: parent.width - Math.abs(noteCard.swipe.position) * 6
 
-                            StyledText {
-                                anchors {
-                                    left: parent.left; right: parent.right
-                                    verticalCenter: parent.verticalCenter
-                                    leftMargin: 12; rightMargin: 12
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 8
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    color: noteCard.fg
+                                    text: noteCard.modelData.content
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
                                 }
-                                color: noteCard.fg
-                                text: noteCard.modelData.content
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
+
+                                Item {
+                                    width: 28
+                                    height: 28
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "delete"
+                                        iconSize: 18
+                                        color: noteCard.fg
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: (mouse) => {
+                                            mouse.accepted = true
+                                            Notes.deleteNote(noteCard.modelData.id)
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -211,6 +245,21 @@ AbstractBackgroundWidget {
                         }
                     }
                     Item { Layout.fillWidth: true }
+
+                    ToolbarPairedFab {
+                        visible: root.pendingNoteId !== null
+                        Layout.rightMargin: 4
+                        Layout.alignment: Qt.AlignVCenter
+                        baseSize: 38
+                        iconText: "delete"
+                        onClicked: {
+                            if (root.pendingNoteId) {
+                                Notes.deleteNote(root.pendingNoteId)
+                                root.pendingNoteId = null
+                            }
+                            root.toggleFlip()
+                        }
+                    }
 
                     ToolbarPairedFab {
                         Layout.rightMargin: 4
