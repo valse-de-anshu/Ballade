@@ -92,7 +92,7 @@ Item { // Player instance
         command: [ "bash", "-c", `
             if [ -f '${artFilePath}' ]; then exit 0; fi
             if [[ '${targetFile}' == file://* ]]; then
-                src_file="${targetFile#file://}"
+                src_file="${targetFile.replace("file://", "")}"
                 for i in {1..20}; do
                     if [ -s "$src_file" ]; then break; fi
                     sleep 0.1
