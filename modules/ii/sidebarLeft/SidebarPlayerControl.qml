@@ -15,7 +15,7 @@ import Quickshell.Services.Mpris
 
 Item {
     id: root
-    property var player: Mpris.players.values[playerSelector.currentIndex] ?? Mpris.players.values[0]
+    property var player: MprisController.activePlayer
     property var artUrl: player?.trackArtUrl ?? ""
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: Qt.md5(artUrl)
@@ -34,9 +34,15 @@ Item {
     property real radius
 
     property string displayedArtFilePath: {
-        if (!root.artUrl || root.artUrl.length == 0) return ""
-        if (root.artUrl.startsWith("file://")) return root.artUrl
-        if (root.downloaded) return Qt.resolvedUrl(artFilePath)
+        if (root.artUrl && root.artUrl.length > 0) {
+            if (root.artUrl.startsWith("file://")) return root.artUrl
+            if (root.downloaded) return Qt.resolvedUrl(artFilePath)
+        }
+        const url = root.player?.trackUrl || ""
+        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+        if (ytMatch && ytMatch[1]) {
+            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
+        }
         return ""
     }
 
@@ -138,13 +144,13 @@ Item {
 
                 StyledComboBox {
                     id: playerSelector
-                    visible: Mpris.players.values.length > 1
+                    visible: MprisController.players.length > 1
                     Layout.fillWidth: true
-                    model: Mpris.players.values.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
-                    currentIndex: 0
+                    model: MprisController.players.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
+                    currentIndex: Math.max(0, MprisController.players.indexOf(MprisController.activePlayer))
                     onCurrentIndexChanged: {
-                        if (currentIndex >= 0 && currentIndex < Mpris.players.values.length) {
-                            MprisController.setActivePlayer(Mpris.players.values[currentIndex])
+                        if (currentIndex >= 0 && currentIndex < MprisController.players.length) {
+                            MprisController.setActivePlayer(MprisController.players[currentIndex])
                         }
                     }
                 }
@@ -423,15 +429,19 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
-                        if (root.player) root.player.volume = (root.player.volume > 0) ? 0 : 1.0  
+                        if (root.player && root.player.volumeSupported) {
+                            root.player.volume = (root.player.volume > 0) ? 0 : 1.0  
+                        } else {
+                            Audio.toggleMute()
+                        }
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18
                         fill: 1
                         horizontalAlignment: Text.AlignHCenter
                         color: blendedColors.colOnSecondaryContainer
-                        text: (root.player?.volume ?? 1) <= 0 ? "volume_off"
-                            : (root.player?.volume ?? 1) < 0.5 ? "volume_down"
+                        text: (Audio.muted || (root.player?.volume ?? 1) <= 0) ? "volume_off"
+                            : (Audio.volume < 0.5) ? "volume_down"
                             : "volume_up"
                     }
                 }
@@ -445,7 +455,11 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
-                        if (root.player) root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.1)  
+                        if (root.player && root.player.volumeSupported) {
+                            root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.05)  
+                        } else {
+                            Audio.decrementVolume(0.05)
+                        }
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18
@@ -465,7 +479,11 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
-                        if (root.player) root.player.volume = Math.min(1.5, (root.player.volume ?? 1) + 0.1)  
+                        if (root.player && root.player.volumeSupported) {
+                            root.player.volume = Math.min(1.0, (root.player.volume ?? 1) + 0.05)  
+                        } else {
+                            Audio.incrementVolume(0.05)
+                        }
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18

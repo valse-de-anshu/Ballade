@@ -16,29 +16,21 @@ import qs.modules.common
  */
 Singleton {
 	id: root;
-	property list<MprisPlayer> players: Mpris.players.values.filter(player => isRealPlayer(player));
-	property MprisPlayer trackedPlayer: null;
-	property MprisPlayer activePlayer: trackedPlayer ?? Mpris.players.values[0] ?? null;
-	signal trackChanged(reverse: bool);
+	property MprisPlayer playingPlayer: {
+		const list = root.players
+		for (let i = 0; i < list.length; i++) {
+			if (list[i] && list[i].isPlaying) return list[i]
+		}
+		return null
+	}
+	property MprisPlayer activePlayer: trackedPlayer ?? playingPlayer ?? root.players[0] ?? null;
 
-	property bool __reverse: false;
-
-	property var activeTrack;
-
-	readonly property bool hasActivePlasmaIntegration: Mpris.players.values.some(
-		p => p.dbusName?.startsWith('org.mpris.MediaPlayer2.plasma-browser-integration')
-	)
 	function isRealPlayer(player) {
-        if (!Config.options.media.filterDuplicatePlayers) {
-            return true;
-        }
-        return (
-            // Remove native browser buses only if plasma-browser-integration is actually active on D-Bus
-            !(hasActivePlasmaIntegration && player.dbusName.startsWith('org.mpris.MediaPlayer2.firefox')) && !(hasActivePlasmaIntegration && player.dbusName.startsWith('org.mpris.MediaPlayer2.chromium')) &&
-            // playerctld just copies other buses and we don't need duplicates
-            !player.dbusName?.startsWith('org.mpris.MediaPlayer2.playerctld') &&
-            // Non-instance mpd bus
-            !(player.dbusName?.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd')));
+        if (!player || !player.dbusName) return false;
+        if (player.dbusName.startsWith('org.mpris.MediaPlayer2.playerctld')) return false;
+        if (player.dbusName.startsWith('org.mpris.MediaPlayer2.plasma-browser-integration')) return false;
+        if (player.dbusName.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd')) return false;
+        return true;
     }
 
 	// Original stuff from fox below
