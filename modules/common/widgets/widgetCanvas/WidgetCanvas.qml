@@ -28,6 +28,7 @@ MouseArea {
         model: root.gridVisible ? Math.ceil(root.width / root.gridSize) : 0
         delegate: Rectangle {
             required property int index
+            z: 997
             x: index * root.gridSize
             width: 1
             height: root.height
@@ -39,6 +40,7 @@ MouseArea {
         model: root.gridVisible ? Math.ceil(root.height / root.gridSize) : 0
         delegate: Rectangle {
             required property int index
+            z: 997
             y: index * root.gridSize
             width: root.width
             height: 1
@@ -48,9 +50,10 @@ MouseArea {
 
     Rectangle {
         id: centerLineV
+        z: 998
         visible: root.gridVisible
         x: root.width / 2 - width / 2
-        width: root.centerXActive ? 2 : 1
+        width: root.centerXActive ? 3 : 1
         height: root.height
         color: root.centerXActive ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
         opacity: root.centerXActive ? 1 : 0.6
@@ -68,10 +71,11 @@ MouseArea {
 
     Rectangle {
         id: centerLineH
+        z: 998
         visible: root.gridVisible
         y: root.height / 2 - height / 2
         width: root.width
-        height: root.centerYActive ? 2 : 1
+        height: root.centerYActive ? 3 : 1
         color: root.centerYActive ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
         opacity: root.centerYActive ? 1 : 0.6
 
@@ -90,6 +94,7 @@ MouseArea {
         id: flashLineComponent
         Rectangle {
             id: flashLine
+            z: 999
             property bool vertical: true
             property real linePos: 0
             color: Appearance.colors.colPrimary
@@ -99,7 +104,7 @@ MouseArea {
             height: vertical ? root.height : 2
 
             NumberAnimation on opacity {
-                from: 0.9
+                from: 1.0
                 to: 0
                 duration: 2000
                 easing.type: Easing.OutCubic

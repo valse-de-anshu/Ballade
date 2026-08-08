@@ -501,6 +501,7 @@ Variants {
 
             WidgetCanvas {
                 id: widgetCanvas
+                z: 10
                 anchors.fill: parent
 
                 transitions: Transition {
