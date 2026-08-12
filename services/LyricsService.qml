@@ -24,6 +24,30 @@ Singleton {
     property string _lastDuration: ""
     property string _lastUrl:      ""
 
+    // ── In-memory cache: keyed by trackUrl, holds { lyrics: [...], cc: [...] }
+    // Prevents re-downloading CC/lyrics when toggling CC off and back on for same track
+    property var _trackCache: ({})
+
+    function _cacheKey() {
+        return root._lastUrl || root._lastTitle
+    }
+
+    function _storeCurrent(mode, lines) {
+        const key = root._cacheKey()
+        if (!key) return
+        let entry = root._trackCache[key] || {}
+        entry[mode] = lines
+        root._trackCache[key] = entry
+    }
+
+    function _getCached(mode) {
+        const key = root._cacheKey()
+        if (!key) return null
+        const entry = root._trackCache[key]
+        if (!entry) return null
+        return entry[mode] || null
+    }
+
     readonly property int before: 3
     readonly property int after:  3
     readonly property int total:  7
@@ -110,6 +134,9 @@ Singleton {
                 root.activeIndex = -1
                 root.slots = root.buildSlots(-1)
                 root.status = "ok"
+                // Store result into the in-memory cache
+                const fetchedMode = root.ccMode ? "cc" : "lyrics"
+                root._storeCurrent(fetchedMode, lines)
             }
         }
     }
@@ -118,7 +145,20 @@ Singleton {
 
     function toggleCC() {
         root.ccMode = !root.ccMode
-        root.restartLyrics()
+        const targetMode = root.ccMode ? "cc" : "lyrics"
+        const cached = root._getCached(targetMode)
+        if (cached && cached.length > 0) {
+            // Instant swap from in-memory cache — no re-download!
+            retryTimer.stop()
+            lyricsProc.running = false
+            root.lyricsLines = cached
+            root.activeIndex = -1
+            root.slots = root.buildSlots(-1)
+            root.status = "ok"
+        } else {
+            // Nothing cached yet for this mode: fetch it
+            root.restartLyrics()
+        }
     }
 
     function toggleCaptions() {
@@ -171,7 +211,8 @@ Singleton {
     Connections {
         target: root.activePlayer
         function onTrackTitleChanged() {
-            root.ccMode = false // Always reset CC mode on new track/video
+            root.ccMode = false  // Always reset CC mode on new track/video
+            root._trackCache = {} // Clear ALL in-memory cache on track change
             root.restartLyrics()
         }
     }

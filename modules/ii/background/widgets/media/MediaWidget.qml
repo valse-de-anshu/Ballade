@@ -42,7 +42,7 @@ AbstractBackgroundWidget {
     property real buttonIconSize: 18
 
     property bool downloaded: false
-    property bool showLyrics: LyricsService.showCaptions
+    property bool showLyrics: false
 
     property string displayedArtFilePath: {
         if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
@@ -276,8 +276,12 @@ AbstractBackgroundWidget {
                                 colBackgroundHover: Appearance.colors.colPrimaryContainerHover
                                 colRipple: Appearance.colors.colPrimaryContainerActive
                                 downAction: () => {
-                                    LyricsService.toggleCC()
-                                    root.showLyrics = LyricsService.ccMode
+                                    if (LyricsService.ccMode && !root.showLyrics) {
+                                        root.showLyrics = true
+                                    } else {
+                                        LyricsService.toggleCC()
+                                        root.showLyrics = LyricsService.ccMode
+                                    }
                                 }
 
                                 MaterialSymbol {
