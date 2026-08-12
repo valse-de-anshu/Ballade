@@ -50,8 +50,7 @@ Singleton {
                     saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
                     savePath="${targetDir}/$saveFileName" && \
                     ${cropBase} "$savePath" && \
-                    wl-copy -t text/plain "$savePath" && \
-                    wl-copy -t image/png < "$savePath" && \
+                    python3 ~/.local/bin/copy-image-with-path.py "$savePath" && \
                     ${cleanup}`
                 ]
                 break;
