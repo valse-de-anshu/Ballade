@@ -309,7 +309,7 @@ AbstractBackgroundWidget {
 
                                     RotationAnimation on rotation {
                                         from: 0; to: 360
-                                        duration: 8000
+                                        duration: 22000
                                         loops: Animation.Infinite
                                         running: root.currentPlayer?.isPlaying ?? false
                                         easing.type: Easing.Linear
@@ -387,6 +387,7 @@ AbstractBackgroundWidget {
                         id: trackSlider
                         Layout.fillWidth: true
                         configuration: StyledSlider.Configuration.Wavy
+                        trackWidth: 10
                         highlightColor: Appearance.colors.colPrimary
                         trackColor: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.8)
                         handleColor: Appearance.colors.colPrimary
