@@ -23,18 +23,18 @@ Singleton {
     function isPinned(entry) {
         if (!entry || !Persistent.ready) return false;
         const clean = StringUtils.cleanCliphistEntry(entry);
-        return (Persistent.states.pinnedClipboard || []).some(p => StringUtils.cleanCliphistEntry(p) === clean);
+        return (Persistent.states.pinnedClipboard || []).indexOf(clean) >= 0;
     }
 
     function togglePin(entry) {
         if (!entry || !Persistent.ready) return;
         const clean = StringUtils.cleanCliphistEntry(entry);
         let list = [...(Persistent.states.pinnedClipboard || [])];
-        const idx = list.findIndex(p => StringUtils.cleanCliphistEntry(p) === clean);
+        const idx = list.indexOf(clean);
         if (idx >= 0) {
             list.splice(idx, 1);
         } else {
-            list.push(entry);
+            list.push(clean); // Store DISPLAY TEXT only (not raw entry with ID) for reboot persistence
         }
         Persistent.states.pinnedClipboard = list;
         root.refresh();
@@ -107,9 +107,8 @@ Singleton {
 
     function deleteEntry(entry) {
         if (!entry) return;
-        if (isPinned(entry)) {
-            togglePin(entry);
-        }
+        // Pinned items are fully protected — cannot be deleted
+        if (isPinned(entry)) return;
         Quickshell.execDetached([
             "bash", "-c",
             `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(entry)}' | ${root.cliphistBinary} delete`
@@ -120,10 +119,26 @@ Singleton {
     function wipe() {
         const pinnedList = entries.filter(e => isPinned(e));
         if (pinnedList.length === 0) {
+            // No pinned entries — just wipe everything
             Quickshell.execDetached(["bash", "-c", `${root.cliphistBinary} wipe`]);
         } else {
-            const reinsertCmds = pinnedList.slice().reverse().map(e => `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(e)}' | ${root.cliphistBinary} decode | wl-copy`);
-            const fullCmd = `${root.cliphistBinary} wipe && ` + reinsertCmds.join(" && ");
+            // Decode pinned entries to temp files FIRST (before wipe destroys the DB),
+            // then wipe, then wl-copy each saved file so cliphist re-indexes them.
+            const tmpBase = `/tmp/qs-cliphist-pin-$$`;
+            const saveCmds = pinnedList.map((e, i) =>
+                `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(e)}' | ${root.cliphistBinary} decode > '${tmpBase}-${i}'`
+            );
+            // Re-copy in reverse so the first pinned item ends up newest (top of list)
+            const restoreCmds = pinnedList.map((e, i) =>
+                `wl-copy < '${tmpBase}-${i}' && sleep 0.08`
+            ).reverse();
+            const fullCmd = [
+                ...saveCmds,
+                `${root.cliphistBinary} wipe`,
+                `sleep 0.2`,
+                ...restoreCmds,
+                `rm -f '${tmpBase}-'*`
+            ].join(" && ");
             Quickshell.execDetached(["bash", "-c", fullCmd]);
         }
         delayedUpdateTimer.restart();
