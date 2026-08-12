@@ -17,13 +17,47 @@ AbstractBackgroundWidget {
 
     property int imageIndex: -1
 
-    property var _widgetConfig: root.imageIndex >= 0 
+    // For extra images (imageIndex >= 0), read from customImages array; else use main customImage
+    property var _widgetConfig: root.imageIndex >= 0
         ? Config.options.background.widgets.customImages[root.imageIndex]
         : Config.options.background.widgets.customImage
 
-    property string imagePath: _widgetConfig.path ?? ""
+    // Override position so each extra widget has its own x/y
+    Component.onCompleted: {
+        if (root.imageIndex >= 0) {
+            root.x = Qt.binding(() => {
+                var cfg = Config.options.background.widgets.customImages[root.imageIndex]
+                return cfg ? Math.max(0, Math.min(cfg.x ?? (100 + root.imageIndex * 220), scaledScreenWidth - width)) : 0
+            })
+            root.y = Qt.binding(() => {
+                var cfg = Config.options.background.widgets.customImages[root.imageIndex]
+                return cfg ? Math.max(0, Math.min(cfg.y ?? 100, scaledScreenHeight - height)) : 0
+            })
+        }
+    }
+
+    // Override drag-end to save position into the right customImages slot
+    onReleased: {
+        if (root.imageIndex >= 0) {
+            var arr = Config.options.background.widgets.customImages.slice()
+            if (arr[root.imageIndex]) {
+                arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], {
+                    placementStrategy: "free",
+                    x: root.x,
+                    y: root.y
+                })
+                Config.options.background.widgets.customImages = arr
+            }
+        } else {
+            configEntry.placementStrategy = "free"
+            configEntry.x = root.x
+            configEntry.y = root.y
+        }
+    }
+
+    property string imagePath: _widgetConfig?.path ?? ""
     property bool dropHover: false
-    property real widgetSize: _widgetConfig.size ?? 200
+    property real widgetSize: _widgetConfig?.size ?? 200
 
     implicitWidth: contentItem.implicitWidth
     implicitHeight: contentItem.implicitHeight
