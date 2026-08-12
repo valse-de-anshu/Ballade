@@ -154,16 +154,37 @@ AbstractBackgroundWidget {
                             color: noteCard.bg
                             width: parent.width - Math.abs(noteCard.swipe.position) * 6
 
-                            StyledText {
-                                anchors {
-                                    left: parent.left; right: parent.right
-                                    verticalCenter: parent.verticalCenter
-                                    leftMargin: 12; rightMargin: 12
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 6
+                                spacing: 4
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    color: noteCard.fg
+                                    text: noteCard.modelData.content
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
                                 }
-                                color: noteCard.fg
-                                text: noteCard.modelData.content
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
+
+                                RippleButton {
+                                    implicitWidth: 30
+                                    implicitHeight: 30
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: "transparent"
+                                    colBackgroundHover: Appearance.colors.colError
+                                    colRipple: Appearance.colors.colOnError
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        iconSize: 18
+                                        text: "delete"
+                                        color: noteCard.fg
+                                    }
+                                    downAction: () => {
+                                        Notes.deleteNote(noteCard.modelData.id)
+                                    }
+                                }
                             }
                         }
 
@@ -215,6 +236,20 @@ AbstractBackgroundWidget {
                         }
                     }
                     Item { Layout.fillWidth: true }
+
+                    ToolbarPairedFab {
+                        visible: root.pendingNoteId !== null
+                        Layout.rightMargin: 4
+                        Layout.alignment: Qt.AlignVCenter
+                        baseSize: 38
+                        iconText: "delete"
+                        onClicked: {
+                            if (root.pendingNoteId) {
+                                Notes.deleteNote(root.pendingNoteId)
+                            }
+                            root.toggleFlip()
+                        }
+                    }
 
                     ToolbarPairedFab {
                         Layout.rightMargin: 4
