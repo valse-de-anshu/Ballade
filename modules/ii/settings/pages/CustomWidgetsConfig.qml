@@ -16,42 +16,68 @@ ContentPage {
         Layout.fillHeight: true
         spacing: 20
 
+        // ── Section 1: Extra Custom Images ──────────────────────────────
         ContentSection {
             icon: "imagesmode"
-            shape: MaterialShape.Shape.Pill 
+            shape: MaterialShape.Shape.Pill
             title: Translation.tr("Extra Custom Images")
-            
+
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 8
 
+                // Existing images list
                 Repeater {
+                    id: imagesRepeater
                     model: Config.options.background.widgets.customImages
+
                     delegate: GroupedList {
                         Layout.fillWidth: true
+
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 8
-                            ConfigTextField {
-                                Layout.fillWidth: true
-                                title: Translation.tr("Image Path")
-                                text: modelData.path ?? ""
-                                onTextChanged: {
-                                    var arr = Config.options.background.widgets.customImages
-                                    arr[index].path = text
-                                    Config.options.background.widgets.customImages = arr
-                                }
+
+                            StyledText {
+                                text: "Widget " + (index + 1)
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colSubtext
                             }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Delete button
                             RippleButton {
-                                implicitWidth: 32; implicitHeight: 32
+                                implicitWidth: 32
+                                implicitHeight: 32
                                 buttonRadius: Appearance.rounding.full
                                 colBackground: Appearance.colors.colErrorContainer
                                 colBackgroundHover: Appearance.colors.colError
                                 colRipple: Appearance.colors.colOnError
-                                MaterialSymbol { anchors.centerIn: parent; iconSize: 18; text: "delete"; color: Appearance.colors.colOnErrorContainer }
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    iconSize: 18
+                                    text: "delete"
+                                    color: Appearance.colors.colOnErrorContainer
+                                }
                                 downAction: () => {
-                                    var arr = Config.options.background.widgets.customImages
+                                    var arr = Config.options.background.widgets.customImages.slice()
                                     arr.splice(index, 1)
+                                    Config.options.background.widgets.customImages = arr
+                                }
+                            }
+                        }
+
+                        ConfigTextArea {
+                            Layout.fillWidth: true
+                            buttonIcon: "image"
+                            text: Translation.tr("Image File Path")
+                            placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
+                            value: modelData.path ?? ""
+                            onValueChanged: {
+                                var arr = Config.options.background.widgets.customImages.slice()
+                                if (arr[index]) {
+                                    arr[index] = Object.assign({}, arr[index], { path: value })
                                     Config.options.background.widgets.customImages = arr
                                 }
                             }
@@ -59,36 +85,90 @@ ContentPage {
                     }
                 }
 
+                // Add button
                 RippleButton {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitWidth: 40; implicitHeight: 40
+                    Layout.topMargin: 4
+                    implicitWidth: 160
+                    implicitHeight: 40
                     buttonRadius: Appearance.rounding.full
                     colBackground: Appearance.colors.colPrimaryContainer
                     colBackgroundHover: Appearance.colors.colPrimary
                     colRipple: Appearance.colors.colOnPrimary
-                    MaterialSymbol { anchors.centerIn: parent; iconSize: 24; text: "add"; color: Appearance.colors.colOnPrimaryContainer }
                     downAction: () => {
-                        var arr = Config.options.background.widgets.customImages
-                        arr.push({ enable: true, placementStrategy: "free", x: 400, y: 100, path: "", shape: "Cookie4Sided", size: 200 })
+                        var arr = Config.options.background.widgets.customImages.slice()
+                        arr.push({
+                            enable: true,
+                            placementStrategy: "free",
+                            x: 400,
+                            y: 100,
+                            path: "",
+                            shape: "Cookie4Sided",
+                            size: 200
+                        })
                         Config.options.background.widgets.customImages = arr
+                    }
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        MaterialSymbol {
+                            iconSize: 20
+                            text: "add"
+                            color: Appearance.colors.colOnPrimaryContainer
+                        }
+                        StyledText {
+                            text: "Add Image Widget"
+                            color: Appearance.colors.colOnPrimaryContainer
+                            font.pixelSize: Appearance.font.pixelSize.small
+                        }
                     }
                 }
             }
         }
 
+        // ── Section 2: User Card Custom Text ────────────────────────────
         ContentSection {
             icon: "person"
-            shape: MaterialShape.Shape.Pill 
+            shape: MaterialShape.Shape.Pill
             title: Translation.tr("User Card")
+
             GroupedList {
-                ConfigTextField {
+                Layout.fillWidth: true
+
+                ColumnLayout {
                     Layout.fillWidth: true
-                    title: Translation.tr("Custom Text")
-                    text: Config.options.background.widgets.userCard.customText
-                    placeholderText: Translation.tr("Leave empty for weather (max 40 chars)")
-                    maximumLength: 40
-                    onTextChanged: {
-                        Config.options.background.widgets.userCard.customText = text
+                    spacing: 8
+
+                    ConfigTextArea {
+                        id: userCardTextField
+                        Layout.fillWidth: true
+                        buttonIcon: "edit_note"
+                        text: Translation.tr("Custom Text")
+                        placeholderText: Translation.tr("Leave empty to show weather instead")
+                        value: Config.options.background.widgets.userCard.customText
+                        onValueChanged: {
+                            // Enforce 40 char limit
+                            var clamped = value.length > 40 ? value.substring(0, 40) : value
+                            if (clamped !== value) {
+                                userCardTextField.value = clamped
+                            } else {
+                                Config.options.background.widgets.userCard.customText = clamped
+                            }
+                        }
+                    }
+
+                    // Character counter
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Item { Layout.fillWidth: true }
+                        StyledText {
+                            text: (Config.options.background.widgets.userCard.customText?.length ?? 0) + " / 40"
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: (Config.options.background.widgets.userCard.customText?.length ?? 0) >= 40
+                                   ? Appearance.colors.colError
+                                   : Appearance.colors.colSubtext
+                        }
                     }
                 }
             }
