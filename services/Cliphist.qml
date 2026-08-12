@@ -20,26 +20,51 @@ Singleton {
         name: Fuzzy.prepare(`${a.replace(/^\s*\S+\s+/, "")}`),
         entry: a
     }))
-    function fuzzyQuery(search: string): var {
-        if (search.trim() === "") {
-            return entries;
+    function isPinned(entry) {
+        if (!entry || !Persistent.ready) return false;
+        const clean = StringUtils.cleanCliphistEntry(entry);
+        return (Persistent.states.pinnedClipboard || []).some(p => StringUtils.cleanCliphistEntry(p) === clean);
+    }
+
+    function togglePin(entry) {
+        if (!entry || !Persistent.ready) return;
+        const clean = StringUtils.cleanCliphistEntry(entry);
+        let list = [...(Persistent.states.pinnedClipboard || [])];
+        const idx = list.findIndex(p => StringUtils.cleanCliphistEntry(p) === clean);
+        if (idx >= 0) {
+            list.splice(idx, 1);
+        } else {
+            list.push(entry);
         }
-        if (root.sloppySearch) {
+        Persistent.states.pinnedClipboard = list;
+        root.refresh();
+    }
+
+    function sortEntries(rawList) {
+        if (!rawList) return [];
+        const pinned = rawList.filter(e => root.isPinned(e));
+        const unpinned = rawList.filter(e => !root.isPinned(e));
+        return [...pinned, ...unpinned];
+    }
+
+    function fuzzyQuery(search: string): var {
+        let rawResults = [];
+        if (search.trim() === "") {
+            rawResults = entries;
+        } else if (root.sloppySearch) {
             const results = entries.slice(0, 100).map(str => ({
                 entry: str,
                 score: Levendist.computeTextMatchScore(str.toLowerCase(), search.toLowerCase())
             })).filter(item => item.score > root.scoreThreshold)
-                .sort((a, b) => b.score - a.score)
-            return results
-                .map(item => item.entry)
+                .sort((a, b) => b.score - a.score);
+            rawResults = results.map(item => item.entry);
+        } else {
+            rawResults = Fuzzy.go(search, preparedEntries, {
+                all: true,
+                key: "name"
+            }).map(r => r.obj.entry);
         }
-
-        return Fuzzy.go(search, preparedEntries, {
-            all: true,
-            key: "name"
-        }).map(r => {
-            return r.obj.entry
-        });
+        return sortEntries(rawResults);
     }
 
     function entryIsImage(entry) {
@@ -80,34 +105,26 @@ Singleton {
         Quickshell.execDetached(["bash", "-c", pasteCommands.join(` && sleep ${root.pasteDelay} && `)]);
     }
 
-    Process {
-        id: deleteProc
-        property string entry: ""
-        command: ["bash", "-c", `echo '${StringUtils.shellSingleQuoteEscape(deleteProc.entry)}' | ${root.cliphistBinary} delete`]
-        function deleteEntry(entry) {
-            deleteProc.entry = entry;
-            deleteProc.running = true;
-            deleteProc.entry = "";
-        }
-        onExited: (exitCode, exitStatus) => {
-            root.refresh();
-        }
-    }
-
     function deleteEntry(entry) {
-        deleteProc.deleteEntry(entry);
-    }
-
-    Process {
-        id: wipeProc
-        command: [root.cliphistBinary, "wipe"]
-        onExited: (exitCode, exitStatus) => {
-            root.refresh();
+        if (!entry) return;
+        if (isPinned(entry)) {
+            togglePin(entry);
         }
+        Quickshell.execDetached([
+            "bash", "-c",
+            `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(entry)}' | ${root.cliphistBinary} delete`
+        ]);
+        delayedUpdateTimer.restart();
     }
 
     function wipe() {
-        wipeProc.running = true;
+        // Only wipe UNPINNED entries so pinned entries remain safe!
+        const unpinned = entries.filter(e => !isPinned(e));
+        if (unpinned.length === 0) return;
+
+        const deleteCmds = unpinned.map(e => `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(e)}' | ${root.cliphistBinary} delete`);
+        Quickshell.execDetached(["bash", "-c", deleteCmds.join(" && ")]);
+        delayedUpdateTimer.restart();
     }
 
     Connections {

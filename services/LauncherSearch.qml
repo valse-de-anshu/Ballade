@@ -180,30 +180,43 @@ Singleton {
                 if (mightBlurImage) {
                     shouldBlurImage = shouldBlurImage && (root.containsUnsafeLink(array[index - 1]) || root.containsUnsafeLink(array[index + 1]));
                 }
-                const type = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+                const isPinned = Cliphist.isPinned(entry);
+                const rawType = `#${entry.match(/^\s*(\S+)/)?.[1] || ""}`;
+                const type = isPinned ? "📌 Pinned" : rawType;
                 return resultComp.createObject(null, {
                     rawValue: entry,
                     name: StringUtils.cleanCliphistEntry(entry),
-                    verb: "",
+                    verb: isPinned ? Translation.tr("Pinned") : "",
                     type: type,
                     execute: () => {
                         Cliphist.copy(entry);
                     },
-                    actions: [resultComp.createObject(null, {
+                    actions: [
+                        resultComp.createObject(null, {
+                            name: isPinned ? Translation.tr("Unpin") : Translation.tr("Pin"),
+                            iconName: isPinned ? "keep_off" : "push_pin",
+                            iconType: LauncherSearchResult.IconType.Material,
+                            execute: () => {
+                                Cliphist.togglePin(entry);
+                            }
+                        }),
+                        resultComp.createObject(null, {
                             name: Translation.tr("Copy"),
                             iconName: "content_copy",
                             iconType: LauncherSearchResult.IconType.Material,
                             execute: () => {
                                 Cliphist.copy(entry);
                             }
-                        }), resultComp.createObject(null, {
+                        }),
+                        resultComp.createObject(null, {
                             name: Translation.tr("Delete"),
                             iconName: "delete",
                             iconType: LauncherSearchResult.IconType.Material,
                             execute: () => {
                                 Cliphist.deleteEntry(entry);
                             }
-                        })],
+                        })
+                    ],
                     blurImage: shouldBlurImage
                 });
             }).filter(Boolean);
