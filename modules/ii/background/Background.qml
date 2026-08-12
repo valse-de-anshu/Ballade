@@ -548,7 +548,7 @@ Variants {
                         required property int index
                         shown: (Config.options.background.screenList.length === 0
                                 || Config.options.background.screenList.includes(bgRoot.screen.name))
-                        sourceComponent: CustomImage {
+                        sourceComponent: ExtraCustomImage {
                             screenWidth:        bgRoot.screen.width
                             screenHeight:       bgRoot.screen.height
                             scaledScreenWidth:  bgRoot.screen.width

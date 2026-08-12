@@ -32,6 +32,8 @@ ContentPage {
                     model: Config.options.background.widgets.customImages
 
                     delegate: GroupedList {
+                        required property var modelData
+                        required property int index
                         Layout.fillWidth: true
 
                         RowLayout {
@@ -71,13 +73,34 @@ ContentPage {
                         ConfigTextArea {
                             Layout.fillWidth: true
                             buttonIcon: "image"
-                            text: Translation.tr("Image File Path")
+                            text: Translation.tr("Image / GIF File Path")
                             placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
                             value: modelData.path ?? ""
                             onValueChanged: {
                                 var arr = Config.options.background.widgets.customImages.slice()
                                 if (arr[index]) {
                                     arr[index] = Object.assign({}, arr[index], { path: value })
+                                    Config.options.background.widgets.customImages = arr
+                                }
+                            }
+                        }
+
+                        // Shape picker for this widget
+                        ConfigSelectionShapeArray {
+                            currentValue: modelData.shape ?? "Cookie4Sided"
+                            shapeColor: Appearance.colors.colPrimary
+                            backgroundColor: Appearance.colors.colPrimaryContainer
+                            options: [
+                                "Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill",
+                                "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
+                                "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
+                                "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
+                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
+                            ]
+                            onSelected: newValue => {
+                                var arr = Config.options.background.widgets.customImages.slice()
+                                if (arr[index]) {
+                                    arr[index] = Object.assign({}, arr[index], { shape: newValue })
                                     Config.options.background.widgets.customImages = arr
                                 }
                             }

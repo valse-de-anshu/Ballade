@@ -118,8 +118,6 @@ AbstractBackgroundWidget {
                 fillMode: Image.PreserveAspectCrop
                 cache: false
                 asynchronous: true
-                sourceSize.width: parent.width * 2
-                sourceSize.height: parent.height * 2
                 visible: root.imagePath !== "" && status !== Image.Error
                 playing: true
                 paused: false
