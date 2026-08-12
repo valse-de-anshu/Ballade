@@ -545,6 +545,7 @@ Variants {
                 Repeater {
                     model: Config.options.background.widgets.customImages
                     delegate: FadeLoader {
+                        required property int index
                         shown: (Config.options.background.screenList.length === 0
                                 || Config.options.background.screenList.includes(bgRoot.screen.name))
                         sourceComponent: CustomImage {

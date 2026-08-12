@@ -17,8 +17,8 @@ AbstractBackgroundWidget {
 
     property int imageIndex: -1
 
-    // Override configEntry — this makes ALL parent logic (x/y, drag-save, targetX/Y)
-    // automatically use the correct slot. No need to override onReleased or anything else.
+    // Override configEntry so ALL parent logic (x/y, targetX/Y, drag-save via onReleased)
+    // automatically uses the correct config slot per widget instance.
     property var configEntry: root.imageIndex >= 0
         ? Config.options.background.widgets.customImages[root.imageIndex]
         : Config.options.background.widgets.customImage
@@ -87,7 +87,7 @@ AbstractBackgroundWidget {
             id: shadowShape
             anchors.fill: parent
             color: Appearance.colors.colPrimaryContainer
-            shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
+            shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
             visible: false
         }
 
@@ -101,19 +101,18 @@ AbstractBackgroundWidget {
             anchors.fill: parent
             z: 0
             color: Appearance.colors.colPrimaryContainer
-            shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
+            shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
 
             layer.enabled: true
             layer.effect: OpacityMask {
                 maskSource: MaterialShape {
                     width: imageShape.width
                     height: imageShape.height
-                    shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
+                    shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
                 }
             }
 
             AnimatedImage {
-                id: animImg
                 anchors.fill: parent
                 source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
                 fillMode: Image.PreserveAspectCrop
@@ -126,7 +125,7 @@ AbstractBackgroundWidget {
                 paused: false
             }
 
-            // Placeholder + hover hint
+            // Placeholder shown when no path is set
             MaterialSymbol {
                 anchors.centerIn: parent
                 iconSize: contentItem.implicitWidth / 3
@@ -139,7 +138,7 @@ AbstractBackgroundWidget {
                 Behavior on color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
             }
 
-        DropArea {
+            DropArea {
                 anchors.fill: parent
                 keys: ["text/uri-list"]
                 onEntered: (drag) => {
@@ -169,7 +168,7 @@ AbstractBackgroundWidget {
             }
         }
 
-        ResizeHandler{
+        ResizeHandler {
             anchorItem: imageShape
             hoverActive: root.containsMouse
             locked: Config.options.background.widgetsLocked
