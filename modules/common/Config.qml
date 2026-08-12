@@ -325,6 +325,7 @@ Singleton {
                         property string path: ""
                         property string shape: "Cookie4Sided"
                         property real size: 200
+                        property bool transparent: false
                     }
 
                     property list<var> customImages: []

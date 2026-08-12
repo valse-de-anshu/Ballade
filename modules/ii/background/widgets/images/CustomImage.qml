@@ -26,6 +26,7 @@ AbstractBackgroundWidget {
     property string imagePath: configEntry?.path ?? ""
     property bool dropHover: false
     property real widgetSize: configEntry?.size ?? 200
+    property bool isTransparent: configEntry?.transparent ?? false
 
     implicitWidth: contentItem.implicitWidth
     implicitHeight: contentItem.implicitHeight
@@ -86,7 +87,7 @@ AbstractBackgroundWidget {
         MaterialShape {
             id: shadowShape
             anchors.fill: parent
-            color: Appearance.colors.colPrimaryContainer
+            color: root.isTransparent ? "transparent" : Appearance.colors.colPrimaryContainer
             shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
             visible: false
         }
@@ -94,13 +95,16 @@ AbstractBackgroundWidget {
         StyledDropShadow {
             target: shadowShape
             z: -1
+            visible: !root.isTransparent
         }
 
         MaterialShape {
             id: imageShape
             anchors.fill: parent
             z: 0
-            color: Appearance.colors.colPrimaryContainer
+            color: root.isTransparent
+                ? (root.imagePath === "" ? ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.7) : "transparent")
+                : Appearance.colors.colPrimaryContainer
             shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
 
             layer.enabled: true

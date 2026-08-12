@@ -919,6 +919,15 @@ ContentPage {
                         Config.options.background.widgets.customImage.enable = checked;
                     }
                 }
+                ConfigSwitch {
+                    Layout.fillWidth: true
+                    buttonIcon: "opacity"
+                    text: Translation.tr("Add transparency")
+                    checked: Config.options.background.widgets.customImage.transparent ?? false
+                    onCheckedChanged: {
+                        Config.options.background.widgets.customImage.transparent = checked;
+                    }
+                }
                 ConfigTextArea {
                     Layout.fillWidth: true
                     buttonIcon: "image"

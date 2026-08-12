@@ -70,6 +70,20 @@ ContentPage {
                             }
                         }
 
+                        ConfigSwitch {
+                            Layout.fillWidth: true
+                            buttonIcon: "opacity"
+                            text: Translation.tr("Add transparency")
+                            checked: modelData.transparent ?? false
+                            onCheckedChanged: {
+                                var arr = Config.options.background.widgets.customImages.slice()
+                                if (arr[index]) {
+                                    arr[index] = Object.assign({}, arr[index], { transparent: checked })
+                                    Config.options.background.widgets.customImages = arr
+                                }
+                            }
+                        }
+
                         ConfigTextArea {
                             Layout.fillWidth: true
                             buttonIcon: "image"
@@ -127,7 +141,8 @@ ContentPage {
                             y: 100,
                             path: "",
                             shape: "Cookie4Sided",
-                            size: 200
+                            size: 200,
+                            transparent: false
                         })
                         Config.options.background.widgets.customImages = arr
                     }

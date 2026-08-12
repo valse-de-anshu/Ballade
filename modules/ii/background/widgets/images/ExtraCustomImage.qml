@@ -22,6 +22,7 @@ Item {
     property string imagePath: cfg.path ?? ""
     property real widgetSize: cfg.size ?? 200
     property string shapeName: cfg.shape ?? "Cookie4Sided"
+    property bool isTransparent: cfg.transparent ?? false
     property bool dropHover: false
     property bool locked: Config.options.background.widgetsLocked
 
@@ -103,7 +104,7 @@ Item {
     MaterialShape {
         id: shadowShape
         anchors.fill: parent
-        color: Appearance.colors.colPrimaryContainer
+        color: root.isTransparent ? "transparent" : Appearance.colors.colPrimaryContainer
         shape: root.getShape(root.shapeName)
         visible: false
     }
@@ -111,13 +112,16 @@ Item {
     StyledDropShadow {
         target: shadowShape
         z: -1
+        visible: !root.isTransparent
     }
 
     MaterialShape {
         id: imageShape
         anchors.fill: parent
         z: 0
-        color: Appearance.colors.colPrimaryContainer
+        color: root.isTransparent
+            ? (root.imagePath === "" ? ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.7) : "transparent")
+            : Appearance.colors.colPrimaryContainer
         shape: root.getShape(root.shapeName)
 
         layer.enabled: true
