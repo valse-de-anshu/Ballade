@@ -86,6 +86,7 @@ Item {
                     wrapMode: Text.WordWrap
                     text: LyricsService.slots[index] ?? ""
                     readonly property int dist: Math.abs(index - LyricsService.before)
+                    readonly property bool isPast: index < LyricsService.before
                     font.pixelSize: {
                         if (dist === 0) return Appearance.font.pixelSize.normal
                         if (dist === 1) return Appearance.font.pixelSize.small
@@ -93,9 +94,10 @@ Item {
                     }
                     opacity: {
                         if (dist === 0) return 1.0
-                        if (dist === 1) return 0.6
-                        if (dist === 2) return 0.35
-                        return 0.15
+                        // Past (already sang): dimmer than future
+                        if (dist === 1) return isPast ? 0.30 : 0.65
+                        if (dist === 2) return isPast ? 0.12 : 0.35
+                        return isPast ? 0.05 : 0.15
                     }
                     color: dist === 0 ? root.activeColor : root.textColor
                     Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
