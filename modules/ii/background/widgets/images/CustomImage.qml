@@ -17,47 +17,15 @@ AbstractBackgroundWidget {
 
     property int imageIndex: -1
 
-    // For extra images (imageIndex >= 0), read from customImages array; else use main customImage
-    property var _widgetConfig: root.imageIndex >= 0
+    // Override configEntry — this makes ALL parent logic (x/y, drag-save, targetX/Y)
+    // automatically use the correct slot. No need to override onReleased or anything else.
+    property var configEntry: root.imageIndex >= 0
         ? Config.options.background.widgets.customImages[root.imageIndex]
         : Config.options.background.widgets.customImage
 
-    // Override position so each extra widget has its own x/y
-    Component.onCompleted: {
-        if (root.imageIndex >= 0) {
-            root.x = Qt.binding(() => {
-                var cfg = Config.options.background.widgets.customImages[root.imageIndex]
-                return cfg ? Math.max(0, Math.min(cfg.x ?? (100 + root.imageIndex * 220), scaledScreenWidth - width)) : 0
-            })
-            root.y = Qt.binding(() => {
-                var cfg = Config.options.background.widgets.customImages[root.imageIndex]
-                return cfg ? Math.max(0, Math.min(cfg.y ?? 100, scaledScreenHeight - height)) : 0
-            })
-        }
-    }
-
-    // Override drag-end to save position into the right customImages slot
-    onReleased: {
-        if (root.imageIndex >= 0) {
-            var arr = Config.options.background.widgets.customImages.slice()
-            if (arr[root.imageIndex]) {
-                arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], {
-                    placementStrategy: "free",
-                    x: root.x,
-                    y: root.y
-                })
-                Config.options.background.widgets.customImages = arr
-            }
-        } else {
-            configEntry.placementStrategy = "free"
-            configEntry.x = root.x
-            configEntry.y = root.y
-        }
-    }
-
-    property string imagePath: _widgetConfig?.path ?? ""
+    property string imagePath: configEntry?.path ?? ""
     property bool dropHover: false
-    property real widgetSize: _widgetConfig?.size ?? 200
+    property real widgetSize: configEntry?.size ?? 200
 
     implicitWidth: contentItem.implicitWidth
     implicitHeight: contentItem.implicitHeight
@@ -145,14 +113,17 @@ AbstractBackgroundWidget {
             }
 
             AnimatedImage {
+                id: animImg
                 anchors.fill: parent
-                source: root.imagePath !== "" ? (root.imagePath.startsWith("/") ? "file://" + root.imagePath : root.imagePath) : ""
+                source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
                 fillMode: Image.PreserveAspectCrop
                 cache: false
-                sourceSize.width: parent.width
-                sourceSize.height: parent.height
-                visible: root.imagePath !== ""
-                playing: visible
+                asynchronous: true
+                sourceSize.width: parent.width * 2
+                sourceSize.height: parent.height * 2
+                visible: root.imagePath !== "" && status !== Image.Error
+                playing: true
+                paused: false
             }
 
             // Placeholder + hover hint
@@ -168,7 +139,7 @@ AbstractBackgroundWidget {
                 Behavior on color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
             }
 
-            DropArea {
+        DropArea {
                 anchors.fill: parent
                 keys: ["text/uri-list"]
                 onEntered: (drag) => {
@@ -185,10 +156,8 @@ AbstractBackgroundWidget {
                         var accepted = ["png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif"]
                         if (accepted.indexOf(ext) !== -1) {
                             if (root.imageIndex >= 0) {
-                                var arr = Config.options.background.widgets.customImages
-                                var obj = arr[root.imageIndex]
-                                obj.path = cleanPath
-                                arr[root.imageIndex] = obj
+                                var arr = Config.options.background.widgets.customImages.slice()
+                                arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { path: cleanPath })
                                 Config.options.background.widgets.customImages = arr
                             } else {
                                 Config.options.background.widgets.customImage.path = cleanPath
@@ -212,10 +181,8 @@ AbstractBackgroundWidget {
             }
             onResizeFinished: {
                 if (root.imageIndex >= 0) {
-                    var arr = Config.options.background.widgets.customImages
-                    var obj = arr[root.imageIndex]
-                    obj.size = root.widgetSize
-                    arr[root.imageIndex] = obj
+                    var arr = Config.options.background.widgets.customImages.slice()
+                    arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { size: root.widgetSize })
                     Config.options.background.widgets.customImages = arr
                 } else {
                     Config.options.background.widgets.customImage.size = root.widgetSize
