@@ -92,7 +92,7 @@ AbstractBackgroundWidget {
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
-        implicitHeight: root.widgetHeight + (root.showLyrics ? 264 : 0)
+        implicitHeight: root.widgetHeight + (root.showLyrics ? 264 : 0) + 18
         radius: Appearance.rounding?.verylarge ?? 30
         color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
         clip: true
@@ -225,107 +225,226 @@ AbstractBackgroundWidget {
                     }
 
                     // Controls 
-                    Rectangle {
-                        id: controlsPill
+                    RowLayout {
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignRight
-                        implicitWidth: controlsRow.implicitWidth + 10
-                        implicitHeight: root.buttonSize + 8
-                        radius: Appearance.rounding?.full ?? 999
-                        color: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.9)
+                        spacing: 6
 
-                        RowLayout {
-                            id: controlsRow
-                            anchors.centerIn: parent
-                            spacing: 2
-                    
-                            RippleButton {
-                                implicitWidth: root.buttonSize
-                                implicitHeight: root.buttonSize
-                                buttonRadius: Appearance.rounding?.full ?? 999
-                                colBackground: root.showLyrics && !LyricsService.ccMode
-                                    ? Appearance.colors.colPrimary
-                                    : "transparent"
-                                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
-                                colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => {
-                                    if (LyricsService.ccMode) {
-                                        LyricsService.ccMode = false
-                                        LyricsService.restartLyrics()
+                        // Progress time
+                        StyledText {
+                            text: {
+                                const pos = root.currentPlayer?.position ?? 0
+                                const m = Math.floor(pos / 60)
+                                const s = Math.floor(pos % 60)
+                                return m + ":" + (s < 10 ? "0" : "") + s
+                            }
+                            font.pixelSize: Appearance.font.pixelSize.smaller ?? 10
+                            color: Appearance.colors.colOnPrimaryContainer
+                            opacity: 0.55
+                        }
+
+                        // Progress bar
+                        Item {
+                            Layout.fillWidth: true
+                            implicitHeight: 20
+
+                            Rectangle {
+                                id: progressTrack
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width
+                                height: 3
+                                radius: 2
+                                color: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.78)
+
+                                Rectangle {
+                                    id: progressFill
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    height: parent.height
+                                    radius: parent.radius
+                                    color: Appearance.colors.colPrimary
+                                    width: {
+                                        const len = root.currentPlayer?.length ?? 0
+                                        if (len <= 0) return 0
+                                        return Math.max(0, Math.min(1, (root.currentPlayer?.position ?? 0) / len)) * progressTrack.width
                                     }
-                                    root.showLyrics = !root.showLyrics
-                                }
+                                    Behavior on width {
+                                        NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+                                    }
 
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "lyrics"
-                                    iconSize: root.buttonIconSize
-                                    fill: root.showLyrics && !LyricsService.ccMode ? 1 : 0
-                                    color: root.showLyrics && !LyricsService.ccMode
-                                        ? Appearance.colors.colOnPrimary
-                                        : Appearance.colors.colOnPrimaryContainer
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 9
+                                        height: 9
+                                        radius: 5
+                                        color: Appearance.colors.colPrimary
+                                        visible: progressMouse.containsMouse || progressMouse.pressed
+                                        Behavior on width { NumberAnimation { duration: 120 } }
+                                    }
                                 }
                             }
 
-                            RippleButton {
-                                implicitWidth: root.buttonSize
-                                implicitHeight: root.buttonSize
-                                buttonRadius: Appearance.rounding?.full ?? 999
-                                colBackground: LyricsService.ccMode
-                                    ? Appearance.colors.colPrimary
-                                    : "transparent"
-                                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
-                                colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => {
-                                    if (LyricsService.ccMode && !root.showLyrics) {
-                                        root.showLyrics = true
-                                    } else {
-                                        LyricsService.toggleCC()
-                                        root.showLyrics = LyricsService.ccMode
+                            MouseArea {
+                                id: progressMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onPressed: (mouse) => {
+                                    const len = root.currentPlayer?.length ?? 0
+                                    if (len > 0) {
+                                        const ratio = Math.max(0, Math.min(1, mouse.x / width))
+                                        root.currentPlayer?.seek(ratio * len)
+                                    }
+                                }
+                                onPositionChanged: (mouse) => {
+                                    if (pressed) {
+                                        const len = root.currentPlayer?.length ?? 0
+                                        if (len > 0) {
+                                            const ratio = Math.max(0, Math.min(1, mouse.x / width))
+                                            root.currentPlayer?.seek(ratio * len)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Duration
+                        StyledText {
+                            text: {
+                                const len = root.currentPlayer?.length ?? 0
+                                const m = Math.floor(len / 60)
+                                const s = Math.floor(len % 60)
+                                return m + ":" + (s < 10 ? "0" : "") + s
+                            }
+                            font.pixelSize: Appearance.font.pixelSize.smaller ?? 10
+                            color: Appearance.colors.colOnPrimaryContainer
+                            opacity: 0.55
+                        }
+
+                        // Control buttons pill
+                        Rectangle {
+                            id: controlsPill
+                            implicitWidth: controlsRow.implicitWidth + 10
+                            implicitHeight: root.buttonSize + 8
+                            radius: Appearance.rounding?.full ?? 999
+                            color: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.9)
+
+                            RowLayout {
+                                id: controlsRow
+                                anchors.centerIn: parent
+                                spacing: 2
+                        
+                                RippleButton {
+                                    implicitWidth: root.buttonSize
+                                    implicitHeight: root.buttonSize
+                                    buttonRadius: Appearance.rounding?.full ?? 999
+                                    colBackground: root.showLyrics && !LyricsService.ccMode
+                                        ? Appearance.colors.colPrimary
+                                        : "transparent"
+                                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                                    colRipple: Appearance.colors.colPrimaryContainerActive
+                                    downAction: () => {
+                                        if (LyricsService.ccMode) {
+                                            LyricsService.ccMode = false
+                                            LyricsService.restartLyrics()
+                                        }
+                                        root.showLyrics = !root.showLyrics
+                                    }
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "lyrics"
+                                        iconSize: root.buttonIconSize
+                                        fill: root.showLyrics && !LyricsService.ccMode ? 1 : 0
+                                        color: root.showLyrics && !LyricsService.ccMode
+                                            ? Appearance.colors.colOnPrimary
+                                            : Appearance.colors.colOnPrimaryContainer
                                     }
                                 }
 
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "closed_caption"
-                                    iconSize: root.buttonIconSize
-                                    fill: LyricsService.ccMode ? 1 : 0
-                                    color: LyricsService.ccMode
-                                        ? Appearance.colors.colOnPrimary
-                                        : Appearance.colors.colOnPrimaryContainer
+                                RippleButton {
+                                    implicitWidth: root.buttonSize
+                                    implicitHeight: root.buttonSize
+                                    buttonRadius: Appearance.rounding?.full ?? 999
+                                    colBackground: LyricsService.ccMode
+                                        ? Appearance.colors.colPrimary
+                                        : "transparent"
+                                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                                    colRipple: Appearance.colors.colPrimaryContainerActive
+                                    downAction: () => {
+                                        if (LyricsService.ccMode && !root.showLyrics) {
+                                            root.showLyrics = true
+                                        } else {
+                                            LyricsService.toggleCC()
+                                            root.showLyrics = LyricsService.ccMode
+                                        }
+                                    }
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "closed_caption"
+                                        iconSize: root.buttonIconSize
+                                        fill: LyricsService.ccMode ? 1 : 0
+                                        color: LyricsService.ccMode
+                                            ? Appearance.colors.colOnPrimary
+                                            : Appearance.colors.colOnPrimaryContainer
+                                    }
                                 }
-                            }
 
-                            MaterialShapeWrappedMaterialSymbol {
-                                shape: MaterialShape.Shape.Cookie12Sided
-                                color: Appearance.colors.colPrimary
-                                colSymbol: Appearance.colors.colOnPrimary
-                                text: root.currentPlayer?.isPlaying ? "pause" : "play_arrow"
-                                iconSize: root.buttonIconSize + 12
-                                fill: 1
-                                padding: 8
+                                // Rotating spiky play/pause button
+                                Item {
+                                    implicitWidth: root.buttonSize + 16
+                                    implicitHeight: root.buttonSize + 16
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: root.currentPlayer?.togglePlaying()
+                                    RotationAnimation on rotation {
+                                        id: spinAnim
+                                        from: 0
+                                        to: 360
+                                        duration: 8000
+                                        loops: Animation.Infinite
+                                        running: root.currentPlayer?.isPlaying ?? false
+                                        easing.type: Easing.Linear
+                                    }
+
+                                    Behavior on rotation {
+                                        enabled: !(root.currentPlayer?.isPlaying ?? false)
+                                        NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
+                                    }
+
+                                    MaterialShapeWrappedMaterialSymbol {
+                                        anchors.centerIn: parent
+                                        shape: MaterialShape.Shape.Cookie12Sided
+                                        color: Appearance.colors.colPrimary
+                                        colSymbol: Appearance.colors.colOnPrimary
+                                        text: root.currentPlayer?.isPlaying ? "pause" : "play_arrow"
+                                        iconSize: root.buttonIconSize + 12
+                                        fill: 1
+                                        padding: 8
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.currentPlayer?.togglePlaying()
+                                        }
+                                    }
                                 }
-                            }
 
-                            RippleButton {
-                                implicitWidth: root.buttonSize
-                                implicitHeight: root.buttonSize
-                                buttonRadius: Appearance.rounding?.full ?? 999
-                                colBackground: "transparent"
-                                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
-                                colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => root.currentPlayer?.next()
-                                altAction: () => root.currentPlayer?.previous()
+                                RippleButton {
+                                    implicitWidth: root.buttonSize
+                                    implicitHeight: root.buttonSize
+                                    buttonRadius: Appearance.rounding?.full ?? 999
+                                    colBackground: "transparent"
+                                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                                    colRipple: Appearance.colors.colPrimaryContainerActive
+                                    downAction: () => root.currentPlayer?.next()
+                                    altAction: () => root.currentPlayer?.previous()
 
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "skip_next"
-                                    iconSize: root.buttonIconSize
-                                    fill: 1
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "skip_next"
+                                        iconSize: root.buttonIconSize
+                                        fill: 1
+                                        color: Appearance.colors.colOnPrimaryContainer
+                                    }
                                 }
                             }
                         }
