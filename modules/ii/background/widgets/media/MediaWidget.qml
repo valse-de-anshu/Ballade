@@ -36,8 +36,9 @@ AbstractBackgroundWidget {
     property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
 
-    property real widgetWidth: 420
-    property real widgetHeight: 120
+    property real widgetWidth: 450
+    property real widgetHeight: 126
+    property real artSize: 98
     property real buttonSize: 34
     property real buttonIconSize: 18
 
@@ -92,7 +93,7 @@ AbstractBackgroundWidget {
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
-        implicitHeight: root.widgetHeight + 32 + (root.showLyrics ? 264 : 0)
+        implicitHeight: root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
         radius: Appearance.rounding?.verylarge ?? 30
         color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
         clip: true
@@ -141,29 +142,25 @@ AbstractBackgroundWidget {
             // Main Row
             Item {
                 width: parent.width
-                height: root.widgetHeight
+                height: root.artSize + 28
 
                 Rectangle {
                     id: artRect
                     anchors.left: parent.left
+                    anchors.leftMargin: 14
                     anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: root.widgetHeight
+                    anchors.topMargin: 14
+                    width: root.artSize
+                    height: root.artSize
                     color: Appearance.colors.colSurfaceContainerLow
-                    topLeftRadius: card.radius
-                    bottomLeftRadius: card.radius
-                    topRightRadius: 0
-                    bottomRightRadius: 0
+                    radius: 20
                     clip: true
                     layer.enabled: true
                     layer.effect: OpacityMask {
                         maskSource: Rectangle {
                             width: artRect.width
                             height: artRect.height
-                            topLeftRadius: card.radius
-                            bottomLeftRadius: card.radius
-                            topRightRadius: 0
-                            bottomRightRadius: 0
+                            radius: artRect.radius
                         }
                     }
 
@@ -182,7 +179,7 @@ AbstractBackgroundWidget {
                         anchors.centerIn: parent
                         fill: 1
                         text: "music_note"
-                        iconSize: root.widgetHeight / 3
+                        iconSize: artRect.width / 2.5
                         color: Appearance.colors.colOnSecondaryContainer
                         visible: root.displayedArtFilePath === ""
                     }
@@ -192,12 +189,12 @@ AbstractBackgroundWidget {
                     anchors {
                         left: artRect.right
                         right: parent.right
-                        top: parent.top
-                        bottom: parent.bottom
-                        leftMargin: 16
+                        top: artRect.top
+                        bottom: artRect.bottom
+                        leftMargin: 14
                         rightMargin: 14
                     }
-                    spacing: -10
+                    spacing: 4
 
                     // Artist + Title
                     ColumnLayout {
@@ -358,17 +355,17 @@ AbstractBackgroundWidget {
             // ── Wavy progress bar row ─────────────────────────────────────────
             Item {
                 width: parent.width
-                height: 32
+                height: 36
 
                 RowLayout {
                     anchors {
                         left: parent.left
                         right: parent.right
                         verticalCenter: parent.verticalCenter
-                        leftMargin: root.widgetHeight + 12
-                        rightMargin: 14
+                        leftMargin: 16
+                        rightMargin: 16
                     }
-                    spacing: 6
+                    spacing: 8
 
                     StyledText {
                         text: {
