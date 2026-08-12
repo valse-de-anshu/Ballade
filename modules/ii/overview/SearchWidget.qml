@@ -48,6 +48,18 @@ Item { // Wrapper
     }
 
     Keys.onPressed: event => {
+        // Handle Delete key for highlighted clipboard / search item
+        if (event.key === Qt.Key_Delete) {
+            if (appResults.currentItem && appResults.currentItem.entry) {
+                const deleteAction = appResults.currentItem.entry.actions?.find(action => action.name == Translation.tr("Delete") || action.iconName == "delete");
+                if (deleteAction) {
+                    deleteAction.execute();
+                    event.accepted = true;
+                    return;
+                }
+            }
+        }
+
         // Prevent Esc and Backspace from registering
         if (event.key === Qt.Key_Escape)
             return;

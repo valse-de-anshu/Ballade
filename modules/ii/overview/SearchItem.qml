@@ -108,11 +108,12 @@ RippleButton {
         root.itemExecute()
     }
     Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Delete && event.modifiers === Qt.ShiftModifier) {
-            const deleteAction = root.entry.actions.find(action => action.name == Translation.tr("Delete"));
+        if (event.key === Qt.Key_Delete) {
+            const deleteAction = root.entry?.actions?.find(action => action.name == Translation.tr("Delete") || action.iconName == "delete");
 
             if (deleteAction) {
                 deleteAction.execute()
+                event.accepted = true;
             }
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             root.keyboardDown = true
@@ -267,8 +268,8 @@ RippleButton {
                     implicitHeight: 34
                     implicitWidth: 34
 
-                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
-                    colRipple: Appearance.colors.colSecondaryContainerActive
+                    colBackgroundHover: actionButton.iconName === "delete" ? Appearance.colors.colError : Appearance.colors.colSecondaryContainerHover
+                    colRipple: actionButton.iconName === "delete" ? Appearance.colors.colOnError : Appearance.colors.colSecondaryContainerActive
 
                     contentItem: Item {
                         id: actionContentItem
@@ -279,7 +280,7 @@ RippleButton {
                             sourceComponent: MaterialSymbol {
                                 text: actionButton.iconName || "video_settings"
                                 font.pixelSize: Appearance.font.pixelSize.hugeass
-                                color: root.colForeground
+                                color: (actionButton.iconName === "delete" && actionButton.containsMouse) ? Appearance.colors.colOnError : root.colForeground
                             }
                         }
                         Loader {
@@ -300,6 +301,5 @@ RippleButton {
                 }
             }
         }
-
     }
 }

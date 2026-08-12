@@ -102,6 +102,21 @@ RowLayout {
     }
 
     IconToolbarButton {
+        id: clearClipboardButton
+        visible: root.searchPrefixType === SearchBar.SearchPrefixType.Clipboard
+        Layout.topMargin: 4
+        Layout.bottomMargin: 4
+        onClicked: {
+            Cliphist.wipe();
+        }
+        text: "delete_sweep"
+        colText: hovered ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
+        StyledToolTip {
+            text: Translation.tr("Clear all clipboard history")
+        }
+    }
+
+    IconToolbarButton {
         Layout.topMargin: 4
         Layout.bottomMargin: 4
         onClicked: {
