@@ -384,18 +384,19 @@ AbstractBackgroundWidget {
                         id: trackSlider
                         Layout.fillWidth: true
                         configuration: StyledSlider.Configuration.Wavy
-                        trackWidth: 10
                         highlightColor: Appearance.colors.colPrimary
                         trackColor: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.8)
                         handleColor: Appearance.colors.colPrimary
                         value: {
-                            const len = root.currentPlayer?.length ?? 0
+                            if (trackSlider.pressed) return trackSlider.value
+                            const len = root.currentPlayer?.length ?? 1
                             const pos = root.currentPlayer?.position ?? 0
                             return len > 0 ? Math.max(0, Math.min(1, pos / len)) : 0
                         }
                         onMoved: {
-                            const len = root.currentPlayer?.length ?? 0
-                            if (len > 0) root.currentPlayer?.seek(value * len)
+                            if (root.currentPlayer && root.currentPlayer.length > 0) {
+                                root.currentPlayer.position = value * root.currentPlayer.length
+                            }
                         }
                     }
 
