@@ -43,20 +43,17 @@ Singleton {
         const annotationCommand = `${Config.options.regionSelector.annotation.useSatty ? "satty" : "swappy"} -f -`;
         switch (action) {
             case ScreenshotAction.Action.Copy:
-                if (saveDir === "") {
-                    // not saving the screenshot, just copy to clipboard
-                    return ["bash", "-c", `${cropToStdout} | wl-copy && ${cleanup}`]
-                    break;
-                }
+                const targetDir = saveDir !== "" ? saveDir : `${Directories.pictures}/Screenshots`
                 return [
                     "bash", "-c",
-                    `mkdir -p '${StringUtils.shellSingleQuoteEscape(saveDir)}' && \
+                    `mkdir -p '${StringUtils.shellSingleQuoteEscape(targetDir)}' && \
                     saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
-                    savePath="${saveDir}/$saveFileName" && \
-                    ${cropToStdout} | tee >(wl-copy) > "$savePath" && \
+                    savePath="${targetDir}/$saveFileName" && \
+                    ${cropBase} "$savePath" && \
+                    wl-copy -t text/plain "$savePath" && \
+                    wl-copy -t image/png < "$savePath" && \
                     ${cleanup}`
                 ]
-
                 break;
             case ScreenshotAction.Action.Edit:
                 return ["bash", "-c", `${cropToStdout} | ${annotationCommand} && ${cleanup}`]
