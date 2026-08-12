@@ -53,14 +53,9 @@ AbstractBackgroundWidget {
             anchors.fill: parent
             visible: false
 
-            property string effectiveSource: {
-                let path = GlobalStates.screenLocked && Config.options.background.lockWall !== ""
-                    ? Config.options.background.lockWall
-                    : Config.options.background.wallpaperPath
-                if (!path || path.length === 0 || path.startsWith("--")) return ""
-                if (path.startsWith("file://")) return path
-                return "file://" + path
-            }
+            property string effectiveSource: "file://" + (GlobalStates.screenLocked && Config.options.background.lockWall !== ""
+                ? Config.options.background.lockWall
+                : Config.options.background.wallpaperPath)
 
             Image {
                 id: bgImageA
@@ -171,7 +166,9 @@ AbstractBackgroundWidget {
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.colors.colOnPrimaryContainer
                         opacity: 0.85
-                        text: root.currentQuip.text
+                        text: Config.options.background.widgets.userCard.customText !== "" 
+                              ? Config.options.background.widgets.userCard.customText 
+                              : root.currentQuip.text
                     }
                 } 
 
@@ -267,15 +264,9 @@ AbstractBackgroundWidget {
                 id: avatarImage
                 anchors.fill: parent
                 anchors.margins: 3
-                property string avatarSource: {
-                    let pic = Config.options.profile.avatarPicture || Config.options.profile.avatarPath || ""
-                    if (!pic || pic.length === 0 || pic.endsWith("/")) {
-                        return "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
-                    }
-                    if (pic.startsWith("file://")) return pic
-                    return "file://" + pic
-                }
-                source: avatarSource
+                source: Config.options.profile.avatarPath !== ""
+                    ? "file://" + Config.options.profile.avatarPicture
+                    : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
                 sourceSize.width: avatarImage.width * 2
                 sourceSize.height: avatarImage.height * 2
                 fillMode: Image.PreserveAspectCrop

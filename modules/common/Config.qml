@@ -296,10 +296,11 @@ Singleton {
                     }
 
                     property JsonObject userCard: JsonObject {
-                        property bool enable: false
+                        property bool enable: true
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property string customText: ""
                     }
 
                     property JsonObject images: JsonObject {
@@ -325,6 +326,8 @@ Singleton {
                         property string shape: "Cookie4Sided"
                         property real size: 200
                     }
+
+                    property list<var> customImages: []
 
                     property JsonObject resources: JsonObject {
                         property bool enable: false

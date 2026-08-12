@@ -19,29 +19,29 @@ AbstractBackgroundWidget {
 
     property string mode: "list" // "list" | "edit"
     property var pendingNoteId: null
-    property string editingText: ""
     onModeChanged: GlobalStates.desktopWidgetKeyboardFocus = (mode === "edit")
 
     function toggleFlip() { flipAnim.start() }
 
     function openNewNote() {
         root.pendingNoteId = null
-        root.editingText = ""
+        editTextArea.text = ""
         toggleFlip()
     }
 
     function openNote(note) {
         root.pendingNoteId = note.id
-        root.editingText = note.content
+        editTextArea.text = note.content
         toggleFlip()
     }
 
     function saveAndBack() {
-        if (root.editingText.length > 0) {
+        let text = editTextArea.text
+        if (text.length > 0) {
             if (root.pendingNoteId) {
-                Notes.updateNote(root.pendingNoteId, root.editingText)
+                Notes.updateNote(root.pendingNoteId, text)
             } else {
-                Notes.addNote(root.editingText)
+                Notes.addNote(text)
             }
         }
         toggleFlip()
@@ -119,19 +119,6 @@ AbstractBackgroundWidget {
                     spacing: 6
                     model: Notes.list
 
-                    MouseArea {
-                        anchors.fill: parent
-                        z: -1
-                        propagateComposedEvents: true
-                        onWheel: (event) => {
-                            if (event.angleDelta.y < 0) {
-                                notesListView.flick(0, -500)
-                            } else if (event.angleDelta.y > 0) {
-                                notesListView.flick(0, 500)
-                            }
-                        }
-                    }
-
                     delegate: SwipeDelegate {
                         id: noteCard
                         required property var modelData
@@ -163,37 +150,16 @@ AbstractBackgroundWidget {
                             color: noteCard.bg
                             width: parent.width - Math.abs(noteCard.swipe.position) * 6
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 8
-
-                                StyledText {
-                                    Layout.fillWidth: true
-                                    color: noteCard.fg
-                                    text: noteCard.modelData.content
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
+                            StyledText {
+                                anchors {
+                                    left: parent.left; right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: 12; rightMargin: 12
                                 }
-
-                                Item {
-                                    width: 28
-                                    height: 28
-                                    MaterialSymbol {
-                                        anchors.centerIn: parent
-                                        text: "delete"
-                                        iconSize: 18
-                                        color: noteCard.fg
-                                    }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: (mouse) => {
-                                            mouse.accepted = true
-                                            Notes.deleteNote(noteCard.modelData.id)
-                                        }
-                                    }
-                                }
+                                color: noteCard.fg
+                                text: noteCard.modelData.content
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
                             }
                         }
 
@@ -247,21 +213,6 @@ AbstractBackgroundWidget {
                     Item { Layout.fillWidth: true }
 
                     ToolbarPairedFab {
-                        visible: root.pendingNoteId !== null
-                        Layout.rightMargin: 4
-                        Layout.alignment: Qt.AlignVCenter
-                        baseSize: 38
-                        iconText: "delete"
-                        onClicked: {
-                            if (root.pendingNoteId) {
-                                Notes.deleteNote(root.pendingNoteId)
-                                root.pendingNoteId = null
-                            }
-                            root.toggleFlip()
-                        }
-                    }
-
-                    ToolbarPairedFab {
                         Layout.rightMargin: 4
                         Layout.alignment: Qt.AlignVCenter
                         baseSize: 38
@@ -270,30 +221,20 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                ScrollView {
-                    id: editScrollView
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    clip: true
-                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    radius: Appearance.rounding.normal
+                    color: Appearance.colors.colSurfaceContainerLow
 
                     TextArea {
                         id: editTextArea
-                        width: editScrollView.width
-                        padding: 8
-                        text: root.editingText
-                        wrapMode: Text.Wrap
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        wrapMode: TextArea.Wrap
                         placeholderText: "Type your note..."
                         color: Appearance.colors.colOnLayer0
-                        background: Rectangle {
-                            radius: Appearance.rounding.normal
-                            color: Appearance.colors.colSurfaceContainerLow
-                        }
-                        onTextChanged: {
-                            root.editingText = text
-                            // Keep cursor in view as text grows
-                            cursorPosition = length
-                        }
+                        background: null
                     }
                 }
             }

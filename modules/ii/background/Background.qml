@@ -541,6 +541,22 @@ Variants {
                         wallpaperScale:     1
                     }
                 }
+
+                Repeater {
+                    model: Config.options.background.widgets.customImages
+                    delegate: FadeLoader {
+                        shown: (Config.options.background.screenList.length === 0
+                                || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        sourceComponent: CustomImage {
+                            screenWidth:        bgRoot.screen.width
+                            screenHeight:       bgRoot.screen.height
+                            scaledScreenWidth:  bgRoot.screen.width
+                            scaledScreenHeight: bgRoot.screen.height
+                            wallpaperScale:     1
+                            imageIndex:         index
+                        }
+                    }
+                }
                 FadeLoader {
                     shown: Config.options.background.widgets.calendar.enable
                         && (Config.options.background.screenList.length === 0

@@ -15,9 +15,15 @@ AbstractBackgroundWidget {
     configEntryName: "customImage"
     hoverEnabled: true
 
-    property string imagePath: Config.options.background.widgets.customImage.path ?? ""
+    property int imageIndex: -1
+
+    property var _widgetConfig: root.imageIndex >= 0 
+        ? Config.options.background.widgets.customImages[root.imageIndex]
+        : Config.options.background.widgets.customImage
+
+    property string imagePath: _widgetConfig.path ?? ""
     property bool dropHover: false
-    property real widgetSize: Config.options.background.widgets.customImage.size ?? 200
+    property real widgetSize: _widgetConfig.size ?? 200
 
     implicitWidth: contentItem.implicitWidth
     implicitHeight: contentItem.implicitHeight
@@ -79,7 +85,7 @@ AbstractBackgroundWidget {
             id: shadowShape
             anchors.fill: parent
             color: Appearance.colors.colPrimaryContainer
-            shape: getShape(Config.options.background.widgets.customImage.shape ?? "Cookie4Sided")
+            shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
             visible: false
         }
 
@@ -93,26 +99,26 @@ AbstractBackgroundWidget {
             anchors.fill: parent
             z: 0
             color: Appearance.colors.colPrimaryContainer
-            shape: getShape(Config.options.background.widgets.customImage.shape ?? "Cookie4Sided")
+            shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
 
             layer.enabled: true
             layer.effect: OpacityMask {
                 maskSource: MaterialShape {
                     width: imageShape.width
                     height: imageShape.height
-                    shape: getShape(Config.options.background.widgets.customImage.shape ?? "Cookie4Sided")
+                    shape: getShape(root._widgetConfig.shape ?? "Cookie4Sided")
                 }
             }
 
-            StyledImage {
+            AnimatedImage {
                 anchors.fill: parent
-                source: root.imagePath !== "" ? root.imagePath : ""
+                source: root.imagePath !== "" ? (root.imagePath.startsWith("/") ? "file://" + root.imagePath : root.imagePath) : ""
                 fillMode: Image.PreserveAspectCrop
                 cache: false
-                antialiasing: true
                 sourceSize.width: parent.width
                 sourceSize.height: parent.height
                 visible: root.imagePath !== ""
+                playing: visible
             }
 
             // Placeholder + hover hint
@@ -144,7 +150,15 @@ AbstractBackgroundWidget {
                         var ext = cleanPath.split(".").pop().toLowerCase()
                         var accepted = ["png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif"]
                         if (accepted.indexOf(ext) !== -1) {
-                            Config.options.background.widgets.customImage.path = cleanPath
+                            if (root.imageIndex >= 0) {
+                                var arr = Config.options.background.widgets.customImages
+                                var obj = arr[root.imageIndex]
+                                obj.path = cleanPath
+                                arr[root.imageIndex] = obj
+                                Config.options.background.widgets.customImages = arr
+                            } else {
+                                Config.options.background.widgets.customImage.path = cleanPath
+                            }
                         }
                     }
                     root.dropHover = false
@@ -163,7 +177,15 @@ AbstractBackgroundWidget {
                 root.widgetSize = Math.max(80, newValue)
             }
             onResizeFinished: {
-                Config.options.background.widgets.customImage.size = root.widgetSize
+                if (root.imageIndex >= 0) {
+                    var arr = Config.options.background.widgets.customImages
+                    var obj = arr[root.imageIndex]
+                    obj.size = root.widgetSize
+                    arr[root.imageIndex] = obj
+                    Config.options.background.widgets.customImages = arr
+                } else {
+                    Config.options.background.widgets.customImage.size = root.widgetSize
+                }
             }
         }
     }
