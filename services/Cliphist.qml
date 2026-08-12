@@ -118,12 +118,14 @@ Singleton {
     }
 
     function wipe() {
-        // Only wipe UNPINNED entries so pinned entries remain safe!
-        const unpinned = entries.filter(e => !isPinned(e));
-        if (unpinned.length === 0) return;
-
-        const deleteCmds = unpinned.map(e => `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(e)}' | ${root.cliphistBinary} delete`);
-        Quickshell.execDetached(["bash", "-c", deleteCmds.join(" && ")]);
+        const pinnedList = entries.filter(e => isPinned(e));
+        if (pinnedList.length === 0) {
+            Quickshell.execDetached(["bash", "-c", `${root.cliphistBinary} wipe`]);
+        } else {
+            const reinsertCmds = pinnedList.slice().reverse().map(e => `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(e)}' | ${root.cliphistBinary} decode | wl-copy`);
+            const fullCmd = `${root.cliphistBinary} wipe && ` + reinsertCmds.join(" && ");
+            Quickshell.execDetached(["bash", "-c", fullCmd]);
+        }
         delayedUpdateTimer.restart();
     }
 
