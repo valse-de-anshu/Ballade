@@ -47,8 +47,10 @@ Singleton {
                 return [
                     "bash", "-c",
                     `mkdir -p '${StringUtils.shellSingleQuoteEscape(targetDir)}' && \
+                    targetDir='${StringUtils.shellSingleQuoteEscape(targetDir)}' && \
+                    targetDir="\${targetDir%/}" && \
                     saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
-                    savePath="${targetDir}/$saveFileName" && \
+                    savePath="$targetDir/$saveFileName" && \
                     ${cropBase} "$savePath" && \
                     python3 ~/.local/bin/copy-image-with-path.py "$savePath" && \
                     ${cleanup}`
