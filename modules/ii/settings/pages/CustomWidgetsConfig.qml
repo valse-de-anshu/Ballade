@@ -11,12 +11,10 @@ ContentPage {
     forceWidth: true
 
     ColumnLayout {
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-        }
-        spacing: 12
+        id: mainLayout
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        spacing: 20
 
         ContentSection {
             icon: "imagesmode"
