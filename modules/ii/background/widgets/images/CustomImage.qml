@@ -23,16 +23,26 @@ AbstractBackgroundWidget {
         ? Config.options.background.widgets.customImages[root.imageIndex]
         : Config.options.background.widgets.customImage
 
-    property string imagePath: configEntry?.path ?? ""
-    property bool dropHover: false
-    property real widgetSize: configEntry?.size ?? 200
-    property bool isTransparent: configEntry?.transparent ?? false
+    property real widgetSize: (configEntry && configEntry.size) ? configEntry.size : 200
+    property string shapeName: configEntry?.shape ?? "Cookie4Sided"
+    readonly property bool isFreeShape: shapeName === "Free"
+    readonly property bool isVerticalRect: shapeName === "VerticalRectangle" || shapeName === "Vertical Rectangle"
+    readonly property bool isRectangle: shapeName === "Rectangle"
+    readonly property real imgAspect: {
+        let w = animImg.sourceSize.width
+        let h = animImg.sourceSize.height
+        if (w > 0 && h > 0 && isFinite(w / h)) return w / h
+        return 1.0
+    }
 
     implicitWidth: contentItem.implicitWidth
     implicitHeight: contentItem.implicitHeight
 
     function getShape(name) {
         switch (name) {
+            case "Free":          return MaterialShape.Shape.Square
+            case "VerticalRectangle": return MaterialShape.Shape.Square
+            case "Rectangle":     return MaterialShape.Shape.Square
             case "Circle":        return MaterialShape.Shape.Circle
             case "Square":        return MaterialShape.Shape.Square
             case "Slanted":       return MaterialShape.Shape.Slanted
@@ -74,8 +84,26 @@ AbstractBackgroundWidget {
 
     Item {
         id: contentItem
-        implicitWidth: root.widgetSize
-        implicitHeight: root.widgetSize
+        implicitWidth: {
+            let size = root.widgetSize || 200
+            if (root.isFreeShape) {
+                let asp = root.imgAspect || 1.0
+                return asp <= 1.0 ? Math.max(50, size * asp) : size
+            } else if (root.isVerticalRect) {
+                return Math.max(50, size * 0.75)
+            } else if (root.isRectangle) {
+                return Math.max(50, size * 1.33)
+            }
+            return size
+        }
+        implicitHeight: {
+            let size = root.widgetSize || 200
+            if (root.isFreeShape) {
+                let asp = root.imgAspect || 1.0
+                return asp > 1.0 ? Math.max(50, size / asp) : size
+            }
+            return size
+        }
 
         Behavior on implicitWidth {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
@@ -88,7 +116,7 @@ AbstractBackgroundWidget {
             id: shadowShape
             anchors.fill: parent
             color: root.isTransparent ? "transparent" : Appearance.colors.colPrimaryContainer
-            shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
+            shape: getShape(root.shapeName)
             visible: false
         }
 
@@ -105,21 +133,22 @@ AbstractBackgroundWidget {
             color: root.isTransparent
                 ? (root.imagePath === "" ? ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.7) : "transparent")
                 : Appearance.colors.colPrimaryContainer
-            shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
+            shape: getShape(root.shapeName)
 
-            layer.enabled: true
+            layer.enabled: !(root.isFreeShape || root.isVerticalRect || root.isRectangle)
             layer.effect: OpacityMask {
                 maskSource: MaterialShape {
                     width: imageShape.width
                     height: imageShape.height
-                    shape: getShape(root.configEntry?.shape ?? "Cookie4Sided")
+                    shape: getShape(root.shapeName)
                 }
             }
 
             AnimatedImage {
+                id: animImg
                 anchors.fill: parent
                 source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
-                fillMode: Image.PreserveAspectCrop
+                fillMode: (root.isFreeShape || root.isVerticalRect || root.isRectangle) ? Image.PreserveAspectFit : Image.PreserveAspectCrop
                 cache: false
                 asynchronous: true
                 visible: root.imagePath !== "" && status !== Image.Error

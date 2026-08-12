@@ -26,8 +26,37 @@ Item {
     property bool dropHover: false
     property bool locked: Config.options.background.widgetsLocked
 
-    width: widgetSize
-    height: widgetSize
+    readonly property bool isFreeShape: shapeName === "Free"
+    readonly property bool isVerticalRect: shapeName === "VerticalRectangle" || shapeName === "Vertical Rectangle"
+    readonly property bool isRectangle: shapeName === "Rectangle"
+    readonly property real imgAspect: {
+        let w = animImg.sourceSize.width
+        let h = animImg.sourceSize.height
+        if (w > 0 && h > 0 && isFinite(w / h)) return w / h
+        return 1.0
+    }
+
+    width: {
+        let size = root.widgetSize || 200
+        if (isFreeShape) {
+            let asp = root.imgAspect || 1.0
+            return asp <= 1.0 ? Math.max(50, size * asp) : size
+        } else if (isVerticalRect) {
+            return Math.max(50, size * 0.75)
+        } else if (isRectangle) {
+            return Math.max(50, size * 1.33)
+        }
+        return size
+    }
+
+    height: {
+        let size = root.widgetSize || 200
+        if (isFreeShape) {
+            let asp = root.imgAspect || 1.0
+            return asp > 1.0 ? Math.max(50, size / asp) : size
+        }
+        return size
+    }
 
     x: Math.max(0, Math.min(cfg.x ?? (100 + root.imageIndex * 220), scaledScreenWidth - width))
     y: Math.max(0, Math.min(cfg.y ?? 100, scaledScreenHeight - height))
@@ -37,6 +66,9 @@ Item {
 
     function getShape(name) {
         switch (name) {
+            case "Free":          return MaterialShape.Shape.Square
+            case "VerticalRectangle": return MaterialShape.Shape.Square
+            case "Rectangle":     return MaterialShape.Shape.Square
             case "Circle":        return MaterialShape.Shape.Circle
             case "Square":        return MaterialShape.Shape.Square
             case "Slanted":       return MaterialShape.Shape.Slanted
@@ -124,7 +156,7 @@ Item {
             : Appearance.colors.colPrimaryContainer
         shape: root.getShape(root.shapeName)
 
-        layer.enabled: true
+        layer.enabled: !(root.isFreeShape || root.isVerticalRect || root.isRectangle)
         layer.effect: OpacityMask {
             maskSource: MaterialShape {
                 width: imageShape.width
@@ -135,9 +167,10 @@ Item {
 
         // GIF / image
         AnimatedImage {
+            id: animImg
             anchors.fill: parent
             source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
-            fillMode: Image.PreserveAspectCrop
+            fillMode: (root.isFreeShape || root.isVerticalRect || root.isRectangle) ? Image.PreserveAspectFit : Image.PreserveAspectCrop
             cache: false
             asynchronous: true
             visible: root.imagePath !== "" && status !== Image.Error

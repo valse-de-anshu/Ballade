@@ -19,6 +19,8 @@ Flow {
 
     function getShape(name) {
         switch (name) {
+            case "Free":          return MaterialShape.Shape.Square
+            case "VerticalRectangle": return MaterialShape.Shape.Square
             case "Circle":        return MaterialShape.Shape.Circle
             case "Square":        return MaterialShape.Shape.Square
             case "Slanted":       return MaterialShape.Shape.Slanted
