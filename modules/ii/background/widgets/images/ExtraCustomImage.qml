@@ -58,8 +58,8 @@ Item {
         return size
     }
 
-    x: Math.max(0, Math.min(cfg.x ?? (100 + root.imageIndex * 220), scaledScreenWidth - width))
-    y: Math.max(0, Math.min(cfg.y ?? 100, scaledScreenHeight - height))
+    x: Math.max(-width + 30, Math.min(cfg.x ?? (100 + root.imageIndex * 220), scaledScreenWidth - 30))
+    y: Math.max(-height + 30, Math.min(cfg.y ?? 100, scaledScreenHeight - 30))
 
     Behavior on x { enabled: !dragArea.drag.active; NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
     Behavior on y { enabled: !dragArea.drag.active; NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
@@ -122,12 +122,13 @@ Item {
     MouseArea {
         id: dragArea
         anchors.fill: parent
+        hoverEnabled: true
         drag.target: root.locked ? undefined : root
         drag.axis: Drag.XAndYAxis
-        drag.minimumX: 0
-        drag.maximumX: root.scaledScreenWidth - root.width
-        drag.minimumY: 0
-        drag.maximumY: root.scaledScreenHeight - root.height
+        drag.minimumX: -root.width + 30
+        drag.maximumX: root.scaledScreenWidth - 30
+        drag.minimumY: -root.height + 30
+        drag.maximumY: root.scaledScreenHeight - 30
         cursorShape: root.locked ? Qt.ArrowCursor : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
         onReleased: root.savePosition()
     }
@@ -211,43 +212,21 @@ Item {
         }
     }
 
-    // Resize handle (bottom-right corner)
-    Rectangle {
-        visible: !root.locked
-        width: 18; height: 18
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        color: "transparent"
+    // Resize handle (bottom-right corner) - visible on hover only
+    ResizeHandler {
+        anchorItem: imageShape
+        hoverActive: dragArea.containsMouse
+        locked: Config.options.background.widgetsLocked
+        currentWidth: (root.widgetSize && !isNaN(root.widgetSize)) ? root.widgetSize : 200
+        resizeMode: "diagonal"
         z: 10
-
-        MaterialSymbol {
-            anchors.centerIn: parent
-            iconSize: 14
-            text: "open_in_full"
-            color: Appearance.colors.colOnPrimaryContainer
-            opacity: 0.7
+        onResized: (newValue) => {
+            root.widgetSize = Math.max(80, newValue)
         }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.SizeFDiagCursor
-            property real startX: 0
-            property real startSize: 0
-            onPressed: (mouse) => {
-                startX = mouse.x
-                startSize = root.widgetSize
-            }
-            onMouseXChanged: (mouse) => {
-                if (pressed) {
-                    var delta = mouse.x - startX
-                    root.widgetSize = Math.max(80, startSize + delta)
-                }
-            }
-            onReleased: {
-                var arr = Config.options.background.widgets.customImages.slice()
-                arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { size: root.widgetSize })
-                Config.options.background.widgets.customImages = arr
-            }
+        onResizeFinished: {
+            var arr = Config.options.background.widgets.customImages.slice()
+            arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { size: root.widgetSize })
+            Config.options.background.widgets.customImages = arr
         }
     }
 }

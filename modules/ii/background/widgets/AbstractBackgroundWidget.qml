@@ -18,8 +18,8 @@ AbstractWidget {
     property bool visibleWhenLocked: Config.options.lock.showWidgets
     property var configEntry: Config.options.background.widgets[configEntryName]
     property string placementStrategy: configEntry.placementStrategy
-    property real targetX: Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width))
-    property real targetY : Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height))
+    property real targetX: Math.max(-width + 30, Math.min(configEntry.x, scaledScreenWidth - 30))
+    property real targetY: Math.max(-height + 30, Math.min(configEntry.y, scaledScreenHeight - 30))
     x: targetX
     y: targetY
     visible: opacity > 0
@@ -42,8 +42,8 @@ AbstractWidget {
         configEntry.placementStrategy = "free";
         configEntry.x = root.x;
         configEntry.y = root.y;
-        root.targetX = Qt.binding(() => Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width)));
-        root.targetY = Qt.binding(() => Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height)));
+        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(configEntry.x, scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(configEntry.y, scaledScreenHeight - 30)));
         root.restoreXYBinding();
     }
 
