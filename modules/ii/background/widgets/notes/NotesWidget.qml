@@ -26,13 +26,17 @@ AbstractBackgroundWidget {
     function openNewNote() {
         root.pendingNoteId = null
         editTextArea.text = ""
+        if (editFlickable) editFlickable.contentY = 0
         toggleFlip()
+        Qt.callLater(() => editTextArea.forceActiveFocus())
     }
 
     function openNote(note) {
         root.pendingNoteId = note.id
         editTextArea.text = note.content
+        if (editFlickable) editFlickable.contentY = 0
         toggleFlip()
+        Qt.callLater(() => editTextArea.forceActiveFocus())
     }
 
     function saveAndBack() {
@@ -222,19 +226,39 @@ AbstractBackgroundWidget {
                 }
 
                 Rectangle {
+                    id: editBox
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: Appearance.rounding.normal
                     color: Appearance.colors.colSurfaceContainerLow
+                    clip: true
 
-                    TextArea {
-                        id: editTextArea
+                    Flickable {
+                        id: editFlickable
                         anchors.fill: parent
                         anchors.margins: 8
-                        wrapMode: TextArea.Wrap
-                        placeholderText: "Type your note..."
-                        color: Appearance.colors.colOnLayer0
-                        background: null
+                        contentWidth: width
+                        contentHeight: Math.max(height, editTextArea.implicitHeight + 40)
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                editTextArea.forceActiveFocus()
+                                editTextArea.cursorPosition = editTextArea.text.length
+                            }
+                        }
+
+                        TextArea {
+                            id: editTextArea
+                            width: editFlickable.width
+                            wrapMode: TextArea.Wrap
+                            placeholderText: "Type your note..."
+                            color: Appearance.colors.colOnLayer0
+                            background: null
+                            selectByMouse: true
+                        }
                     }
                 }
             }
