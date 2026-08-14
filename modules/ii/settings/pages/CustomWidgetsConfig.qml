@@ -72,7 +72,7 @@ ContentPage {
 
                         ConfigSwitch {
                             Layout.fillWidth: true
-                            icon: "opacity"
+                            buttonIcon: "opacity"
                             text: Translation.tr("Add transparency")
                             checked: modelData.transparent ?? false
                             onCheckedChanged: {
@@ -86,7 +86,7 @@ ContentPage {
 
                         ConfigSwitch {
                             Layout.fillWidth: true
-                            icon: "loop"
+                            buttonIcon: "loop"
                             text: Translation.tr("Infinite Loop (Play continuously)")
                             checked: modelData.infiniteLoop ?? false
                             onCheckedChanged: {
@@ -123,8 +123,7 @@ ContentPage {
                                 "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
                                 "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
                                 "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
-                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart",
-                                "Hexagon", "Octagon", "Shield", "Star", "Cross"
+                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
                             ]
                             onSelected: newValue => {
                                 var arr = Config.options.background.widgets.customImages.slice()
@@ -223,6 +222,154 @@ ContentPage {
                             color: (Config.options.background.widgets.userCard.customText?.length ?? 0) >= 40
                                    ? Appearance.colors.colError
                                    : Appearance.colors.colSubtext
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Section 3: Wall Shape (HyprPicker Shape & Animation Specs) ──
+        ContentSection {
+            icon: "wallpaper"
+            shape: MaterialShape.Shape.Slanted
+            title: Translation.tr("Wall Shape")
+
+            GroupedList {
+                Layout.fillWidth: true
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: "Shape & Animation Specifications for HyprPicker Wallpaper Selector:"
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colPrimary
+                    }
+
+                    // Shape 1: Slanted Cyber
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        RowLayout {
+                            spacing: 8
+                            StyledText {
+                                text: "1. Cinematic Slanted (Active)"
+                                font.weight: Font.Bold
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colOnSurface
+                            }
+                            Rectangle {
+                                radius: 4
+                                height: 18
+                                width: 50
+                                color: Appearance.colors.colPrimaryContainer
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: "Default"
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    color: Appearance.colors.colOnPrimaryContainer
+                                }
+                            }
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "• Geometry: Dynamic -12° shear angle with 18px rounded corners.\n• Animation: C++ StrictlyEnforceRange centering with 160ms OutCubic GPU distance scaling (1.0 center focus → 0.58 edge taper)."
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
+
+                    // Shape 2: Organic Superellipse (Cookie 4-Sided)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        StyledText {
+                            text: "2. Organic Superellipse (Cookie 4-Sided)"
+                            font.weight: Font.Bold
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSurface
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "• Geometry: Material You 4-sided continuous squircle with 28px smoothed curvature.\n• Animation: Subtle breathing scale pulse on active item with floating ambient shadow elevation."
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
+
+                    // Shape 3: Cathedral Arch
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        StyledText {
+                            text: "3. Cathedral Arch (Gothic Dome)"
+                            font.weight: Font.Bold
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSurface
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "• Geometry: Semicircular dome top arch with clean rectangular base.\n• Animation: Vertical parallax rise on hover (+8px Y lift) with smoothstep edge falloff."
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
+
+                    // Shape 4: Starburst Scallop (Cookie 7-Sided)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        StyledText {
+                            text: "4. Starburst Scallop (Cookie 7-Sided)"
+                            font.weight: Font.Bold
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSurface
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "• Geometry: Multi-petal organic rounded flower scallop with 7-point symmetry.\n• Animation: Micro-rotational settle (±1.5°) on selection with instant thumbnail caching."
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
+
+                    // Shape 5: Cyber Diamond (Puffy Diamond)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        StyledText {
+                            text: "5. Cyber Diamond (Puffy Diamond)"
+                            font.weight: Font.Bold
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSurface
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "• Geometry: 45° rotated rounded rhombus with curved vertices and neon edge highlight.\n• Animation: Horizontal magnetic snapping with 180ms easeOutBack focal transition."
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
                         }
                     }
                 }
