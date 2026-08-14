@@ -245,29 +245,19 @@ ContentPage {
                     }
                     options: [
                         {
-                            displayName: Translation.tr("Slanted"),
+                            displayName: Translation.tr("Cyberpunk Slanted"),
                             icon: "category",
                             value: "slanted"
                         },
                         {
-                            displayName: Translation.tr("Superellipse"),
+                            displayName: Translation.tr("Modern Rounded"),
                             icon: "crop_square",
-                            value: "superellipse"
+                            value: "rounded"
                         },
                         {
-                            displayName: Translation.tr("Arch"),
-                            icon: "door_front",
-                            value: "arch"
-                        },
-                        {
-                            displayName: Translation.tr("Starburst"),
-                            icon: "star",
-                            value: "starburst"
-                        },
-                        {
-                            displayName: Translation.tr("Diamond"),
-                            icon: "diamond",
-                            value: "diamond"
+                            displayName: Translation.tr("Cyberpunk Panoramic"),
+                            icon: "panorama_wide_angle",
+                            value: "panoramic"
                         }
                     ]
                 }

@@ -38,13 +38,9 @@ var _flower = null
 var _puffy = null
 var _puffyDiamond = null
 var _pixelCircle = null
+var _pixelTriangle = null
 var _bun = null
 var _heart = null
-var _hexagon = null
-var _octagon = null
-var _shield = null
-var _star = null
-var _cross = null
 
 var cornerRound15 = new CornerRounding.CornerRounding(0.15)
 var cornerRound20 = new CornerRounding.CornerRounding(0.2)
@@ -288,84 +284,6 @@ function getHeart() {
     if (_heart !== null) return _heart;
     _heart = heart();
     return _heart;
-}
-
-function getHexagon() {
-    if (_hexagon !== null) return _hexagon;
-    _hexagon = hexagon();
-    return _hexagon;
-}
-
-function getOctagon() {
-    if (_octagon !== null) return _octagon;
-    _octagon = octagon();
-    return _octagon;
-}
-
-function getShield() {
-    if (_shield !== null) return _shield;
-    _shield = shield();
-    return _shield;
-}
-
-function getStar() {
-    if (_star !== null) return _star;
-    _star = star();
-    return _star;
-}
-
-function getCross() {
-    if (_cross !== null) return _cross;
-    _cross = cross();
-    return _cross;
-}
-
-function hexagon() {
-    return RoundedPolygon.RoundedPolygon.circle(6, cornerRound30).normalized();
-}
-
-function octagon() {
-    return RoundedPolygon.RoundedPolygon.circle(8, cornerRound20).normalized();
-}
-
-function shield() {
-    return customPolygon([
-        new PointNRound(new Offset.Offset(1.0, 0.0), cornerRound20),
-        new PointNRound(new Offset.Offset(0.0, 0.0), cornerRound20),
-        new PointNRound(new Offset.Offset(0.0, 0.65), cornerRound30),
-        new PointNRound(new Offset.Offset(0.5, 1.0), cornerRound50),
-        new PointNRound(new Offset.Offset(1.0, 0.65), cornerRound30),
-    ], 1).normalized();
-}
-
-function star() {
-    return customPolygon([
-        new PointNRound(new Offset.Offset(0.5, 0.0), cornerRound20),
-        new PointNRound(new Offset.Offset(0.65, 0.35), cornerRound15),
-        new PointNRound(new Offset.Offset(1.0, 0.5), cornerRound20),
-        new PointNRound(new Offset.Offset(0.65, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.5, 1.0), cornerRound20),
-        new PointNRound(new Offset.Offset(0.35, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.0, 0.5), cornerRound20),
-        new PointNRound(new Offset.Offset(0.35, 0.35), cornerRound15),
-    ], 1).normalized();
-}
-
-function cross() {
-    return customPolygon([
-        new PointNRound(new Offset.Offset(0.35, 0.0), cornerRound15),
-        new PointNRound(new Offset.Offset(0.65, 0.0), cornerRound15),
-        new PointNRound(new Offset.Offset(0.65, 0.35), cornerRound15),
-        new PointNRound(new Offset.Offset(1.0, 0.35), cornerRound15),
-        new PointNRound(new Offset.Offset(1.0, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.65, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.65, 1.0), cornerRound15),
-        new PointNRound(new Offset.Offset(0.35, 1.0), cornerRound15),
-        new PointNRound(new Offset.Offset(0.35, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.0, 0.65), cornerRound15),
-        new PointNRound(new Offset.Offset(0.0, 0.35), cornerRound15),
-        new PointNRound(new Offset.Offset(0.35, 0.35), cornerRound15),
-    ], 1).normalized();
 }
 
 function circle() {

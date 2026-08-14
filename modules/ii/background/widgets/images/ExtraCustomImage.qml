@@ -136,11 +136,6 @@ Item {
             case "PixelTriangle": return MaterialShape.Shape.PixelTriangle
             case "Bun":           return MaterialShape.Shape.Bun
             case "Heart":         return MaterialShape.Shape.Heart
-            case "Hexagon":       return MaterialShape.Shape.Hexagon
-            case "Octagon":       return MaterialShape.Shape.Octagon
-            case "Shield":        return MaterialShape.Shape.Shield
-            case "Star":          return MaterialShape.Shape.Star
-            case "Cross":         return MaterialShape.Shape.Cross
             default:              return MaterialShape.Shape.Cookie4Sided
         }
     }

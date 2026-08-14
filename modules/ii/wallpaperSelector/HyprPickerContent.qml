@@ -5,6 +5,8 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.modules.common
+import qs.modules.common.widgets
+import qs.modules.common.widgets.shapes
 import qs.modules.common.functions
 
 // Dock-style wallpaper picker — hyprquickpaper UI embedded in ballade
@@ -38,8 +40,7 @@ Item {
     property int    baseSpacing   : 18
     property int    visibleTiles  : 5
     property string activeShape   : Config.options.wallpaperSelector.shape || "slanted"
-    property real   slantFactor   : activeShape === "slanted" ? -0.12 : 0.0
-    property int    cornerRadius  : activeShape === "superellipse" ? 34 : (activeShape === "arch" ? 28 : 20)
+    readonly property bool isPanoramic: activeShape === "panoramic"
     // ------------------
 
     // Thumbnail cache — reuse hyprquickpaper's own cache (simple filenames)
@@ -78,14 +79,33 @@ Item {
         clip: false
         cacheBuffer: 600
 
-        property real tileSlotWidth: Math.round(width / Math.max(1, root.visibleTiles))
+        property bool isPanoramic  : root.activeShape === "panoramic"
+        property real tileSlotWidth : isPanoramic
+                                      ? Math.max(8, width / Math.max(1, folderModel.count))
+                                      : Math.round(width / 4.5)
         property int  selectedIndex : 0
+        property bool _initializedIndex: false
+
+        Connections {
+            target: folderModel
+            function onCountChanged() {
+                if (!_initializedIndex && folderModel.count > 0) {
+                    _initializedIndex = true;
+                    list.selectedIndex = Math.max(0, Math.floor((folderModel.count - 1) / 2));
+                }
+            }
+        }
+
+        // For Panoramic, do NOT scroll (fit all on screen). For others, allow scrolling to center.
+        leftMargin: isPanoramic ? 0 : width / 2
+        rightMargin: isPanoramic ? 0 : width / 2
 
         currentIndex: selectedIndex
         preferredHighlightBegin: (width - tileSlotWidth) / 2
         preferredHighlightEnd:   (width + tileSlotWidth) / 2
-        highlightRangeMode:      ListView.StrictlyEnforceRange
+        highlightRangeMode:      isPanoramic ? ListView.NoHighlightRange : ListView.StrictlyEnforceRange
         highlightMoveDuration:   180
+        interactive:             !isPanoramic
 
         function clampIndex(i) { return Math.max(0, Math.min(i, count - 1)) }
 
@@ -105,38 +125,63 @@ Item {
             height: list.height
             property bool active: index === list.selectedIndex
             property int distFromSelected: Math.abs(index - list.selectedIndex)
+            property int deltaIndex: index - list.selectedIndex
 
-            z: active ? 100 : Math.max(1, 50 - distFromSelected)
+            // ONLY calculate continuous physical distance for NON-PANORAMIC (scrolling modes)
+            property real itemCenter: x + width / 2
+            property real viewCenter: list.contentX + list.width / 2
+            property real continuousDelta: list.isPanoramic ? deltaIndex : ((itemCenter - viewCenter) / list.tileSlotWidth)
+            property real distFromCenter: Math.abs(continuousDelta)
+
+            z: 100 - Math.round(distFromCenter * 10)
 
             property real targetScale: {
-                if (distFromSelected === 0) return 1.0;
-                if (distFromSelected === 1) return 0.82;
-                if (distFromSelected === 2) return 0.68;
-                return 0.58;
+                if (list.isPanoramic) {
+                    if (distFromSelected === 0) return 1.15;
+                    return Math.max(0.50, 0.85 - ((distFromSelected - 1) * 0.03));
+                } else {
+                    return 0.88 + Math.max(0, (1.0 - distFromCenter)) * 0.20;
+                }
             }
 
-            property real targetOpacity: {
-                if (distFromSelected === 0) return 1.0;
-                if (distFromSelected === 1) return 0.90;
-                if (distFromSelected === 2) return 0.70;
-                return 0.45;
+            property real targetY: {
+                if (list.isPanoramic) {
+                    if (distFromSelected === 0) return -40;
+                    return Math.min(100, (distFromSelected - 1) * 5);
+                } else {
+                    return -20 * Math.max(0, (1.0 - distFromCenter));
+                }
             }
+
+            property real targetXOffset: {
+                if (list.isPanoramic) {
+                    if (distFromSelected === 0) return 0;
+                    let push = 160;
+                    return deltaIndex < 0 ? -push : push;
+                }
+                return 0;
+            }
+
+            // Keep opaque for all 3 modes
+            property real targetOpacity: 1.0
+
+            Behavior on targetScale { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            Behavior on targetY { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            Behavior on targetXOffset { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
             Item {
                 id: content
-                anchors.centerIn: parent
-                width: parent.width - root.baseSpacing
+                x: parent.width / 2 - width / 2 + tile.targetXOffset
+                y: parent.height / 2 - height / 2 + tile.targetY
+                
+                // For panoramic, visual card is large and overlaps tightly packed slots
+                width: list.isPanoramic ? 320 : parent.width - root.baseSpacing
                 height: parent.height * 0.94
+                
                 scale: tile.targetScale
                 opacity: tile.targetOpacity
-                transform: Shear { xFactor: root.slantFactor }
+                transform: Shear { xFactor: root.activeShape === "slanted" ? -0.12 : 0.0 }
 
-                Behavior on scale {
-                    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-                }
-                Behavior on opacity {
-                    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-                }
 
                 Item {
                     id: imageContainer
@@ -148,7 +193,7 @@ Item {
                         maskSource: Rectangle {
                             width: imageContainer.width
                             height: imageContainer.height
-                            radius: root.cornerRadius
+                            radius: 20
                         }
                     }
 
@@ -183,39 +228,27 @@ Item {
                     }
                 }
 
-                // Active Futuristic Border
+                // Active Border Highlighter (Clean 20px radius card border, zero bleed!)
                 Rectangle {
+                    id: activeHighlight
                     z: 10
                     anchors.fill: parent
-                    radius: root.cornerRadius
+                    radius: 20
                     visible: tile.active
                     color: "transparent"
-                    border.width: 3
+                    border.width: 3.5
                     border.color: Appearance.colors.colPrimary
                 }
 
-                // Inner Accent Line on top
-                Rectangle {
-                    z: 11
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 4
-                    height: 3
-                    radius: 2
-                    visible: tile.active
-                    color: "#CCFFFFFF"
-                }
-
-                // Filename chip at bottom — only on active tile
+                // Filename chip at bottom — only on active card
                 Rectangle {
                     z: 12
                     anchors.bottom: parent.bottom
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottomMargin: 14
-                    width: Math.min(parent.width - 20, nameLabel.implicitWidth + 28)
+                    width: Math.min(parent.width - 16, nameLabel.implicitWidth + 28)
                     height: 30
-                    radius: 10
+                    radius: 15
                     color: "#E0101014"
                     border.width: 1
                     border.color: "#40FFFFFF"
@@ -233,7 +266,7 @@ Item {
                         elide: Text.ElideMiddle
                         width: parent.width - 16
                         horizontalAlignment: Text.AlignHCenter
-                        transform: Shear { xFactor: -root.slantFactor } // Keep text straight & readable
+                        transform: Shear { xFactor: root.activeShape === "slanted" ? 0.12 : 0.0 }
                     }
                 }
             }
