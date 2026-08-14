@@ -13,40 +13,75 @@ import Quickshell.Hyprland
 Scope {
     id: root
 
+    property bool reallyOpen: false
+
+    Connections {
+        target: GlobalStates
+        function onWallpaperSelectorOpenChanged() {
+            if (GlobalStates.wallpaperSelectorOpen) {
+                closeAnimTimer.stop()
+                root.reallyOpen = true
+            } else {
+                closeAnimTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: closeAnimTimer
+        interval: 300
+        onTriggered: root.reallyOpen = false
+    }
+
     Loader {
         id: wallpaperSelectorLoader
-        active: GlobalStates.wallpaperSelectorOpen
+        active: root.reallyOpen
 
         sourceComponent: PanelWindow {
             id: panelWindow
-            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
-            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
 
+            // Full-screen transparent overlay — same approach as hyprquickpaper
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell:wallpaperSelector"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
             color: "transparent"
 
             anchors.top: true
-            margins {
-                top: Config?.options.bar.vertical ? Appearance.sizes.hyprlandGapsOut : Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut
-            }
+            anchors.bottom: true
+            anchors.left: true
+            anchors.right: true
 
-            mask: Region {
-                item: content
-            }
-
-            implicitHeight: Appearance.sizes.wallpaperSelectorHeight
-            implicitWidth: Appearance.sizes.wallpaperSelectorWidth
+            implicitWidth: Screen.width
+            implicitHeight: Screen.height
 
             Component.onCompleted: {
+                GlobalFocusGrab.addDismissable(panelWindow)
+                picker.forceActiveFocus()
+            }
+            Component.onDestruction: {
+                GlobalFocusGrab.removeDismissable(panelWindow)
+            }
+            Connections {
+                target: GlobalFocusGrab
+                function onDismissed() {
+                    GlobalStates.wallpaperSelectorOpen = false
+                }
             }
 
-            WallpaperSelectorContent {
-                id: content
-                anchors {
-                    fill: parent
+            Item {
+                id: fadeItem
+                anchors.fill: parent
+                opacity: GlobalStates.wallpaperSelectorOpen ? 1.0 : 0.0
+                Behavior on opacity {
+                    NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+                }
+
+                HyprPickerContent {
+                    id: picker
+                    anchors.fill: parent
+                    focus: true
+                    onDismissed: GlobalStates.wallpaperSelectorOpen = false
                 }
             }
         }
@@ -54,37 +89,27 @@ Scope {
 
     function toggleWallpaperSelector() {
         if (Config.options.wallpaperSelector.useSystemFileDialog) {
-            Wallpapers.openFallbackPicker(Appearance.m3colors.darkmode);
-            return;
+            Wallpapers.openFallbackPicker(Appearance.m3colors.darkmode)
+            return
         }
         GlobalStates.wallpaperSelectorOpen = !GlobalStates.wallpaperSelectorOpen
     }
 
     IpcHandler {
         target: "wallpaperSelector"
-
-        function toggle(): void {
-            root.toggleWallpaperSelector();
-        }
-
-        function random(): void {
-            Wallpapers.randomFromCurrentFolder();
-        }
+        function toggle(): void { root.toggleWallpaperSelector() }
+        function random(): void { Wallpapers.randomFromCurrentFolder() }
     }
 
-    GlobalShortcut {
+    CompositorGlobalShortcut {
         name: "wallpaperSelectorToggle"
         description: "Toggle wallpaper selector"
-        onPressed: {
-            root.toggleWallpaperSelector();
-        }
+        onPressed: root.toggleWallpaperSelector()
     }
 
-    GlobalShortcut {
+    CompositorGlobalShortcut {
         name: "wallpaperSelectorRandom"
         description: "Select random wallpaper in current folder"
-        onPressed: {
-            Wallpapers.randomFromCurrentFolder();
-        }
+        onPressed: Wallpapers.randomFromCurrentFolder()
     }
 }

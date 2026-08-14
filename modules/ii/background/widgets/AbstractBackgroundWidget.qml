@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.common.widgets.widgetCanvas
@@ -64,6 +65,10 @@ AbstractWidget {
     Connections {
         target: Config
         function onReadyChanged() { refreshPlacementIfNeeded() }
+    }
+    Connections {
+        target: Wallpapers
+        function onChanged() { refreshPlacementIfNeeded() }
     }
     function refreshPlacementIfNeeded() {
         if (!Config.ready) return;

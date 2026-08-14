@@ -141,16 +141,17 @@ Slider {
                 property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : root.handleMargins
                 x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
                 width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
-                height: root.height
+                height: root.trackWidth * 6
                 active: root.wavy
                 sourceComponent: WavyLine {
                     id: wavyFill
                     frequency: root.waveFrequency
                     fullLength: root.width
                     color: root.highlightColor
-                    amplitudeMultiplier: root.wavy ? 0.5 : 0
+                    amplitudeMultiplier: root.wavy ? 1.5 : 0
                     width: parent.width
-                    height: root.trackWidth
+                    height: parent.height
+                    lineWidth: 1.5
                     Connections {
                         target: root
                         function onValueChanged() { wavyFill.requestPaint(); }

@@ -14,15 +14,9 @@ MouseArea {
     property bool snapEnabled: true
     readonly property bool dragging: drag.active
 
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    acceptedButtons: Qt.LeftButton
     drag.target: draggable ? dragProxy : undefined
     cursorShape: (draggable && containsPress) ? Qt.ClosedHandCursor : draggable ? Qt.OpenHandCursor : Qt.ArrowCursor
-
-    onClicked: (mouse) => {
-        if (mouse.button === Qt.RightButton) {
-            Config.options.background.widgetsLocked = !Config.options.background.widgetsLocked
-        }
-    }
 
     function center() {
         root.x = (root.parent.width - root.width) / 2
@@ -31,6 +25,12 @@ MouseArea {
 
     function snap(value) {
         return Math.round(value / root.gridSize) * root.gridSize
+    }
+
+    property var cachedCanvas: null
+    function getCanvas() {
+        if (!cachedCanvas) cachedCanvas = findCanvas(root.parent)
+        return cachedCanvas
     }
 
     function findCanvas(item) {
@@ -43,7 +43,7 @@ MouseArea {
     }
 
     function updateCenterHighlight() {
-        var canvas = findCanvas(root.parent)
+        var canvas = getCanvas()
         if (!canvas) return
         var widgetCenterX = dragProxy.x + root.width / 2
         var widgetCenterY = dragProxy.y + root.height / 2
@@ -79,7 +79,7 @@ MouseArea {
     }
 
     onDraggingChanged: {
-        var canvas = findCanvas(root.parent)
+        var canvas = getCanvas()
         if (canvas) canvas.setDragging(dragging)
 
         if (!dragging && canvas) {

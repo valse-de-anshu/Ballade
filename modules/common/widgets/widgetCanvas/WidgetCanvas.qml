@@ -12,6 +12,7 @@ MouseArea {
     property bool centerYActive: false
 
     function setDragging(active) {
+        console.log("[WidgetCanvas] setDragging:", active)
         root.showGrid = active
         if (!active) {
             root.centerXActive = false
@@ -20,31 +21,39 @@ MouseArea {
     }
 
     function setCenterActive(xActive, yActive) {
+        // console.log("[WidgetCanvas] setCenterActive:", xActive, yActive)
         root.centerXActive = xActive
         root.centerYActive = yActive
     }
 
-    Repeater {
-        model: root.gridVisible ? Math.ceil(root.width / root.gridSize) : 0
-        delegate: Rectangle {
-            required property int index
-            z: 997
-            x: index * root.gridSize
-            width: 1
-            height: root.height
-            color: Appearance.colors.colLayer0Border
-        }
-    }
+    Item {
+        anchors.fill: parent
+        visible: opacity > 0
+        opacity: root.gridVisible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
 
-    Repeater {
-        model: root.gridVisible ? Math.ceil(root.height / root.gridSize) : 0
-        delegate: Rectangle {
-            required property int index
-            z: 997
-            y: index * root.gridSize
-            width: root.width
-            height: 1
-            color: Appearance.colors.colLayer0Border
+        Repeater {
+            model: Math.ceil(root.width / root.gridSize)
+            delegate: Rectangle {
+                required property int index
+                z: 997
+                x: index * root.gridSize
+                width: 1
+                height: root.height
+                color: Appearance.colors.colLayer0Border
+            }
+        }
+
+        Repeater {
+            model: Math.ceil(root.height / root.gridSize)
+            delegate: Rectangle {
+                required property int index
+                z: 997
+                y: index * root.gridSize
+                width: root.width
+                height: 1
+                color: Appearance.colors.colLayer0Border
+            }
         }
     }
 
@@ -115,6 +124,7 @@ MouseArea {
     }
 
     function flashLines(verticalPositions, horizontalPositions) {
+        console.log("[WidgetCanvas] flashLines:", verticalPositions, horizontalPositions)
         for (let i = 0; i < verticalPositions.length; i++)
             flashLineComponent.createObject(root, { vertical: true, linePos: verticalPositions[i] })
         for (let i = 0; i < horizontalPositions.length; i++)

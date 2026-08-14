@@ -28,19 +28,40 @@ Singleton {
     property list<string> wallpapers: [] // List of absolute file paths (without file://)
     readonly property bool thumbnailGenerationRunning: thumbgenProc.running
     property real thumbnailGenerationProgress: 0
+    property string previewPath: ""  // Set during arrow navigation; empty by default
+    property string confirmedPath: ""  // Holds confirmed path until config catches up
 
     signal changed()
     signal thumbnailGenerated(directory: string)
     signal thumbnailGeneratedFile(filePath: string)
 
     function load () {} // For forcing initialization
+
+    function startPreview(path) {
+        if (!path || path.length === 0) return;
+        root.previewPath = path;
+    }
+
+    function stopPreview() {
+        root.previewPath = "";
+    }
+
+    // Executions
+    Process {
+        id: applyProc
+    }
     
-    function openFallbackPicker(darkMode = Appearance.m3colors.darkmode) {
-        Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", darkMode ? "dark" : "light"]);
+    function openFallbackPicker(darkMode = Appearance.m3colors.darkmode, startDir = "") {
+        const args = [Directories.wallpaperSwitchScriptPath, "--mode", darkMode ? "dark" : "light"];
+        if (startDir !== "") {
+            args.push("--start-dir", startDir);
+        }
+        Quickshell.execDetached(args);
     }
 
     function apply(path, darkMode = Appearance.m3colors.darkmode) {
         if (!path || path.length === 0) return;
+        root.confirmedPath = path;
         Quickshell.execDetached([Directories.wallpaperSwitchScriptPath, "--mode", darkMode ? "dark" : "light", "--image", path]);
         root.changed()
     }
@@ -49,9 +70,11 @@ Singleton {
         id: selectProc
         property string filePath: ""
         property bool darkMode: Appearance.m3colors.darkmode
-        function select(filePath, darkMode = Appearance.m3colors.darkmode) {
+        property var onFileSelected: null
+        function select(filePath, darkMode = Appearance.m3colors.darkmode, onFileSelected = null) {
             selectProc.filePath = filePath
             selectProc.darkMode = darkMode
+            selectProc.onFileSelected = onFileSelected
             selectProc.exec(["test", "-d", FileUtils.trimFileProtocol(filePath)])
         }
         onExited: (exitCode, exitStatus) => {
@@ -59,12 +82,16 @@ Singleton {
                 setDirectory(selectProc.filePath);
                 return;
             }
-            root.apply(selectProc.filePath, selectProc.darkMode);
+            if (selectProc.onFileSelected) {
+                selectProc.onFileSelected(selectProc.filePath);
+            } else {
+                root.apply(selectProc.filePath, selectProc.darkMode);
+            }
         }
     }
 
-    function select(filePath, darkMode = Appearance.m3colors.darkmode) {
-        selectProc.select(filePath, darkMode);
+    function select(filePath, darkMode = Appearance.m3colors.darkmode, onFileSelected = null) {
+        selectProc.select(filePath, darkMode, onFileSelected);
     }
 
     function randomFromCurrentFolder(darkMode = Appearance.m3colors.darkmode) {
@@ -73,6 +100,20 @@ Singleton {
         const filePath = folderModel.get(randomIndex, "filePath");
         print("Randomly selected wallpaper:", filePath);
         root.select(filePath, darkMode);
+    }
+
+    function getRandomWallpaperPath(excludePath = "") {
+        if (folderModel.count === 0) return "";
+        const excludeClean = FileUtils.trimFileProtocol(excludePath);
+        const candidates = [];
+        for (let i = 0; i < folderModel.count; i++) {
+            const path = folderModel.get(i, "filePath") || FileUtils.trimFileProtocol(folderModel.get(i, "fileURL"));
+            if (path && path.length && FileUtils.trimFileProtocol(path) !== excludeClean) {
+                candidates.push(path);
+            }
+        }
+        if (candidates.length === 0) return "";
+        return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
     Process {

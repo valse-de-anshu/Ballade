@@ -2,12 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Qt5Compat.GraphicalEffects
+import Quickshell
+import qs
+import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.background.widgets
 
-// Standalone draggable image widget for extra custom images.
-// Does NOT extend AbstractBackgroundWidget to avoid the shared configEntry problem.
 Item {
     id: root
 
@@ -25,6 +26,37 @@ Item {
     property bool isTransparent: cfg.transparent ?? false
     property bool dropHover: false
     property bool locked: Config.options.background.widgetsLocked
+
+    property bool infiniteLoop: cfg.infiniteLoop ?? false
+    property bool hoverPlaying: true
+
+    Timer {
+        id: playTimer
+        interval: 40000
+        running: false
+        repeat: false
+        onTriggered: {
+            console.log("[ExtraCustomImage] 40-second timer triggered! Pausing GIF animation to static image.")
+            root.hoverPlaying = false
+        }
+    }
+
+    Component.onCompleted: {
+        if (!root.infiniteLoop) {
+            root.hoverPlaying = true
+            playTimer.restart()
+        }
+    }
+
+    onInfiniteLoopChanged: {
+        if (infiniteLoop) {
+            playTimer.stop()
+            root.hoverPlaying = true
+        } else {
+            root.hoverPlaying = true
+            playTimer.restart()
+        }
+    }
 
     readonly property bool isFreeShape: shapeName === "Free"
     readonly property bool isVerticalRect: shapeName === "VerticalRectangle" || shapeName === "Vertical Rectangle"
@@ -104,6 +136,11 @@ Item {
             case "PixelTriangle": return MaterialShape.Shape.PixelTriangle
             case "Bun":           return MaterialShape.Shape.Bun
             case "Heart":         return MaterialShape.Shape.Heart
+            case "Hexagon":       return MaterialShape.Shape.Hexagon
+            case "Octagon":       return MaterialShape.Shape.Octagon
+            case "Shield":        return MaterialShape.Shape.Shield
+            case "Star":          return MaterialShape.Shape.Star
+            case "Cross":         return MaterialShape.Shape.Cross
             default:              return MaterialShape.Shape.Cookie4Sided
         }
     }
@@ -118,22 +155,122 @@ Item {
         Config.options.background.widgets.customImages = arr
     }
 
-    // -- Drag ---
+    property var cachedCanvas: null
+    function findCanvas() {
+        if (!cachedCanvas) {
+            var p = root.parent
+            while (p) {
+                if (p.isWidgetCanvas === true) { cachedCanvas = p; break }
+                p = p.parent
+            }
+        }
+        return cachedCanvas
+    }
+
+    function snap(value) {
+        return Math.round(value / 24) * 24
+    }
+
+    Item {
+        id: dragProxy
+        parent: root.parent
+        x: root.x
+        y: root.y
+
+        onXChanged: {
+            if (dragArea.drag.active) {
+                var c = root.findCanvas()
+                if (c) {
+                    var widgetCenterX = root.x + root.width / 2
+                    var widgetCenterY = root.y + root.height / 2
+                    c.setCenterActive(Math.abs(widgetCenterX - c.width / 2) < 24, Math.abs(widgetCenterY - c.height / 2) < 24)
+                }
+            }
+        }
+        onYChanged: {
+            if (dragArea.drag.active) {
+                var c = root.findCanvas()
+                if (c) {
+                    var widgetCenterX = root.x + root.width / 2
+                    var widgetCenterY = root.y + root.height / 2
+                    c.setCenterActive(Math.abs(widgetCenterX - c.width / 2) < 24, Math.abs(widgetCenterY - c.height / 2) < 24)
+                }
+            }
+        }
+    }
+
+    Binding {
+        target: root
+        property: "x"
+        value: snap(dragProxy.x)
+        when: dragArea.drag.active
+        restoreMode: Binding.RestoreNone
+    }
+    Binding {
+        target: root
+        property: "y"
+        value: snap(dragProxy.y)
+        when: dragArea.drag.active
+        restoreMode: Binding.RestoreNone
+    }
+
     MouseArea {
         id: dragArea
         anchors.fill: parent
         hoverEnabled: true
-        drag.target: root.locked ? undefined : root
+        drag.target: root.locked ? undefined : dragProxy
         drag.axis: Drag.XAndYAxis
         drag.minimumX: -root.width + 30
         drag.maximumX: root.scaledScreenWidth - 30
         drag.minimumY: -root.height + 30
         drag.maximumY: root.scaledScreenHeight - 30
         cursorShape: root.locked ? Qt.ArrowCursor : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
-        onReleased: root.savePosition()
+
+        onEntered: {
+            if (!root.infiniteLoop) {
+                root.hoverPlaying = true
+                playTimer.restart()
+            }
+        }
+
+        onPressed: {
+            if (!root.locked) {
+                var c = root.findCanvas()
+                if (c) c.setDragging(true)
+            }
+            if (!root.infiniteLoop) {
+                root.hoverPlaying = true
+                playTimer.restart()
+            }
+        }
+
+        onReleased: {
+            var c = root.findCanvas()
+            if (c) {
+                c.setDragging(false)
+                var left = root.x
+                var right = root.x + root.width
+                var top = root.y
+                var bottom = root.y + root.height
+                var verticalLines = [left, right]
+                var horizontalLines = [top, bottom]
+
+                var widgetCenterX = root.x + root.width / 2
+                var widgetCenterY = root.y + root.height / 2
+                if (Math.abs(widgetCenterX - c.width / 2) < 12)
+                    verticalLines.push(c.width / 2)
+                if (Math.abs(widgetCenterY - c.height / 2) < 12)
+                    horizontalLines.push(c.height / 2)
+
+                if (Config.options.background.showSnapLines ?? true)
+                    c.flashLines(verticalLines, horizontalLines)
+            }
+            dragProxy.x = root.x
+            dragProxy.y = root.y
+            root.savePosition()
+        }
     }
 
-    // -- Visual ---
     MaterialShape {
         id: shadowShape
         anchors.fill: parent
@@ -166,20 +303,18 @@ Item {
             }
         }
 
-        // GIF / image
         AnimatedImage {
             id: animImg
             anchors.fill: parent
             source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
             fillMode: (root.isFreeShape || root.isVerticalRect || root.isRectangle) ? Image.PreserveAspectFit : Image.PreserveAspectCrop
-            cache: false
+            cache: true
             asynchronous: true
             visible: root.imagePath !== "" && status !== Image.Error
-            playing: true
-            paused: false
+            playing: visible && root.visible && !GlobalStates.screenLocked && (root.infiniteLoop || root.hoverPlaying)
+            paused: !playing
         }
 
-        // Placeholder icon when no path set
         MaterialSymbol {
             anchors.centerIn: parent
             iconSize: root.widgetSize / 3
@@ -190,7 +325,6 @@ Item {
             Behavior on color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
         }
 
-        // Drag-and-drop file onto widget
         DropArea {
             anchors.fill: parent
             keys: ["text/uri-list"]
@@ -212,7 +346,6 @@ Item {
         }
     }
 
-    // Resize handle (bottom-right corner) - visible on hover only
     ResizeHandler {
         anchorItem: imageShape
         hoverActive: dragArea.containsMouse

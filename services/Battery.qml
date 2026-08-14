@@ -60,8 +60,6 @@ Singleton {
             "-a", "Shell",
             "--hint=int:transient:1",
         ])
-
-        if (root.soundEnabled) Audio.playSystemSound("dialog-warning");
     }
 
     onIsCriticalAndNotChargingChanged: {
@@ -74,8 +72,6 @@ Singleton {
             "-a", "Shell",
             "--hint=int:transient:1",
         ]);
-
-        if (root.soundEnabled) Audio.playSystemSound("suspend-error");
     }
 
     onIsSuspendingAndNotChargingChanged: {
@@ -93,8 +89,6 @@ Singleton {
             "-a", "Shell",
             "--hint=int:transient:1",
         ]);
-
-        if (root.soundEnabled) Audio.playSystemSound("complete");
     }
 
     onIsPluggedInChanged: {

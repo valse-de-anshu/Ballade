@@ -5,26 +5,60 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
 import Quickshell
+import qs
+import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.ii.background.widgets
 
-AbstractBackgroundWidget {
+Item {
     id: root
 
-    configEntryName: "customImage"
-    hoverEnabled: true
+    required property int screenWidth
+    required property int screenHeight
+    required property int scaledScreenWidth
+    required property int scaledScreenHeight
+    required property real wallpaperScale
 
-    property int imageIndex: -1
+    property var cfg: Config.options.background.widgets.customImage
+    property string imagePath: cfg?.path ?? ""
+    property real widgetSize: cfg?.size ?? 200
+    property string shapeName: cfg?.shape ?? "Cookie4Sided"
+    property bool isTransparent: cfg?.transparent ?? false
+    property bool dropHover: false
+    property bool locked: Config.options.background.widgetsLocked
 
-    // Override configEntry so ALL parent logic (x/y, targetX/Y, drag-save via onReleased)
-    // automatically uses the correct config slot per widget instance.
-    property var configEntry: root.imageIndex >= 0
-        ? Config.options.background.widgets.customImages[root.imageIndex]
-        : Config.options.background.widgets.customImage
+    property bool infiniteLoop: cfg?.infiniteLoop ?? false
+    property bool hoverPlaying: true
 
-    property real widgetSize: (configEntry && configEntry.size) ? configEntry.size : 200
-    property string shapeName: configEntry?.shape ?? "Cookie4Sided"
+    Timer {
+        id: playTimer
+        interval: 40000
+        running: false
+        repeat: false
+        onTriggered: {
+            console.log("[CustomImage] 40-second timer triggered! Pausing GIF animation to static image.")
+            root.hoverPlaying = false
+        }
+    }
+
+    Component.onCompleted: {
+        if (!root.infiniteLoop) {
+            root.hoverPlaying = true
+            playTimer.restart()
+        }
+    }
+
+    onInfiniteLoopChanged: {
+        if (infiniteLoop) {
+            playTimer.stop()
+            root.hoverPlaying = true
+        } else {
+            root.hoverPlaying = true
+            playTimer.restart()
+        }
+    }
+
     readonly property bool isFreeShape: shapeName === "Free"
     readonly property bool isVerticalRect: shapeName === "VerticalRectangle" || shapeName === "Vertical Rectangle"
     readonly property bool isRectangle: shapeName === "Rectangle"
@@ -35,8 +69,33 @@ AbstractBackgroundWidget {
         return 1.0
     }
 
-    implicitWidth: contentItem.implicitWidth
-    implicitHeight: contentItem.implicitHeight
+    width: {
+        let size = root.widgetSize || 200
+        if (isFreeShape) {
+            let asp = root.imgAspect || 1.0
+            return asp <= 1.0 ? Math.max(50, size * asp) : size
+        } else if (isVerticalRect) {
+            return Math.max(50, size * 0.75)
+        } else if (isRectangle) {
+            return Math.max(50, size * 1.33)
+        }
+        return size
+    }
+
+    height: {
+        let size = root.widgetSize || 200
+        if (isFreeShape) {
+            let asp = root.imgAspect || 1.0
+            return asp > 1.0 ? Math.max(50, size / asp) : size
+        }
+        return size
+    }
+
+    x: Math.max(-width + 30, Math.min(cfg?.x ?? 400, scaledScreenWidth - 30))
+    y: Math.max(-height + 30, Math.min(cfg?.y ?? 100, scaledScreenHeight - 30))
+
+    Behavior on x { enabled: !dragArea.drag.active; NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+    Behavior on y { enabled: !dragArea.drag.active; NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
     function getShape(name) {
         switch (name) {
@@ -78,146 +137,222 @@ AbstractBackgroundWidget {
             case "PixelTriangle": return MaterialShape.Shape.PixelTriangle
             case "Bun":           return MaterialShape.Shape.Bun
             case "Heart":         return MaterialShape.Shape.Heart
+            case "Hexagon":       return MaterialShape.Shape.Hexagon
+            case "Octagon":       return MaterialShape.Shape.Octagon
+            case "Shield":        return MaterialShape.Shape.Shield
+            case "Star":          return MaterialShape.Shape.Star
+            case "Cross":         return MaterialShape.Shape.Cross
             default:              return MaterialShape.Shape.Cookie4Sided
         }
     }
 
+    function savePosition() {
+        Config.options.background.widgets.customImage.x = root.x
+        Config.options.background.widgets.customImage.y = root.y
+    }
+
+    property var cachedCanvas: null
+    function findCanvas() {
+        if (!cachedCanvas) {
+            var p = root.parent
+            while (p) {
+                if (p.isWidgetCanvas === true) { cachedCanvas = p; break }
+                p = p.parent
+            }
+        }
+        return cachedCanvas
+    }
+
+    function snap(value) {
+        return Math.round(value / 24) * 24
+    }
+
     Item {
-        id: contentItem
-        implicitWidth: {
-            let size = root.widgetSize || 200
-            if (root.isFreeShape) {
-                let asp = root.imgAspect || 1.0
-                return asp <= 1.0 ? Math.max(50, size * asp) : size
-            } else if (root.isVerticalRect) {
-                return Math.max(50, size * 0.75)
-            } else if (root.isRectangle) {
-                return Math.max(50, size * 1.33)
+        id: dragProxy
+        parent: root.parent
+        x: root.x
+        y: root.y
+
+        onXChanged: {
+            if (dragArea.drag.active) {
+                var c = root.findCanvas()
+                if (c) {
+                    var widgetCenterX = root.x + root.width / 2
+                    var widgetCenterY = root.y + root.height / 2
+                    c.setCenterActive(Math.abs(widgetCenterX - c.width / 2) < 24, Math.abs(widgetCenterY - c.height / 2) < 24)
+                }
             }
-            return size
         }
-        implicitHeight: {
-            let size = root.widgetSize || 200
-            if (root.isFreeShape) {
-                let asp = root.imgAspect || 1.0
-                return asp > 1.0 ? Math.max(50, size / asp) : size
+        onYChanged: {
+            if (dragArea.drag.active) {
+                var c = root.findCanvas()
+                if (c) {
+                    var widgetCenterX = root.x + root.width / 2
+                    var widgetCenterY = root.y + root.height / 2
+                    c.setCenterActive(Math.abs(widgetCenterX - c.width / 2) < 24, Math.abs(widgetCenterY - c.height / 2) < 24)
+                }
             }
-            return size
+        }
+    }
+
+    Binding {
+        target: root
+        property: "x"
+        value: snap(dragProxy.x)
+        when: dragArea.drag.active
+        restoreMode: Binding.RestoreNone
+    }
+    Binding {
+        target: root
+        property: "y"
+        value: snap(dragProxy.y)
+        when: dragArea.drag.active
+        restoreMode: Binding.RestoreNone
+    }
+
+    MouseArea {
+        id: dragArea
+        anchors.fill: parent
+        hoverEnabled: true
+        drag.target: root.locked ? undefined : dragProxy
+        drag.axis: Drag.XAndYAxis
+        drag.minimumX: -root.width + 30
+        drag.maximumX: root.scaledScreenWidth - 30
+        drag.minimumY: -root.height + 30
+        drag.maximumY: root.scaledScreenHeight - 30
+        cursorShape: root.locked ? Qt.ArrowCursor : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+
+        onEntered: {
+            if (!root.infiniteLoop) {
+                root.hoverPlaying = true
+                playTimer.restart()
+            }
         }
 
-        Behavior on implicitWidth {
-            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-        }
-        Behavior on implicitHeight {
-            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        onPressed: {
+            if (!root.locked) {
+                var c = root.findCanvas()
+                console.log("[CustomImage] onPressed findCanvas result:", c)
+                if (c) c.setDragging(true)
+            }
+            if (!root.infiniteLoop) {
+                root.hoverPlaying = true
+                playTimer.restart()
+            }
         }
 
-        MaterialShape {
-            id: shadowShape
+        onReleased: {
+            var c = root.findCanvas()
+            if (c) {
+                c.setDragging(false)
+                var left = root.x
+                var right = root.x + root.width
+                var top = root.y
+                var bottom = root.y + root.height
+                var verticalLines = [left, right]
+                var horizontalLines = [top, bottom]
+
+                var widgetCenterX = root.x + root.width / 2
+                var widgetCenterY = root.y + root.height / 2
+                if (Math.abs(widgetCenterX - c.width / 2) < 12)
+                    verticalLines.push(c.width / 2)
+                if (Math.abs(widgetCenterY - c.height / 2) < 12)
+                    horizontalLines.push(c.height / 2)
+
+                if (Config.options.background.showSnapLines ?? true)
+                    c.flashLines(verticalLines, horizontalLines)
+            }
+            dragProxy.x = root.x
+            dragProxy.y = root.y
+            root.savePosition()
+        }
+    }
+
+    MaterialShape {
+        id: shadowShape
+        anchors.fill: parent
+        color: root.isTransparent ? "transparent" : Appearance.colors.colPrimaryContainer
+        shape: root.getShape(root.shapeName)
+        visible: false
+    }
+
+    StyledDropShadow {
+        target: shadowShape
+        z: -1
+        visible: !root.isTransparent
+    }
+
+    MaterialShape {
+        id: imageShape
+        anchors.fill: parent
+        z: 0
+        color: root.isTransparent
+            ? (root.imagePath === "" ? ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.7) : "transparent")
+            : Appearance.colors.colPrimaryContainer
+        shape: root.getShape(root.shapeName)
+
+        layer.enabled: !(root.isFreeShape || root.isVerticalRect || root.isRectangle)
+        layer.effect: OpacityMask {
+            maskSource: MaterialShape {
+                width: imageShape.width
+                height: imageShape.height
+                shape: root.getShape(root.shapeName)
+            }
+        }
+
+        AnimatedImage {
+            id: animImg
             anchors.fill: parent
-            color: root.isTransparent ? "transparent" : Appearance.colors.colPrimaryContainer
-            shape: getShape(root.shapeName)
-            visible: false
+            source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
+            fillMode: (root.isFreeShape || root.isVerticalRect || root.isRectangle) ? Image.PreserveAspectFit : Image.PreserveAspectCrop
+            cache: true
+            asynchronous: true
+            visible: root.imagePath !== "" && status !== Image.Error
+            playing: visible && root.visible && !GlobalStates.screenLocked && (root.infiniteLoop || root.hoverPlaying)
+            paused: !playing
         }
 
-        StyledDropShadow {
-            target: shadowShape
-            z: -1
-            visible: !root.isTransparent
+        MaterialSymbol {
+            anchors.centerIn: parent
+            iconSize: root.widgetSize / 3
+            text: root.dropHover ? "download" : "image"
+            fill: root.dropHover ? 1 : 0
+            color: root.dropHover ? Appearance.colors.colPrimary : Appearance.colors.colOnPrimaryContainer
+            visible: root.imagePath === ""
+            Behavior on color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
         }
 
-        MaterialShape {
-            id: imageShape
+        DropArea {
             anchors.fill: parent
-            z: 0
-            color: root.isTransparent
-                ? (root.imagePath === "" ? ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.7) : "transparent")
-                : Appearance.colors.colPrimaryContainer
-            shape: getShape(root.shapeName)
-
-            layer.enabled: !(root.isFreeShape || root.isVerticalRect || root.isRectangle)
-            layer.effect: OpacityMask {
-                maskSource: MaterialShape {
-                    width: imageShape.width
-                    height: imageShape.height
-                    shape: getShape(root.shapeName)
-                }
-            }
-
-            AnimatedImage {
-                id: animImg
-                anchors.fill: parent
-                source: root.imagePath !== "" ? ("file://" + root.imagePath) : ""
-                fillMode: (root.isFreeShape || root.isVerticalRect || root.isRectangle) ? Image.PreserveAspectFit : Image.PreserveAspectCrop
-                cache: false
-                asynchronous: true
-                visible: root.imagePath !== "" && status !== Image.Error
-                playing: true
-                paused: false
-            }
-
-            // Placeholder shown when no path is set
-            MaterialSymbol {
-                anchors.centerIn: parent
-                iconSize: contentItem.implicitWidth / 3
-                text: root.dropHover ? "download" : "image"
-                fill: root.dropHover ? 1 : 0
-                color: root.dropHover
-                    ? Appearance.colors.colPrimary
-                    : Appearance.colors.colOnPrimaryContainer
-                visible: root.imagePath === ""
-                Behavior on color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
-            }
-
-            DropArea {
-                anchors.fill: parent
-                keys: ["text/uri-list"]
-                onEntered: (drag) => {
-                    drag.accept(Qt.CopyAction)
-                    root.dropHover = true
-                }
-                onExited: {
-                    root.dropHover = false
-                }
-                onDropped: (drop) => {
-                    if (drop.hasUrls && drop.urls.length > 0) {
-                        var cleanPath = drop.urls[0].toString().replace(/^file:\/\//, "")
-                        var ext = cleanPath.split(".").pop().toLowerCase()
-                        var accepted = ["png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif"]
-                        if (accepted.indexOf(ext) !== -1) {
-                            if (root.imageIndex >= 0) {
-                                var arr = Config.options.background.widgets.customImages.slice()
-                                arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { path: cleanPath })
-                                Config.options.background.widgets.customImages = arr
-                            } else {
-                                Config.options.background.widgets.customImage.path = cleanPath
-                            }
-                        }
+            keys: ["text/uri-list"]
+            onEntered: (drag) => { drag.accept(Qt.CopyAction); root.dropHover = true }
+            onExited: { root.dropHover = false }
+            onDropped: (drop) => {
+                if (drop.hasUrls && drop.urls.length > 0) {
+                    var cleanPath = drop.urls[0].toString().replace(/^file:\/\//, "")
+                    var ext = cleanPath.split(".").pop().toLowerCase()
+                    var accepted = ["png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif"]
+                    if (accepted.indexOf(ext) !== -1) {
+                        Config.options.background.widgets.customImage.path = cleanPath
                     }
-                    root.dropHover = false
                 }
+                root.dropHover = false
             }
         }
+    }
 
-        ResizeHandler {
-            anchorItem: imageShape
-            hoverActive: root.containsMouse
-            locked: Config.options.background.widgetsLocked
-            currentWidth: root.widgetSize
-            resizeMode: "diagonal"
-            z: 1
-            onResized: (newValue) => {
-                root.widgetSize = Math.max(80, newValue)
-            }
-            onResizeFinished: {
-                if (root.imageIndex >= 0) {
-                    var arr = Config.options.background.widgets.customImages.slice()
-                    arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], { size: root.widgetSize })
-                    Config.options.background.widgets.customImages = arr
-                } else {
-                    Config.options.background.widgets.customImage.size = root.widgetSize
-                }
-            }
+    ResizeHandler {
+        anchorItem: imageShape
+        hoverActive: dragArea.containsMouse
+        locked: Config.options.background.widgetsLocked
+        currentWidth: (root.widgetSize && !isNaN(root.widgetSize)) ? root.widgetSize : 200
+        resizeMode: "diagonal"
+        z: 10
+        onResized: (newValue) => {
+            root.widgetSize = Math.max(80, newValue)
+        }
+        onResizeFinished: {
+            Config.options.background.widgets.customImage.size = root.widgetSize
         }
     }
 }

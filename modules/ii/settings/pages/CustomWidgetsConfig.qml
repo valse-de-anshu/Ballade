@@ -72,13 +72,27 @@ ContentPage {
 
                         ConfigSwitch {
                             Layout.fillWidth: true
-                            buttonIcon: "opacity"
+                            icon: "opacity"
                             text: Translation.tr("Add transparency")
                             checked: modelData.transparent ?? false
                             onCheckedChanged: {
                                 var arr = Config.options.background.widgets.customImages.slice()
                                 if (arr[index]) {
                                     arr[index] = Object.assign({}, arr[index], { transparent: checked })
+                                    Config.options.background.widgets.customImages = arr
+                                }
+                            }
+                        }
+
+                        ConfigSwitch {
+                            Layout.fillWidth: true
+                            icon: "loop"
+                            text: Translation.tr("Infinite Loop (Play continuously)")
+                            checked: modelData.infiniteLoop ?? false
+                            onCheckedChanged: {
+                                var arr = Config.options.background.widgets.customImages.slice()
+                                if (arr[index]) {
+                                    arr[index] = Object.assign({}, arr[index], { infiniteLoop: checked })
                                     Config.options.background.widgets.customImages = arr
                                 }
                             }
@@ -109,7 +123,8 @@ ContentPage {
                                 "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
                                 "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
                                 "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
-                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
+                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart",
+                                "Hexagon", "Octagon", "Shield", "Star", "Cross"
                             ]
                             onSelected: newValue => {
                                 var arr = Config.options.background.widgets.customImages.slice()
@@ -125,9 +140,10 @@ ContentPage {
                 // Add button
                 RippleButton {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 4
-                    implicitWidth: 160
-                    implicitHeight: 40
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 8
+                    implicitWidth: 196
+                    implicitHeight: 44
                     buttonRadius: Appearance.rounding.full
                     colBackground: Appearance.colors.colPrimaryContainer
                     colBackgroundHover: Appearance.colors.colPrimary
@@ -149,7 +165,7 @@ ContentPage {
 
                     RowLayout {
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: 8
                         MaterialSymbol {
                             iconSize: 20
                             text: "add"
@@ -158,7 +174,8 @@ ContentPage {
                         StyledText {
                             text: "Add Image Widget"
                             color: Appearance.colors.colOnPrimaryContainer
-                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.DemiBold
                         }
                     }
                 }

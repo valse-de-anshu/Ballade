@@ -61,10 +61,12 @@ generate_thumbnail() {
     hash="$(md5 "$uri")"
     local out="$CACHE_DIR/$hash.png"
     mkdir -p "$CACHE_DIR"
-    if [ -f "$out" ]; then
+    if [ -f "$out" ] && [ ! "$abs_path" -nt "$out" ]; then
+        echo "FILE $abs_path"
         return
     fi
     magick "$abs_path" -resize "${THUMBNAIL_SIZE}x${THUMBNAIL_SIZE}" "$out"
+    echo "FILE $abs_path"
 }
 
 # Parse arguments

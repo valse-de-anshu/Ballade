@@ -928,6 +928,15 @@ ContentPage {
                         Config.options.background.widgets.customImage.transparent = checked;
                     }
                 }
+                ConfigSwitch {
+                    Layout.fillWidth: true
+                    buttonIcon: "loop"
+                    text: Translation.tr("Infinite Loop (Play continuously)")
+                    checked: Config.options.background.widgets.customImage.infiniteLoop ?? false
+                    onCheckedChanged: {
+                        Config.options.background.widgets.customImage.infiniteLoop = checked;
+                    }
+                }
                 ConfigTextArea {
                     Layout.fillWidth: true
                     buttonIcon: "image"

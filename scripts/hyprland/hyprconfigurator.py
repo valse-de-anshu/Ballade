@@ -1,4 +1,4 @@
-#!/usr/bin/env -S\_/bin/sh\_-c\_"source\_\$(eval\_echo\_\$ILLOGICAL_IMPULSE_VIRTUAL_ENV)/bin/activate&&exec\_python\_-E\_"\$0"\_"\$@""
+#!/usr/bin/env python3
 import argparse
 import re
 import os
@@ -37,21 +37,16 @@ def edit_hyprland_config(file_path, set_args, reset_args):
     set_dict = {k: v for k, v in set_args} if set_args else {}
     reset_set = set(reset_args) if reset_args else set()
     
-    new_lines = []
-    found_keys = set()
-    
     patterns = {}
     for k in list(set_dict.keys()) + list(reset_set):
         key_parts = k.split(':')
-        main_key = key_parts[0]
-        if len(key_parts) > 1:
-            # Build pattern to match nested structure
-            pattern_parts = [rf'\s*{re.escape(part)}\s*=' for part in key_parts]
-            nested_pattern = '\{'.join(pattern_parts)
-            patterns[k] = re.compile(rf'^\s*hl\.config\(\{{\s*{nested_pattern}')
-        else:
-            patterns[k] = re.compile(rf'^\s*hl\.config\(\{{\s*{re.escape(main_key)}\s*=')
-        
+        pattern_parts = [rf'\s*{re.escape(part)}\s*=' for part in key_parts]
+        nested_pattern = r'\s*\{\s*'.join(pattern_parts)
+        patterns[k] = re.compile(rf'^\s*hl\.config\(\s*\{{\s*{nested_pattern}')
+
+    new_lines = []
+    found_keys = set()
+    
     for line in lines:
         matched = False
         
@@ -67,9 +62,9 @@ def edit_hyprland_config(file_path, set_args, reset_args):
         # Check if line matches a key to be set
         for key, value in set_dict.items():
             if patterns[key].match(line):
-                new_line = generate_config_line(key, value)
-                new_lines.append(new_line)
-                found_keys.add(key)
+                if key not in found_keys:
+                    new_lines.append(generate_config_line(key, value))
+                    found_keys.add(key)
                 matched = True
                 break
                 
@@ -104,23 +99,15 @@ def edit_hyprland_config(file_path, set_args, reset_args):
             os.remove(temp_path)
         print(f"Error saving file: {e}")
         return
-        
-    for key in reset_set:
-        print(f"Removed '{key}' from '{file_path}'")
-    for key, value in set_dict.items():
-        print(f"Updated '{file_path}' with {generate_config_line(key, value).strip()}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Edit a Hyprland config file. Subkeys use colon (:) for nesting.")
-    parser.add_argument("--file", default="~/.config/hypr/hyprland.conf", help="Path to the Hyprland config file (default: ~/.config/hypr/hyprland.conf).")
-    
-    parser.add_argument("--set", nargs=2, action="append", metavar=("KEY", "VALUE"), help="Set a configuration key to a value.")
-    parser.add_argument("--reset", action="append", metavar="KEY", help="Remove a configuration key.")
-    
+    parser = argparse.ArgumentParser(description="Edit a Hyprland config file.")
+    parser.add_argument("--file", default="~/.config/hypr/hyprland.conf")
+    parser.add_argument("--set", nargs=2, action="append", metavar=("KEY", "VALUE"))
+    parser.add_argument("--reset", action="append", metavar="KEY")
     args = parser.parse_args()
     
     file_path = os.path.expanduser(args.file)
-    
     raw_set_args = args.set or []
     reset_args = args.reset or []
     
@@ -131,8 +118,5 @@ if __name__ == "__main__":
         else:
             set_args.append((key, value))
     
-    if not set_args and not reset_args:
-        print("Error: Must specify at least one key to set or reset.")
-    else:
+    if set_args or reset_args:
         edit_hyprland_config(file_path, set_args, reset_args)
-        

@@ -103,7 +103,7 @@ Item {
                 id: navRailWrapper
                 Layout.fillHeight: true
                 Layout.margins: 0
-                implicitWidth: navRail.expanded ? 195 : fab.baseSize
+                implicitWidth: navRail.expanded ? 225 : fab.baseSize
                 color: Appearance.m3colors.m3surfaceContainerLow
                 radius: Appearance.rounding.normal
 
@@ -173,7 +173,8 @@ Item {
                                 color: Appearance.colors.colOnLayer1
                                 font.weight: Font.Medium
                                 elide: Text.ElideRight
-                                Layout.maximumWidth: 100
+                                Layout.fillWidth: true
+                                Layout.maximumWidth: 140
                             }
 
                             StyledText {
@@ -181,7 +182,8 @@ Item {
                                 font.pixelSize: Appearance.font.pixelSize.smaller
                                 color: Appearance.colors.colSubtext
                                 elide: Text.ElideRight
-                                Layout.maximumWidth: 100
+                                Layout.fillWidth: true
+                                Layout.maximumWidth: 140
 
                                 text: {
                                     const d = Config.options.profile.descriptionText
@@ -199,7 +201,7 @@ Item {
                     }
 
                     Rectangle {
-                        width: 160
+                        width: 185
                         Layout.topMargin: -5
                         height: 2
                         gradient: Gradient {

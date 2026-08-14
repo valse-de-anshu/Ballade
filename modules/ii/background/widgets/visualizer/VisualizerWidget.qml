@@ -16,11 +16,10 @@ AbstractBackgroundWidget {
     readonly property bool isPlaying: activePlayer?.isPlaying ?? false
     readonly property list<real> points: GlobalStates.visualizerPoints
 
-    property real barWidth: 4
-    property real barSpacing: 8
+    property real barWidth: 8
+    property real barSpacing: 12
     property real maxBarHeight: 220
     property real maxVisualizerValue: 1000
-    property real smoothingDuration: 150
 
     readonly property int barCount: Math.max(1, Math.floor(screenWidth / (barWidth + barSpacing)))
 
@@ -106,10 +105,6 @@ AbstractBackgroundWidget {
                     Appearance.colors.colPrimary.b * intensity + Appearance.colors.colPrimaryContainer.b * (1 - intensity),
                     1
                 )
-
-                Behavior on height {
-                    NumberAnimation { duration: root.smoothingDuration; easing.type: Easing.OutQuad }
-                }
             }
         }
     }

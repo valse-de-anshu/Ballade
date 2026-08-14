@@ -33,8 +33,15 @@ StyledImage {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
     }
 
-    onSourceSizeChanged: {
+    Component.onCompleted: {
         if (!root.generateThumbnail) return;
+        if (!root.sourcePath || root.sourcePath.length === 0) return;
+        thumbnailGeneration.running = false;
+        thumbnailGeneration.running = true;
+    }
+    onSourcePathChanged: {
+        if (!root.generateThumbnail) return;
+        if (!root.sourcePath || root.sourcePath.length === 0) return;
         thumbnailGeneration.running = false;
         thumbnailGeneration.running = true;
     }
@@ -43,13 +50,17 @@ StyledImage {
         command: {
             const maxSize = Images.thumbnailSizes[root.thumbnailSizeName];
             return ["bash", "-c", 
-                `[ -f '${FileUtils.trimFileProtocol(root.thumbnailPath)}' ] && exit 0 || { magick '${root.sourcePath}' -resize ${maxSize}x${maxSize} '${FileUtils.trimFileProtocol(root.thumbnailPath)}' && exit 1; }`
+                `[ -f '${FileUtils.trimFileProtocol(root.thumbnailPath)}' ] && [ ! '${FileUtils.trimFileProtocol(root.sourcePath)}' -nt '${FileUtils.trimFileProtocol(root.thumbnailPath)}' ] && exit 0 || { magick '${FileUtils.trimFileProtocol(root.sourcePath)}' -resize ${maxSize}x${maxSize} '${FileUtils.trimFileProtocol(root.thumbnailPath)}' && exit 1; }`
             ]
         }
         onExited: (exitCode, exitStatus) => {
-            if (exitCode === 1) { // Force reload if thumbnail had to be generated
+            if (exitCode === 1) { // Thumbnail was regenerated — force reload
                 root.source = "";
-                root.source = root.thumbnailPath; // Force reload
+                root.source = root.thumbnailPath;
+            } else if (exitCode === 0 && root.status !== Image.Ready) {
+                // Thumbnail already existed but image hasn't loaded — reload it
+                root.source = "";
+                root.source = root.thumbnailPath;
             }
         }
     }

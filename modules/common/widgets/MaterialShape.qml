@@ -38,7 +38,12 @@ ShapeCanvas {
         PixelCircle,
         PixelTriangle,
         Bun,
-        Heart
+        Heart,
+        Hexagon,
+        Octagon,
+        Shield,
+        Star,
+        Cross
     }
     required property var shape
     property double implicitSize
@@ -82,6 +87,11 @@ ShapeCanvas {
             case MaterialShape.Shape.PixelTriangle: return MaterialShapes.getPixelTriangle();
             case MaterialShape.Shape.Bun: return MaterialShapes.getBun();
             case MaterialShape.Shape.Heart: return MaterialShapes.getHeart();
+            case MaterialShape.Shape.Hexagon: return MaterialShapes.getHexagon();
+            case MaterialShape.Shape.Octagon: return MaterialShapes.getOctagon();
+            case MaterialShape.Shape.Shield: return MaterialShapes.getShield();
+            case MaterialShape.Shape.Star: return MaterialShapes.getStar();
+            case MaterialShape.Shape.Cross: return MaterialShapes.getCross();
             default: return MaterialShapes.getCircle();
         }
     }
