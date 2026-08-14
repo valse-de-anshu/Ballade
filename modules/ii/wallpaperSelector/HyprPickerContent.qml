@@ -31,13 +31,15 @@ Item {
     }
 
     // ---- Tunables ----
-    property int   animDuration  : 200
-    property int   scrollSpeed   : 6000
-    property real  zoomScale     : 0.88
-    property real  edgeScale     : 0.50
-    property int   baseSpacing   : 18
-    property int   visibleTiles  : 5
-    property real  slantFactor   : -0.12   // Cinematic anime slant shear
+    property int    animDuration  : 200
+    property int    scrollSpeed   : 6000
+    property real   zoomScale     : 0.88
+    property real   edgeScale     : 0.50
+    property int    baseSpacing   : 18
+    property int    visibleTiles  : 5
+    property string activeShape   : Config.options.wallpaperSelector.shape || "slanted"
+    property real   slantFactor   : activeShape === "slanted" ? -0.12 : 0.0
+    property int    cornerRadius  : activeShape === "superellipse" ? 34 : (activeShape === "arch" ? 28 : 20)
     // ------------------
 
     // Thumbnail cache — reuse hyprquickpaper's own cache (simple filenames)
@@ -62,67 +64,12 @@ Item {
         sortField: FolderListModel.Name
     }
 
-    // --- Top Cyberpunk Header & Counter ---
-    Item {
-        id: header
-        anchors.top: parent.top
-        anchors.topMargin: 42
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(parent.width - 80, 480)
-        height: 38
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 10
-            color: "#80121216"
-            border.width: 1
-            border.color: "#33FFFFFF"
-            transform: Shear { xFactor: root.slantFactor }
-        }
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 12
-
-            Text {
-                text: "✦"
-                color: Appearance.colors.colPrimary
-                font.pixelSize: 13
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-                text: "WALLPAPERS"
-                color: "#EEEEEE"
-                font.pixelSize: 13
-                font.weight: Font.Bold
-                font.letterSpacing: 2.0
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Rectangle {
-                width: 1; height: 14
-                color: "#44FFFFFF"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-                text: (list.selectedIndex + 1).toString().padStart(2, '0') + " / " + folderModel.count.toString().padStart(2, '0')
-                color: Appearance.colors.colPrimary
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-                font.letterSpacing: 1.0
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-    }
-
     // --- Main Carousel ---
     ListView {
         id: list
         anchors.centerIn: parent
         width: parent.width
-        height: parent.height * 0.72
+        height: parent.height * 0.78
         focus: true
 
         model: folderModel
@@ -201,7 +148,7 @@ Item {
                         maskSource: Rectangle {
                             width: imageContainer.width
                             height: imageContainer.height
-                            radius: 18
+                            radius: root.cornerRadius
                         }
                     }
 
@@ -240,7 +187,7 @@ Item {
                 Rectangle {
                     z: 10
                     anchors.fill: parent
-                    radius: 18
+                    radius: root.cornerRadius
                     visible: tile.active
                     color: "transparent"
                     border.width: 3

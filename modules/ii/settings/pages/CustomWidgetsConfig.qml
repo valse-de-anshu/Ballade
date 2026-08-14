@@ -239,137 +239,294 @@ ContentPage {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: 14
 
-                    StyledText {
+                    ConfigSelectionArray {
+                        text: Translation.tr("Active Wall Shape")
+                        icon: "shapes"
                         Layout.fillWidth: true
-                        text: "Shape & Animation Specifications for HyprPicker Wallpaper Selector:"
-                        font.pixelSize: Appearance.font.pixelSize.normal
-                        font.weight: Font.DemiBold
-                        color: Appearance.colors.colPrimary
+                        currentValue: Config.options.wallpaperSelector.shape || "slanted"
+                        onSelected: newValue => {
+                            Config.options.wallpaperSelector.shape = newValue;
+                        }
+                        options: [
+                            {
+                                displayName: Translation.tr("Slanted"),
+                                icon: "category",
+                                value: "slanted"
+                            },
+                            {
+                                displayName: Translation.tr("Superellipse"),
+                                icon: "crop_square",
+                                value: "superellipse"
+                            },
+                            {
+                                displayName: Translation.tr("Arch"),
+                                icon: "door_front",
+                                value: "arch"
+                            },
+                            {
+                                displayName: Translation.tr("Starburst"),
+                                icon: "star",
+                                value: "starburst"
+                            },
+                            {
+                                displayName: Translation.tr("Diamond"),
+                                icon: "diamond",
+                                value: "diamond"
+                            }
+                        ]
                     }
 
-                    // Shape 1: Slanted Cyber
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 3
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
 
-                        RowLayout {
-                            spacing: 8
-                            StyledText {
-                                text: "1. Cinematic Slanted (Active)"
-                                font.weight: Font.Bold
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: Appearance.colors.colOnSurface
-                            }
-                            Rectangle {
-                                radius: 4
-                                height: 18
-                                width: 50
-                                color: Appearance.colors.colPrimaryContainer
+                    // Card 1: Slanted Cyber
+                    RippleButton {
+                        Layout.fillWidth: true
+                        height: card1Col.implicitHeight + 20
+                        radius: 12
+                        colBackground: Config.options.wallpaperSelector.shape === "slanted" ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer1
+                        border.width: Config.options.wallpaperSelector.shape === "slanted" ? 2 : 1
+                        border.color: Config.options.wallpaperSelector.shape === "slanted" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        onClicked: Config.options.wallpaperSelector.shape = "slanted"
+
+                        ColumnLayout {
+                            id: card1Col
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 12
+                            spacing: 4
+
+                            RowLayout {
+                                spacing: 8
                                 StyledText {
-                                    anchors.centerIn: parent
-                                    text: "Default"
-                                    font.pixelSize: 10
+                                    text: "1. Cinematic Slanted"
                                     font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Config.options.wallpaperSelector.shape === "slanted" ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSurface
+                                }
+                                Rectangle {
+                                    radius: 4
+                                    height: 18
+                                    width: Config.options.wallpaperSelector.shape === "slanted" ? 64 : 50
+                                    color: Config.options.wallpaperSelector.shape === "slanted" ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Config.options.wallpaperSelector.shape === "slanted" ? "Active ✓" : "Select"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: Config.options.wallpaperSelector.shape === "slanted" ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                                    }
                                 }
                             }
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "• Geometry: Dynamic -12° shear angle with 18px rounded corners.\n• Animation: C++ StrictlyEnforceRange centering with 160ms OutCubic GPU distance scaling (1.0 center focus → 0.58 edge taper)."
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            wrapMode: Text.Wrap
-                        }
-                    }
-
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
-
-                    // Shape 2: Organic Superellipse (Cookie 4-Sided)
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 3
-
-                        StyledText {
-                            text: "2. Organic Superellipse (Cookie 4-Sided)"
-                            font.weight: Font.Bold
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnSurface
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "• Geometry: Material You 4-sided continuous squircle with 28px smoothed curvature.\n• Animation: Subtle breathing scale pulse on active item with floating ambient shadow elevation."
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            wrapMode: Text.Wrap
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "• Dynamic -12° shear angle with 18px rounded corners.\n• C++ StrictlyEnforceRange centering with 160ms OutCubic distance scaling (1.0 center focus → 0.45 edge taper)."
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                wrapMode: Text.Wrap
+                            }
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
-
-                    // Shape 3: Cathedral Arch
-                    ColumnLayout {
+                    // Card 2: Organic Superellipse
+                    RippleButton {
                         Layout.fillWidth: true
-                        spacing: 3
+                        height: card2Col.implicitHeight + 20
+                        radius: 12
+                        colBackground: Config.options.wallpaperSelector.shape === "superellipse" ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer1
+                        border.width: Config.options.wallpaperSelector.shape === "superellipse" ? 2 : 1
+                        border.color: Config.options.wallpaperSelector.shape === "superellipse" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        onClicked: Config.options.wallpaperSelector.shape = "superellipse"
 
-                        StyledText {
-                            text: "3. Cathedral Arch (Gothic Dome)"
-                            font.weight: Font.Bold
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnSurface
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "• Geometry: Semicircular dome top arch with clean rectangular base.\n• Animation: Vertical parallax rise on hover (+8px Y lift) with smoothstep edge falloff."
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            wrapMode: Text.Wrap
+                        ColumnLayout {
+                            id: card2Col
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 12
+                            spacing: 4
+
+                            RowLayout {
+                                spacing: 8
+                                StyledText {
+                                    text: "2. Organic Superellipse (Cookie 4-Sided)"
+                                    font.weight: Font.Bold
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Config.options.wallpaperSelector.shape === "superellipse" ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSurface
+                                }
+                                Rectangle {
+                                    radius: 4
+                                    height: 18
+                                    width: Config.options.wallpaperSelector.shape === "superellipse" ? 64 : 50
+                                    color: Config.options.wallpaperSelector.shape === "superellipse" ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Config.options.wallpaperSelector.shape === "superellipse" ? "Active ✓" : "Select"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: Config.options.wallpaperSelector.shape === "superellipse" ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                                    }
+                                }
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "• Material You 4-sided continuous squircle with 34px smooth curvature.\n• Subtle breathing scale pulse on active item with floating ambient elevation."
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                wrapMode: Text.Wrap
+                            }
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
-
-                    // Shape 4: Starburst Scallop (Cookie 7-Sided)
-                    ColumnLayout {
+                    // Card 3: Cathedral Arch
+                    RippleButton {
                         Layout.fillWidth: true
-                        spacing: 3
+                        height: card3Col.implicitHeight + 20
+                        radius: 12
+                        colBackground: Config.options.wallpaperSelector.shape === "arch" ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer1
+                        border.width: Config.options.wallpaperSelector.shape === "arch" ? 2 : 1
+                        border.color: Config.options.wallpaperSelector.shape === "arch" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        onClicked: Config.options.wallpaperSelector.shape = "arch"
 
-                        StyledText {
-                            text: "4. Starburst Scallop (Cookie 7-Sided)"
-                            font.weight: Font.Bold
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnSurface
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "• Geometry: Multi-petal organic rounded flower scallop with 7-point symmetry.\n• Animation: Micro-rotational settle (±1.5°) on selection with instant thumbnail caching."
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            wrapMode: Text.Wrap
+                        ColumnLayout {
+                            id: card3Col
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 12
+                            spacing: 4
+
+                            RowLayout {
+                                spacing: 8
+                                StyledText {
+                                    text: "3. Cathedral Arch (Gothic Dome)"
+                                    font.weight: Font.Bold
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Config.options.wallpaperSelector.shape === "arch" ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSurface
+                                }
+                                Rectangle {
+                                    radius: 4
+                                    height: 18
+                                    width: Config.options.wallpaperSelector.shape === "arch" ? 64 : 50
+                                    color: Config.options.wallpaperSelector.shape === "arch" ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Config.options.wallpaperSelector.shape === "arch" ? "Active ✓" : "Select"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: Config.options.wallpaperSelector.shape === "arch" ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                                    }
+                                }
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "• Semicircular dome top arch with 28px rounded top curvature.\n• Vertical parallax rise on hover (+8px Y lift) with smoothstep edge falloff."
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                wrapMode: Text.Wrap
+                            }
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colLayer0Border }
-
-                    // Shape 5: Cyber Diamond (Puffy Diamond)
-                    ColumnLayout {
+                    // Card 4: Starburst Scallop
+                    RippleButton {
                         Layout.fillWidth: true
-                        spacing: 3
+                        height: card4Col.implicitHeight + 20
+                        radius: 12
+                        colBackground: Config.options.wallpaperSelector.shape === "starburst" ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer1
+                        border.width: Config.options.wallpaperSelector.shape === "starburst" ? 2 : 1
+                        border.color: Config.options.wallpaperSelector.shape === "starburst" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        onClicked: Config.options.wallpaperSelector.shape = "starburst"
 
-                        StyledText {
-                            text: "5. Cyber Diamond (Puffy Diamond)"
-                            font.weight: Font.Bold
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnSurface
+                        ColumnLayout {
+                            id: card4Col
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 12
+                            spacing: 4
+
+                            RowLayout {
+                                spacing: 8
+                                StyledText {
+                                    text: "4. Starburst Scallop (Cookie 7-Sided)"
+                                    font.weight: Font.Bold
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Config.options.wallpaperSelector.shape === "starburst" ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSurface
+                                }
+                                Rectangle {
+                                    radius: 4
+                                    height: 18
+                                    width: Config.options.wallpaperSelector.shape === "starburst" ? 64 : 50
+                                    color: Config.options.wallpaperSelector.shape === "starburst" ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Config.options.wallpaperSelector.shape === "starburst" ? "Active ✓" : "Select"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: Config.options.wallpaperSelector.shape === "starburst" ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                                    }
+                                }
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "• Multi-petal organic rounded flower scallop with 7-point symmetry.\n• Micro-rotational settle (±1.5°) on selection with instant thumbnail caching."
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                wrapMode: Text.Wrap
+                            }
                         }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "• Geometry: 45° rotated rounded rhombus with curved vertices and neon edge highlight.\n• Animation: Horizontal magnetic snapping with 180ms easeOutBack focal transition."
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            wrapMode: Text.Wrap
+                    }
+
+                    // Card 5: Cyber Diamond
+                    RippleButton {
+                        Layout.fillWidth: true
+                        height: card5Col.implicitHeight + 20
+                        radius: 12
+                        colBackground: Config.options.wallpaperSelector.shape === "diamond" ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer1
+                        border.width: Config.options.wallpaperSelector.shape === "diamond" ? 2 : 1
+                        border.color: Config.options.wallpaperSelector.shape === "diamond" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        onClicked: Config.options.wallpaperSelector.shape = "diamond"
+
+                        ColumnLayout {
+                            id: card5Col
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: 12
+                            spacing: 4
+
+                            RowLayout {
+                                spacing: 8
+                                StyledText {
+                                    text: "5. Cyber Diamond (Puffy Diamond)"
+                                    font.weight: Font.Bold
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Config.options.wallpaperSelector.shape === "diamond" ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSurface
+                                }
+                                Rectangle {
+                                    radius: 4
+                                    height: 18
+                                    width: Config.options.wallpaperSelector.shape === "diamond" ? 64 : 50
+                                    color: Config.options.wallpaperSelector.shape === "diamond" ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: Config.options.wallpaperSelector.shape === "diamond" ? "Active ✓" : "Select"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: Config.options.wallpaperSelector.shape === "diamond" ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                                    }
+                                }
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: "• 45° rotated rounded rhombus with curved vertices and neon edge highlight.\n• Horizontal magnetic snapping with 180ms easeOutBack focal transition."
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                wrapMode: Text.Wrap
+                            }
                         }
                     }
                 }

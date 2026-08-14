@@ -780,6 +780,7 @@ Singleton {
             }
             
             property JsonObject wallpaperSelector: JsonObject {
+                property string shape: "slanted" // "slanted", "superellipse", "arch", "starburst", "diamond"
                 property bool useSystemFileDialog: false
                 property bool showBlurBackground: false
                 property bool showHomePath: true
