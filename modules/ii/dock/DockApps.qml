@@ -20,7 +20,22 @@ Item {
 
     property Item lastHoveredButton: null
     property bool buttonHovered: false
-    property bool requestDockShow: previewPopup.show
+    property Item contextMenuButton: null
+    property var contextMenuAppToplevel: contextMenuButton?.appToplevel
+    property bool requestDockShow: previewPopup.show || (contextMenuPopup && contextMenuPopup.show)
+
+    function openContextMenu(button) {
+        if (!button || !root.QsWindow) return;
+        previewPopup.show = false;
+        contextMenuButton = button;
+        contextMenuPopup.cachedCenterX = root.popupCenterXForButton(button);
+        contextMenuPopup.show = true;
+    }
+
+    function closeContextMenu() {
+        if (contextMenuPopup) contextMenuPopup.show = false;
+        contextMenuButton = null;
+    }
 
     Layout.fillHeight: true
     Layout.topMargin: Appearance.sizes.hyprlandGapsOut
@@ -64,7 +79,7 @@ Item {
         id: previewPopup
         property var appTopLevel: root.lastHoveredButton?.appToplevel
 
-        property bool shouldShow: (popupMouseArea.containsMouse || root.buttonHovered) && appTopLevel && appTopLevel.toplevels && appTopLevel.toplevels.length > 0
+        property bool shouldShow: !contextMenuPopup.show && (popupMouseArea.containsMouse || root.buttonHovered) && appTopLevel && appTopLevel.toplevels && appTopLevel.toplevels.length > 0
 
         property bool show: false
         property real cachedCenterX: 0
@@ -218,6 +233,162 @@ Item {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    PopupWindow {
+        id: contextMenuPopup
+        property bool show: false
+        property real cachedCenterX: 0
+
+        anchor {
+            window: root.QsWindow.window
+            adjustment: PopupAdjustment.None
+            gravity: Edges.Top | Edges.Right
+            edges: Edges.Top | Edges.Left
+        }
+
+        visible: contextMenuBackground.opacity > 0
+        color: "transparent"
+        implicitWidth: root.QsWindow.window?.width ?? 1
+        implicitHeight: contextMenuMouseArea.implicitHeight + Appearance.sizes.elevationMargin * 2
+
+        MouseArea {
+            id: contextMenuMouseArea
+            anchors.bottom: parent.bottom
+            implicitWidth: contextMenuBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
+            implicitHeight: contextMenuBackground.implicitHeight + Appearance.sizes.elevationMargin * 2
+            x: contextMenuPopup.cachedCenterX - width / 2
+            hoverEnabled: true
+
+            StyledRectangularShadow {
+                target: contextMenuBackground
+                opacity: contextMenuPopup.show ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity {
+                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                }
+            }
+
+            Rectangle {
+                id: contextMenuBackground
+                property real padding: 6
+                opacity: contextMenuPopup.show ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity {
+                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                }
+                color: Appearance.m3colors.m3surfaceContainer
+                radius: Appearance.rounding.normal
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: Appearance.sizes.elevationMargin
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitHeight: contextMenuColumn.implicitHeight + padding * 2
+                implicitWidth: Math.max(160, contextMenuColumn.implicitWidth + padding * 2)
+
+                ColumnLayout {
+                    id: contextMenuColumn
+                    anchors.centerIn: parent
+                    spacing: 3
+
+                    // Header: App Title
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.margins: 4
+                        spacing: 8
+
+                        IconImage {
+                            source: Quickshell.iconPath(AppSearch.guessIcon(root.contextMenuAppToplevel?.appId ?? ""), "image-missing")
+                            implicitSize: 20
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: {
+                                const entry = DesktopEntries.heuristicLookup(root.contextMenuAppToplevel?.appId ?? "");
+                                return entry?.name || root.contextMenuAppToplevel?.appId || Translation.tr("Application");
+                            }
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                            color: Appearance.m3colors.m3onSurface
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 1
+                        color: Appearance.colors.colOutlineVariant
+                        opacity: 0.25
+                    }
+
+                    // Pin / Unpin Button
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.small
+                        onClicked: {
+                            if (root.contextMenuAppToplevel?.appId) {
+                                TaskbarApps.togglePin(root.contextMenuAppToplevel.appId);
+                            }
+                            root.closeContextMenu();
+                        }
+                        contentItem: RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+                            MaterialSymbol {
+                                iconSize: 16
+                                text: TaskbarApps.isPinned(root.contextMenuAppToplevel?.appId ?? "") ? "bookmark_remove" : "keep"
+                                color: TaskbarApps.isPinned(root.contextMenuAppToplevel?.appId ?? "") ? Appearance.colors.colPrimary : Appearance.m3colors.m3onSurface
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: TaskbarApps.isPinned(root.contextMenuAppToplevel?.appId ?? "") ? Translation.tr("Unpin from Dock") : Translation.tr("Pin to Dock")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.m3colors.m3onSurface
+                            }
+                        }
+                    }
+
+                    // Close Window Button (if active)
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.small
+                        visible: (root.contextMenuAppToplevel?.toplevels?.length ?? 0) > 0
+                        colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colError, 0.8)
+                        onClicked: {
+                            if (root.contextMenuAppToplevel?.toplevels) {
+                                for (const toplevel of root.contextMenuAppToplevel.toplevels) {
+                                    toplevel?.close();
+                                }
+                            }
+                            root.closeContextMenu();
+                        }
+                        contentItem: RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+                            MaterialSymbol {
+                                iconSize: 16
+                                text: "close"
+                                color: Appearance.colors.colError
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("Close")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colError
                             }
                         }
                     }

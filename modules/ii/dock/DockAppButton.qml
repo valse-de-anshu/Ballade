@@ -75,7 +75,7 @@ DockButton {
     }
 
     altAction: () => {
-        TaskbarApps.togglePin(appToplevel.appId);
+        appListRoot?.openContextMenu(root);
     }
 
     contentItem: Loader {
