@@ -44,11 +44,45 @@ Flickable {
         }
     }
 
+    function scrollBy(delta) {
+        const maxY = Math.max(0, root.contentHeight - root.height);
+        const base = scrollAnim.running ? root.scrollTargetY : root.contentY;
+        var targetY = Math.max(0, Math.min(base + delta, maxY));
+        root.scrollTargetY = targetY;
+        root.contentY = targetY;
+    }
+
+    function scrollUp() {
+        scrollBy(-60);
+    }
+
+    function scrollDown() {
+        scrollBy(60);
+    }
+
+    function pageUp() {
+        scrollBy(-Math.max(120, root.height * 0.8));
+    }
+
+    function pageDown() {
+        scrollBy(Math.max(120, root.height * 0.8));
+    }
+
+    function scrollToTop() {
+        root.scrollTargetY = 0;
+        root.contentY = 0;
+    }
+
+    function scrollToBottom() {
+        const maxY = Math.max(0, root.contentHeight - root.height);
+        root.scrollTargetY = maxY;
+        root.contentY = maxY;
+    }
+
     // Keep target synced when not animating (e.g., drag/flick or programmatic changes)
     onContentYChanged: {
         if (!scrollAnim.running) {
             root.scrollTargetY = root.contentY;
         }
     }
-
 }

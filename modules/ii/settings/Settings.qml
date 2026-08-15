@@ -74,6 +74,37 @@ Scope {
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Escape) {
                     panelWindow.hide();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.scrollUp === "function") {
+                        GlobalStates.currentPageInstance.scrollUp();
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_Down) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.scrollDown === "function") {
+                        GlobalStates.currentPageInstance.scrollDown();
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_PageUp) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.pageUp === "function") {
+                        GlobalStates.currentPageInstance.pageUp();
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_PageDown) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.pageDown === "function") {
+                        GlobalStates.currentPageInstance.pageDown();
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_Home) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.scrollToTop === "function") {
+                        GlobalStates.currentPageInstance.scrollToTop();
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_End) {
+                    if (GlobalStates.currentPageInstance && typeof GlobalStates.currentPageInstance.scrollToBottom === "function") {
+                        GlobalStates.currentPageInstance.scrollToBottom();
+                        event.accepted = true;
+                    }
                 }
             }
 

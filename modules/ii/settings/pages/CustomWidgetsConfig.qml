@@ -31,108 +31,155 @@ ContentPage {
                     id: imagesRepeater
                     model: Config.options.background.widgets.customImages
 
-                    delegate: GroupedList {
+                    delegate: Rectangle {
+                        id: widgetCard
                         required property var modelData
                         required property int index
                         Layout.fillWidth: true
+                        radius: Appearance.rounding.normal
+                        color: Appearance.colors.colLayer1
+                        border.width: 1
+                        border.color: Appearance.colors.colLayer0Border
+                        implicitHeight: widgetCardContent.implicitHeight + 28
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
+                        ColumnLayout {
+                            id: widgetCardContent
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                right: parent.right
+                                margins: 14
+                            }
+                            spacing: 12
+
+                            // Header with Title & Delete Button
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                MaterialSymbol {
+                                    iconSize: 20
+                                    text: "widgets"
+                                    color: Appearance.colors.colPrimary
+                                }
+
+                                StyledText {
+                                    text: Translation.tr("Custom Image Widget #") + (index + 1)
+                                    font.pixelSize: Appearance.font.pixelSize.normal
+                                    font.weight: Font.DemiBold
+                                    color: Appearance.colors.colOnLayer1
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                RippleButton {
+                                    implicitWidth: 32
+                                    implicitHeight: 32
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: ColorUtils.transparentize(Appearance.colors.colError, 0.8)
+                                    colBackgroundHover: Appearance.colors.colError
+                                    colRipple: Appearance.colors.colOnError
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        iconSize: 18
+                                        text: "delete"
+                                        color: Appearance.colors.colError
+                                    }
+                                    downAction: () => {
+                                        var arr = Config.options.background.widgets.customImages.slice()
+                                        arr.splice(index, 1)
+                                        Config.options.background.widgets.customImages = arr
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 1
+                                color: Appearance.colors.colOutlineVariant
+                                opacity: 0.2
+                            }
+
+                            ConfigSwitch {
+                                Layout.fillWidth: true
+                                buttonIcon: "opacity"
+                                text: Translation.tr("Add transparency")
+                                checked: modelData.transparent ?? false
+                                onCheckedChanged: {
+                                    var arr = Config.options.background.widgets.customImages.slice()
+                                    if (arr[index]) {
+                                        arr[index] = Object.assign({}, arr[index], { transparent: checked })
+                                        Config.options.background.widgets.customImages = arr
+                                    }
+                                }
+                            }
+
+                            ConfigSwitch {
+                                Layout.fillWidth: true
+                                buttonIcon: "loop"
+                                text: Translation.tr("Infinite Loop (Play continuously)")
+                                checked: modelData.infiniteLoop ?? false
+                                onCheckedChanged: {
+                                    var arr = Config.options.background.widgets.customImages.slice()
+                                    if (arr[index]) {
+                                        arr[index] = Object.assign({}, arr[index], { infiniteLoop: checked })
+                                        Config.options.background.widgets.customImages = arr
+                                    }
+                                }
+                            }
+
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "image"
+                                text: Translation.tr("Image / GIF File Path")
+                                placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
+                                value: modelData.path ?? ""
+                                onValueChanged: {
+                                    var arr = Config.options.background.widgets.customImages.slice()
+                                    if (arr[index]) {
+                                        arr[index] = Object.assign({}, arr[index], { path: value })
+                                        Config.options.background.widgets.customImages = arr
+                                    }
+                                }
+                            }
 
                             StyledText {
-                                text: "Widget " + (index + 1)
-                                font.pixelSize: Appearance.font.pixelSize.small
+                                text: Translation.tr("Card Shape")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: Font.DemiBold
                                 color: Appearance.colors.colSubtext
+                                Layout.topMargin: 4
                             }
 
-                            Item { Layout.fillWidth: true }
-
-                            // Delete button
-                            RippleButton {
-                                implicitWidth: 32
-                                implicitHeight: 32
-                                buttonRadius: Appearance.rounding.full
-                                colBackground: Appearance.colors.colErrorContainer
-                                colBackgroundHover: Appearance.colors.colError
-                                colRipple: Appearance.colors.colOnError
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    iconSize: 18
-                                    text: "delete"
-                                    color: Appearance.colors.colOnErrorContainer
-                                }
-                                downAction: () => {
+                            // Shape picker for this widget
+                            ConfigSelectionShapeArray {
+                                currentValue: modelData.shape ?? "Cookie4Sided"
+                                shapeColor: Appearance.colors.colPrimary
+                                backgroundColor: Appearance.colors.colPrimaryContainer
+                                options: [
+                                    "Free", "VerticalRectangle", "Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill",
+                                    "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
+                                    "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
+                                    "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
+                                    "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
+                                ]
+                                onSelected: newValue => {
                                     var arr = Config.options.background.widgets.customImages.slice()
-                                    arr.splice(index, 1)
-                                    Config.options.background.widgets.customImages = arr
+                                    if (arr[index]) {
+                                        arr[index] = Object.assign({}, arr[index], { shape: newValue })
+                                        Config.options.background.widgets.customImages = arr
+                                    }
                                 }
                             }
                         }
+                    }
+                }
 
-                        ConfigSwitch {
-                            Layout.fillWidth: true
-                            buttonIcon: "opacity"
-                            text: Translation.tr("Add transparency")
-                            checked: modelData.transparent ?? false
-                            onCheckedChanged: {
-                                var arr = Config.options.background.widgets.customImages.slice()
-                                if (arr[index]) {
-                                    arr[index] = Object.assign({}, arr[index], { transparent: checked })
-                                    Config.options.background.widgets.customImages = arr
-                                }
-                            }
-                        }
-
-                        ConfigSwitch {
-                            Layout.fillWidth: true
-                            buttonIcon: "loop"
-                            text: Translation.tr("Infinite Loop (Play continuously)")
-                            checked: modelData.infiniteLoop ?? false
-                            onCheckedChanged: {
-                                var arr = Config.options.background.widgets.customImages.slice()
-                                if (arr[index]) {
-                                    arr[index] = Object.assign({}, arr[index], { infiniteLoop: checked })
-                                    Config.options.background.widgets.customImages = arr
-                                }
-                            }
-                        }
-
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "image"
-                            text: Translation.tr("Image / GIF File Path")
-                            placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
-                            value: modelData.path ?? ""
-                            onValueChanged: {
-                                var arr = Config.options.background.widgets.customImages.slice()
-                                if (arr[index]) {
-                                    arr[index] = Object.assign({}, arr[index], { path: value })
-                                    Config.options.background.widgets.customImages = arr
-                                }
-                            }
-                        }
-
-                        // Shape picker for this widget
-                        ConfigSelectionShapeArray {
-                            currentValue: modelData.shape ?? "Cookie4Sided"
-                            shapeColor: Appearance.colors.colPrimary
-                            backgroundColor: Appearance.colors.colPrimaryContainer
-                            options: [
-                                "Free", "VerticalRectangle", "Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill",
-                                "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
-                                "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
-                                "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
-                                "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
-                            ]
-                            onSelected: newValue => {
-                                var arr = Config.options.background.widgets.customImages.slice()
-                                if (arr[index]) {
-                                    arr[index] = Object.assign({}, arr[index], { shape: newValue })
-                                    Config.options.background.widgets.customImages = arr
-                                }
-                            }
-                        }
+                Timer {
+                    id: scrollToNewWidgetTimer
+                    interval: 60
+                    onTriggered: {
+                        page.scrollToBottom()
                     }
                 }
 
@@ -160,6 +207,7 @@ ContentPage {
                             transparent: false
                         })
                         Config.options.background.widgets.customImages = arr
+                        scrollToNewWidgetTimer.restart()
                     }
 
                     RowLayout {
