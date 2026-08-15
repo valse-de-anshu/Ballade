@@ -119,7 +119,8 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-5ebe9b8 (HEAD -> master) fix(bar): target /home disk partition, format hover popups, and fix layout jitter
+0496766 (HEAD -> master) feat(background,bar): add CRT/Glitch/Ripple shaders, fix wallpaper transition lifecycle, and refine workspace indicators
+5ebe9b8 fix(bar): target /home disk partition, format hover popups, and fix layout jitter
 a41254a refactor(bar): remove deprecated dynamic Divider settings
 1e6a702 feat(wallpaper-selector): implement static Mac Dock style Cover Flow for panoramic mode
 31bce2a fix(settings): remove redundant label to eliminate button overlap in Wall Shape section
@@ -133,7 +134,6 @@ d52e1ee fix(media): fix seeking on desktop media widget wavy progress bar and en
 43334d9 fix(clipboard): fix deleteEntry bug, add Pin/Unpin support and protect pinned items from wipe
 019f47e feat(clipboard): add clear all clipboard history button (delete_sweep) to search bar header
 c04e5ec fix(screenshot): strip trailing slash from savePath to fix double-slash in file path
-1f8c4f9 fix(screenshot): use copy-image-with-path.py to show both image and file path in cliphist
 ```
 
 ---
