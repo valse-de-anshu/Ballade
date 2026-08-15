@@ -119,7 +119,8 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-a1b1b0f (HEAD -> master) fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
+1555ae6 (HEAD -> master) feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
+a1b1b0f fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
 900810c feat(dock): add right-click context menu popup with Pin/Unpin and Close actions
 0496766 feat(background,bar): add CRT/Glitch/Ripple shaders, fix wallpaper transition lifecycle, and refine workspace indicators
 5ebe9b8 fix(bar): target /home disk partition, format hover popups, and fix layout jitter
@@ -133,8 +134,6 @@ d52e1ee fix(media): fix seeking on desktop media widget wavy progress bar and en
 11be865 style(media): widen desktop music player widget and convert album art to floating rounded square
 72a732b fix(clipboard): fully protect pinned items from delete/wipe, persist pins across reboots by storing display text
 64aa86c fix(clipboard): make wipe() atomic on 1st tap while preserving pinned items
-43334d9 fix(clipboard): fix deleteEntry bug, add Pin/Unpin support and protect pinned items from wipe
-019f47e feat(clipboard): add clear all clipboard history button (delete_sweep) to search bar header
 ```
 
 ---
