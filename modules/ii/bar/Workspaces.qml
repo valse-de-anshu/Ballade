@@ -383,40 +383,34 @@ ButtonMouseArea {
         FadeLoader {
             shown: !wsNum.showingNumbers
             anchors.centerIn: parent
-            Loader {
+
+            Circle {
                 anchors.centerIn: parent
-                sourceComponent: (Config.options?.bar.workspaces.indicatorStyle ?? "dot") === "icon" ? iconComponent : dotComponent
+                visible: (Config.options?.bar.workspaces.indicatorStyle ?? "dot") !== "icon"
+                diameter: root.workspaceButtonWidth * 0.18
+                color: wsNum.contentColor
+            }
 
-                Component {
-                    id: dotComponent
-                    Circle {
-                        anchors.centerIn: parent
-                        diameter: root.workspaceButtonWidth * 0.18
-                        color: wsNum.contentColor
-                    }
-                }
-
-                Component {
-                    id: iconComponent
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        iconSize: root.workspaceButtonWidth * 0.50
-                        color: wsNum.contentColor
-                        text: {
-                            switch (wsNum.wsId) {
-                                case 1:  return "code"
-                                case 2:  return "public"
-                                case 3:  return "music_note"
-                                case 4:  return "edit_square"
-                                case 5:  return "image"
-                                case 6:  return "forum"
-                                case 7:  return "browser_updated"
-                                case 8:  return "finance_mode"
-                                case 9:  return "monitor"
-                                case 10: return "analytics"
-                                default: return "circle"
-                            }
-                        }
+            MaterialSymbol {
+                anchors.centerIn: parent
+                visible: (Config.options?.bar.workspaces.indicatorStyle ?? "dot") === "icon"
+                iconSize: Appearance.font.pixelSize.smaller
+                color: wsNum.contentColor
+                fill: 1
+                font.weight: Font.DemiBold
+                text: {
+                    switch (wsNum.wsId) {
+                        case 1:  return "code"
+                        case 2:  return "public"
+                        case 3:  return "music_note"
+                        case 4:  return "edit_square"
+                        case 5:  return "image"
+                        case 6:  return "forum"
+                        case 7:  return "browser_updated"
+                        case 8:  return "finance_mode"
+                        case 9:  return "monitor"
+                        case 10: return "analytics"
+                        default: return "circle"
                     }
                 }
             }

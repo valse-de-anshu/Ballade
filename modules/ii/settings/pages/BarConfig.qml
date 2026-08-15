@@ -416,9 +416,10 @@ ContentPage {
                 ConfigSelectionArray {
                     text: Translation.tr("Indicator style")
                     icon: "page_control"
-                    currentValue: Config.options.bar.workspaces.indicatorStyle ?? "icon"
+                    currentValue: Config.options.bar.workspaces.indicatorStyle ?? "dot"
                     onSelected: newValue => {
-                        Config.options.bar.workspaces.indicatorStyle = newValue
+                        Config.options.bar.workspaces.indicatorStyle = newValue;
+                        Config.options.bar.workspaces.alwaysShowNumbers = false;
                     }
                     options: [
                         { displayName: Translation.tr("Dots"),  icon: "radio_button_checked",   value: "dot" },
@@ -526,27 +527,6 @@ ContentPage {
                         onTriggered: {
                             Config.options.bar.media.preferredPlayer = preferredPlayerField.value;
                         }
-                    }
-                }
-                ConfigSwitch {
-                    buttonIcon: "keep"; text: Translation.tr("Pin media controls")
-                    checked: Config.options.bar.media.alwaysVisible
-                    onCheckedChanged: { Config.options.bar.media.alwaysVisible = checked; }
-                }
-                ConfigSwitch {
-                    buttonIcon: "titlecase"; text: Translation.tr("Show only title")
-                    checked: Config.options.bar.media.onlyTitle
-                    onCheckedChanged: { Config.options.bar.media.onlyTitle = checked; }
-                }
-                ConfigSpinBox {
-                    icon: "width"
-                    text: Translation.tr("Max media width")
-                    value: Config.options.bar.media.maxWidth
-                    from: 100
-                    to: 500
-                    stepSize: 10
-                    onValueChanged: {
-                        Config.options.bar.media.maxWidth = value;
                     }
                 }
             }

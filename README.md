@@ -119,19 +119,21 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-1e6a702 (HEAD -> master) feat(wallpaper-selector): implement static Mac Dock style Cover Flow for panoramic mode
+5ebe9b8 (HEAD -> master) fix(bar): target /home disk partition, format hover popups, and fix layout jitter
+a41254a refactor(bar): remove deprecated dynamic Divider settings
+1e6a702 feat(wallpaper-selector): implement static Mac Dock style Cover Flow for panoramic mode
 31bce2a fix(settings): remove redundant label to eliminate button overlap in Wall Shape section
 b151a0a feat(wallpaperPicker): make wall shapes selectable in settings and remove top header bar
 a3d75d2 feat(settings): add Wall Shape section with 5 shape and animation specifications
 a06c1f3 feat(wallpaperPicker,widgets): integrate Cinematic Slanted picker, add 5 new shapes, and optimize widget performance
-1106290 fix(ballade): resolve all remaining QML warnings, property overrides, and signal handler errors in log
-19ab9da feat(ballade): sync latest end4-pC commits including WeatherWidget, Lyrics, and ResizeHandler
-b350d57 fix(ballade): resolve filterDuplicatePlayers ReferenceError and NotificationPopup TypeError
-b62e9b9 feat(ballade): restore ditto ii top bar with end4-pC visualizer and ii media controls popup
-eea8db6 feat(ballade): enable fully customizable dynamic bar and BarConfig.qml widget layout support
-d26780c feat(ballade): integrate end4-pC left and right sidebars
-dad368c fix(ballade): resolve QML property mismatches, restore ii top bar, frosted glass, and end4-pC features
-01f0723 feat(ballade): initial commit of ballade rice with ii topbar, frosted glass, and end4-pC feature modules
+d52e1ee fix(media): fix seeking on desktop media widget wavy progress bar and enhance album art layout
+11be865 style(media): widen desktop music player widget and convert album art to floating rounded square
+72a732b fix(clipboard): fully protect pinned items from delete/wipe, persist pins across reboots by storing display text
+64aa86c fix(clipboard): make wipe() atomic on 1st tap while preserving pinned items
+43334d9 fix(clipboard): fix deleteEntry bug, add Pin/Unpin support and protect pinned items from wipe
+019f47e feat(clipboard): add clear all clipboard history button (delete_sweep) to search bar header
+c04e5ec fix(screenshot): strip trailing slash from savePath to fix double-slash in file path
+1f8c4f9 fix(screenshot): use copy-image-with-path.py to show both image and file path in cliphist
 ```
 
 ---
