@@ -119,7 +119,8 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-1555ae6 (HEAD -> master) feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
+d4e3afe (HEAD -> master) feat(settings): add Up/Down arrow and PageUp/Down key scrolling, unify custom widget cards, and auto-scroll on add
+1555ae6 feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
 a1b1b0f fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
 900810c feat(dock): add right-click context menu popup with Pin/Unpin and Close actions
 0496766 feat(background,bar): add CRT/Glitch/Ripple shaders, fix wallpaper transition lifecycle, and refine workspace indicators
