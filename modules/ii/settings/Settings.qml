@@ -44,32 +44,7 @@ Scope {
 
         onVisibleChanged: {
             if (visible) {
-                GlobalFocusGrab.addDismissable(panelWindow);
                 settingsWindow.userMoved = false;
-            } else {
-                GlobalFocusGrab.removeDismissable(panelWindow);
-            }
-        }
-
-        Connections {
-            target: GlobalFocusGrab
-            function onDismissed() {
-                panelWindow.hide();
-            }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            color: "transparent"
-            opacity: GlobalStates.settingsOpen ? 1 : 0
-            z: 0
-            Behavior on opacity {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-            }
-            MouseArea {
-                anchors.fill: parent
-                propagateComposedEvents: false
-                onClicked: panelWindow.hide()
             }
         }
 
@@ -106,8 +81,8 @@ Scope {
                 id: dragHandle
                 anchors.top: parent.top
                 anchors.left: parent.left
-                anchors.right: parent.right
-                height: 32
+                anchors.right: closeBtn.left
+                height: 36
                 color: "transparent"
                 z: 2
 
@@ -118,6 +93,34 @@ Scope {
                     drag.axis: Drag.XAndYAxis
                     onPressed: settingsWindow.userMoved = true
                     onDoubleClicked: settingsWindow.userMoved = false
+                }
+            }
+
+            // Top-right Close Button
+            Rectangle {
+                id: closeBtn
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.margins: 8
+                width: 28
+                height: 28
+                radius: Appearance.rounding.full
+                color: closeMouseArea.containsMouse ? ColorUtils.transparentize(Appearance.colors.colError, 0.8) : "transparent"
+                z: 10
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "close"
+                    iconSize: 18
+                    color: closeMouseArea.containsMouse ? Appearance.colors.colError : Appearance.colors.colOnLayer0
+                }
+
+                MouseArea {
+                    id: closeMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: panelWindow.hide()
                 }
             }
 

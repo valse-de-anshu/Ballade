@@ -34,11 +34,9 @@ ShellRoot {
 
 
     // Panel families
-    property list<string> families: ["ii", "waffle"]
+    property list<string> families: ["ii"]
     function cyclePanelFamily() {
-        const currentIndex = families.indexOf(Config.options.panelFamily)
-        const nextIndex = (currentIndex + 1) % families.length
-        Config.options.panelFamily = families[nextIndex]
+        Config.options.panelFamily = "ii"
     }
 
     component PanelFamilyLoader: LazyLoader {
@@ -52,26 +50,14 @@ ShellRoot {
         component: IllogicalImpulseFamily {}
     }
 
-    PanelFamilyLoader {
-        identifier: "waffle"
-        component: WaffleFamily {}
-    }
-
-
     // Shortcuts
     IpcHandler {
         target: "panelFamily"
 
         function cycle(): void {
-            root.cyclePanelFamily()
+            // Keep locked to ii
+            Config.options.panelFamily = "ii"
         }
-    }
-
-    GlobalShortcut {
-        name: "panelFamilyCycle"
-        description: "Cycles panel family"
-
-        onPressed: root.cyclePanelFamily()
     }
 }
 
