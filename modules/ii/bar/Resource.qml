@@ -14,6 +14,7 @@ Item {
     implicitWidth: resourceRowLayout.x < 0 ? 0 : resourceRowLayout.implicitWidth
     implicitHeight: Appearance.sizes.barHeight
     property bool warning: percentage * 100 >= warningThreshold
+    property string rawTextOverride: ""
 
     RowLayout {
         id: resourceRowLayout
@@ -23,49 +24,83 @@ Item {
             verticalCenter: parent.verticalCenter
         }
 
-        ClippedFilledCircularProgress {
-            id: resourceCircProg
+        Item {
             Layout.alignment: Qt.AlignVCenter
-            lineWidth: Appearance.rounding.unsharpen
-            value: percentage
-            implicitSize: 20
-            colPrimary: root.warning ? Appearance.colors.colError : Appearance.colors.colOnSecondaryContainer
-            accountForLightBleeding: !root.warning
-            enableAnimation: false
+            implicitWidth: 20
+            implicitHeight: 20
 
-            Item {
-                anchors.centerIn: parent
-                width: resourceCircProg.implicitSize
-                height: resourceCircProg.implicitSize
-                
-                MaterialSymbol {
+            ClippedFilledCircularProgress {
+                anchors.fill: parent
+                visible: Config.options.bar.resources.style !== "outline"
+                lineWidth: Appearance.rounding.unsharpen
+                value: percentage
+                implicitSize: 20
+                colPrimary: root.warning ? Appearance.colors.colError : Appearance.colors.colOnSecondaryContainer
+                accountForLightBleeding: !root.warning
+                enableAnimation: false
+
+                Item {
                     anchors.centerIn: parent
-                    font.weight: Font.DemiBold
-                    fill: 1
-                    text: iconName
-                    iconSize: Appearance.font.pixelSize.normal
-                    color: Appearance.m3colors.m3onSecondaryContainer
+                    width: 20
+                    height: 20
+                    
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        font.weight: Font.DemiBold
+                        fill: 1
+                        text: iconName
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.m3colors.m3onSecondaryContainer
+                    }
+                }
+            }
+
+            ClippedOutlineCircularProgress {
+                anchors.fill: parent
+                visible: Config.options.bar.resources.style === "outline"
+                lineWidth: Appearance.rounding.unsharpen
+                value: percentage
+                implicitSize: 20
+                colPrimary: root.warning ? Appearance.colors.colError : Appearance.colors.colOnSecondaryContainer
+                enableAnimation: false
+
+                Item {
+                    anchors.centerIn: parent
+                    width: 20
+                    height: 20
+                    
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        font.weight: Font.DemiBold
+                        fill: 1
+                        text: iconName
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.m3colors.m3onSecondaryContainer
+                    }
                 }
             }
         }
 
         Item {
             Layout.alignment: Qt.AlignVCenter
-            implicitWidth: fullPercentageTextMetrics.width
+            visible: Config.options.bar.resources.showValue
+            implicitWidth: visible ? fullPercentageTextMetrics.width : 0
             implicitHeight: percentageText.implicitHeight
+            clip: true
 
             TextMetrics {
                 id: fullPercentageTextMetrics
-                text: "100"
+                text: percentageText.text.replace(/[0-9]/g, '0')
                 font.pixelSize: Appearance.font.pixelSize.small
             }
 
             StyledText {
                 id: percentageText
-                anchors.centerIn: parent
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
                 color: Appearance.colors.colOnLayer1
                 font.pixelSize: Appearance.font.pixelSize.small
-                text: `${Math.round(percentage * 100).toString()}`
+                text: root.rawTextOverride !== "" ? root.rawTextOverride : `${Math.round(percentage * 100).toString()}`
             }
         }
 

@@ -21,6 +21,13 @@ Singleton {
     property real swapUsedPercentage: swapTotal > 0 ? (swapUsed / swapTotal) : 0
     property real cpuUsage: 0
     property var previousCpuStats
+    
+    property real diskTotal: 1
+    property real diskUsed: 0
+    property real diskFree: diskTotal - diskUsed
+    property real diskUsedPercentage: diskTotal > 0 ? (diskUsed / diskTotal) : 0
+    
+    property real cpuTemp: 0
 
     property string maxAvailableMemoryString: kbToGbString(ResourceUsage.memoryTotal)
     property string maxAvailableSwapString: kbToGbString(ResourceUsage.swapTotal)
@@ -94,11 +101,39 @@ Singleton {
 
             root.updateHistories()
             interval = Config.options?.resources?.updateInterval ?? 3000
+            diskPollProc.running = true
+            tempPollProc.running = true
         }
 	}
 
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }
+
+    Process {
+        id: diskPollProc
+        command: ["bash", "-c", "df /home | tail -1 | awk '{print $2, $3}'"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parts = text.trim().split(/\s+/)
+                if (parts.length >= 2) {
+                    root.diskTotal = Number(parts[0])
+                    root.diskUsed = Number(parts[1])
+                }
+            }
+        }
+    }
+
+    Process {
+        id: tempPollProc
+        command: ["bash", "-c", "cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -nr | head -1"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.cpuTemp = Number(text.trim()) / 1000
+            }
+        }
+    }
 
     Process {
         id: findCpuMaxFreqProc

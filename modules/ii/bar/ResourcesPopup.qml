@@ -88,6 +88,35 @@ StyledPopup {
                     label: Translation.tr("Load:")
                     value: `${Math.round(ResourceUsage.cpuUsage * 100)}%`
                 }
+                StyledPopupValueRow {
+                    icon: "device_thermostat"
+                    label: Translation.tr("Temp:")
+                    value: `${Math.round(ResourceUsage.cpuTemp)}°C`
+                    visible: ResourceUsage.cpuTemp > 0
+                }
+            }
+        }
+
+        Column {
+            anchors.top: parent.top
+            spacing: 8
+
+            StyledPopupHeaderRow {
+                icon: "hard_drive"
+                label: "Disk (/home)"
+            }
+            Column {
+                spacing: 4
+                StyledPopupValueRow {
+                    icon: "clock_loader_60"
+                    label: Translation.tr("Used:")
+                    value: `${root.formatKB(ResourceUsage.diskUsed)} / ${root.formatKB(ResourceUsage.diskTotal)}`
+                }
+                StyledPopupValueRow {
+                    icon: "check_circle"
+                    label: Translation.tr("Free:")
+                    value: root.formatKB(ResourceUsage.diskFree)
+                }
             }
         }
     }

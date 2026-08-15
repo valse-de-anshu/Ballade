@@ -111,7 +111,7 @@ Item { // Bar content region
         BarGroup {
             id: leftCenterGroup
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: root.centerSideModuleWidth
+            implicitWidth: Math.max(root.centerSideModuleWidth, childrenRect.width)
 
             Resources {
                 alwaysShowAllResources: root.useShortenedForm === 2
@@ -157,7 +157,7 @@ Item { // Bar content region
         MouseArea {
             id: rightCenterGroup
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: root.centerSideModuleWidth
+            implicitWidth: Math.max(root.centerSideModuleWidth, childrenRect.width)
             implicitHeight: rightCenterGroupContent.implicitHeight
 
             onPressed: {
