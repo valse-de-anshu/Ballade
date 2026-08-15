@@ -75,7 +75,7 @@ DockButton {
     }
 
     altAction: () => {
-        appListRoot?.openContextMenu(root);
+        appListRoot?.openContextMenu(appToplevel, root);
     }
 
     contentItem: Loader {

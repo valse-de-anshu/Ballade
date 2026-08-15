@@ -50,6 +50,17 @@ Item {
         return bestCoords ? { lat: bestCoords.lat, lon: bestCoords.lon, name: bestName } : null
     }
 
+    readonly property var weatherCoords: {
+        if (Weather.data && typeof Weather.data.lat === "number" && typeof Weather.data.lon === "number" && (Weather.data.lat !== 0 || Weather.data.lon !== 0)) {
+            var label = Weather.data.city || "";
+            if (Weather.data.region && Weather.data.region !== label && Weather.data.region !== "City") {
+                label += (label.length > 0 ? ", " : "") + Weather.data.region;
+            }
+            return { lat: Weather.data.lat, lon: Weather.data.lon, name: label };
+        }
+        return null;
+    }
+
     readonly property bool gpsFixValid: Weather.gpsActive && Weather.location.valid
         && !(Weather.location.lat === 0 && Weather.location.lon === 0)
 
@@ -58,7 +69,7 @@ Item {
         : null
 
     readonly property var cityFallback: findCityCoords(Config.options.bar.weather.city)
-    readonly property var markerCoords: root.gpsFixValid ? root.gpsSnapped : root.cityFallback
+    readonly property var markerCoords: root.weatherCoords || (root.gpsFixValid ? root.gpsSnapped : root.cityFallback)
     readonly property bool hasMarker: root.markerCoords !== null
         && isFinite(root.markerCoords.lat) && isFinite(root.markerCoords.lon)
         && root.width > 0 && root.height > 0
@@ -144,13 +155,14 @@ Item {
     }
 
     StyledText {
-        visible: root.hasMarker && root.gpsFixValid
-        x: marker.x + marker.width + 4
-        y: marker.y - 2
-        text: root.gpsSnapped?.name ?? ""
+        visible: root.hasMarker && (root.markerCoords?.name?.length > 0)
+        x: Math.min(root.width - implicitWidth - 4, Math.max(4, marker.x + marker.width + 4))
+        y: Math.min(root.height - implicitHeight - 2, Math.max(2, marker.y - 2))
+        text: root.markerCoords?.name ?? ""
         font.pixelSize: Appearance.font.pixelSize.smallest
+        font.weight: Font.DemiBold
         color: root.markerColor
-        opacity: 0.85
+        opacity: 0.9
     }
 
     onWidthChanged: canvas.requestPaint()

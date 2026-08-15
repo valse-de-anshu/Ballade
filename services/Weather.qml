@@ -31,50 +31,60 @@ Singleton {
 
     property var data: ({
         uv: 0,
-        humidity: 0,
-        sunrise: 0,
-        sunset: 0,
-        windDir: 0,
-        wCode: 0,
-        city: 0,
-        wind: 0,
-        precip: 0,
-        visib: 0,
-        press: 0,
-        temp: 0,
-        tempFeelsLike: 0,
-        lastRefresh: 0,
+        humidity: "--",
+        sunrise: "--",
+        sunset: "--",
+        windDir: "N",
+        wCode: "113",
+        city: "--",
+        region: "",
+        country: "",
+        lat: 0,
+        lon: 0,
+        description: "",
+        wind: "--",
+        precip: "--",
+        visib: "--",
+        press: "--",
+        temp: "--°",
+        tempFeelsLike: "--°",
+        cr: "--",
+        cloudcover: 0,
+        lastRefresh: "--",
     })
 
     function refineData(data) {
+        if (!data || !data.current) return;
         let temp = {};
         temp.uv = data?.current?.uvIndex || 0;
         temp.humidity = (data?.current?.humidity || 0) + "%";
-        temp.sunrise = data?.astronomy?.sunrise || "0.0";
-        temp.sunset = data?.astronomy?.sunset || "0.0";
+        temp.sunrise = data?.astronomy?.sunrise || "--";
+        temp.sunset = data?.astronomy?.sunset || "--";
         temp.windDir = data?.current?.winddir16Point || "N";
         temp.wCode = data?.current?.weatherCode || "113";
-        temp.city = data?.location?.areaName[0]?.value || "City";
-        temp.temp = "";
-        temp.tempFeelsLike = "";
+        temp.city = data?.location?.areaName ? (data.location.areaName[0]?.value || "City") : "City";
+        temp.region = data?.location?.region ? (data.location.region[0]?.value || "") : "";
+        temp.country = data?.location?.country ? (data.location.country[0]?.value || "") : "";
+        temp.lat = parseFloat(data?.location?.latitude) || 0;
+        temp.lon = parseFloat(data?.location?.longitude) || 0;
+        temp.description = data?.current?.weatherDesc ? (data.current.weatherDesc[0]?.value || "") : "";
+        temp.cloudcover = data?.current?.cloudcover || 0;
         if (root.useUSCS) {
             temp.wind = (data?.current?.windspeedMiles || 0) + " mph";
             temp.precip = (data?.current?.precipInches || 0) + " in";
-            temp.visib = (data?.current?.visibilityMiles || 0) + " m";
+            temp.visib = (data?.current?.visibilityMiles || 0) + " mi";
             temp.press = (data?.current?.pressureInches || 0) + " psi";
-            temp.temp += (data?.current?.temp_F || 0);
-            temp.tempFeelsLike += (data?.current?.FeelsLikeF || 0);
-            temp.temp += "°F";
-            temp.tempFeelsLike += "°F";
+            temp.cr = (data?.current?.precipInches || 0) + " in";
+            temp.temp = (data?.current?.temp_F || 0) + "°F";
+            temp.tempFeelsLike = (data?.current?.FeelsLikeF || 0) + "°F";
         } else {
             temp.wind = (data?.current?.windspeedKmph || 0) + " km/h";
             temp.precip = (data?.current?.precipMM || 0) + " mm";
             temp.visib = (data?.current?.visibility || 0) + " km";
             temp.press = (data?.current?.pressure || 0) + " hPa";
-            temp.temp += (data?.current?.temp_C || 0);
-            temp.tempFeelsLike += (data?.current?.FeelsLikeC || 0);
-            temp.temp += "°C";
-            temp.tempFeelsLike += "°C";
+            temp.cr = (data?.current?.precipMM || 0) + " mm";
+            temp.temp = (data?.current?.temp_C || 0) + "°C";
+            temp.tempFeelsLike = (data?.current?.FeelsLikeC || 0) + "°C";
         }
         temp.lastRefresh = DateTime.time + " • " + DateTime.date;
         root.data = temp;
@@ -92,7 +102,7 @@ Singleton {
         // format as json
         command += "?format=j1";
         command += " | ";
-        // only take the current weather, location, asytronmy data
+        // only take the current weather, location, astronomy data
         command += "jq '{current: .current_condition[0], location: .nearest_area[0], astronomy: .weather[0].astronomy[0]}'";
         fetcher.command[2] = command;
         fetcher.running = true;
@@ -103,9 +113,12 @@ Singleton {
     }
 
     Component.onCompleted: {
-        if (!root.gpsActive) return;
-        console.info("[WeatherService] Starting the GPS service.");
-        positionSource.start();
+        if (root.gpsActive) {
+            console.info("[WeatherService] Starting the GPS service.");
+            positionSource.start();
+        } else {
+            root.getData();
+        }
     }
 
     Process {

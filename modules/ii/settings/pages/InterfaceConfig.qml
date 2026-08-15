@@ -448,104 +448,73 @@ ContentPage {
                         Config.options.overview.scale = value / 100;
                     }
                 }
-                ConfigSelectionArray {
-                    text: Translation.tr("Style")
-                    icon: "style"
-                    currentValue: Config.options.overview.style
-                    onSelected: newValue => {
-                        Config.options.overview.style = newValue
-                    }
-                    options: [
-                        {
-                            displayName: Translation.tr("Default"),
-                            icon: "grid_on",
-                            value: "default"
-                        },
-                        {
-                            displayName: Translation.tr("Niri Like"),
-                            icon: "view_carousel",
-                            value: "niri"
+                ConfigRow {
+                    uniform: true
+                    ConfigSpinBox {
+                        icon: "splitscreen_bottom"
+                        text: Translation.tr("Rows")
+                        value: Config.options.overview.rows
+                        from: 1
+                        to: 20
+                        stepSize: 1
+                        onValueChanged: {
+                            Config.options.overview.rows = value;
                         }
-                    ]
+                    }
+                    ConfigSpinBox {
+                        icon: "splitscreen_right"
+                        text: Translation.tr("Columns")
+                        value: Config.options.overview.columns
+                        from: 1
+                        to: 20
+                        stepSize: 1
+                        onValueChanged: {
+                            Config.options.overview.columns = value;
+                        }
+                    }
                 }
-            }
 
-            ContentSubsection {
-                title: Translation.tr("Default Settings")
-                visible: Config.options.overview.style !== "niri"
-
-                GroupedList {
-                    visible: Config.options.overview.style !== "niri"
-                    ConfigRow {
-                        uniform: true
-                        visible: Config.options.overview.style !== "niri"
-                        ConfigSpinBox {
-                            icon: "splitscreen_bottom"
-                            text: Translation.tr("Rows")
-                            value: Config.options.overview.rows
-                            from: 1
-                            to: 20
-                            stepSize: 1
-                            onValueChanged: {
-                                Config.options.overview.rows = value;
-                            }
-                        }
-                        ConfigSpinBox {
-                            icon: "splitscreen_right"
-                            text: Translation.tr("Columns")
-                            value: Config.options.overview.columns
-                            from: 1
-                            to: 20
-                            stepSize: 1
-                            onValueChanged: {
-                                Config.options.overview.columns = value;
-                            }
-                        }
-                    }
-
-                    ConfigRow {
-                        uniform: true
-                        visible: Config.options.overview.style !== "niri"
+                ConfigRow {
+                    uniform: true
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.leftMargin: 24
+                    ConfigSelectionArray {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.leftMargin: 24
-                        ConfigSelectionArray {
-                            Layout.alignment: Qt.AlignHCenter
-                            currentValue: Config.options.overview.orderRightLeft
-                            onSelected: newValue => {
-                                Config.options.overview.orderRightLeft = newValue
-                            }
-                            options: [
-                                {
-                                    displayName: Translation.tr("Left to right"),
-                                    icon: "arrow_forward",
-                                    value: 0
-                                },
-                                {
-                                    displayName: Translation.tr("Right to left"),
-                                    icon: "arrow_back",
-                                    value: 1
-                                }
-                            ]
+                        currentValue: Config.options.overview.orderRightLeft
+                        onSelected: newValue => {
+                            Config.options.overview.orderRightLeft = newValue
                         }
-                        ConfigSelectionArray {
-                            Layout.alignment: Qt.AlignHCenter
-                            currentValue: Config.options.overview.orderBottomUp
-                            onSelected: newValue => {
-                                Config.options.overview.orderBottomUp = newValue
+                        options: [
+                            {
+                                displayName: Translation.tr("Left to right"),
+                                icon: "arrow_forward",
+                                value: 0
+                            },
+                            {
+                                displayName: Translation.tr("Right to left"),
+                                icon: "arrow_back",
+                                value: 1
                             }
-                            options: [
-                                {
-                                    displayName: Translation.tr("Top-down"),
-                                    icon: "arrow_downward",
-                                    value: 0
-                                },
-                                {
-                                    displayName: Translation.tr("Bottom-up"),
-                                    icon: "arrow_upward",
-                                    value: 1
-                                }
-                            ]
+                        ]
+                    }
+                    ConfigSelectionArray {
+                        Layout.alignment: Qt.AlignHCenter
+                        currentValue: Config.options.overview.orderBottomUp
+                        onSelected: newValue => {
+                            Config.options.overview.orderBottomUp = newValue
                         }
+                        options: [
+                            {
+                                displayName: Translation.tr("Top-down"),
+                                icon: "arrow_downward",
+                                value: 0
+                            },
+                            {
+                                displayName: Translation.tr("Bottom-up"),
+                                icon: "arrow_upward",
+                                value: 1
+                            }
+                        ]
                     }
                 }
             }

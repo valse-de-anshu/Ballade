@@ -80,6 +80,27 @@ Scope {
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Escape) {
                     GlobalStates.overviewOpen = false;
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    if (!panelWindow.searchingText) {
+                        Hyprland.dispatch("workspace r-1");
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_Down) {
+                    if (!panelWindow.searchingText) {
+                        Hyprland.dispatch("workspace r+1");
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_PageUp) {
+                    if (!panelWindow.searchingText) {
+                        Hyprland.dispatch("workspace -3");
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_PageDown) {
+                    if (!panelWindow.searchingText) {
+                        Hyprland.dispatch("workspace +3");
+                        event.accepted = true;
+                    }
                 }
             }
 
