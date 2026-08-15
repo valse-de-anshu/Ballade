@@ -18,6 +18,11 @@ install_dir__sync_exclude+=("ballade" "docs")
 ```
 Additionally, `ballade` is fully initialized with its own local **Git repository** (`git init`) to track commits and restore states safely.
 
+### 📝 Documentation Maintenance Directive
+As an AI agent working on this repository, you are **REQUIRED** to keep this `README.md` file updated as you work:
+1. **Git Commits:** Whenever you successfully implement a feature or fix a bug and commit it via `git`, you MUST update the `## 📦 Git Commit History & Statistics` section at the bottom of this document. Run `git log --oneline -n 15` and replace the code block with the latest log.
+2. **Core File Glossary:** If you introduce a new major UI component, config file, logic module, or settings page, you MUST document it in the `## 📌 Important Section: Core File Glossary` at the bottom of this file. Use simple, generic terms (like "Settings UI", "Shape Engine") and explicitly describe its path, its purpose, and *when* a future agent should edit it.
+
 ---
 
 ## 💡 Code Logic & Architectural Insights (`ii` vs `end4-pC` vs `ballade`)
@@ -111,10 +116,15 @@ graph TD
 
 ## 📦 Git Commit History & Statistics
 
-The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the complete chronological commit history:
+The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-1106290 (HEAD -> master) fix(ballade): resolve all remaining QML warnings, property overrides, and signal handler errors in log
+1e6a702 (HEAD -> master) feat(wallpaper-selector): implement static Mac Dock style Cover Flow for panoramic mode
+31bce2a fix(settings): remove redundant label to eliminate button overlap in Wall Shape section
+b151a0a feat(wallpaperPicker): make wall shapes selectable in settings and remove top header bar
+a3d75d2 feat(settings): add Wall Shape section with 5 shape and animation specifications
+a06c1f3 feat(wallpaperPicker,widgets): integrate Cinematic Slanted picker, add 5 new shapes, and optimize widget performance
+1106290 fix(ballade): resolve all remaining QML warnings, property overrides, and signal handler errors in log
 19ab9da feat(ballade): sync latest end4-pC commits including WeatherWidget, Lyrics, and ResizeHandler
 b350d57 fix(ballade): resolve filterDuplicatePlayers ReferenceError and NotificationPopup TypeError
 b62e9b9 feat(ballade): restore ditto ii top bar with end4-pC visualizer and ii media controls popup
@@ -124,44 +134,28 @@ dad368c fix(ballade): resolve QML property mismatches, restore ii top bar, frost
 01f0723 feat(ballade): initial commit of ballade rice with ii topbar, frosted glass, and end4-pC feature modules
 ```
 
-### Detailed Breakdown of Commit History & Contents
+---
 
-#### 1. Commit `01f0723`
-* **Message**: `feat(ballade): initial commit of ballade rice with ii topbar, frosted glass, and end4-pC feature modules`
-* **Stats**: `972 files changed, 87181 insertions(+)`
-* **Contents**: Initialized `ballade` as an independent Git repository, bootstrapping base files from `ii` and copying core feature modules from `end4-pC`.
+## 📌 Important Section: Core File Glossary
 
-#### 2. Commit `dad368c`
-* **Message**: `fix(ballade): resolve QML property mismatches, restore ii top bar, frosted glass, and end4-pC features`
-* **Stats**: `8 files changed, 214 insertions(+), 42 deletions(-)`
-* **Contents**: Configured `qsConfig = "ballade"` in `custom/env.lua`, updated `3.files-legacy.sh` exclude list, fixed initial QML module load paths, and restored frosted glass blur parameters.
+If you ever need to revisit, modify, or debug the components of this rice, the following acts as an architectural map to the most frequently modified core files. 
 
-#### 3. Commit `d26780c`
-* **Message**: `feat(ballade): integrate end4-pC left and right sidebars`
-* **Stats**: `24 files changed, 3410 insertions(+), 180 deletions(-)`
-* **Contents**: Replaced static sidebars with `end4-pC`'s `sidebarLeft` (AI Chat, Translator, Booru) and `sidebarRight` (QuickSliders, Volume Mixer, Network/Bluetooth dialogs, Pomodoro).
+### 1. The Wallpaper Picker UI (`HyprPickerContent.qml`)
+**Path:** `modules/ii/wallpaperSelector/HyprPickerContent.qml`
+**What it does:** This is the **Main UI file** for the wallpaper selector. It contains the visual layout logic, including the 3D "Cover Flow" geometry, the sliding "Mac Dock" scale animations, and the image loading logic. 
+**When to edit:** Edit this if you want to change how the wallpaper cards look, adjust the 3D curvature, modify the gap sizes, or change the border highlighters.
 
-#### 4. Commit `eea8db6`
-* **Message**: `feat(ballade): enable fully customizable dynamic bar and BarConfig.qml widget layout support`
-* **Stats**: `33 files changed, 4926 insertions(+), 862 deletions(-)`
-* **Contents**: Synchronized `BarConfig.qml` with dynamic bar layout controls and option adapters.
+### 2. The Settings Menu UI (`CustomWidgetsConfig.qml`)
+**Path:** `modules/ii/settings/pages/CustomWidgetsConfig.qml`
+**What it does:** This is the **Settings UI file** for the Custom Widgets page in the overlay menu. It contains the visual buttons, arrays, and text inputs (like the "Behavior" and "Card Shape" toggles) that the user interacts with.
+**When to edit:** Edit this if you want to add new buttons, toggle switches, or shape options to the settings panel.
 
-#### 5. Commit `b62e9b9`
-* **Message**: `feat(ballade): restore ditto ii top bar with end4-pC visualizer and ii media controls popup`
-* **Stats**: `19 files changed, 794 insertions(+), 2082 deletions(-)`
-* **Contents**: Restored the **ditto `ii` top bar** layout (`modules/ii/bar/`), embedded `end4-pC`'s animated Audio Visualizer into `Media.qml`, and hooked click actions to trigger `ii`'s native music preview popup (`MediaControls.qml`).
+### 3. The Configuration Schema (`Config.qml`)
+**Path:** `modules/common/Config.qml`
+**What it does:** This is the **Master Configuration Schema**. It defines the JSON structure that QuickShell uses to save and load user preferences (e.g., `Config.options.wallpaperSelector.behavior`).
+**When to edit:** Edit this **before** adding new toggles to the settings menu. If a property isn't defined here, the UI buttons won't react when tapped because the property won't emit a state-change signal.
 
-#### 6. Commit `b350d57`
-* **Message**: `fix(ballade): resolve filterDuplicatePlayers ReferenceError and NotificationPopup TypeError`
-* **Stats**: `2 files changed, 24 insertions(+), 2 deletions(-)`
-* **Contents**: Fixed `ReferenceError` in `SidebarRightContent.qml` by defining `filterDuplicatePlayers()` and added safe optional chaining (`?.`) to `forceMonitor` in `NotificationPopup.qml`.
-
-#### 7. Commit `19ab9da`
-* **Message**: `feat(ballade): sync latest end4-pC commits including WeatherWidget, Lyrics, and ResizeHandler`
-* **Stats**: `30 files changed, 3681 insertions(+), 205 deletions(-)`
-* **Contents**: Pulled latest upstream commits (`f334b97c`, `f3a84436`, `b4547fde`) from `end4-pC`, incorporating updated responsive `WeatherWidget.qml`, auto-scrolling `Lyrics.qml`, and `ResizeHandler.qml`.
-
-#### 8. Commit `1106290`
-* **Message**: `fix(ballade): resolve all remaining QML warnings, property overrides, and signal handler errors in log`
-* **Stats**: `4 files changed, 10 insertions(+), 16 deletions(-)`
-* **Contents**: Fixed `StyledSwitch` `scale` property override in `StyledSwitch.qml` & `Anime.qml`, removed invalid `onHostnameChanged` signal connection in `Profile.qml`, and added null checks in `ToolbarTabBar.qml`.
+### 4. The Geometry & Mask Engine (`MaterialShape.qml` & `material-shapes.js`)
+**Path:** `modules/common/widgets/MaterialShape.qml` & `modules/common/widgets/shapes/material-shapes.js`
+**What it does:** This acts as the **Shape Rendering Engine**. It uses QML `Canvas` and standard Qt transforms to draw complex geometric masks (like the `slanted` Cyberpunk parallelogram, `superellipse`, or `cookie`).
+**When to edit:** Edit this if you want to create entirely new geometric borders or clip-masks for images and widgets across the rice.

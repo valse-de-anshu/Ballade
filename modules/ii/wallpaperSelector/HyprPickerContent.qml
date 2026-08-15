@@ -39,8 +39,9 @@ Item {
     property real   edgeScale     : 0.50
     property int    baseSpacing   : 18
     property int    visibleTiles  : 5
-    property string activeShape   : Config.options.wallpaperSelector.shape || "slanted"
-    readonly property bool isPanoramic: activeShape === "panoramic"
+    property string activeShape   : Config.options.wallpaperSelector.shape || "cyberpunk"
+    property string activeBehavior: Config.options.wallpaperSelector.behavior || "standard"
+    readonly property bool isPanoramic: activeBehavior === "panoramic"
     // ------------------
 
     // Thumbnail cache — reuse hyprquickpaper's own cache (simple filenames)
@@ -79,7 +80,7 @@ Item {
         clip: false
         cacheBuffer: 600
 
-        property bool isPanoramic  : root.activeShape === "panoramic"
+        property bool isPanoramic  : root.activeBehavior === "panoramic"
         property real tileSlotWidth : isPanoramic
                                       ? Math.max(8, width / Math.max(1, folderModel.count))
                                       : Math.round(width / 4.5)
@@ -180,7 +181,7 @@ Item {
                 
                 scale: tile.targetScale
                 opacity: tile.targetOpacity
-                transform: Shear { xFactor: root.activeShape === "slanted" ? -0.12 : 0.0 }
+                transform: Shear { xFactor: root.activeShape === "cyberpunk" ? -0.12 : 0.0 }
 
 
                 Item {
@@ -266,13 +267,12 @@ Item {
                         elide: Text.ElideMiddle
                         width: parent.width - 16
                         horizontalAlignment: Text.AlignHCenter
-                        transform: Shear { xFactor: root.activeShape === "slanted" ? 0.12 : 0.0 }
+                        transform: Shear { xFactor: root.activeShape === "cyberpunk" ? 0.12 : 0.0 }
                     }
                 }
             }
-
             MouseArea {
-                anchors.fill: parent
+                anchors.fill: content
                 hoverEnabled: true
                 onEntered: list.selectedIndex = index
                 onClicked:  list.activateCurrent()

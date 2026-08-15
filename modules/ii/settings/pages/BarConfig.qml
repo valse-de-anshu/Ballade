@@ -52,8 +52,7 @@ ContentPage {
         { id: "updatesCount",      name: Translation.tr("Updates"),              icon: "deployed_code_update" },
         { id: "docktoPanel",       name: Translation.tr("Dock to Panel"),        icon: "apps" },
         { id: "visualizer",        name: Translation.tr("Visualizer"),           icon: "graphic_eq" },
-        { id: "hyprlandXkbIndicator",   name: Translation.tr("Keyboard Layout"), icon: "keyboard" },
-        { id: "divisor",            name: Translation.tr("Divider"),             icon: "horizontal_distribute" },
+        { id: "hyprlandXkbIndicator",   name: Translation.tr("Keyboard Layout"), icon: "keyboard" }
     ]
 
     function availableFor() {
@@ -62,9 +61,8 @@ ContentPage {
             ...Config.options.bar.layouts.middleLayout,
             ...Config.options.bar.layouts.rightLayout
         ]
-        const multipleAllowed = ["visualizer", "divisor"]
+        const multipleAllowed = ["visualizer"]
         return allWidgets.filter(w => {
-            if (w.id === "divisor" && Config.options.bar.borderless !== "transparent") return false
             return !used.includes(w.id) || multipleAllowed.includes(w.id)
         })
     }
@@ -312,39 +310,7 @@ ContentPage {
                 }
             }
         }
-
-        ContentSection {
-            icon: "vertical_align_center"
-            shape: MaterialShape.Shape.Diamond
-            title: Translation.tr("Divider")
-
-            GroupedList {
-                ConfigSelectionArray {
-                    text: Translation.tr("Style")
-                    icon: "style"
-                    currentValue: Config.options.bar.divider.style
-                    onSelected: newValue => { Config.options.bar.divider.style = newValue; }
-                    options: [
-                        { displayName: Translation.tr("Line"),  icon: "more_vert",       value: "rect" },
-                        { displayName: Translation.tr("Dot"),   icon: "fiber_manual_record", value: "dot" },
-                        { displayName: Translation.tr("Space"), icon: "space_bar",       value: "space" }
-                    ]
-                }
-                ConfigSpinBox {
-                    icon: "width"
-                    enabled: Config.options.bar.divider.style === "space"
-                    text: Translation.tr("Space width (px)")
-                    value: Config.options.bar.divider.spacing
-                    from: 4
-                    to: 100
-                    stepSize: 2
-                    onValueChanged: {
-                        Config.options.bar.divider.spacing = value;
-                    }
-                }
-            }
-        }
-
+        
         ContentSection {
             icon: "buttons_alt"
             shape: MaterialShape.Shape.SoftBurst

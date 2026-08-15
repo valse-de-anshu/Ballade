@@ -228,38 +228,76 @@ ContentPage {
             }
         }
 
-        // ── Section 3: Wall Shape ───────────────────────────────────────
+        // ── Section 3: Wallpaper Picker ───────────────────────────────────────
         ContentSection {
             icon: "wallpaper"
             shape: MaterialShape.Shape.Slanted
-            title: Translation.tr("Wall Shape")
+            title: Translation.tr("Wallpaper Picker")
 
             GroupedList {
                 Layout.fillWidth: true
 
-                ConfigSelectionArray {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    currentValue: Config.options.wallpaperSelector.shape || "slanted"
-                    onSelected: newValue => {
-                        Config.options.wallpaperSelector.shape = newValue;
+                    spacing: 8
+
+                    StyledText {
+                        text: Translation.tr("Behavior")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colSubtext
+                        Layout.leftMargin: 4
                     }
-                    options: [
-                        {
-                            displayName: Translation.tr("Cyberpunk Slanted"),
-                            icon: "category",
-                            value: "slanted"
-                        },
-                        {
-                            displayName: Translation.tr("Modern Rounded"),
-                            icon: "crop_square",
-                            value: "rounded"
-                        },
-                        {
-                            displayName: Translation.tr("Cyberpunk Panoramic"),
-                            icon: "panorama_wide_angle",
-                            value: "panoramic"
+
+                    ConfigSelectionArray {
+                        Layout.fillWidth: true
+                        currentValue: Config.options.wallpaperSelector.behavior || "standard"
+                        onSelected: newValue => {
+                            Config.options.wallpaperSelector.behavior = newValue;
                         }
-                    ]
+                        options: [
+                            {
+                                displayName: Translation.tr("Modern Rounded"),
+                                icon: "view_list",
+                                value: "standard"
+                            },
+                            {
+                                displayName: Translation.tr("Cyberpunk Panoramic"),
+                                icon: "panorama_wide_angle",
+                                value: "panoramic"
+                            }
+                        ]
+                    }
+                    
+                    Item { Layout.preferredHeight: 4 }
+
+                    StyledText {
+                        text: Translation.tr("Card Shape")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colSubtext
+                        Layout.leftMargin: 4
+                    }
+
+                    ConfigSelectionArray {
+                        Layout.fillWidth: true
+                        currentValue: Config.options.wallpaperSelector.shape || "cyberpunk"
+                        onSelected: newValue => {
+                            Config.options.wallpaperSelector.shape = newValue;
+                        }
+                        options: [
+                            {
+                                displayName: Translation.tr("Cyberpunk"),
+                                icon: "category",
+                                value: "cyberpunk"
+                            },
+                            {
+                                displayName: Translation.tr("Card"),
+                                icon: "crop_square",
+                                value: "card"
+                            }
+                        ]
+                    }
                 }
             }
         }
