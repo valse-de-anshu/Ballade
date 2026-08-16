@@ -324,7 +324,7 @@ ContentPage {
                     ConfigTextArea {
                         id: notifSoundPathField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "music_note"
                         text: Translation.tr("Notification Sound Path")
                         value: Config.options.sounds.notificationSoundPath
@@ -507,7 +507,7 @@ ContentPage {
                     ConfigTextArea {
                         id: startupSoundField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "wb_sunny"
                         text: Translation.tr("Startup Audio / Greeting Folder")
                         value: Config.options.sounds.startupSoundPath
@@ -554,7 +554,7 @@ ContentPage {
                     ConfigTextArea {
                         id: shutdownSoundField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "power_settings_new"
                         text: Translation.tr("Shutdown & Reboot Sound")
                         value: Config.options.sounds.shutdownSoundPath
@@ -597,7 +597,7 @@ ContentPage {
                     ConfigTextArea {
                         id: lockSoundField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "lock"
                         text: Translation.tr("Lock Screen Sound")
                         value: Config.options.sounds.lockSoundPath
@@ -640,7 +640,7 @@ ContentPage {
                     ConfigTextArea {
                         id: logoutSoundField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "logout"
                         text: Translation.tr("Logout Sound")
                         value: Config.options.sounds.logoutSoundPath
@@ -683,7 +683,7 @@ ContentPage {
                     ConfigTextArea {
                         id: sleepSoundField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "bedtime"
                         text: Translation.tr("Sleep & Suspend Sound")
                         value: Config.options.sounds.sleepSoundPath
@@ -761,7 +761,7 @@ ContentPage {
                     ConfigTextArea {
                         id: chargerPluggedField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "power"
                         text: Translation.tr("Charging Now (Plugged In)")
                         value: Config.options.sounds.chargerPluggedSoundPath
@@ -804,7 +804,7 @@ ContentPage {
                     ConfigTextArea {
                         id: chargerUnpluggedField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "power_off"
                         text: Translation.tr("Charge Cut Off (Unplugged)")
                         value: Config.options.sounds.chargerUnpluggedSoundPath
@@ -847,7 +847,7 @@ ContentPage {
                     ConfigTextArea {
                         id: batteryFullField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "battery_charging_full"
                         text: Translation.tr("Battery Full Warning")
                         value: Config.options.sounds.batteryFullSoundPath
@@ -925,7 +925,7 @@ ContentPage {
                     ConfigTextArea {
                         id: usbPlugInField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "usb"
                         text: Translation.tr("USB Plug In Sound")
                         value: Config.options.sounds.usbPlugInSoundPath
@@ -968,7 +968,7 @@ ContentPage {
                     ConfigTextArea {
                         id: usbPlugOutField
                         Layout.fillWidth: true
-                        fieldWidth: 250
+                        fieldWidth: 175
                         buttonIcon: "usb_off"
                         text: Translation.tr("USB Plug Out Sound")
                         value: Config.options.sounds.usbPlugOutSoundPath

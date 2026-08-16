@@ -47,12 +47,14 @@ RowLayout {
 
     ColumnLayout {
         Layout.fillWidth: true
+        Layout.minimumWidth: 120
         spacing: 0
         StyledText {
             Layout.fillWidth: true
             text: root.text
             color: root.colLabel
             opacity: root.enabled ? 1 : 0.4
+            elide: Text.ElideRight
         }
         StyledText {
             Layout.fillWidth: true
@@ -96,7 +98,7 @@ RowLayout {
             anchors.leftMargin: 12
             anchors.rightMargin: 12
             enabled: root.enabled
-            wrapMode: TextArea.Wrap
+            wrapMode: TextArea.NoWrap
             verticalAlignment: TextEdit.AlignVCenter
             selectByMouse: true
             placeholderTextColor: Appearance.colors.colSubtext
