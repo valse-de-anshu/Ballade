@@ -93,27 +93,45 @@ ContentPage {
             shape: MaterialShape.Shape.Oval
             title: Translation.tr("Music Recognition")
 
-            GroupedList {
-                ConfigSpinBox {
-                    icon: "timer_off"
-                    text: Translation.tr("Total duration timeout (s)")
-                    value: Config.options.musicRecognition.timeout
-                    from: 10
-                    to: 100
-                    stepSize: 2
-                    onValueChanged: {
-                        Config.options.musicRecognition.timeout = value;
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: musicRecCardContent.implicitHeight + 28
+
+                ColumnLayout {
+                    id: musicRecCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
                     }
-                }
-                ConfigSpinBox {
-                    icon: "av_timer"
-                    text: Translation.tr("Polling interval (s)")
-                    value: Config.options.musicRecognition.interval
-                    from: 2
-                    to: 10
-                    stepSize: 1
-                    onValueChanged: {
-                        Config.options.musicRecognition.interval = value;
+                    spacing: 12
+
+                    ConfigSpinBox {
+                        icon: "timer_off"
+                        text: Translation.tr("Total duration timeout (s)")
+                        value: Config.options.musicRecognition.timeout
+                        from: 10
+                        to: 100
+                        stepSize: 2
+                        onValueChanged: {
+                            Config.options.musicRecognition.timeout = value;
+                        }
+                    }
+                    ConfigSpinBox {
+                        icon: "av_timer"
+                        text: Translation.tr("Polling interval (s)")
+                        value: Config.options.musicRecognition.interval
+                        from: 2
+                        to: 10
+                        stepSize: 1
+                        onValueChanged: {
+                            Config.options.musicRecognition.interval = value;
+                        }
                     }
                 }
             }
@@ -124,45 +142,63 @@ ContentPage {
             shape: MaterialShape.Shape.Slanted
             title: Translation.tr("Save paths")
 
-            GroupedList {
-                ConfigTextArea {
-                    id: videoRecordPathField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "video_file"
-                    text: Translation.tr("Video Recording Path")
-                    value: Config.options.screenRecord.savePath
-                    onValueChanged: {
-                        videoRecordPathDebounceTimer.restart();
-                    }
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: savePathsCardContent.implicitHeight + 28
 
-                    Timer {
-                        id: videoRecordPathDebounceTimer
-                        interval: 600
-                        repeat: false
-                        onTriggered: {
-                            Config.options.screenRecord.savePath = videoRecordPathField.value;
+                ColumnLayout {
+                    id: savePathsCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
+                    }
+                    spacing: 12
+
+                    ConfigTextArea {
+                        id: videoRecordPathField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "video_file"
+                        text: Translation.tr("Video Recording Path")
+                        value: Config.options.screenRecord.savePath
+                        onValueChanged: {
+                            videoRecordPathDebounceTimer.restart();
+                        }
+
+                        Timer {
+                            id: videoRecordPathDebounceTimer
+                            interval: 600
+                            repeat: false
+                            onTriggered: {
+                                Config.options.screenRecord.savePath = videoRecordPathField.value;
+                            }
                         }
                     }
-                }
 
-                ConfigTextArea {
-                    id: screenshotPathField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "screenshot_monitor"
-                    text: Translation.tr("Screenshot Path (leave empty to just copy)")
-                    value: Config.options.screenSnip.savePath
-                    onValueChanged: {
-                        screenshotPathDebounceTimer.restart();
-                    }
+                    ConfigTextArea {
+                        id: screenshotPathField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "screenshot_monitor"
+                        text: Translation.tr("Screenshot Path (leave empty to just copy)")
+                        value: Config.options.screenSnip.savePath
+                        onValueChanged: {
+                            screenshotPathDebounceTimer.restart();
+                        }
 
-                    Timer {
-                        id: screenshotPathDebounceTimer
-                        interval: 600
-                        repeat: false
-                        onTriggered: {
-                            Config.options.screenSnip.savePath = screenshotPathField.value;
+                        Timer {
+                            id: screenshotPathDebounceTimer
+                            interval: 600
+                            repeat: false
+                            onTriggered: {
+                                Config.options.screenSnip.savePath = screenshotPathField.value;
+                            }
                         }
                     }
                 }
@@ -174,127 +210,145 @@ ContentPage {
             shape: MaterialShape.Shape.Superellipse
             title: Translation.tr("Notifications & Audio")
 
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "volume_up"
-                    text: Translation.tr("Play sound on new notifications")
-                    checked: Config.options.sounds.notifications
-                    onCheckedChanged: {
-                        Config.options.sounds.notifications = checked;
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: notifCardContent.implicitHeight + 28
+
+                ColumnLayout {
+                    id: notifCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
                     }
-                }
+                    spacing: 12
 
-                // Volume Stepper Row with Minus/Plus and Live Preview
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.rightMargin: 8
-                    spacing: 10
-
-                    OptionalMaterialSymbol {
-                        icon: "volume_up"
-                        iconSize: Appearance.font.pixelSize.larger
+                    ConfigSwitch {
+                        buttonIcon: "volume_up"
+                        text: Translation.tr("Play sound on new notifications")
+                        checked: Config.options.sounds.notifications
+                        onCheckedChanged: {
+                            Config.options.sounds.notifications = checked;
+                        }
                     }
 
-                    StyledText {
-                        text: Translation.tr("Notification Volume")
-                        color: Appearance.colors.colOnSecondaryContainer
+                    // Volume Stepper Row with Minus/Plus and Live Preview
+                    RowLayout {
                         Layout.fillWidth: true
-                    }
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
+                        spacing: 10
 
-                    StyledText {
-                        text: (Config.options.sounds.notificationVolume ?? 70) + "%"
-                        color: Appearance.colors.colPrimary
-                        font.weight: Font.DemiBold
-                        Layout.preferredWidth: 45
-                        horizontalAlignment: Text.AlignRight
-                    }
-
-                    // Minus Button
-                    RippleButton {
-                        implicitWidth: 32
-                        implicitHeight: 32
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colSurfaceContainerHigh
-                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                        colRipple: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "remove"
-                            iconSize: 18
-                            color: Appearance.colors.colOnSurface
-                        }
-                        onClicked: {
-                            let current = Config.options.sounds.notificationVolume ?? 70;
-                            let nextVal = Math.max(0, current - 10);
-                            Config.options.sounds.notificationVolume = nextVal;
-                            page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
-                        }
-                    }
-
-                    // Plus Button
-                    RippleButton {
-                        implicitWidth: 32
-                        implicitHeight: 32
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colSurfaceContainerHigh
-                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                        colRipple: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "add"
-                            iconSize: 18
-                            color: Appearance.colors.colOnSurface
-                        }
-                        onClicked: {
-                            let current = Config.options.sounds.notificationVolume ?? 70;
-                            let nextVal = Math.min(100, current + 10);
-                            Config.options.sounds.notificationVolume = nextVal;
-                            page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
-                        }
-                    }
-                }
-
-                ConfigTextArea {
-                    id: notifSoundPathField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "music_note"
-                    text: Translation.tr("Notification Sound Path")
-                    value: Config.options.sounds.notificationSoundPath
-                    onValueChanged: notifSoundPathDebounceTimer.restart()
-
-                    Timer {
-                        id: notifSoundPathDebounceTimer
-                        interval: 600
-                        repeat: false
-                        onTriggered: {
-                            Config.options.sounds.notificationSoundPath = notifSoundPathField.value;
-                        }
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
+                        OptionalMaterialSymbol {
+                            icon: "volume_up"
                             iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
+                        }
+
+                        StyledText {
+                            text: Translation.tr("Notification Volume")
+                            color: Appearance.colors.colOnSecondaryContainer
+                            Layout.fillWidth: true
+                        }
+
+                        StyledText {
+                            text: (Config.options.sounds.notificationVolume ?? 70) + "%"
                             color: Appearance.colors.colPrimary
+                            font.weight: Font.DemiBold
+                            Layout.preferredWidth: 45
+                            horizontalAlignment: Text.AlignRight
                         }
-                        onClicked: page.playSound(notifSoundPathField.value, Config.options.sounds.notificationVolume ?? 70)
+
+                        // Minus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "remove"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.notificationVolume ?? 70;
+                                let nextVal = Math.max(0, current - 10);
+                                Config.options.sounds.notificationVolume = nextVal;
+                                page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
+                            }
+                        }
+
+                        // Plus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "add"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.notificationVolume ?? 70;
+                                let nextVal = Math.min(100, current + 10);
+                                Config.options.sounds.notificationVolume = nextVal;
+                                page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
+                            }
+                        }
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    ConfigTextArea {
+                        id: notifSoundPathField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "music_note"
+                        text: Translation.tr("Notification Sound Path")
+                        value: Config.options.sounds.notificationSoundPath
+                        onValueChanged: notifSoundPathDebounceTimer.restart()
+
+                        Timer {
+                            id: notifSoundPathDebounceTimer
+                            interval: 600
+                            repeat: false
+                            onTriggered: {
+                                Config.options.sounds.notificationSoundPath = notifSoundPathField.value;
+                            }
                         }
-                        onClicked: notifSoundFileDialog.open()
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(notifSoundPathField.value, Config.options.sounds.notificationVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: notifSoundFileDialog.open()
+                        }
                     }
                 }
             }
@@ -305,306 +359,324 @@ ContentPage {
             shape: MaterialShape.Shape.Pill
             title: Translation.tr("System Event Sounds")
 
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "volume_up"
-                    text: Translation.tr("Play sounds on system events (Shutdown, Lock, Sleep, Logout)")
-                    checked: Config.options.sounds.enableSystemSounds ?? true
-                    onCheckedChanged: {
-                        Config.options.sounds.enableSystemSounds = checked;
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: systemSoundCardContent.implicitHeight + 28
+
+                ColumnLayout {
+                    id: systemSoundCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
                     }
-                }
+                    spacing: 12
 
-                // System Volume Stepper Row with Minus/Plus and Live Preview
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.rightMargin: 8
-                    spacing: 10
-
-                    OptionalMaterialSymbol {
-                        icon: "volume_up"
-                        iconSize: Appearance.font.pixelSize.larger
+                    ConfigSwitch {
+                        buttonIcon: "volume_up"
+                        text: Translation.tr("Play sounds on system events (Shutdown, Lock, Sleep, Logout)")
+                        checked: Config.options.sounds.enableSystemSounds ?? true
+                        onCheckedChanged: {
+                            Config.options.sounds.enableSystemSounds = checked;
+                        }
                     }
 
-                    StyledText {
-                        text: Translation.tr("System Sound Volume")
-                        color: Appearance.colors.colOnSecondaryContainer
+                    // System Volume Stepper Row with Minus/Plus and Live Preview
+                    RowLayout {
                         Layout.fillWidth: true
-                    }
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
+                        spacing: 10
 
-                    StyledText {
-                        text: (Config.options.sounds.systemSoundVolume ?? 70) + "%"
-                        color: Appearance.colors.colPrimary
-                        font.weight: Font.DemiBold
-                        Layout.preferredWidth: 45
-                        horizontalAlignment: Text.AlignRight
-                    }
-
-                    // Minus Button
-                    RippleButton {
-                        implicitWidth: 32
-                        implicitHeight: 32
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colSurfaceContainerHigh
-                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                        colRipple: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "remove"
-                            iconSize: 18
-                            color: Appearance.colors.colOnSurface
+                        OptionalMaterialSymbol {
+                            icon: "volume_up"
+                            iconSize: Appearance.font.pixelSize.larger
                         }
-                        onClicked: {
-                            let current = Config.options.sounds.systemSoundVolume ?? 70;
-                            let nextVal = Math.max(0, current - 10);
-                            Config.options.sounds.systemSoundVolume = nextVal;
-                            page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+
+                        StyledText {
+                            text: Translation.tr("System Sound Volume")
+                            color: Appearance.colors.colOnSecondaryContainer
+                            Layout.fillWidth: true
+                        }
+
+                        StyledText {
+                            text: (Config.options.sounds.systemSoundVolume ?? 70) + "%"
+                            color: Appearance.colors.colPrimary
+                            font.weight: Font.DemiBold
+                            Layout.preferredWidth: 45
+                            horizontalAlignment: Text.AlignRight
+                        }
+
+                        // Minus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "remove"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.systemSoundVolume ?? 70;
+                                let nextVal = Math.max(0, current - 10);
+                                Config.options.sounds.systemSoundVolume = nextVal;
+                                page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+                            }
+                        }
+
+                        // Plus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "add"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.systemSoundVolume ?? 70;
+                                let nextVal = Math.min(100, current + 10);
+                                Config.options.sounds.systemSoundVolume = nextVal;
+                                page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+                            }
                         }
                     }
 
-                    // Plus Button
-                    RippleButton {
-                        implicitWidth: 32
-                        implicitHeight: 32
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colSurfaceContainerHigh
-                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                        colRipple: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "add"
-                            iconSize: 18
-                            color: Appearance.colors.colOnSurface
-                        }
-                        onClicked: {
-                            let current = Config.options.sounds.systemSoundVolume ?? 70;
-                            let nextVal = Math.min(100, current + 10);
-                            Config.options.sounds.systemSoundVolume = nextVal;
-                            page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+                    // Startup & Login Greeting Sound
+                    ConfigSwitch {
+                        buttonIcon: "wb_sunny"
+                        text: Translation.tr("Play greeting on login / startup")
+                        checked: Config.options.sounds.enableStartupSound ?? true
+                        onCheckedChanged: {
+                            Config.options.sounds.enableStartupSound = checked;
                         }
                     }
-                }
 
-                // Startup & Login Greeting Sound
-                ConfigSwitch {
-                    buttonIcon: "wb_sunny"
-                    text: Translation.tr("Play greeting on login / startup")
-                    checked: Config.options.sounds.enableStartupSound ?? true
-                    onCheckedChanged: {
-                        Config.options.sounds.enableStartupSound = checked;
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 12
-                    Layout.rightMargin: 12
-                    spacing: 8
-                    OptionalMaterialSymbol {
-                        icon: "shuffle"
-                        iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colPrimary
-                    }
-                    StyledText {
-                        text: Translation.tr("Randomize Greetings: Select a folder containing audio files to automatically play a random greeting on each startup.")
-                        color: Appearance.colors.colOnSecondaryContainer
-                        font.pixelSize: Appearance.font.pixelSize.smaller
+                    RowLayout {
                         Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                    }
-                }
-
-                ConfigTextArea {
-                    id: startupSoundField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "wb_sunny"
-                    text: Translation.tr("Startup Audio / Greeting Folder")
-                    value: Config.options.sounds.startupSoundPath
-                    placeholderText: Translation.tr("Single audio file or directory of rotating greetings")
-                    onValueChanged: {
-                        Config.options.sounds.startupSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
+                        spacing: 8
+                        OptionalMaterialSymbol {
+                            icon: "shuffle"
+                            iconSize: Appearance.font.pixelSize.normal
                             color: Appearance.colors.colPrimary
                         }
-                        onClicked: {
-                            let p = startupSoundField.value || "";
-                            let cmd = `p="${p}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ]; then pw-play --volume ${((Config.options.sounds.systemSoundVolume ?? 70)/100).toFixed(2)} "$file" 2>/dev/null || mpv --no-video --volume=${Config.options.sounds.systemSoundVolume ?? 70} "$file" 2>/dev/null; fi`;
-                            Quickshell.execDetached(["bash", "-c", cmd]);
+                        StyledText {
+                            text: Translation.tr("Randomize Greetings: Pointing to a directory automatically plays a random greeting on each startup.")
+                            color: Appearance.colors.colOnSecondaryContainer
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
                         }
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    ConfigTextArea {
+                        id: startupSoundField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "wb_sunny"
+                        text: Translation.tr("Startup Audio / Greeting Folder")
+                        value: Config.options.sounds.startupSoundPath
+                        placeholderText: Translation.tr("Single audio file or directory of rotating greetings")
+                        onValueChanged: {
+                            Config.options.sounds.startupSoundPath = value;
                         }
-                        onClicked: startupSoundFileDialog.open()
-                    }
-                }
 
-                // Shutdown & Reboot Sound
-                ConfigTextArea {
-                    id: shutdownSoundField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "power_settings_new"
-                    text: Translation.tr("Shutdown & Reboot Sound")
-                    value: Config.options.sounds.shutdownSoundPath
-                    placeholderText: Translation.tr("Path to shutdown sound file (.flac, .mp3, .wav)")
-                    onValueChanged: {
-                        Config.options.sounds.shutdownSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: {
+                                let p = startupSoundField.value || "";
+                                let cmd = `p="${p}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ]; then pw-play --volume ${((Config.options.sounds.systemSoundVolume ?? 70)/100).toFixed(2)} "$file" 2>/dev/null || mpv --no-video --volume=${Config.options.sounds.systemSoundVolume ?? 70} "$file" 2>/dev/null; fi`;
+                                Quickshell.execDetached(["bash", "-c", cmd]);
+                            }
                         }
-                        onClicked: page.playSound(shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
-                    }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: startupSoundFileDialog.open()
                         }
-                        onClicked: shutdownSoundFileDialog.open()
-                    }
-                }
-
-                // Lock Screen Sound
-                ConfigTextArea {
-                    id: lockSoundField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "lock"
-                    text: Translation.tr("Lock Screen Sound")
-                    value: Config.options.sounds.lockSoundPath
-                    placeholderText: Translation.tr("Path to lock sound file (leave empty for default)")
-                    onValueChanged: {
-                        Config.options.sounds.lockSoundPath = value;
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                    // Shutdown & Reboot Sound
+                    ConfigTextArea {
+                        id: shutdownSoundField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "power_settings_new"
+                        text: Translation.tr("Shutdown & Reboot Sound")
+                        value: Config.options.sounds.shutdownSoundPath
+                        placeholderText: Translation.tr("Path to shutdown sound file (.flac, .mp3, .wav)")
+                        onValueChanged: {
+                            Config.options.sounds.shutdownSoundPath = value;
                         }
-                        onClicked: page.playSound(lockSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
-                    }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
                         }
-                        onClicked: lockSoundFileDialog.open()
-                    }
-                }
 
-                // Logout Sound
-                ConfigTextArea {
-                    id: logoutSoundField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "logout"
-                    text: Translation.tr("Logout Sound")
-                    value: Config.options.sounds.logoutSoundPath
-                    placeholderText: Translation.tr("Path to logout sound file (leave empty for default)")
-                    onValueChanged: {
-                        Config.options.sounds.logoutSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: shutdownSoundFileDialog.open()
                         }
-                        onClicked: page.playSound(logoutSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // Lock Screen Sound
+                    ConfigTextArea {
+                        id: lockSoundField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "lock"
+                        text: Translation.tr("Lock Screen Sound")
+                        value: Config.options.sounds.lockSoundPath
+                        placeholderText: Translation.tr("Path to lock sound file (leave empty for default)")
+                        onValueChanged: {
+                            Config.options.sounds.lockSoundPath = value;
                         }
-                        onClicked: logoutSoundFileDialog.open()
-                    }
-                }
 
-                // Sleep / Suspend Sound
-                ConfigTextArea {
-                    id: sleepSoundField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "bedtime"
-                    text: Translation.tr("Sleep & Suspend Sound")
-                    value: Config.options.sounds.sleepSoundPath
-                    placeholderText: Translation.tr("Path to sleep sound file (leave empty for default)")
-                    onValueChanged: {
-                        Config.options.sounds.sleepSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(lockSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
                         }
-                        onClicked: page.playSound(sleepSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: lockSoundFileDialog.open()
+                        }
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // Logout Sound
+                    ConfigTextArea {
+                        id: logoutSoundField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "logout"
+                        text: Translation.tr("Logout Sound")
+                        value: Config.options.sounds.logoutSoundPath
+                        placeholderText: Translation.tr("Path to logout sound file (leave empty for default)")
+                        onValueChanged: {
+                            Config.options.sounds.logoutSoundPath = value;
                         }
-                        onClicked: sleepSoundFileDialog.open()
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(logoutSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: logoutSoundFileDialog.open()
+                        }
+                    }
+
+                    // Sleep / Suspend Sound
+                    ConfigTextArea {
+                        id: sleepSoundField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "bedtime"
+                        text: Translation.tr("Sleep & Suspend Sound")
+                        value: Config.options.sounds.sleepSoundPath
+                        placeholderText: Translation.tr("Path to sleep sound file (leave empty for default)")
+                        onValueChanged: {
+                            Config.options.sounds.sleepSoundPath = value;
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(sleepSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: sleepSoundFileDialog.open()
+                        }
                     }
                 }
             }
@@ -615,127 +687,145 @@ ContentPage {
             shape: MaterialShape.Shape.Oval
             title: Translation.tr("Battery & Power Sound Events")
 
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "volume_up"
-                    text: Translation.tr("Play sounds on battery & charging events")
-                    checked: Config.options.sounds.battery ?? true
-                    onCheckedChanged: {
-                        Config.options.sounds.battery = checked;
-                    }
-                }
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: batterySoundCardContent.implicitHeight + 28
 
-                // Charger Plugged In (Charging Now)
-                ConfigTextArea {
-                    id: chargerPluggedField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "power"
-                    text: Translation.tr("Charging Now (Plugged In)")
-                    value: Config.options.sounds.chargerPluggedSoundPath
-                    placeholderText: Translation.tr("Custom audio or empty for system default (power-plug)")
-                    onValueChanged: {
-                        Config.options.sounds.chargerPluggedSoundPath = value;
+                ColumnLayout {
+                    id: batterySoundCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
                     }
+                    spacing: 12
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                    ConfigSwitch {
+                        buttonIcon: "volume_up"
+                        text: Translation.tr("Play sounds on battery & charging events")
+                        checked: Config.options.sounds.battery ?? true
+                        onCheckedChanged: {
+                            Config.options.sounds.battery = checked;
                         }
-                        onClicked: page.playSound(chargerPluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // Charger Plugged In (Charging Now)
+                    ConfigTextArea {
+                        id: chargerPluggedField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "power"
+                        text: Translation.tr("Charging Now (Plugged In)")
+                        value: Config.options.sounds.chargerPluggedSoundPath
+                        placeholderText: Translation.tr("Custom audio or empty for system default (power-plug)")
+                        onValueChanged: {
+                            Config.options.sounds.chargerPluggedSoundPath = value;
                         }
-                        onClicked: chargerPluggedFileDialog.open()
-                    }
-                }
 
-                // Charger Unplugged (Charge Cut Off)
-                ConfigTextArea {
-                    id: chargerUnpluggedField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "power_off"
-                    text: Translation.tr("Charge Cut Off (Unplugged)")
-                    value: Config.options.sounds.chargerUnpluggedSoundPath
-                    placeholderText: Translation.tr("Custom audio or empty for system default (power-unplug)")
-                    onValueChanged: {
-                        Config.options.sounds.chargerUnpluggedSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(chargerPluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
                         }
-                        onClicked: page.playSound(chargerUnpluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
-                    }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: chargerPluggedFileDialog.open()
                         }
-                        onClicked: chargerUnpluggedFileDialog.open()
-                    }
-                }
-
-                // Battery Full
-                ConfigTextArea {
-                    id: batteryFullField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "battery_charging_full"
-                    text: Translation.tr("Battery Full Warning")
-                    value: Config.options.sounds.batteryFullSoundPath
-                    placeholderText: Translation.tr("Custom audio or empty for system default (complete)")
-                    onValueChanged: {
-                        Config.options.sounds.batteryFullSoundPath = value;
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                    // Charger Unplugged (Charge Cut Off)
+                    ConfigTextArea {
+                        id: chargerUnpluggedField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "power_off"
+                        text: Translation.tr("Charge Cut Off (Unplugged)")
+                        value: Config.options.sounds.chargerUnpluggedSoundPath
+                        placeholderText: Translation.tr("Custom audio or empty for system default (power-unplug)")
+                        onValueChanged: {
+                            Config.options.sounds.chargerUnpluggedSoundPath = value;
                         }
-                        onClicked: page.playSound(batteryFullField.value, Config.options.sounds.systemSoundVolume ?? 70)
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(chargerUnpluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: chargerUnpluggedFileDialog.open()
+                        }
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // Battery Full
+                    ConfigTextArea {
+                        id: batteryFullField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "battery_charging_full"
+                        text: Translation.tr("Battery Full Warning")
+                        value: Config.options.sounds.batteryFullSoundPath
+                        placeholderText: Translation.tr("Custom audio or empty for system default (complete)")
+                        onValueChanged: {
+                            Config.options.sounds.batteryFullSoundPath = value;
                         }
-                        onClicked: batteryFullFileDialog.open()
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(batteryFullField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: batteryFullFileDialog.open()
+                        }
                     }
                 }
             }
@@ -746,89 +836,107 @@ ContentPage {
             shape: MaterialShape.Shape.Cookie6Sided
             title: Translation.tr("USB Device Sound Events")
 
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "volume_up"
-                    text: Translation.tr("Play sounds on USB device connect / disconnect")
-                    checked: Config.options.sounds.enableUsbSounds ?? true
-                    onCheckedChanged: {
-                        Config.options.sounds.enableUsbSounds = checked;
-                    }
-                }
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: usbCardContent.implicitHeight + 28
 
-                // USB Plug In
-                ConfigTextArea {
-                    id: usbPlugInField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "usb"
-                    text: Translation.tr("USB Plug In Sound")
-                    value: Config.options.sounds.usbPlugInSoundPath
-                    placeholderText: Translation.tr("Path to USB connect audio file")
-                    onValueChanged: {
-                        Config.options.sounds.usbPlugInSoundPath = value;
+                ColumnLayout {
+                    id: usbCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
                     }
+                    spacing: 12
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                    ConfigSwitch {
+                        buttonIcon: "volume_up"
+                        text: Translation.tr("Play sounds on USB device connect / disconnect")
+                        checked: Config.options.sounds.enableUsbSounds ?? true
+                        onCheckedChanged: {
+                            Config.options.sounds.enableUsbSounds = checked;
                         }
-                        onClicked: page.playSound(usbPlugInField.value, Config.options.sounds.systemSoundVolume ?? 70)
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // USB Plug In
+                    ConfigTextArea {
+                        id: usbPlugInField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "usb"
+                        text: Translation.tr("USB Plug In Sound")
+                        value: Config.options.sounds.usbPlugInSoundPath
+                        placeholderText: Translation.tr("Path to USB connect audio file")
+                        onValueChanged: {
+                            Config.options.sounds.usbPlugInSoundPath = value;
                         }
-                        onClicked: usbPlugInFileDialog.open()
-                    }
-                }
 
-                // USB Plug Out
-                ConfigTextArea {
-                    id: usbPlugOutField
-                    Layout.fillWidth: true
-                    fieldWidth: 250
-                    buttonIcon: "usb_off"
-                    text: Translation.tr("USB Plug Out Sound")
-                    value: Config.options.sounds.usbPlugOutSoundPath
-                    placeholderText: Translation.tr("Path to USB disconnect audio file")
-                    onValueChanged: {
-                        Config.options.sounds.usbPlugOutSoundPath = value;
-                    }
-
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "play_arrow"
-                            color: Appearance.colors.colPrimary
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(usbPlugInField.value, Config.options.sounds.systemSoundVolume ?? 70)
                         }
-                        onClicked: page.playSound(usbPlugOutField.value, Config.options.sounds.systemSoundVolume ?? 70)
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: usbPlugInFileDialog.open()
+                        }
                     }
 
-                    GroupButton {
-                        baseWidth: height
-                        buttonRadius: Appearance.rounding.small
-                        contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: Appearance.font.pixelSize.larger
-                            text: "folder_open"
-                            color: Appearance.colors.colOnLayer1
+                    // USB Plug Out
+                    ConfigTextArea {
+                        id: usbPlugOutField
+                        Layout.fillWidth: true
+                        fieldWidth: 250
+                        buttonIcon: "usb_off"
+                        text: Translation.tr("USB Plug Out Sound")
+                        value: Config.options.sounds.usbPlugOutSoundPath
+                        placeholderText: Translation.tr("Path to USB disconnect audio file")
+                        onValueChanged: {
+                            Config.options.sounds.usbPlugOutSoundPath = value;
                         }
-                        onClicked: usbPlugOutFileDialog.open()
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "play_arrow"
+                                color: Appearance.colors.colPrimary
+                            }
+                            onClicked: page.playSound(usbPlugOutField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                        }
+
+                        GroupButton {
+                            baseWidth: height
+                            buttonRadius: Appearance.rounding.small
+                            contentItem: MaterialSymbol {
+                                anchors.centerIn: parent
+                                iconSize: Appearance.font.pixelSize.larger
+                                text: "folder_open"
+                                color: Appearance.colors.colOnLayer1
+                            }
+                            onClicked: usbPlugOutFileDialog.open()
+                        }
                     }
                 }
             }
@@ -839,12 +947,30 @@ ContentPage {
             shape: MaterialShape.Shape.Cookie6Sided
             title: Translation.tr("Search")
 
-            GroupedList {
-                ConfigSwitch {
-                    text: Translation.tr("Use Levenshtein distance-based algorithm instead of fuzzy")
-                    checked: Config.options.search.sloppy
-                    onCheckedChanged: {
-                        Config.options.search.sloppy = checked;
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: searchCardContent.implicitHeight + 28
+
+                ColumnLayout {
+                    id: searchCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
+                    }
+                    spacing: 12
+
+                    ConfigSwitch {
+                        text: Translation.tr("Use Levenshtein distance-based algorithm instead of fuzzy")
+                        checked: Config.options.search.sloppy
+                        onCheckedChanged: {
+                            Config.options.search.sloppy = checked;
+                        }
                     }
                 }
             }
@@ -852,125 +978,162 @@ ContentPage {
             ContentSubsection {
                 title: Translation.tr("Prefixes")
 
-                GroupedList {
-                    ConfigRow {
-                        uniform: true
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "bolt"
-                            fieldWidth: 100
-                            text: Translation.tr("Action")
-                            value: Config.options.search.prefix.action
-                            onValueChanged: {
-                                Config.options.search.prefix.action = value;
-                            }
-                        }
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "content_paste"
-                            fieldWidth: 100
-                            text: Translation.tr("Clipboard")
-                            value: Config.options.search.prefix.clipboard
-                            onValueChanged: {
-                                Config.options.search.prefix.clipboard = value;
-                            }
-                        }
-                    }
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: Appearance.rounding.normal
+                    color: Appearance.colors.colLayer1
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
+                    implicitHeight: prefixesCardContent.implicitHeight + 28
 
-                    ConfigRow {
-                        uniform: true
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "mood"
-                            fieldWidth: 100
-                            text: Translation.tr("Emojis")
-                            value: Config.options.search.prefix.emojis
-                            onValueChanged: {
-                                Config.options.search.prefix.emojis = value;
-                            }
+                    ColumnLayout {
+                        id: prefixesCardContent
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                            margins: 14
                         }
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "emoji_symbols"
-                            fieldWidth: 100
-                            text: Translation.tr("Icons")
-                            value: Config.options.search.prefix.symbols
-                            onValueChanged: {
-                                Config.options.search.prefix.symbols = value;
-                            }
-                        }
-                    }
+                        spacing: 12
 
-                    ConfigRow {
-                        uniform: true
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "terminal"
-                            fieldWidth: 100
-                            text: Translation.tr("Shell command")
-                            value: Config.options.search.prefix.shellCommand
-                            onValueChanged: {
-                                Config.options.search.prefix.shellCommand = value;
+                        ConfigRow {
+                            uniform: true
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "bolt"
+                                fieldWidth: 100
+                                text: Translation.tr("Action")
+                                value: Config.options.search.prefix.action
+                                onValueChanged: {
+                                    Config.options.search.prefix.action = value;
+                                }
+                            }
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "content_paste"
+                                fieldWidth: 100
+                                text: Translation.tr("Clipboard")
+                                value: Config.options.search.prefix.clipboard
+                                onValueChanged: {
+                                    Config.options.search.prefix.clipboard = value;
+                                }
                             }
                         }
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            fieldWidth: 100
-                            buttonIcon: "travel_explore"
-                            text: Translation.tr("Web search")
-                            value: Config.options.search.prefix.webSearch
-                            onValueChanged: {
-                                Config.options.search.prefix.webSearch = value;
-                            }
-                        }
-                    }
 
-                    ConfigRow {
-                        uniform: true
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "apps"
-                            fieldWidth: 100
-                            text: Translation.tr("Apps")
-                            value: Config.options.search.prefix.app
-                            onValueChanged: {
-                                Config.options.search.prefix.app = value;
+                        ConfigRow {
+                            uniform: true
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "mood"
+                                fieldWidth: 100
+                                text: Translation.tr("Emojis")
+                                value: Config.options.search.prefix.emojis
+                                onValueChanged: {
+                                    Config.options.search.prefix.emojis = value;
+                                }
+                            }
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "emoji_symbols"
+                                fieldWidth: 100
+                                text: Translation.tr("Icons")
+                                value: Config.options.search.prefix.symbols
+                                onValueChanged: {
+                                    Config.options.search.prefix.symbols = value;
+                                }
                             }
                         }
-                        ConfigTextArea {
-                            Layout.fillWidth: true
-                            buttonIcon: "keyboard_command_key"
-                            fieldWidth: 100
-                            text: Translation.tr("Keybinds")
-                            value: Config.options.search.prefix.keybinds
-                            onValueChanged: {
-                                Config.options.search.prefix.keybinds = value;
+
+                        ConfigRow {
+                            uniform: true
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "terminal"
+                                fieldWidth: 100
+                                text: Translation.tr("Shell command")
+                                value: Config.options.search.prefix.shellCommand
+                                onValueChanged: {
+                                    Config.options.search.prefix.shellCommand = value;
+                                }
+                            }
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                fieldWidth: 100
+                                buttonIcon: "travel_explore"
+                                text: Translation.tr("Web search")
+                                value: Config.options.search.prefix.webSearch
+                                onValueChanged: {
+                                    Config.options.search.prefix.webSearch = value;
+                                }
+                            }
+                        }
+
+                        ConfigRow {
+                            uniform: true
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "apps"
+                                fieldWidth: 100
+                                text: Translation.tr("Apps")
+                                value: Config.options.search.prefix.app
+                                onValueChanged: {
+                                    Config.options.search.prefix.app = value;
+                                }
+                            }
+                            ConfigTextArea {
+                                Layout.fillWidth: true
+                                buttonIcon: "keyboard_command_key"
+                                fieldWidth: 100
+                                text: Translation.tr("Keybinds")
+                                value: Config.options.search.prefix.keybinds
+                                onValueChanged: {
+                                    Config.options.search.prefix.keybinds = value;
+                                }
                             }
                         }
                     }
                 }
             }
+
             ContentSubsection {
                 title: Translation.tr("Web search")
 
-                GroupedList {
-                    ConfigTextArea {
-                        id: baseUrlField
-                        Layout.fillWidth: true
-                        fieldWidth: 320
-                        buttonIcon: "travel_explore"
-                        text: Translation.tr("Base URL")
-                        value: Config.options.search.engineBaseUrl
-                        onValueChanged: {
-                            baseUrlDebounceTimer.restart();
-                        }
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: Appearance.rounding.normal
+                    color: Appearance.colors.colLayer1
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
+                    implicitHeight: webSearchCardContent.implicitHeight + 28
 
-                        Timer {
-                            id: baseUrlDebounceTimer
-                            interval: 600
-                            repeat: false
-                            onTriggered: {
-                                Config.options.search.engineBaseUrl = baseUrlField.value;
+                    ColumnLayout {
+                        id: webSearchCardContent
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                            margins: 14
+                        }
+                        spacing: 12
+
+                        ConfigTextArea {
+                            id: baseUrlField
+                            Layout.fillWidth: true
+                            fieldWidth: 320
+                            buttonIcon: "travel_explore"
+                            text: Translation.tr("Base URL")
+                            value: Config.options.search.engineBaseUrl
+                            onValueChanged: {
+                                baseUrlDebounceTimer.restart();
+                            }
+
+                            Timer {
+                                id: baseUrlDebounceTimer
+                                interval: 600
+                                repeat: false
+                                onTriggered: {
+                                    Config.options.search.engineBaseUrl = baseUrlField.value;
+                                }
                             }
                         }
                     }
@@ -982,25 +1145,43 @@ ContentPage {
             icon: "deployed_code_update"
             title: Translation.tr("System updates (Arch only)")
 
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "update"
-                    text: Translation.tr("Enable update checks")
-                    checked: Config.options.updates.enableCheck
-                    onCheckedChanged: {
-                        Config.options.updates.enableCheck = checked;
-                    }
-                }
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: updatesCardContent.implicitHeight + 28
 
-                ConfigSpinBox {
-                    icon: "av_timer"
-                    text: Translation.tr("Check interval (mins)")
-                    value: Config.options.updates.checkInterval
-                    from: 60
-                    to: 1440
-                    stepSize: 60
-                    onValueChanged: {
-                        Config.options.updates.checkInterval = value;
+                ColumnLayout {
+                    id: updatesCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
+                    }
+                    spacing: 12
+
+                    ConfigSwitch {
+                        buttonIcon: "update"
+                        text: Translation.tr("Enable update checks")
+                        checked: Config.options.updates.enableCheck
+                        onCheckedChanged: {
+                            Config.options.updates.enableCheck = checked;
+                        }
+                    }
+
+                    ConfigSpinBox {
+                        icon: "av_timer"
+                        text: Translation.tr("Check interval (mins)")
+                        value: Config.options.updates.checkInterval
+                        from: 60
+                        to: 1440
+                        stepSize: 60
+                        onValueChanged: {
+                            Config.options.updates.checkInterval = value;
+                        }
                     }
                 }
             }
@@ -1010,47 +1191,66 @@ ContentPage {
             icon: "weather_mix"
             shape: MaterialShape.Shape.Pill
             title: Translation.tr("Weather")
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "assistant_navigation"
-                    text: Translation.tr("Enable GPS based location")
-                    checked: Config.options.bar.weather.enableGPS
-                    onCheckedChanged: {
-                        Config.options.bar.weather.enableGPS = checked;
-                    }
-                }
-                ConfigSwitch {
-                    buttonIcon: "thermometer"
-                    text: Translation.tr("Fahrenheit unit")
-                    checked: Config.options.bar.weather.useUSCS
-                    onCheckedChanged: {
-                        Config.options.bar.weather.useUSCS = checked;
-                    }
-                }
-                ConfigSpinBox {
-                    icon: "av_timer"
-                    text: Translation.tr("Polling interval (m)")
-                    value: Config.options.bar.weather.fetchInterval
-                    from: 5
-                    to: 50
-                    stepSize: 5
-                    onValueChanged: {
-                        Config.options.bar.weather.fetchInterval = value;
-                    }
-                }
-                ConfigTextArea {
-                    id: cityField
-                    Layout.fillWidth: true
-                    buttonIcon: "location_city"
-                    text: Translation.tr("City name")
-                    value: Config.options.bar.weather.city
-                    onValueChanged: cityDebounceTimer.restart()
 
-                    Timer {
-                        id: cityDebounceTimer
-                        interval: 1000
-                        running: false
-                        onTriggered: Config.options.bar.weather.city = cityField.value
+            Rectangle {
+                Layout.fillWidth: true
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+                implicitHeight: weatherCardContent.implicitHeight + 28
+
+                ColumnLayout {
+                    id: weatherCardContent
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                        margins: 14
+                    }
+                    spacing: 12
+
+                    ConfigSwitch {
+                        buttonIcon: "assistant_navigation"
+                        text: Translation.tr("Enable GPS based location")
+                        checked: Config.options.bar.weather.enableGPS
+                        onCheckedChanged: {
+                            Config.options.bar.weather.enableGPS = checked;
+                        }
+                    }
+                    ConfigSwitch {
+                        buttonIcon: "thermometer"
+                        text: Translation.tr("Fahrenheit unit")
+                        checked: Config.options.bar.weather.useUSCS
+                        onCheckedChanged: {
+                            Config.options.bar.weather.useUSCS = checked;
+                        }
+                    }
+                    ConfigSpinBox {
+                        icon: "av_timer"
+                        text: Translation.tr("Polling interval (m)")
+                        value: Config.options.bar.weather.fetchInterval
+                        from: 5
+                        to: 50
+                        stepSize: 5
+                        onValueChanged: {
+                            Config.options.bar.weather.fetchInterval = value;
+                        }
+                    }
+                    ConfigTextArea {
+                        id: cityField
+                        Layout.fillWidth: true
+                        buttonIcon: "location_city"
+                        text: Translation.tr("City name")
+                        value: Config.options.bar.weather.city
+                        onValueChanged: cityDebounceTimer.restart()
+
+                        Timer {
+                            id: cityDebounceTimer
+                            interval: 1000
+                            running: false
+                            onTriggered: Config.options.bar.weather.city = cityField.value
+                        }
                     }
                 }
             }
