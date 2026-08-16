@@ -69,10 +69,20 @@ def _clean(text: str) -> str:
         return ""
     text = re.sub(r'^\(\d+\)\s*', '', text)
     text = re.sub(r'\s*-\s*YouTube$', '', text, flags=re.IGNORECASE)
+    # Strip common Indian / Bollywood record label suffixes
     text = re.sub(
-        r'\s*[\(\[](Official Music Video|Official Video|Official Audio|'
-        r'Lyric Video|Audio|Video|HD|HQ|MV|4K|Live|Visualizer)[\)\]]',
-        '', text, flags=re.IGNORECASE)
+        r'\s*-\s*(?:T-Series|Zee Music Company|Sony Music India|Tips Official|YRF|Speed Records|Saregama Music|Saregama|White Hill Music|Geet MP3|T-Series Apna Punjab|Eros Now|Desi Music Factory|SonyMusicIndiaVEVO)\s*$',
+        '', text, flags=re.IGNORECASE
+    )
+    # Strip common music video descriptors
+    text = re.sub(
+        r'\s*[\(\[](?:Official Music Video|Official Video|Official Audio|'
+        r'Lyric Video|Lyrical Video|Full Song|Full Audio Song|Audio Song|Song Video|'
+        r'4K Video|New Song|Video Song|Title Track|Remix|Slowed\s*(?:and|&|\+)\s*Reverb|'
+        r'From\s*"[^"]+"|From\s*[^\)\]]+|Lofi Mix|8D Audio|'
+        r'Audio|Video|HD|HQ|MV|4K|8K|Live|Visualizer)[\)\]]',
+        '', text, flags=re.IGNORECASE
+    )
     return text.strip()
 
 def _parse_lrc(lrc_text: str) -> list:
@@ -107,12 +117,19 @@ def _title_match(a: str, b: str) -> bool:
     return a in b or b in a or a[:15] == b[:15]
 
 def _artist_match(a: str, b: str) -> bool:
-    """Fuzzy artist comparison."""
-    if not a or a.lower() in ("youtube", ""):
+    """Fuzzy artist comparison supporting multi-artist Indian tracks."""
+    if not a or a.lower() in ("youtube", "", "unknown"):
         return True
-    a_words = set(w for w in a.lower().split() if len(w) > 3)
-    b_lower = b.lower()
-    return a.lower() in b_lower or b_lower in a.lower() or any(w in b_lower for w in a_words)
+    a_lower, b_lower = a.lower(), b.lower()
+    if a_lower in b_lower or b_lower in a_lower:
+        return True
+    delims = r'[,&/|]|\b(?:feat|ft|with|and|x)\b'
+    a_parts = [p.strip() for p in re.split(delims, a_lower) if len(p.strip()) > 2]
+    b_parts = [p.strip() for p in re.split(delims, b_lower) if len(p.strip()) > 2]
+    for ap in a_parts:
+        if any(ap in bp or bp in ap for bp in b_parts) or ap in b_lower:
+            return True
+    return False
 
 def _http_get(url: str, timeout: int = 8, headers: dict = None) -> bytes:
     hdrs = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
@@ -191,12 +208,13 @@ def _from_local_lrc(file_url: str) -> list:
 def _from_lrclib(title: str, artist: str, duration: float) -> list:
     base = "https://lrclib.net/api"
     urls = []
-    if title and artist and artist.lower() not in ("youtube", ""):
-        urls.append(
-            f"{base}/get?track_name={urllib.parse.quote(title)}"
-            f"&artist_name={urllib.parse.quote(artist)}"
-            f"&duration={int(duration)}"
-        )
+    if title and artist and artist.lower() not in ("youtube", "", "unknown"):
+        if duration > 0:
+            urls.append(
+                f"{base}/get?track_name={urllib.parse.quote(title)}"
+                f"&artist_name={urllib.parse.quote(artist)}"
+                f"&duration={int(duration)}"
+            )
         urls.append(
             f"{base}/search?track_name={urllib.parse.quote(title)}"
             f"&artist_name={urllib.parse.quote(artist)}"
@@ -204,16 +222,20 @@ def _from_lrclib(title: str, artist: str, duration: float) -> list:
     urls.append(f"{base}/search?q={urllib.parse.quote(title + ' ' + artist)}")
     urls.append(f"{base}/search?q={urllib.parse.quote(title)}")
 
+    # Try base title without parentheticals (e.g. "Kesariya (From Brahmastra)" -> "Kesariya")
+    base_title = re.sub(r'\s*[\(\[][^\)\]]+[\)\]]', '', title).strip()
+    if base_title and base_title != title:
+        urls.append(f"{base}/search?q={urllib.parse.quote(base_title)}")
+
     for url in urls:
         try:
             data = json.loads(_http_get(url))
             if isinstance(data, list):
-                # Try strict match first, then loose
                 for strict in (True, False):
                     for d in data:
                         if not d.get("syncedLyrics"):
                             continue
-                        tm = _title_match(title, d.get("trackName", ""))
+                        tm = _title_match(title, d.get("trackName", "")) or _title_match(base_title, d.get("trackName", ""))
                         am = _artist_match(artist, d.get("artistName", ""))
                         if strict and tm and am:
                             return _parse_lrc(d["syncedLyrics"])
@@ -253,7 +275,6 @@ def _from_netease(title: str, artist: str) -> list:
     url = f"https://music.163.com/api/song/lyric?os=pc&id={song_id}&lv=1&kv=1&tv=-1"
     try:
         data = json.loads(_http_get(url, headers={"Referer": "https://music.163.com/"}))
-        # klyric = karaoke (synced), lrc = plain synced
         for key in ("klyric", "lrc"):
             lrc_text = data.get(key, {}).get("lyric", "")
             if lrc_text:
@@ -272,13 +293,11 @@ def _from_megalobiz(title: str, artist: str) -> list:
     search_url = f"https://www.megalobiz.com/search/all?qry={urllib.parse.quote(query)}&searchButton=Search"
     try:
         html = _http_get(search_url, timeout=10).decode("utf-8", errors="ignore")
-        # Find first lrc result link
         match = re.search(r'href="(/lrc/maker/[^"]+)"', html)
         if not match:
             return []
         lrc_url = "https://www.megalobiz.com" + match.group(1)
         lrc_html = _http_get(lrc_url, timeout=10).decode("utf-8", errors="ignore")
-        # Extract LRC content between specific tags
         lrc_match = re.search(
             r'<div[^>]*id="entity_lyric_text"[^>]*>(.*?)</div>',
             lrc_html, re.DOTALL
@@ -320,7 +339,9 @@ def _parse_vtt(vtt_text: str) -> list:
 
         text_lines = [line.strip() for line in block.splitlines() if "-->" not in line and not line.isdigit()]
         text = " ".join(text_lines).strip()
+        # Clean inline HTML tags, color spans, and word-level timestamps (e.g. <00:00:01.234>)
         text = re.sub(r"<[^>]+>", "", text)
+        text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
         text = re.sub(r"^♪\s*|\s*♪$", "", text).strip()
         if text and (not lines or lines[-1]["text"] != text):
             lines.append({"time": timestamp, "text": text})
@@ -345,13 +366,24 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
                 "yt-dlp",
                 "--no-warnings", "--quiet", "--no-playlist",
                 "--write-auto-sub", "--write-sub",
-                "--sub-lang", "en.*",
+                "--sub-langs", "hi,hi.*,hin,hi-orig,en,en.*,en-orig,all",
                 "--skip-download",
                 "-o", out_tmpl,
                 query
             ]
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
-            for fname in os.listdir(tmpdir):
+
+            # Sort files with Hindi subtitles first, then English, then others
+            def _sub_priority(f):
+                f_lower = f.lower()
+                if ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
+                    return 0
+                if ".en" in f_lower or "english" in f_lower:
+                    return 1
+                return 2
+
+            filenames = sorted(os.listdir(tmpdir), key=_sub_priority)
+            for fname in filenames:
                 fpath = os.path.join(tmpdir, fname)
                 with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
