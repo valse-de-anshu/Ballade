@@ -119,7 +119,12 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-3ec9d46 (HEAD -> master) fix(settings): replace GroupedList with solid Card containers in ServicesConfig
+682788a (HEAD -> master) fix(lyrics): set English priority above Hindi and eliminate caption timing latency
+a55b785 feat(lyrics): add full Hindi lyrics and YouTube Hindi subtitles support
+b0da2cf feat(settings,sounds): add volume stepper controls with live audio preview to all sound sections
+1b78645 fix(settings): fix text wrapping and layout overlap in ConfigTextArea and sound settings
+34e3880 fix(settings): fix invalid property assignment on OptionalMaterialSymbol in ServicesConfig
+3ec9d46 fix(settings): replace GroupedList with solid Card containers in ServicesConfig
 5f5f5fb feat(portability,sounds): bundle all audio assets, systemd/udev scripts, and 1-click setup into ballade repository
 5dbe5cf feat(settings,sounds): integrate startup, battery, and USB sound events into settings UI
 af68f84 feat(settings,sounds): add notification and system event sound volume steppers with live audio preview
@@ -127,13 +132,6 @@ fc806a4 fix(bar): lock resource indicators in place, fix spacing gaps, and elimi
 d4e3afe feat(settings): add Up/Down arrow and PageUp/Down key scrolling, unify custom widget cards, and auto-scroll on add
 1555ae6 feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
 a1b1b0f fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
-900810c feat(dock): add right-click context menu popup with Pin/Unpin and Close actions
-0496766 feat(background,bar): add CRT/Glitch/Ripple shaders, fix wallpaper transition lifecycle, and refine workspace indicators
-5ebe9b8 fix(bar): target /home disk partition, format hover popups, and fix layout jitter
-a41254a refactor(bar): remove deprecated dynamic Divider settings
-1e6a702 feat(wallpaper-selector): implement static Mac Dock style Cover Flow for panoramic mode
-31bce2a fix(settings): remove redundant label to eliminate button overlap in Wall Shape section
-b151a0a feat(wallpaperPicker): make wall shapes selectable in settings and remove top header bar
 ```
 
 ---
