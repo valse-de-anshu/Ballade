@@ -11,6 +11,19 @@ ContentPage {
     forceWidth: true
     bottomContentPadding: 15
 
+    FileDialog {
+        id: audioFileDialog
+        title: Translation.tr("Select Audio File")
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        property var targetField: null
+        property var targetCallback: null
+        onAccepted: {
+            let path = selectedFile.toString().replace(/^file:\/\//, "")
+            if (targetField) targetField.value = path
+            if (targetCallback) targetCallback(path)
+        }
+    }
+
     function playSound(filePath, volumePercent) {
         if (!filePath || filePath.trim().length === 0) return;
         let p = filePath.trim();
@@ -347,7 +360,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: notifSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Notification Sound");
+                                audioFileDialog.targetField = notifSoundPathField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.notificationSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
                 }
@@ -472,8 +490,8 @@ ContentPage {
                         Layout.leftMargin: 8
                         Layout.rightMargin: 8
                         spacing: 8
-                        OptionalMaterialSymbol {
-                            icon: "shuffle"
+                        MaterialSymbol {
+                            text: "shuffle"
                             iconSize: Appearance.font.pixelSize.normal
                             color: Appearance.colors.colPrimary
                         }
@@ -523,7 +541,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: startupSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Startup Sound or Folder");
+                                audioFileDialog.targetField = startupSoundField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.startupSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -561,7 +584,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: shutdownSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Shutdown / Reboot Sound");
+                                audioFileDialog.targetField = shutdownSoundField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.shutdownSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -599,7 +627,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: lockSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Lock Screen Sound");
+                                audioFileDialog.targetField = lockSoundField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.lockSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -637,7 +670,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: logoutSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Logout Sound");
+                                audioFileDialog.targetField = logoutSoundField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.logoutSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -675,7 +713,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: sleepSoundFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Sleep / Suspend Sound");
+                                audioFileDialog.targetField = sleepSoundField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.sleepSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
                 }
@@ -748,7 +791,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: chargerPluggedFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Charging (Plugged In) Sound");
+                                audioFileDialog.targetField = chargerPluggedField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.chargerPluggedSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -786,7 +834,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: chargerUnpluggedFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Charge Cut Off (Unplugged) Sound");
+                                audioFileDialog.targetField = chargerUnpluggedField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.chargerUnpluggedSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -824,7 +877,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: batteryFullFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select Battery Full Warning Sound");
+                                audioFileDialog.targetField = batteryFullField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.batteryFullSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
                 }
@@ -897,7 +955,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: usbPlugInFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select USB Plug In Sound");
+                                audioFileDialog.targetField = usbPlugInField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.usbPlugInSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
 
@@ -935,7 +998,12 @@ ContentPage {
                                 text: "folder_open"
                                 color: Appearance.colors.colOnLayer1
                             }
-                            onClicked: usbPlugOutFileDialog.open()
+                            onClicked: {
+                                audioFileDialog.title = Translation.tr("Select USB Plug Out Sound");
+                                audioFileDialog.targetField = usbPlugOutField;
+                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.usbPlugOutSoundPath = p; };
+                                audioFileDialog.open();
+                            }
                         }
                     }
                 }
@@ -1258,138 +1326,6 @@ ContentPage {
         WorldMap {
             Layout.fillWidth: true
             Layout.preferredHeight: 300
-        }
-    }
-
-    FileDialog {
-        id: notifSoundFileDialog
-        title: Translation.tr("Select Notification Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            notifSoundPathField.value = path;
-            Config.options.sounds.notificationSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: shutdownSoundFileDialog
-        title: Translation.tr("Select Shutdown / Reboot Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            shutdownSoundField.value = path;
-            Config.options.sounds.shutdownSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: lockSoundFileDialog
-        title: Translation.tr("Select Lock Screen Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            lockSoundField.value = path;
-            Config.options.sounds.lockSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: logoutSoundFileDialog
-        title: Translation.tr("Select Logout Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            logoutSoundField.value = path;
-            Config.options.sounds.logoutSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: sleepSoundFileDialog
-        title: Translation.tr("Select Sleep / Suspend Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            sleepSoundField.value = path;
-            Config.options.sounds.sleepSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: startupSoundFileDialog
-        title: Translation.tr("Select Startup Sound or Folder")
-        currentFolder: "file://" + Directories.home + "/.local/share/login_greetings"
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            startupSoundField.value = path;
-            Config.options.sounds.startupSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: chargerPluggedFileDialog
-        title: Translation.tr("Select Charging (Plugged In) Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            chargerPluggedField.value = path;
-            Config.options.sounds.chargerPluggedSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: chargerUnpluggedFileDialog
-        title: Translation.tr("Select Charge Cut Off (Unplugged) Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            chargerUnpluggedField.value = path;
-            Config.options.sounds.chargerUnpluggedSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: batteryFullFileDialog
-        title: Translation.tr("Select Battery Full Warning Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            batteryFullField.value = path;
-            Config.options.sounds.batteryFullSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: usbPlugInFileDialog
-        title: Translation.tr("Select USB Plug In Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            usbPlugInField.value = path;
-            Config.options.sounds.usbPlugInSoundPath = path;
-        }
-    }
-
-    FileDialog {
-        id: usbPlugOutFileDialog
-        title: Translation.tr("Select USB Plug Out Sound")
-        currentFolder: "file://" + Directories.music
-        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
-        onAccepted: {
-            let path = selectedFile.toString().replace("file://", "");
-            usbPlugOutField.value = path;
-            Config.options.sounds.usbPlugOutSoundPath = path;
         }
     }
 }
