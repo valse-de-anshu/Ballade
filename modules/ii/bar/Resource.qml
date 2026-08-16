@@ -13,12 +13,14 @@ Item {
     visible: shown
     implicitWidth: shown ? resourceRowLayout.implicitWidth : 0
     implicitHeight: Appearance.sizes.barHeight
+    Layout.preferredWidth: shown ? resourceRowLayout.implicitWidth : 0
+    Layout.fillWidth: false
     property bool warning: percentage * 100 >= warningThreshold
     property string rawTextOverride: ""
 
     RowLayout {
         id: resourceRowLayout
-        spacing: 4
+        spacing: 2
         anchors.verticalCenter: parent.verticalCenter
 
         Item {
@@ -81,30 +83,16 @@ Item {
         Item {
             Layout.alignment: Qt.AlignVCenter
             visible: Config.options.bar.resources.showValue
-            implicitWidth: visible ? Math.max(fullPercentageTextMetrics.width, minWidthMetrics.width) : 0
+            implicitWidth: visible ? percentageText.implicitWidth : 0
             implicitHeight: percentageText.implicitHeight
-            clip: true
-
-            TextMetrics {
-                id: minWidthMetrics
-                text: "00"
-                font.pixelSize: Appearance.font.pixelSize.small
-            }
-
-            TextMetrics {
-                id: fullPercentageTextMetrics
-                text: percentageText.text.replace(/[0-9]/g, '0')
-                font.pixelSize: Appearance.font.pixelSize.small
-            }
 
             StyledText {
                 id: percentageText
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
+                anchors.left: parent.left
                 color: Appearance.colors.colOnLayer1
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.features: { "tnum": 1 }
-                horizontalAlignment: Text.AlignRight
                 text: root.rawTextOverride !== "" ? root.rawTextOverride : `${Math.round(percentage * 100).toString()}`
             }
         }

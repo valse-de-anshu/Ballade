@@ -119,7 +119,9 @@ graph TD
 The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
 
 ```text
-d4e3afe (HEAD -> master) feat(settings): add Up/Down arrow and PageUp/Down key scrolling, unify custom widget cards, and auto-scroll on add
+a14b15f (HEAD -> master) feat(settings,sounds): add notification and system event sound volume steppers with live audio preview
+fc806a4 fix(bar): lock resource indicators in place, fix spacing gaps, and eliminate number jitter
+d4e3afe feat(settings): add Up/Down arrow and PageUp/Down key scrolling, unify custom widget cards, and auto-scroll on add
 1555ae6 feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
 a1b1b0f fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
 900810c feat(dock): add right-click context menu popup with Pin/Unpin and Close actions
@@ -131,10 +133,7 @@ a41254a refactor(bar): remove deprecated dynamic Divider settings
 b151a0a feat(wallpaperPicker): make wall shapes selectable in settings and remove top header bar
 a3d75d2 feat(settings): add Wall Shape section with 5 shape and animation specifications
 a06c1f3 feat(wallpaperPicker,widgets): integrate Cinematic Slanted picker, add 5 new shapes, and optimize widget performance
-d52e1ee fix(media): fix seeking on desktop media widget wavy progress bar and enhance album art layout
 11be865 style(media): widen desktop music player widget and convert album art to floating rounded square
-72a732b fix(clipboard): fully protect pinned items from delete/wipe, persist pins across reboots by storing display text
-64aa86c fix(clipboard): make wipe() atomic on 1st tap while preserving pinned items
 ```
 
 ---

@@ -13,7 +13,7 @@ MouseArea {
 
     RowLayout {
         id: rowLayout
-        spacing: 8
+        spacing: 6
         anchors.centerIn: parent
 
         Resource {
@@ -26,21 +26,21 @@ MouseArea {
         Resource {
             iconName: "swap_horiz"
             percentage: ResourceUsage.swapUsedPercentage
-            shown: Config.options.bar.resources.alwaysShowSwap && percentage > 0
+            shown: ResourceUsage.swapUsedPercentage > 0 || Config.options.bar.resources.alwaysShowSwap
             warningThreshold: Config.options.bar.resources.swapWarningThreshold
         }
 
         Resource {
             iconName: "planner_review"
             percentage: ResourceUsage.cpuUsage
-            shown: Config.options.bar.resources.alwaysShowCpu
+            shown: Config.options.bar.resources.alwaysShowCpu || root.alwaysShowAllResources
             warningThreshold: Config.options.bar.resources.cpuWarningThreshold
         }
 
         Resource {
             iconName: "device_thermostat"
             percentage: (ResourceUsage.cpuTemp > 0) ? (ResourceUsage.cpuTemp / 100) : 0
-            shown: Config.options.bar.resources.alwaysShowCpuTemp && ResourceUsage.cpuTemp > 0
+            shown: (Config.options.bar.resources.alwaysShowCpuTemp || root.alwaysShowAllResources) && ResourceUsage.cpuTemp > 0
             warningThreshold: 85
             rawTextOverride: `${Math.round(ResourceUsage.cpuTemp)}°C`
         }

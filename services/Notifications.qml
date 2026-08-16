@@ -149,8 +149,17 @@ Singleton {
 
     Process {
         id: notifSoundProc
-        property string soundPath: Config.options.sounds.notificationSoundPath || "/home/valse-de-anshu/⁄Music/notification/1. Nakime Biwa sound effect.flac"
-        command: ["bash", "-c", `paplay --media-role=event "${soundPath}" || pw-play --media-role=event "${soundPath}" || canberra-gtk-play --file="${soundPath}"`]
+        property string soundPath: Config.options.sounds.notificationSoundPath || ""
+        property int volume: Config.options.sounds.notificationVolume ?? 70
+        command: {
+            let p = soundPath.trim();
+            if (p.startsWith("file://")) p = p.substring(7);
+            if (p.length === 0) p = FileUtils.trimFileProtocol(`${Directories.music}/notification/1. Nakime Biwa sound effect.flac`);
+            let vol = Math.max(0, Math.min(100, volume));
+            let volNorm = (vol / 100).toFixed(2);
+            let paVol = Math.round(65536 * (vol / 100));
+            return ["bash", "-c", `pw-play --volume ${volNorm} --media-role=event "${p}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${p}" 2>/dev/null || mpv --no-video --volume=${vol} "${p}" 2>/dev/null || canberra-gtk-play --file="${p}" 2>/dev/null`];
+        }
     }
 
 	NotificationServer {

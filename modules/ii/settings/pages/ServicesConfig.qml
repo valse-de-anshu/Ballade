@@ -157,6 +157,11 @@ ContentPage {
             }
         }
 
+        Process {
+            id: soundPreviewProc
+            command: ["bash", "-c", ""]
+        }
+
         ContentSection {
             icon: "notifications"
             shape: MaterialShape.Shape.Superellipse
@@ -169,6 +174,77 @@ ContentPage {
                     checked: Config.options.sounds.notifications
                     onCheckedChanged: {
                         Config.options.sounds.notifications = checked;
+                    }
+                }
+
+                // Volume Stepper Row with Minus/Plus and Live Preview
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 8
+                    Layout.rightMargin: 8
+                    spacing: 10
+
+                    OptionalMaterialSymbol {
+                        icon: "volume_up"
+                        iconSize: Appearance.font.pixelSize.larger
+                    }
+
+                    StyledText {
+                        text: Translation.tr("Notification Volume")
+                        color: Appearance.colors.colOnSecondaryContainer
+                        Layout.fillWidth: true
+                    }
+
+                    StyledText {
+                        text: (Config.options.sounds.notificationVolume ?? 70) + "%"
+                        color: Appearance.colors.colPrimary
+                        font.weight: Font.DemiBold
+                        Layout.preferredWidth: 45
+                        horizontalAlignment: Text.AlignRight
+                    }
+
+                    // Minus Button
+                    RippleButton {
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSurfaceContainerHigh
+                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                        colRipple: Appearance.colors.colPrimary
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "remove"
+                            iconSize: 18
+                            color: Appearance.colors.colOnSurface
+                        }
+                        downAction: () => {
+                            let current = Config.options.sounds.notificationVolume ?? 70;
+                            let nextVal = Math.max(0, current - 10);
+                            Config.options.sounds.notificationVolume = nextVal;
+                            page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
+                        }
+                    }
+
+                    // Plus Button
+                    RippleButton {
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSurfaceContainerHigh
+                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                        colRipple: Appearance.colors.colPrimary
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "add"
+                            iconSize: 18
+                            color: Appearance.colors.colOnSurface
+                        }
+                        downAction: () => {
+                            let current = Config.options.sounds.notificationVolume ?? 70;
+                            let nextVal = Math.min(100, current + 10);
+                            Config.options.sounds.notificationVolume = nextVal;
+                            page.playSound(Config.options.sounds.notificationSoundPath, nextVal);
+                        }
                     }
                 }
 
@@ -196,10 +272,262 @@ ContentPage {
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
                             iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(notifSoundPathField.value, Config.options.sounds.notificationVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
                             text: "folder_open"
                             color: Appearance.colors.colOnLayer1
                         }
                         onClicked: notifSoundFileDialog.open()
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "power_settings_new"
+            shape: MaterialShape.Shape.Pill
+            title: Translation.tr("System Event Sounds")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Play sounds on system events (Shutdown, Lock, Sleep, Logout)")
+                    checked: Config.options.sounds.enableSystemSounds ?? true
+                    onCheckedChanged: {
+                        Config.options.sounds.enableSystemSounds = checked;
+                    }
+                }
+
+                // System Volume Stepper Row with Minus/Plus and Live Preview
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 8
+                    Layout.rightMargin: 8
+                    spacing: 10
+
+                    OptionalMaterialSymbol {
+                        icon: "volume_up"
+                        iconSize: Appearance.font.pixelSize.larger
+                    }
+
+                    StyledText {
+                        text: Translation.tr("System Sound Volume")
+                        color: Appearance.colors.colOnSecondaryContainer
+                        Layout.fillWidth: true
+                    }
+
+                    StyledText {
+                        text: (Config.options.sounds.systemSoundVolume ?? 70) + "%"
+                        color: Appearance.colors.colPrimary
+                        font.weight: Font.DemiBold
+                        Layout.preferredWidth: 45
+                        horizontalAlignment: Text.AlignRight
+                    }
+
+                    // Minus Button
+                    RippleButton {
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSurfaceContainerHigh
+                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                        colRipple: Appearance.colors.colPrimary
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "remove"
+                            iconSize: 18
+                            color: Appearance.colors.colOnSurface
+                        }
+                        downAction: () => {
+                            let current = Config.options.sounds.systemSoundVolume ?? 70;
+                            let nextVal = Math.max(0, current - 10);
+                            Config.options.sounds.systemSoundVolume = nextVal;
+                            page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+                        }
+                    }
+
+                    // Plus Button
+                    RippleButton {
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colSurfaceContainerHigh
+                        colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                        colRipple: Appearance.colors.colPrimary
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "add"
+                            iconSize: 18
+                            color: Appearance.colors.colOnSurface
+                        }
+                        downAction: () => {
+                            let current = Config.options.sounds.systemSoundVolume ?? 70;
+                            let nextVal = Math.min(100, current + 10);
+                            Config.options.sounds.systemSoundVolume = nextVal;
+                            page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
+                        }
+                    }
+                }
+
+                // Shutdown & Reboot Sound
+                ConfigTextArea {
+                    id: shutdownSoundField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "power_settings_new"
+                    text: Translation.tr("Shutdown & Reboot Sound")
+                    value: Config.options.sounds.shutdownSoundPath
+                    placeholderText: Translation.tr("Path to shutdown sound file (.flac, .mp3, .wav)")
+                    onValueChanged: {
+                        Config.options.sounds.shutdownSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: shutdownSoundFileDialog.open()
+                    }
+                }
+
+                // Lock Screen Sound
+                ConfigTextArea {
+                    id: lockSoundField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "lock"
+                    text: Translation.tr("Lock Screen Sound")
+                    value: Config.options.sounds.lockSoundPath
+                    placeholderText: Translation.tr("Path to lock sound file (leave empty for default)")
+                    onValueChanged: {
+                        Config.options.sounds.lockSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(lockSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: lockSoundFileDialog.open()
+                    }
+                }
+
+                // Logout Sound
+                ConfigTextArea {
+                    id: logoutSoundField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "logout"
+                    text: Translation.tr("Logout Sound")
+                    value: Config.options.sounds.logoutSoundPath
+                    placeholderText: Translation.tr("Path to logout sound file (leave empty for default)")
+                    onValueChanged: {
+                        Config.options.sounds.logoutSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(logoutSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: logoutSoundFileDialog.open()
+                    }
+                }
+
+                // Sleep / Suspend Sound
+                ConfigTextArea {
+                    id: sleepSoundField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "bedtime"
+                    text: Translation.tr("Sleep & Suspend Sound")
+                    value: Config.options.sounds.sleepSoundPath
+                    placeholderText: Translation.tr("Path to sleep sound file (leave empty for default)")
+                    onValueChanged: {
+                        Config.options.sounds.sleepSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(sleepSoundField.value || shutdownSoundField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: sleepSoundFileDialog.open()
                     }
                 }
             }
@@ -435,12 +763,60 @@ ContentPage {
     FileDialog {
         id: notifSoundFileDialog
         title: Translation.tr("Select Notification Sound")
-        currentFolder: "file:///home/valse-de-anshu/Music/"
+        currentFolder: "file://" + Directories.music
         nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
         onAccepted: {
             let path = selectedFile.toString().replace("file://", "");
             notifSoundPathField.value = path;
             Config.options.sounds.notificationSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: shutdownSoundFileDialog
+        title: Translation.tr("Select Shutdown / Reboot Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            shutdownSoundField.value = path;
+            Config.options.sounds.shutdownSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: lockSoundFileDialog
+        title: Translation.tr("Select Lock Screen Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            lockSoundField.value = path;
+            Config.options.sounds.lockSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: logoutSoundFileDialog
+        title: Translation.tr("Select Logout Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            logoutSoundField.value = path;
+            Config.options.sounds.logoutSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: sleepSoundFileDialog
+        title: Translation.tr("Select Sleep / Suspend Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            sleepSoundField.value = path;
+            Config.options.sounds.sleepSoundPath = path;
         }
     }
 }

@@ -752,8 +752,15 @@ Singleton {
                 property bool battery: false
                 property bool pomodoro: false
                 property bool notifications: true
-                property string notificationSoundPath: "/home/valse-de-anshu/⁄Music/notification/1. Nakime Biwa sound effect.flac"
+                property int notificationVolume: 70
+                property string notificationSoundPath: FileUtils.trimFileProtocol(`${Directories.music}/notification/1. Nakime Biwa sound effect.flac`)
                 property string theme: "freedesktop"
+                property bool enableSystemSounds: true
+                property int systemSoundVolume: 70
+                property string shutdownSoundPath: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/shutdown_sound.flac`)
+                property string lockSoundPath: ""
+                property string logoutSoundPath: ""
+                property string sleepSoundPath: ""
             }
 
             property JsonObject time: JsonObject {
