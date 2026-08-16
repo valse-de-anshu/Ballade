@@ -763,10 +763,12 @@ Singleton {
                 property string lockSoundPath: ""
                 property string logoutSoundPath: ""
                 property string sleepSoundPath: ""
+                property int batterySoundVolume: 70
                 property string chargerPluggedSoundPath: ""
                 property string chargerUnpluggedSoundPath: ""
                 property string batteryFullSoundPath: ""
                 property bool enableUsbSounds: true
+                property int usbSoundVolume: 70
                 property string usbPlugInSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/usb-in.flac`)
                 property string usbPlugOutSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/usb-out.flac`)
             }

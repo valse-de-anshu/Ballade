@@ -757,6 +757,77 @@ ContentPage {
                         }
                     }
 
+                    // Battery Volume Stepper Row with Minus/Plus and Live Preview
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
+                        spacing: 10
+
+                        OptionalMaterialSymbol {
+                            icon: "volume_up"
+                            iconSize: Appearance.font.pixelSize.larger
+                        }
+
+                        StyledText {
+                            text: Translation.tr("Battery Sound Volume")
+                            color: Appearance.colors.colOnSecondaryContainer
+                            Layout.fillWidth: true
+                        }
+
+                        StyledText {
+                            text: (Config.options.sounds.batterySoundVolume ?? 70) + "%"
+                            color: Appearance.colors.colPrimary
+                            font.weight: Font.DemiBold
+                            Layout.preferredWidth: 45
+                            horizontalAlignment: Text.AlignRight
+                        }
+
+                        // Minus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "remove"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.batterySoundVolume ?? 70;
+                                let nextVal = Math.max(0, current - 10);
+                                Config.options.sounds.batterySoundVolume = nextVal;
+                                page.playSound(chargerPluggedField.value || "file:///usr/share/sounds/freedesktop/stereo/power-plug.oga", nextVal);
+                            }
+                        }
+
+                        // Plus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "add"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.batterySoundVolume ?? 70;
+                                let nextVal = Math.min(100, current + 10);
+                                Config.options.sounds.batterySoundVolume = nextVal;
+                                page.playSound(chargerPluggedField.value || "file:///usr/share/sounds/freedesktop/stereo/power-plug.oga", nextVal);
+                            }
+                        }
+                    }
+
                     // Charger Plugged In (Charging Now)
                     ConfigTextArea {
                         id: chargerPluggedField
@@ -779,7 +850,7 @@ ContentPage {
                                 text: "play_arrow"
                                 color: Appearance.colors.colPrimary
                             }
-                            onClicked: page.playSound(chargerPluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                            onClicked: page.playSound(chargerPluggedField.value || "file:///usr/share/sounds/freedesktop/stereo/power-plug.oga", Config.options.sounds.batterySoundVolume ?? 70)
                         }
 
                         GroupButton {
@@ -822,7 +893,7 @@ ContentPage {
                                 text: "play_arrow"
                                 color: Appearance.colors.colPrimary
                             }
-                            onClicked: page.playSound(chargerUnpluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                            onClicked: page.playSound(chargerUnpluggedField.value || "file:///usr/share/sounds/freedesktop/stereo/power-unplug.oga", Config.options.sounds.batterySoundVolume ?? 70)
                         }
 
                         GroupButton {
@@ -865,7 +936,7 @@ ContentPage {
                                 text: "play_arrow"
                                 color: Appearance.colors.colPrimary
                             }
-                            onClicked: page.playSound(batteryFullField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                            onClicked: page.playSound(batteryFullField.value || "file:///usr/share/sounds/freedesktop/stereo/complete.oga", Config.options.sounds.batterySoundVolume ?? 70)
                         }
 
                         GroupButton {
@@ -921,6 +992,77 @@ ContentPage {
                         }
                     }
 
+                    // USB Volume Stepper Row with Minus/Plus and Live Preview
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
+                        spacing: 10
+
+                        OptionalMaterialSymbol {
+                            icon: "volume_up"
+                            iconSize: Appearance.font.pixelSize.larger
+                        }
+
+                        StyledText {
+                            text: Translation.tr("USB Sound Volume")
+                            color: Appearance.colors.colOnSecondaryContainer
+                            Layout.fillWidth: true
+                        }
+
+                        StyledText {
+                            text: (Config.options.sounds.usbSoundVolume ?? 70) + "%"
+                            color: Appearance.colors.colPrimary
+                            font.weight: Font.DemiBold
+                            Layout.preferredWidth: 45
+                            horizontalAlignment: Text.AlignRight
+                        }
+
+                        // Minus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "remove"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.usbSoundVolume ?? 70;
+                                let nextVal = Math.max(0, current - 10);
+                                Config.options.sounds.usbSoundVolume = nextVal;
+                                page.playSound(usbPlugInField.value, nextVal);
+                            }
+                        }
+
+                        // Plus Button
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colSurfaceContainerHigh
+                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
+                            colRipple: Appearance.colors.colPrimary
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "add"
+                                iconSize: 18
+                                color: Appearance.colors.colOnSurface
+                            }
+                            onClicked: {
+                                let current = Config.options.sounds.usbSoundVolume ?? 70;
+                                let nextVal = Math.min(100, current + 10);
+                                Config.options.sounds.usbSoundVolume = nextVal;
+                                page.playSound(usbPlugInField.value, nextVal);
+                            }
+                        }
+                    }
+
                     // USB Plug In
                     ConfigTextArea {
                         id: usbPlugInField
@@ -943,7 +1085,7 @@ ContentPage {
                                 text: "play_arrow"
                                 color: Appearance.colors.colPrimary
                             }
-                            onClicked: page.playSound(usbPlugInField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                            onClicked: page.playSound(usbPlugInField.value, Config.options.sounds.usbSoundVolume ?? 70)
                         }
 
                         GroupButton {
@@ -986,7 +1128,7 @@ ContentPage {
                                 text: "play_arrow"
                                 color: Appearance.colors.colPrimary
                             }
-                            onClicked: page.playSound(usbPlugOutField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                            onClicked: page.playSound(usbPlugOutField.value, Config.options.sounds.usbSoundVolume ?? 70)
                         }
 
                         GroupButton {

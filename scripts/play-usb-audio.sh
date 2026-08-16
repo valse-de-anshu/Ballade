@@ -12,7 +12,7 @@ AUDIO_PATH=""
 
 if command -v jq &>/dev/null && [[ -f "$CONFIG_FILE" ]]; then
     ENABLED=$(jq -r '.sounds.enableUsbSounds // true' "$CONFIG_FILE" 2>/dev/null || echo "true")
-    VOLUME=$(jq -r '.sounds.systemSoundVolume // 70' "$CONFIG_FILE" 2>/dev/null || echo "70")
+    VOLUME=$(jq -r '.sounds.usbSoundVolume // .sounds.systemSoundVolume // 70' "$CONFIG_FILE" 2>/dev/null || echo "70")
 
     if [[ "$ENABLED" == "false" ]]; then
         exit 0
