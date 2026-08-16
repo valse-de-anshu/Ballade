@@ -10,19 +10,16 @@ Item {
     property int warningThreshold: 100
     property bool shown: true
     clip: true
-    visible: width > 0 && height > 0
-    implicitWidth: resourceRowLayout.x < 0 ? 0 : resourceRowLayout.implicitWidth
+    visible: shown
+    implicitWidth: shown ? resourceRowLayout.implicitWidth : 0
     implicitHeight: Appearance.sizes.barHeight
     property bool warning: percentage * 100 >= warningThreshold
     property string rawTextOverride: ""
 
     RowLayout {
         id: resourceRowLayout
-        spacing: 2
-        x: shown ? 0 : -resourceRowLayout.width
-        anchors {
-            verticalCenter: parent.verticalCenter
-        }
+        spacing: 4
+        anchors.verticalCenter: parent.verticalCenter
 
         Item {
             Layout.alignment: Qt.AlignVCenter
@@ -84,9 +81,15 @@ Item {
         Item {
             Layout.alignment: Qt.AlignVCenter
             visible: Config.options.bar.resources.showValue
-            implicitWidth: visible ? fullPercentageTextMetrics.width : 0
+            implicitWidth: visible ? Math.max(fullPercentageTextMetrics.width, minWidthMetrics.width) : 0
             implicitHeight: percentageText.implicitHeight
             clip: true
+
+            TextMetrics {
+                id: minWidthMetrics
+                text: "00"
+                font.pixelSize: Appearance.font.pixelSize.small
+            }
 
             TextMetrics {
                 id: fullPercentageTextMetrics
@@ -97,15 +100,13 @@ Item {
             StyledText {
                 id: percentageText
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
+                anchors.right: parent.right
                 color: Appearance.colors.colOnLayer1
                 font.pixelSize: Appearance.font.pixelSize.small
+                font.features: { "tnum": 1 }
+                horizontalAlignment: Text.AlignRight
                 text: root.rawTextOverride !== "" ? root.rawTextOverride : `${Math.round(percentage * 100).toString()}`
             }
-        }
-
-        Behavior on x {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
         }
     }
 
@@ -114,14 +115,6 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
-        enabled: resourceRowLayout.x >= 0 && root.width > 0 && root.visible
-    }
-
-    Behavior on implicitWidth {
-        NumberAnimation {
-            duration: Appearance.animation.elementMove.duration
-            easing.type: Appearance.animation.elementMove.type
-            easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-        }
+        enabled: root.shown && root.width > 0 && root.visible
     }
 }
