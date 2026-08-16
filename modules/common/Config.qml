@@ -753,13 +753,13 @@ Singleton {
                 property bool pomodoro: false
                 property bool notifications: true
                 property int notificationVolume: 70
-                property string notificationSoundPath: FileUtils.trimFileProtocol(`${Directories.music}/notification/1. Nakime Biwa sound effect.flac`)
+                property string notificationSoundPath: ""
                 property string theme: "freedesktop"
                 property bool enableSystemSounds: true
                 property int systemSoundVolume: 70
                 property bool enableStartupSound: true
-                property string startupSoundPath: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/login_greetings`)
-                property string shutdownSoundPath: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/shutdown_sound.flac`)
+                property string startupSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/login_greetings`)
+                property string shutdownSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/shutdown_sound.flac`)
                 property string lockSoundPath: ""
                 property string logoutSoundPath: ""
                 property string sleepSoundPath: ""
@@ -767,8 +767,8 @@ Singleton {
                 property string chargerUnpluggedSoundPath: ""
                 property string batteryFullSoundPath: ""
                 property bool enableUsbSounds: true
-                property string usbPlugInSoundPath: ""
-                property string usbPlugOutSoundPath: ""
+                property string usbPlugInSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/usb-in.flac`)
+                property string usbPlugOutSoundPath: FileUtils.trimFileProtocol(`${Directories.soundsPath}/usb-out.flac`)
             }
 
             property JsonObject time: JsonObject {

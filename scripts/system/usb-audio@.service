@@ -1,0 +1,7 @@
+[Unit]
+Description=QuickShell Ballade USB Audio Notification for %i
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/quickshell/ballade/scripts/play-usb-audio.sh %i
+Environment=HOME=%h

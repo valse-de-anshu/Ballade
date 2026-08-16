@@ -396,14 +396,33 @@ ContentPage {
                     }
                 }
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 12
+                    Layout.rightMargin: 12
+                    spacing: 8
+                    OptionalMaterialSymbol {
+                        icon: "shuffle"
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.colors.colPrimary
+                    }
+                    StyledText {
+                        text: Translation.tr("Randomize Greetings: Select a folder containing audio files to automatically play a random greeting on each startup.")
+                        color: Appearance.colors.colOnSecondaryContainer
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                }
+
                 ConfigTextArea {
                     id: startupSoundField
                     Layout.fillWidth: true
                     fieldWidth: 250
                     buttonIcon: "wb_sunny"
-                    text: Translation.tr("Startup / Greeting Audio")
+                    text: Translation.tr("Startup Audio / Greeting Folder")
                     value: Config.options.sounds.startupSoundPath
-                    placeholderText: Translation.tr("Path to audio file or folder with rotating greetings")
+                    placeholderText: Translation.tr("Single audio file or directory of rotating greetings")
                     onValueChanged: {
                         Config.options.sounds.startupSoundPath = value;
                     }
