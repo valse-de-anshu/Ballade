@@ -30,6 +30,17 @@ ShellRoot {
         Cliphist.refresh()
         Wallpapers.load()
         Updates.load()
+
+        if (Config.options.sounds.enableStartupSound ?? true) {
+            let startPath = Config.options.sounds.startupSoundPath || "";
+            if (startPath.length > 0) {
+                let vol = Math.max(0, Math.min(100, Config.options.sounds.systemSoundVolume ?? 70));
+                let volNorm = (vol / 100).toFixed(2);
+                let paVol = Math.round(65536 * (vol / 100));
+                let cmd = `p="${startPath}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ] && [ -f "$file" ]; then pw-play --volume ${volNorm} --media-role=event "$file" 2>/dev/null || paplay --volume=${paVol} --media-role=event "$file" 2>/dev/null || mpv --no-video --volume=${vol} "$file" 2>/dev/null || canberra-gtk-play --file="$file" 2>/dev/null; fi`;
+                Quickshell.execDetached(["bash", "-c", cmd]);
+            }
+        }
     }
 
 

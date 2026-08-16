@@ -114,26 +114,23 @@ Singleton {
         }
     }
 
-    function playSystemSound(soundName) {
+    function playSystemSound(soundName, customPath) {
+        let p = (customPath && customPath.trim().length > 0) ? customPath.trim() : "";
+        if (p.startsWith("file://")) p = p.substring(7);
+
+        let vol = Math.max(0, Math.min(100, Config.options.sounds.systemSoundVolume ?? 70));
+        let volNorm = (vol / 100).toFixed(2);
+        let paVol = Math.round(65536 * (vol / 100));
+
+        if (p.length > 0) {
+            let cmd = `pw-play --volume ${volNorm} --media-role=event "${p}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${p}" 2>/dev/null || mpv --no-video --volume=${vol} "${p}" 2>/dev/null || canberra-gtk-play --file="${p}" 2>/dev/null || ffplay -nodisp -autoexit -volume ${vol} "${p}" 2>/dev/null`;
+            Quickshell.execDetached(["bash", "-c", cmd]);
+            return;
+        }
+
         const ogaPath = `/usr/share/sounds/${root.audioTheme}/stereo/${soundName}.oga`;
         const oggPath = `/usr/share/sounds/${root.audioTheme}/stereo/${soundName}.ogg`;
-
-        // Try playing .oga first
-        let command = [
-            "ffplay",
-            "-nodisp",
-            "-autoexit",
-            ogaPath
-        ];
-        Quickshell.execDetached(command);
-
-        // Also try playing .ogg (ffplay will just fail silently if file doesn't exist)
-        command = [
-            "ffplay",
-            "-nodisp",
-            "-autoexit",
-            oggPath
-        ];
-        Quickshell.execDetached(command);
+        let cmd = `pw-play --volume ${volNorm} --media-role=event "${ogaPath}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${ogaPath}" 2>/dev/null || pw-play --volume ${volNorm} --media-role=event "${oggPath}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${oggPath}" 2>/dev/null || canberra-gtk-play -i "${soundName}" 2>/dev/null`;
+        Quickshell.execDetached(["bash", "-c", cmd]);
     }
 }

@@ -161,3 +161,24 @@ If you ever need to revisit, modify, or debug the components of this rice, the f
 **Path:** `modules/common/widgets/MaterialShape.qml` & `modules/common/widgets/shapes/material-shapes.js`
 **What it does:** This acts as the **Shape Rendering Engine**. It uses QML `Canvas` and standard Qt transforms to draw complex geometric masks (like the `slanted` Cyberpunk parallelogram, `superellipse`, or `cookie`).
 **When to edit:** Edit this if you want to create entirely new geometric borders or clip-masks for images and widgets across the rice.
+
+### 5. The System Power & Event Audio Executor (`power-audio-executor.sh`)
+**Path:** `scripts/power-audio-executor.sh` (deployed to `~/.local/bin/power-audio-executor.sh`)
+**What it does:** This is the **System Power & Event Audio Wrapper**. It intercepts system power events (`poweroff`, `reboot`, `lock-session`, `suspend`, `hibernate`, `logout`) to play audio cues with deduplication lock protection and volume scaling. It dynamically reads user-configured audio paths and volume from `~/.config/illogical-impulse/config.json` via `jq` (`shutdownSoundPath`, `lockSoundPath`, `sleepSoundPath`, `logoutSoundPath`, `systemSoundVolume`, `enableSystemSounds`) with automated player fallbacks (`pw-play` ➔ `paplay` ➔ `mpv` ➔ `ffplay`).
+**When to edit:** Edit this when adding or altering system-level audio cues for power/lock actions, adjusting audio deduplication timeouts, or changing sound playback backends on Arch Linux.
+
+### 6. The Services, Notifications & Audio Settings (`ServicesConfig.qml`)
+**Path:** `modules/ii/settings/pages/ServicesConfig.qml`
+**What it does:** This is the **Services, Notifications & Audio Configuration UI**. It provides `-` / `+` stepper controls (0%-100%) with live test audio previews, sound file picker dialogs for notifications and system event sounds (Shutdown, Lock, Logout, Sleep), and system integration controls (AI prompts, Weather, Network user-agent, System updates).
+**When to edit:** Edit this when configuring new service settings, adding audio triggers, or adjusting volume stepper increments and audio preview handlers.
+
+### 7. The Bar Resource Indicators (`Resource.qml` & `Resources.qml`)
+**Path:** `modules/ii/bar/Resource.qml` & `modules/ii/bar/Resources.qml`
+**What it does:** This is the **Top Bar Hardware Metrics Component** (CPU, RAM, Swap, CPU Temp, Disk). It locks numerals in place using OpenType tabular figures (`tnum: 1`) to eliminate number fluctuation jitter, uses a tight `2px` gap between the circular progress icon and value, maintains a clean `6px` inter-widget spacing, and automatically reveals Swap whenever swap memory is actively being used (`> 0%`).
+**When to edit:** Edit this if customizing hardware sensors, warning thresholds, metric spacing, or top bar resource aesthetics.
+
+### 8. The Weather Service & Dynamic Dot-Map (`Weather.qml` & `WorldMap.qml`)
+**Path:** `services/Weather.qml` & `modules/common/widgets/WorldMap.qml`
+**What it does:** This is the **Weather Telemetry & Geographic Projection Engine**. It queries `wttr.in` for complete forecast data (coordinates, city, temperature, weather descriptions, precipitation) and maps the user's location coordinates with a pulsing target ring onto the world dot map canvas.
+**When to edit:** Edit this when updating weather API data formats, adding forecast details, or styling the world dot map locator.
+

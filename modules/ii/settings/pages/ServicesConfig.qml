@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import Quickshell
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -9,6 +10,17 @@ ContentPage {
     id: page
     forceWidth: true
     bottomContentPadding: 15
+
+    function playSound(filePath, volumePercent) {
+        if (!filePath || filePath.trim().length === 0) return;
+        let p = filePath.trim();
+        if (p.startsWith("file://")) p = p.substring(7);
+        let vol = Math.max(0, Math.min(100, volumePercent));
+        let volNorm = (vol / 100).toFixed(2);
+        let paVol = Math.round(65536 * (vol / 100));
+        let cmd = `pw-play --volume ${volNorm} --media-role=event "${p}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${p}" 2>/dev/null || mpv --no-video --volume=${vol} "${p}" 2>/dev/null || canberra-gtk-play --file="${p}" 2>/dev/null`;
+        Quickshell.execDetached(["bash", "-c", cmd]);
+    }
 
     //This was intended to go into the results more deeply but in the end I didn't like it but I left it just in case lol
     function goTo(term) {
@@ -157,11 +169,6 @@ ContentPage {
             }
         }
 
-        Process {
-            id: soundPreviewProc
-            command: ["bash", "-c", ""]
-        }
-
         ContentSection {
             icon: "notifications"
             shape: MaterialShape.Shape.Superellipse
@@ -217,7 +224,7 @@ ContentPage {
                             iconSize: 18
                             color: Appearance.colors.colOnSurface
                         }
-                        downAction: () => {
+                        onClicked: {
                             let current = Config.options.sounds.notificationVolume ?? 70;
                             let nextVal = Math.max(0, current - 10);
                             Config.options.sounds.notificationVolume = nextVal;
@@ -239,7 +246,7 @@ ContentPage {
                             iconSize: 18
                             color: Appearance.colors.colOnSurface
                         }
-                        downAction: () => {
+                        onClicked: {
                             let current = Config.options.sounds.notificationVolume ?? 70;
                             let nextVal = Math.min(100, current + 10);
                             Config.options.sounds.notificationVolume = nextVal;
@@ -348,7 +355,7 @@ ContentPage {
                             iconSize: 18
                             color: Appearance.colors.colOnSurface
                         }
-                        downAction: () => {
+                        onClicked: {
                             let current = Config.options.sounds.systemSoundVolume ?? 70;
                             let nextVal = Math.max(0, current - 10);
                             Config.options.sounds.systemSoundVolume = nextVal;
@@ -370,12 +377,63 @@ ContentPage {
                             iconSize: 18
                             color: Appearance.colors.colOnSurface
                         }
-                        downAction: () => {
+                        onClicked: {
                             let current = Config.options.sounds.systemSoundVolume ?? 70;
                             let nextVal = Math.min(100, current + 10);
                             Config.options.sounds.systemSoundVolume = nextVal;
                             page.playSound(Config.options.sounds.shutdownSoundPath, nextVal);
                         }
+                    }
+                }
+
+                // Startup & Login Greeting Sound
+                ConfigSwitch {
+                    buttonIcon: "wb_sunny"
+                    text: Translation.tr("Play greeting on login / startup")
+                    checked: Config.options.sounds.enableStartupSound ?? true
+                    onCheckedChanged: {
+                        Config.options.sounds.enableStartupSound = checked;
+                    }
+                }
+
+                ConfigTextArea {
+                    id: startupSoundField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "wb_sunny"
+                    text: Translation.tr("Startup / Greeting Audio")
+                    value: Config.options.sounds.startupSoundPath
+                    placeholderText: Translation.tr("Path to audio file or folder with rotating greetings")
+                    onValueChanged: {
+                        Config.options.sounds.startupSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: {
+                            let p = startupSoundField.value || "";
+                            let cmd = `p="${p}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ]; then pw-play --volume ${((Config.options.sounds.systemSoundVolume ?? 70)/100).toFixed(2)} "$file" 2>/dev/null || mpv --no-video --volume=${Config.options.sounds.systemSoundVolume ?? 70} "$file" 2>/dev/null; fi`;
+                            Quickshell.execDetached(["bash", "-c", cmd]);
+                        }
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: startupSoundFileDialog.open()
                     }
                 }
 
@@ -528,6 +586,230 @@ ContentPage {
                             color: Appearance.colors.colOnLayer1
                         }
                         onClicked: sleepSoundFileDialog.open()
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "battery_charging_full"
+            shape: MaterialShape.Shape.Oval
+            title: Translation.tr("Battery & Power Sound Events")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Play sounds on battery & charging events")
+                    checked: Config.options.sounds.battery ?? true
+                    onCheckedChanged: {
+                        Config.options.sounds.battery = checked;
+                    }
+                }
+
+                // Charger Plugged In (Charging Now)
+                ConfigTextArea {
+                    id: chargerPluggedField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "power"
+                    text: Translation.tr("Charging Now (Plugged In)")
+                    value: Config.options.sounds.chargerPluggedSoundPath
+                    placeholderText: Translation.tr("Custom audio or empty for system default (power-plug)")
+                    onValueChanged: {
+                        Config.options.sounds.chargerPluggedSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(chargerPluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: chargerPluggedFileDialog.open()
+                    }
+                }
+
+                // Charger Unplugged (Charge Cut Off)
+                ConfigTextArea {
+                    id: chargerUnpluggedField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "power_off"
+                    text: Translation.tr("Charge Cut Off (Unplugged)")
+                    value: Config.options.sounds.chargerUnpluggedSoundPath
+                    placeholderText: Translation.tr("Custom audio or empty for system default (power-unplug)")
+                    onValueChanged: {
+                        Config.options.sounds.chargerUnpluggedSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(chargerUnpluggedField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: chargerUnpluggedFileDialog.open()
+                    }
+                }
+
+                // Battery Full
+                ConfigTextArea {
+                    id: batteryFullField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "battery_charging_full"
+                    text: Translation.tr("Battery Full Warning")
+                    value: Config.options.sounds.batteryFullSoundPath
+                    placeholderText: Translation.tr("Custom audio or empty for system default (complete)")
+                    onValueChanged: {
+                        Config.options.sounds.batteryFullSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(batteryFullField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: batteryFullFileDialog.open()
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "usb"
+            shape: MaterialShape.Shape.Cookie6Sided
+            title: Translation.tr("USB Device Sound Events")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Play sounds on USB device connect / disconnect")
+                    checked: Config.options.sounds.enableUsbSounds ?? true
+                    onCheckedChanged: {
+                        Config.options.sounds.enableUsbSounds = checked;
+                    }
+                }
+
+                // USB Plug In
+                ConfigTextArea {
+                    id: usbPlugInField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "usb"
+                    text: Translation.tr("USB Plug In Sound")
+                    value: Config.options.sounds.usbPlugInSoundPath
+                    placeholderText: Translation.tr("Path to USB connect audio file")
+                    onValueChanged: {
+                        Config.options.sounds.usbPlugInSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(usbPlugInField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: usbPlugInFileDialog.open()
+                    }
+                }
+
+                // USB Plug Out
+                ConfigTextArea {
+                    id: usbPlugOutField
+                    Layout.fillWidth: true
+                    fieldWidth: 250
+                    buttonIcon: "usb_off"
+                    text: Translation.tr("USB Plug Out Sound")
+                    value: Config.options.sounds.usbPlugOutSoundPath
+                    placeholderText: Translation.tr("Path to USB disconnect audio file")
+                    onValueChanged: {
+                        Config.options.sounds.usbPlugOutSoundPath = value;
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "play_arrow"
+                            color: Appearance.colors.colPrimary
+                        }
+                        onClicked: page.playSound(usbPlugOutField.value, Config.options.sounds.systemSoundVolume ?? 70)
+                    }
+
+                    GroupButton {
+                        baseWidth: height
+                        buttonRadius: Appearance.rounding.small
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: Appearance.font.pixelSize.larger
+                            text: "folder_open"
+                            color: Appearance.colors.colOnLayer1
+                        }
+                        onClicked: usbPlugOutFileDialog.open()
                     }
                 }
             }
@@ -817,6 +1099,78 @@ ContentPage {
             let path = selectedFile.toString().replace("file://", "");
             sleepSoundField.value = path;
             Config.options.sounds.sleepSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: startupSoundFileDialog
+        title: Translation.tr("Select Startup Sound or Folder")
+        currentFolder: "file://" + Directories.home + "/.local/share/login_greetings"
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            startupSoundField.value = path;
+            Config.options.sounds.startupSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: chargerPluggedFileDialog
+        title: Translation.tr("Select Charging (Plugged In) Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            chargerPluggedField.value = path;
+            Config.options.sounds.chargerPluggedSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: chargerUnpluggedFileDialog
+        title: Translation.tr("Select Charge Cut Off (Unplugged) Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            chargerUnpluggedField.value = path;
+            Config.options.sounds.chargerUnpluggedSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: batteryFullFileDialog
+        title: Translation.tr("Select Battery Full Warning Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            batteryFullField.value = path;
+            Config.options.sounds.batteryFullSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: usbPlugInFileDialog
+        title: Translation.tr("Select USB Plug In Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            usbPlugInField.value = path;
+            Config.options.sounds.usbPlugInSoundPath = path;
+        }
+    }
+
+    FileDialog {
+        id: usbPlugOutFileDialog
+        title: Translation.tr("Select USB Plug Out Sound")
+        currentFolder: "file://" + Directories.music
+        nameFilters: ["Audio files (*.flac *.wav *.mp3 *.ogg *.opus *.m4a)", "All files (*)"]
+        onAccepted: {
+            let path = selectedFile.toString().replace("file://", "");
+            usbPlugOutField.value = path;
+            Config.options.sounds.usbPlugOutSoundPath = path;
         }
     }
 }

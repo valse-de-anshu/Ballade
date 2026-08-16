@@ -749,7 +749,7 @@ Singleton {
             }
 
             property JsonObject sounds: JsonObject {
-                property bool battery: false
+                property bool battery: true
                 property bool pomodoro: false
                 property bool notifications: true
                 property int notificationVolume: 70
@@ -757,10 +757,18 @@ Singleton {
                 property string theme: "freedesktop"
                 property bool enableSystemSounds: true
                 property int systemSoundVolume: 70
+                property bool enableStartupSound: true
+                property string startupSoundPath: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/login_greetings`)
                 property string shutdownSoundPath: FileUtils.trimFileProtocol(`${Directories.home}/.local/share/shutdown_sound.flac`)
                 property string lockSoundPath: ""
                 property string logoutSoundPath: ""
                 property string sleepSoundPath: ""
+                property string chargerPluggedSoundPath: ""
+                property string chargerUnpluggedSoundPath: ""
+                property string batteryFullSoundPath: ""
+                property bool enableUsbSounds: true
+                property string usbPlugInSoundPath: ""
+                property string usbPlugOutSoundPath: ""
             }
 
             property JsonObject time: JsonObject {
