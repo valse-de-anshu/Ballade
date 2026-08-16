@@ -64,14 +64,15 @@ Singleton {
         return result
     }
 
-    // ── Sync timer: updates activeIndex every 300ms while playing ─────────────
+    // ── Sync timer: updates activeIndex every 100ms with lead compensation ─────────────
     Timer {
         id: syncTimer
-        interval: 300
+        interval: 100
         repeat: true
         running: root.status === "ok" && root.lyricsLines.length > 0
         onTriggered: {
-            const pos = root.activePlayer?.position ?? 0
+            const lead = root.ccMode ? 0.75 : 0.35
+            const pos = (root.activePlayer?.position ?? 0) + lead
             let idx = -1
             for (let i = 0; i < root.lyricsLines.length; i++) {
                 if (root.lyricsLines[i].time <= pos) idx = i

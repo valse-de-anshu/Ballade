@@ -373,12 +373,12 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
             ]
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
 
-            # Sort files with Hindi subtitles first, then English, then others
+            # Sort files with English subtitles first, then Hindi, then others
             def _sub_priority(f):
                 f_lower = f.lower()
-                if ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
-                    return 0
                 if ".en" in f_lower or "english" in f_lower:
+                    return 0
+                if ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
                     return 1
                 return 2
 
