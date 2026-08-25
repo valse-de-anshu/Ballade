@@ -16,7 +16,7 @@ import qs.modules.common
  */
 Singleton {
 	id: root;
-	property list<MprisPlayer> players: Mpris.players.values.filter(player => isRealPlayer(player));
+	property var players: Mpris.players.values.filter(player => isRealPlayer(player));
 	property MprisPlayer trackedPlayer: null;
 	property MprisPlayer activePlayer: trackedPlayer ?? root.players[0] ?? null;
 	signal trackChanged(reverse: bool);
