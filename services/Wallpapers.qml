@@ -19,7 +19,9 @@ Singleton {
     property string generateThumbnailsMagickScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/generate-thumbnails-magick.sh`
     property alias directory: folderModel.folder
     readonly property string activeThemePreset: Config.options.theme?.activePreset ?? "green"
-    property url defaultFolder: Qt.resolvedUrl(`${Directories.pictures}/Wallpapers/${root.activeThemePreset}`)
+    property url defaultFolder: Config.options.wallpaperSelector?.userPath 
+                                ? Qt.resolvedUrl(Config.options.wallpaperSelector.userPath)
+                                : Qt.resolvedUrl(`${Directories.pictures}/Wallpapers/${root.activeThemePreset}`)
     property alias folderModel: folderModel // Expose for direct binding when needed
     property string searchQuery: ""
     readonly property list<string> extensions: [ // TODO: add videos
@@ -36,11 +38,23 @@ Singleton {
     signal thumbnailGeneratedFile(filePath: string)
 
     Connections {
+        target: Config.options?.wallpaperSelector ?? null
+        function onUserPathChanged() {
+            if (Config.options.wallpaperSelector?.userPath) {
+                root.setDirectory(Config.options.wallpaperSelector.userPath)
+            }
+        }
+    }
+    
+    Connections {
         target: Config.options?.theme ?? null
         function onActivePresetChanged() {
-            const theme = Config.options.theme?.activePreset ?? "green"
-            const themeFolder = `${Directories.pictures}/Wallpapers/${theme}`
-            root.setDirectory(themeFolder)
+            // Fallback if userPath doesn't exist
+            if (!Config.options.wallpaperSelector?.userPath) {
+                const theme = Config.options.theme?.activePreset ?? "green"
+                const themeFolder = `${Directories.pictures}/Wallpapers/${theme}`
+                root.setDirectory(themeFolder)
+            }
         }
     }
 

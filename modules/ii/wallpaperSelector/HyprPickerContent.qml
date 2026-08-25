@@ -173,7 +173,7 @@ Item {
             property real targetXOffset: {
                 if (list.isPanoramic) {
                     if (distFromSelected === 0) return 0;
-                    let push = 160;
+                    let push = 30; // Reduced from 160 to fix massive gap
                     return deltaIndex < 0 ? -push : push;
                 }
                 return 0;

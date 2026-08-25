@@ -150,7 +150,7 @@ if [ -f "$CONFIG_FILE" ]; then
     tmp_config=$(mktemp)
     jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \
         '.theme = (.theme // {}) | .theme.activePreset = $theme | .wallpaperSelector.userPath = $dir' \
-        "$CONFIG_FILE" > "$tmp_config" && mv "$tmp_config" "$CONFIG_FILE"
+        "$CONFIG_FILE" > "$tmp_config" && cat "$tmp_config" > "$CONFIG_FILE" && rm "$tmp_config"
 fi
 
 # 9. Auto-restart apps & Reloads
