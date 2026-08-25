@@ -76,7 +76,7 @@ Singleton {
     property bool silent: false
     property int unread: 0
     property var filePath: Directories.notificationsPath
-    property list<Notif> list: []
+    property list<QtObject> list: []
     property var popupList: list.filter((notif) => notif.popup);
     property bool popupInhibited: (GlobalStates?.sidebarRightOpen ?? false) || silent
     property var latestTimeForApp: ({})
