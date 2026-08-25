@@ -266,6 +266,7 @@ ContentPage {
 
                         FileView {
                             path: `${Directories.userPresetsPath}/${themeCard.modelData.key}.json`
+                            watchChanges: true
                             onLoaded: {
                                 try {
                                     const data = JSON.parse(text())
@@ -378,13 +379,14 @@ ContentPage {
                             // === Info + Buttons (bottom 88px) ===
                             ColumnLayout {
                                 anchors.top: previewArea.bottom
+                                anchors.bottom: parent.bottom
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.topMargin: 8
                                 anchors.bottomMargin: 10
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 10
-                                spacing: 10
+                                spacing: 6
 
                                 // Color dot + name row
                                 RowLayout {

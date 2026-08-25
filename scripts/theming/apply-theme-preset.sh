@@ -155,7 +155,7 @@ fi
 if pidof dolphin > /dev/null 2>&1; then
     pkill -x dolphin 2>/dev/null || true
     sleep 0.3
-    hyprctl dispatch exec dolphin 2>/dev/null || true
+    dolphin >/dev/null 2>&1 &
 fi
 
 # Rebuild KDE service/icon cache
