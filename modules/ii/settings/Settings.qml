@@ -45,6 +45,7 @@ Scope {
         onVisibleChanged: {
             if (visible) {
                 settingsWindow.userMoved = false;
+                settingsWindow.forceActiveFocus();
             }
         }
 
@@ -57,6 +58,7 @@ Scope {
             border.color: Appearance.colors.colLayer0Border
             radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 5
             z: 1
+            focus: true
 
             property bool userMoved: false
             anchors.centerIn: userMoved ? undefined : parent

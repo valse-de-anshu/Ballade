@@ -234,7 +234,7 @@ ContentPage {
         ContentSection {
             icon: "palette"
             shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Color Themes")
+            title: Translation.tr("Themes & Presets")
 
             Flow {
                 Layout.fillWidth: true
@@ -472,12 +472,16 @@ ContentPage {
                     }
                 }
             }
-        }
 
-        ContentSection {
-            icon: "wall_art"
-            shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Custom Snapshots")
+            // ── Custom Snapshots sub-section ──────────────────────
+            StyledText {
+                Layout.topMargin: 8
+                text: Translation.tr("Snapshots")
+                font.pixelSize: Appearance.font.pixelSize.small
+                font.weight: Font.DemiBold
+                color: Appearance.colors.colSubtext
+                letterSpacing: 1
+            }
 
             GroupedList {
                 ConfigTextArea {
@@ -499,7 +503,7 @@ ContentPage {
 
             StyledText {
                 Layout.fillWidth: true
-                Layout.topMargin: 40
+                Layout.topMargin: 20
                 visible: (Presets.folderModel ? Presets.folderModel.count : 0) === 0
                 horizontalAlignment: Text.AlignHCenter
                 text: Translation.tr("No saved snapshots yet")
