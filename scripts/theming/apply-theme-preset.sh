@@ -144,45 +144,25 @@ if [ -f "$CONFIG_FILE" ]; then
         "$CONFIG_FILE" > "$tmp_config" && mv "$tmp_config" "$CONFIG_FILE"
 fi
 
-# 9. Auto-restart apps in their workspaces
-# We detect which workspace each running app is on, kill it, and reopen it there.
-_restart_in_workspace() {
-    local app_class="$1"   # hyprctl clients class
-    local app_cmd="$2"     # command to relaunch
-    local fallback_ws="${3:-1}"
-
-    # Find workspace of currently running instance
-    local ws
-    ws=$(hyprctl clients -j 2>/dev/null \
-        | jq -r --arg cls "$app_class" '.[] | select(.class | test($cls; "i")) | .workspace.id' \
-        | head -n 1)
-    ws="${ws:-$fallback_ws}"
-
-    # Kill existing instances
-    pkill -f "$app_class" 2>/dev/null || true
-    sleep 0.3
-
-    # Reopen on same workspace
-    hyprctl dispatch exec "[workspace $ws silent]" "$app_cmd" 2>/dev/null || true
-}
-
-# Kitty: live-reload via SIGUSR1 (config changes apply without restart)
-# Only hard-restart if it can't pick up theme (e.g. full terminal restart)
+# 9. Auto-restart apps & Reloads
+# ---------------------------------------------------------
+# Kitty: live-reload via SIGUSR1 (no hard restart needed)
 if pidof kitty > /dev/null 2>&1; then
     kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
 fi
 
 # Dolphin: restart to pick up new icon theme
 if pidof dolphin > /dev/null 2>&1; then
-    _restart_in_workspace "dolphin" "dolphin" 4
+    pkill -x dolphin 2>/dev/null || true
+    sleep 0.3
+    hyprctl dispatch exec dolphin 2>/dev/null || true
 fi
 
-# rmpc: restart to pick up new theme
-if pidof rmpc > /dev/null 2>&1; then
-    _restart_in_workspace "rmpc" "kitty --class rmpc -e rmpc" 3
-fi
-
-# Rebuild KDE service/icon cache (needed for icon theme to take effect in Dolphin)
+# Rebuild KDE service/icon cache
 kbuildsycoca6 --noincremental 2>/dev/null &
+
+# Reload Hyprland and Quickshell
+hyprctl reload &
+killall -SIGUSR1 quickshell 2>/dev/null || true
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
