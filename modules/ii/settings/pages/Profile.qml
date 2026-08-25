@@ -443,7 +443,7 @@ ContentPage {
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                Presets.save(themeCard.modelData.key)
+                                                Presets.save(String(themeCard.modelData.key))
                                             }
                                         }
                                     }
@@ -483,7 +483,7 @@ ContentPage {
                                             cursorShape: themeCard.isActive ? Qt.ArrowCursor : Qt.PointingHandCursor
                                             onClicked: {
                                                 if (!themeCard.isActive)
-                                                    Presets.apply(themeCard.modelData.key)
+                                                    Presets.apply(String(themeCard.modelData.key))
                                             }
                                         }
                                     }
