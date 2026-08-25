@@ -296,15 +296,21 @@ ContentPage {
                         }
 
                         Rectangle {
-                            anchors.fill: parent
+                            id: cardMask
+                            width: themeCard.width
+                            height: themeCard.height
                             radius: Appearance.rounding.large
-                            color: Appearance.colors.colLayer1
-                            clip: true
-                            border.color: themeCard.isActive ? themeCard.modelData.color : Qt.alpha(themeCard.modelData.color, 0.25)
-                            border.width: themeCard.isActive ? 2.5 : 1
+                            visible: false
+                        }
 
-                            Behavior on border.color { ColorAnimation { duration: 250 } }
-                            Behavior on border.width  { NumberAnimation { duration: 150 } }
+                        Rectangle {
+                            id: cardBg
+                            anchors.fill: parent
+                            color: Appearance.colors.colLayer1
+                            layer.enabled: true
+                            layer.effect: OpacityMask {
+                                maskSource: cardMask
+                            }
 
                             // === Wallpaper Preview (top 160px) ===
                             Item {
@@ -488,6 +494,17 @@ ContentPage {
                                     }
                                 }
                             }
+                        }
+
+                        // Border overlay (renders on top of the rounded card)
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Appearance.rounding.large
+                            color: "transparent"
+                            border.color: themeCard.isActive ? themeCard.modelData.color : Qt.alpha(themeCard.modelData.color, 0.25)
+                            border.width: themeCard.isActive ? 2.5 : 1
+                            Behavior on border.color { ColorAnimation { duration: 250 } }
+                            Behavior on border.width  { NumberAnimation { duration: 150 } }
                         }
                     }
                 }

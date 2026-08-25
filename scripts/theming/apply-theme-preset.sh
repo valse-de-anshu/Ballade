@@ -111,12 +111,12 @@ if command -v gsettings &>/dev/null; then
     gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null &
 fi
 if command -v kwriteconfig6 &>/dev/null; then
-    kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null &
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null
 fi
 
 # 4. Apply KDE Color Scheme (Dolphin, Konsole, Kate, System UI)
 if command -v plasma-apply-colorscheme &>/dev/null; then
-    plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1 &
+    plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1
 fi
 
 # 5. Apply Kitty Theme
@@ -160,14 +160,19 @@ if pidof kitty > /dev/null 2>&1; then
     kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
 fi
 
+# Update Konsole profile to match KDE scheme
+if [ -f ~/.local/share/konsole/"Profile 1.profile" ]; then
+    sed -i "s/^ColorScheme=.*/ColorScheme=$KDE_SCHEME/" ~/.local/share/konsole/"Profile 1.profile"
+fi
+
+# Rebuild KDE service/icon cache BEFORE restarting Dolphin
+kbuildsycoca6 --noincremental 2>/dev/null
+
 # Dolphin: restart to pick up new icon theme
 if pidof dolphin > /dev/null 2>&1; then
     pkill -x dolphin 2>/dev/null || true
-    sleep 0.3
-    dolphin >/dev/null 2>&1 &
+    sleep 0.5
+    env XDG_CURRENT_DESKTOP=KDE dolphin >/dev/null 2>&1 &
 fi
-
-# Rebuild KDE service/icon cache
-kbuildsycoca6 --noincremental 2>/dev/null &
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
