@@ -366,21 +366,26 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
                 "yt-dlp",
                 "--no-warnings", "--quiet", "--no-playlist",
                 "--write-auto-sub", "--write-sub",
-                "--sub-langs", "hi,hi.*,hin,hi-orig,en,en.*,en-orig,all",
+                "--sub-format", "vtt/lrc/best",
+                "--sub-langs", "en,en.*,en-orig,en-US,en-GB,hi,hi.*,hin,hi-orig,all",
                 "--skip-download",
                 "-o", out_tmpl,
                 query
             ]
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
 
-            # Sort files with English subtitles first, then Hindi, then others
+            # Sort files: Official/Manual English -> AI Auto-generated English -> Official Hindi -> AI Auto-generated Hindi -> Others
             def _sub_priority(f):
                 f_lower = f.lower()
-                if ".en" in f_lower or "english" in f_lower:
+                if f_lower.endswith(".en.vtt") or f_lower.endswith(".en.lrc"):
                     return 0
-                if ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
+                if ".en-orig" in f_lower or ".en" in f_lower or "english" in f_lower:
                     return 1
-                return 2
+                if f_lower.endswith(".hi.vtt") or f_lower.endswith(".hi.lrc"):
+                    return 2
+                if ".hi-orig" in f_lower or ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
+                    return 3
+                return 4
 
             filenames = sorted(os.listdir(tmpdir), key=_sub_priority)
             for fname in filenames:
