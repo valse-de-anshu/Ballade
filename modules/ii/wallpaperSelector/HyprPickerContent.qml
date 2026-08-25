@@ -18,7 +18,6 @@ Item {
 
     Component.onCompleted: {
         list.forceActiveFocus();
-        cacheProc.running = true;
     }
 
     Keys.onPressed: function(event) {
@@ -44,18 +43,6 @@ Item {
     readonly property bool isPanoramic: activeBehavior === "panoramic"
     // ------------------
 
-    // Thumbnail cache — reuse hyprquickpaper's own cache (simple filenames)
-    readonly property string thumbCacheDir: FileUtils.trimFileProtocol(
-        Directories.home + "/.cache/quickshell/hyprquickpaper/thumbs/"
-    )
-
-    // Keep thumbs fresh whenever the wallpaper folder changes
-    Process {
-        id: cacheProc
-        property string shellDir: FileUtils.trimFileProtocol(Directories.config) + "/quickshell/hyprquickpaper"
-        command: ["bash", shellDir + "/cache.sh", shellDir]
-        running: false
-    }
 
     // Folder model — points at the same directory ballade's Wallpapers service watches
     FolderListModel {
@@ -227,9 +214,7 @@ Item {
                             NumberAnimation { duration: 120 }
                         }
 
-                        source: root.thumbCacheDir.length > 0
-                            ? ("file://" + root.thumbCacheDir + fileName)
-                            : ""
+                        source: "file://" + FileUtils.trimFileProtocol(filePath)
 
                         sourceSize.width: 500
                         sourceSize.height: 700
