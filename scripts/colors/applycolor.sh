@@ -73,10 +73,68 @@ apply_anyterm() {
   done
 }
 
+apply_konsole() {
+  local konsole_theme="$HOME/.local/share/konsole/Quickshell.colorscheme"
+  mkdir -p "$HOME/.local/share/konsole"
+  
+  hex2rgb() {
+    local hex="${1#\#}"
+    if [ ${#hex} -eq 6 ]; then
+      printf "%d,%d,%d" "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
+    else
+      echo "0,0,0"
+    fi
+  }
+
+  echo "[General]" > "$konsole_theme"
+  echo "Description=Dynamic Quickshell" >> "$konsole_theme"
+  echo "Opacity=1" >> "$konsole_theme"
+
+  local temp_kitty="/tmp/qs_konsole_kitty_template.conf"
+  if [ -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
+    cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$temp_kitty"
+    for i in "${!colorlist[@]}"; do
+      sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$temp_kitty"
+    done
+
+    while read -r line; do
+      local key=$(echo "$line" | awk '{print $1}')
+      local val=$(echo "$line" | awk '{print $2}')
+      
+      if [[ -z "$key" || -z "$val" ]]; then
+        continue
+      fi
+      
+      if [[ "$key" == "background" ]]; then
+        echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+      elif [[ "$key" == "foreground" ]]; then
+        echo -e "[Foreground]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+      elif [[ "$key" =~ ^color([0-9]+)$ ]]; then
+        local cnum="${BASH_REMATCH[1]}"
+        echo -e "[Color${cnum}]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        echo -e "[Color${cnum}Intense]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+      fi
+    done < "$temp_kitty"
+    rm -f "$temp_kitty"
+  fi
+
+  local profile="$HOME/.local/share/konsole/Profile 1.profile"
+  if [ -f "$profile" ]; then
+    if grep -q "^ColorScheme=" "$profile"; then
+      sed -i "s/^ColorScheme=.*/ColorScheme=Quickshell/" "$profile"
+    else
+      sed -i '1s/^/[Appearance]\nColorScheme=Quickshell\n\n/' "$profile"
+    fi
+  fi
+}
+
 apply_term() {
   apply_anyterm &
   apply_kitty &
 }
+
+# Always apply konsole since it's embedded in Dolphin UI
+apply_konsole &
 
 # Check if terminal theming is enabled in config
 CONFIG_FILE="$XDG_CONFIG_HOME/illogical-impulse/config.json"
