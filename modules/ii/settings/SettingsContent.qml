@@ -194,7 +194,8 @@ Item {
                         }
 
                         MouseArea {
-                            anchors.fill: parent
+                            width: parent.width
+                            height: parent.height
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.showingProfile = !root.showingProfile
                         }

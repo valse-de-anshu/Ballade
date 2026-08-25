@@ -83,17 +83,26 @@ echo "[Theme Orchestrator] Applying theme preset: $PRESET_NAME ($PRIMARY_HEX)"
 # 1. Ensure theme wallpaper directory exists
 mkdir -p "$WALLPAPER_DIR"
 
-# 2. Check if a wallpaper exists in the target theme folder
-first_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
+# 2. Apply Wallpaper & Colors
+# Check if a wallpaper was loaded into config.json from the preset snapshot
+saved_wall=$(jq -r '.background.wallpaperPath // empty' "$CONFIG_FILE" 2>/dev/null)
 
-if [ -n "$first_wall" ] && [ -f "$first_wall" ]; then
-    echo "[Theme Orchestrator] Applying theme wallpaper: $first_wall"
-    "$SCRIPT_DIR/../colors/switchwall.sh" --image "$first_wall" --mode dark >/dev/null 2>&1 &
+if [ -n "$saved_wall" ] && [ -f "$saved_wall" ]; then
+    echo "[Theme Orchestrator] Applying saved wallpaper: $saved_wall"
+    "$SCRIPT_DIR/../colors/switchwall.sh" --image "$saved_wall" --mode dark >/dev/null 2>&1 &
 else
-    # Fallback to direct hex generation if folder has no wallpapers yet
-    if command -v matugen &>/dev/null; then
-        matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1
-        "$SCRIPT_DIR/../colors/applycolor.sh" >/dev/null 2>&1 &
+    # Fallback: check if a wallpaper exists in the target theme folder
+    first_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
+
+    if [ -n "$first_wall" ] && [ -f "$first_wall" ]; then
+        echo "[Theme Orchestrator] Applying fallback theme wallpaper: $first_wall"
+        "$SCRIPT_DIR/../colors/switchwall.sh" --image "$first_wall" --mode dark >/dev/null 2>&1 &
+    else
+        # Fallback to direct hex generation if folder has no wallpapers yet
+        if command -v matugen &>/dev/null; then
+            matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1
+            "$SCRIPT_DIR/../colors/applycolor.sh" >/dev/null 2>&1 &
+        fi
     fi
 fi
 

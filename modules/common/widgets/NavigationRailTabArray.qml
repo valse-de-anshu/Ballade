@@ -8,7 +8,7 @@ Item {
     property int currentIndex: 0
     property bool expanded: false
     property color colToggled: Appearance.colors.colSecondaryContainer
-    default property alias data: tabBarColumn.data  
+    default property alias _contentData: tabBarColumn.data  
     implicitHeight: tabBarColumn.implicitHeight
     implicitWidth: tabBarColumn.implicitWidth
     Layout.topMargin: 25

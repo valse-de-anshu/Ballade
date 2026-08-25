@@ -10,7 +10,7 @@ ColumnLayout {
     property string title
     property string icon: ""
     property var bgColor: Appearance.colors.colSecondaryContainer
-    default property alias data: sectionContent.data
+    default property alias _contentData: sectionContent.data
 
     Layout.fillWidth: true
     spacing: 6

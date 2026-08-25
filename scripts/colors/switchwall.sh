@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "switchwall called with: $@" >> /tmp/switchwall_debug.log
 
 QUICKSHELL_CONFIG_NAME="ii"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"

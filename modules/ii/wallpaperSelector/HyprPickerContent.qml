@@ -82,7 +82,7 @@ Item {
 
         property bool isPanoramic  : root.activeBehavior === "panoramic"
         property real tileSlotWidth : isPanoramic
-                                      ? Math.max(8, width / Math.max(1, folderModel.count))
+                                      ? Math.min(Math.round(width / 4.5), Math.max(8, width / Math.max(1, folderModel.count)))
                                       : Math.round(width / 4.5)
         property int  selectedIndex : 0
         property bool _initializedIndex: false

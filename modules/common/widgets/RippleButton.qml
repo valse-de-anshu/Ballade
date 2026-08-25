@@ -162,8 +162,8 @@ Button {
             opacity: 0
             visible: width > 0 && height > 0
 
-            property real implicitWidth: 0
-            property real implicitHeight: 0
+            implicitWidth: 0
+            implicitHeight: 0
 
             Behavior on opacity {
                 animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
