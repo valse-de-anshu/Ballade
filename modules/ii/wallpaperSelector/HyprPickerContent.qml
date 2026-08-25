@@ -81,32 +81,48 @@ Item {
         cacheBuffer: 600
 
         property bool isPanoramic  : root.activeBehavior === "panoramic"
-        property real tileSlotWidth : isPanoramic
-                                      ? Math.min(Math.round(width / 4.5), Math.max(8, width / Math.max(1, folderModel.count)))
-                                      : Math.round(width / 4.5)
+        property real tileSlotWidth : Math.round(width / 5.0) // Standardize slot width to prevent massive gaps
         property int  selectedIndex : 0
         property bool _initializedIndex: false
 
         Connections {
             target: folderModel
             function onCountChanged() {
-                if (!_initializedIndex && folderModel.count > 0) {
-                    _initializedIndex = true;
-                    list.selectedIndex = Math.max(0, Math.floor((folderModel.count - 1) / 2));
+                if (!list._initializedIndex && folderModel.count > 0) {
+                    list._initializedIndex = true;
+                    
+                    let activePath = Config.options.background.wallpaperPath;
+                    let foundIndex = -1;
+                    if (activePath) {
+                        for (let i = 0; i < folderModel.count; i++) {
+                            let itemPath = FileUtils.trimFileProtocol(folderModel.get(i, "filePath"));
+                            if (itemPath === activePath) {
+                                foundIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (foundIndex !== -1) {
+                        list.selectedIndex = foundIndex;
+                    } else {
+                        list.selectedIndex = Math.max(0, Math.floor((folderModel.count - 1) / 2));
+                    }
                 }
             }
         }
 
-        // For Panoramic, do NOT scroll (fit all on screen). For others, allow scrolling to center.
-        leftMargin: isPanoramic ? 0 : width / 2
-        rightMargin: isPanoramic ? 0 : width / 2
+        // Center all items if they don't fill the screen, otherwise allow normal scrolling
+        property real totalContentWidth: folderModel.count * tileSlotWidth
+        leftMargin: totalContentWidth < width ? (width - totalContentWidth) / 2 : width / 2
+        rightMargin: leftMargin
 
         currentIndex: selectedIndex
         preferredHighlightBegin: (width - tileSlotWidth) / 2
         preferredHighlightEnd:   (width + tileSlotWidth) / 2
-        highlightRangeMode:      isPanoramic ? ListView.NoHighlightRange : ListView.StrictlyEnforceRange
+        highlightRangeMode:      ListView.StrictlyEnforceRange
         highlightMoveDuration:   180
-        interactive:             !isPanoramic
+        interactive:             true
 
         function clampIndex(i) { return Math.max(0, Math.min(i, count - 1)) }
 

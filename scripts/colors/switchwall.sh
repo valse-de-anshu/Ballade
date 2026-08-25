@@ -127,14 +127,14 @@ EOF
 set_wallpaper_path() {
     local path="$1"
     if [ -f "$SHELL_CONFIG_FILE" ]; then
-        jq --arg path "$path" '.background.wallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+        jq --arg path "$path" '.background.wallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && cat "$SHELL_CONFIG_FILE.tmp" > "$SHELL_CONFIG_FILE" && rm "$SHELL_CONFIG_FILE.tmp"
     fi
 }
 
 set_thumbnail_path() {
     local path="$1"
     if [ -f "$SHELL_CONFIG_FILE" ]; then
-        jq --arg path "$path" '.background.thumbnailPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+        jq --arg path "$path" '.background.thumbnailPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && cat "$SHELL_CONFIG_FILE.tmp" > "$SHELL_CONFIG_FILE" && rm "$SHELL_CONFIG_FILE.tmp"
     fi
 }
 
@@ -315,7 +315,9 @@ main() {
     }
     set_accent_color() {
         local color="$1"
-        jq --arg color "$color" '.appearance.palette.accentColor = $color' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+        if [ -f "$SHELL_CONFIG_FILE" ]; then
+            jq --arg color "$color" '.appearance.palette.accentColor = $color' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && cat "$SHELL_CONFIG_FILE.tmp" > "$SHELL_CONFIG_FILE" && rm "$SHELL_CONFIG_FILE.tmp"
+        fi
     }
 
     detect_scheme_type_from_image() {
