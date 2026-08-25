@@ -234,7 +234,250 @@ ContentPage {
         ContentSection {
             icon: "palette"
             shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Color Themes & Presets")
+            title: Translation.tr("Color Themes")
+
+            Flow {
+                Layout.fillWidth: true
+                width: parent.width
+                spacing: 10
+
+                Repeater {
+                    model: [
+                        { key: "green",     name: "Green",      folder: "green",     color: "#7d9726", icon: "forest"         },
+                        { key: "pink",      name: "Pink",       folder: "pink",      color: "#d4659a", icon: "local_florist"  },
+                        { key: "red",       name: "Red",        folder: "red",       color: "#bf3f43", icon: "whatshot"       },
+                        { key: "purple",    name: "Purple",     folder: "purple",    color: "#9c5adb", icon: "nights_stay"    },
+                        { key: "blue",      name: "Tokyo Night",folder: "blue",      color: "#7aa2f7", icon: "location_city"  },
+                        { key: "grayscale", name: "Grayscale",  folder: "grayscale", color: "#888899", icon: "invert_colors"  }
+                    ]
+
+                    delegate: Item {
+                        id: themeCard
+                        required property var modelData
+                        required property int index
+
+                        readonly property bool isActive: Presets.activeTheme === modelData.key
+                        readonly property string wallDir: `${Directories.pictures}/Wallpapers/${modelData.folder}`
+
+                        width: 180
+                        height: 248
+
+                        // Auto-find first wallpaper in theme folder
+                        FolderListModel {
+                            id: wallModel
+                            folder: Qt.resolvedUrl(themeCard.wallDir)
+                            showDirs: false
+                            nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+                            sortField: FolderListModel.Name
+                        }
+
+                        readonly property string wallPreview: wallModel.count > 0
+                            ? `${themeCard.wallDir}/${wallModel.get(0, "fileName")}`
+                            : ""
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Appearance.rounding.large
+                            color: Appearance.colors.colLayer1
+                            clip: true
+                            border.color: themeCard.isActive ? themeCard.modelData.color : Qt.alpha(themeCard.modelData.color, 0.25)
+                            border.width: themeCard.isActive ? 2.5 : 1
+
+                            Behavior on border.color { ColorAnimation { duration: 250 } }
+                            Behavior on border.width  { NumberAnimation { duration: 150 } }
+
+                            // === Wallpaper Preview (top 160px) ===
+                            Item {
+                                id: previewArea
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 160
+                                clip: true
+
+                                StyledImage {
+                                    anchors.fill: parent
+                                    fillMode: Image.PreserveAspectCrop
+                                    source: themeCard.wallPreview
+                                    visible: themeCard.wallPreview !== ""
+                                    cache: true
+                                    antialiasing: true
+                                    sourceSize.width: 360
+                                    sourceSize.height: 320
+                                }
+
+                                // Fallback: solid color + big icon
+                                Rectangle {
+                                    anchors.fill: parent
+                                    visible: themeCard.wallPreview === ""
+                                    color: Qt.darker(themeCard.modelData.color, 2.8)
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: themeCard.modelData.icon
+                                        iconSize: 56
+                                        color: Qt.alpha(themeCard.modelData.color, 0.6)
+                                    }
+                                }
+
+                                // Bottom gradient fade into card body
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    height: 48
+                                    color: "transparent"
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: "transparent" }
+                                        GradientStop { position: 1.0; color: Appearance.colors.colLayer1 }
+                                    }
+                                }
+
+                                // Active badge (top-right corner)
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.topMargin: 7
+                                    anchors.rightMargin: 7
+                                    visible: themeCard.isActive
+                                    width: 22
+                                    height: 22
+                                    radius: 11
+                                    color: themeCard.modelData.color
+                                    border.color: "#ffffffcc"
+                                    border.width: 1.5
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: "check"
+                                        iconSize: 13
+                                        color: "#ffffff"
+                                    }
+                                }
+                            }
+
+                            // === Info + Buttons (bottom 88px) ===
+                            ColumnLayout {
+                                anchors.top: previewArea.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.topMargin: -6
+                                anchors.bottomMargin: 10
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 7
+
+                                // Color dot + name row
+                                RowLayout {
+                                    spacing: 6
+                                    Rectangle {
+                                        width: 10; height: 10; radius: 5
+                                        color: themeCard.modelData.color
+                                    }
+                                    StyledText {
+                                        text: themeCard.modelData.name
+                                        font.pixelSize: Appearance.font.pixelSize.normal
+                                        font.weight: Font.DemiBold
+                                        color: Appearance.colors.colText
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                }
+
+                                // Save | Apply button row
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    // Save button
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 30
+                                        radius: 15
+                                        color: saveHover.containsMouse
+                                            ? Qt.alpha(themeCard.modelData.color, 0.18)
+                                            : Qt.alpha(themeCard.modelData.color, 0.08)
+                                        border.color: Qt.alpha(themeCard.modelData.color, 0.35)
+                                        border.width: 1
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                                        RowLayout {
+                                            anchors.centerIn: parent
+                                            spacing: 3
+                                            MaterialSymbol {
+                                                text: "save"
+                                                iconSize: 13
+                                                color: themeCard.modelData.color
+                                            }
+                                            StyledText {
+                                                text: "Save"
+                                                font.pixelSize: Appearance.font.pixelSize.small
+                                                font.weight: Font.Medium
+                                                color: themeCard.modelData.color
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: saveHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                Presets.save(themeCard.modelData.key)
+                                            }
+                                        }
+                                    }
+
+                                    // Apply button
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 30
+                                        radius: 15
+                                        color: themeCard.isActive
+                                            ? Qt.alpha(themeCard.modelData.color, 0.22)
+                                            : (applyHover.containsMouse ? themeCard.modelData.color : Qt.alpha(themeCard.modelData.color, 0.75))
+                                        border.color: themeCard.isActive ? themeCard.modelData.color : "transparent"
+                                        border.width: themeCard.isActive ? 1.5 : 0
+                                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                                        RowLayout {
+                                            anchors.centerIn: parent
+                                            spacing: 3
+                                            MaterialSymbol {
+                                                text: themeCard.isActive ? "check_circle" : "format_paint"
+                                                iconSize: 13
+                                                color: "#ffffff"
+                                            }
+                                            StyledText {
+                                                text: themeCard.isActive ? "Active" : "Apply"
+                                                font.pixelSize: Appearance.font.pixelSize.small
+                                                font.weight: Font.DemiBold
+                                                color: "#ffffff"
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: applyHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: themeCard.isActive ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (!themeCard.isActive)
+                                                    Presets.apply(themeCard.modelData.key)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "wall_art"
+            shape: MaterialShape.Shape.Pentagon
+            title: Translation.tr("Custom Snapshots")
 
             GroupedList {
                 ConfigTextArea {
