@@ -160,13 +160,13 @@ if pidof kitty > /dev/null 2>&1; then
     kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
 fi
 
-# Update Konsole profile to match KDE scheme
-if [ -f ~/.local/share/konsole/"Profile 1.profile" ]; then
-    sed -i "s/^ColorScheme=.*/ColorScheme=$KDE_SCHEME/" ~/.local/share/konsole/"Profile 1.profile"
-fi
-
 # Rebuild KDE service/icon cache BEFORE restarting Dolphin
 kbuildsycoca6 --noincremental 2>/dev/null
+
+# Ensure Dolphin follows system colors by stripping any hardcoded overrides
+if [ -f ~/.config/dolphinrc ]; then
+    sed -i '/^ColorScheme=/d' ~/.config/dolphinrc
+fi
 
 # Dolphin: restart to pick up new icon theme
 if pidof dolphin > /dev/null 2>&1; then
