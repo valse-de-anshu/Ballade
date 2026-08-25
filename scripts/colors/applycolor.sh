@@ -106,7 +106,13 @@ apply_konsole() {
       fi
       
       if [[ "$key" == "background" ]]; then
-        echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        # To perfectly blend with Dolphin, read Dolphin's exact background from kdeglobals!
+        local kde_bg=$(grep -A 5 "^\[Colors:Window\]" "$HOME/.config/kdeglobals" 2>/dev/null | grep "^BackgroundNormal=" | cut -d= -f2)
+        if [[ -n "$kde_bg" ]]; then
+          echo -e "[Background]\nColor=$(hex2rgb "$kde_bg")" >> "$konsole_theme"
+        else
+          echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        fi
       elif [[ "$key" == "foreground" ]]; then
         echo -e "[Foreground]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
       elif [[ "$key" =~ ^color([0-9]+)$ ]]; then

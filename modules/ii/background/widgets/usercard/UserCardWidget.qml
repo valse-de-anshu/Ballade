@@ -53,9 +53,12 @@ AbstractBackgroundWidget {
             anchors.fill: parent
             visible: false
 
-            property string effectiveSource: "file://" + (GlobalStates.screenLocked && Config.options.background.lockWall !== ""
-                ? Config.options.background.lockWall
-                : Config.options.background.wallpaperPath)
+            property string effectiveSource: {
+                var path = (GlobalStates.screenLocked && Config.options.background.lockWall !== "")
+                    ? Config.options.background.lockWall
+                    : Config.options.background.wallpaperPath;
+                return path ? "file://" + path : "";
+            }
 
             Image {
                 id: bgImageA

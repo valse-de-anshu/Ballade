@@ -60,7 +60,7 @@ case "$THEME_KEY" in
     grayscale|nord|monochrome|bw)
         PRESET_NAME="grayscale"
         PRIMARY_HEX="#8892B0"
-        ICON_THEME="Tela-circle-nord-dark"
+        ICON_THEME="Tela-circle-grey-dark"
         KDE_SCHEME="NordDark"
         KITTY_THEME_FILE="$KITTY_THEMES_DIR/nord.conf"
         RMPC_THEME="nord"
@@ -176,3 +176,12 @@ if pidof dolphin > /dev/null 2>&1; then
 fi
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
+
+# Reload Hyprland to pick up new matugen colors
+if command -v hyprctl &>/dev/null; then
+    hyprctl reload >/dev/null 2>&1 &
+fi
+
+# Reload Quickshell so it picks up material_colors.scss changes instantly
+pkill -x qs 2>/dev/null || true
+qs -c ballade >/dev/null 2>&1 &

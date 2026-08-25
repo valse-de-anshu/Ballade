@@ -156,7 +156,7 @@ Item {
             id: img
             property real fixedWidth: parent?.fixedWidth ?? width
             property real fixedHeight: parent?.fixedHeight ?? height
-            source: "file://" + FileUtils.trimFileProtocol(modelData)
+            source: modelData ? "file://" + FileUtils.trimFileProtocol(modelData) : ""
             fillMode: Image.PreserveAspectCrop
             cache: true
             asynchronous: true
