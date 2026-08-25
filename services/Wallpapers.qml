@@ -18,8 +18,8 @@ Singleton {
     property string thumbgenScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/thumbgen-venv.sh`
     property string generateThumbnailsMagickScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/generate-thumbnails-magick.sh`
     property alias directory: folderModel.folder
-    readonly property string effectiveDirectory: FileUtils.trimFileProtocol(folderModel.folder.toString())
-    property url defaultFolder: Qt.resolvedUrl(`${Directories.pictures}/Wallpapers`)
+    readonly property string activeThemePreset: Config.options.theme?.activePreset ?? "green"
+    property url defaultFolder: Qt.resolvedUrl(`${Directories.pictures}/Wallpapers/${root.activeThemePreset}`)
     property alias folderModel: folderModel // Expose for direct binding when needed
     property string searchQuery: ""
     readonly property list<string> extensions: [ // TODO: add videos
@@ -34,6 +34,15 @@ Singleton {
     signal changed()
     signal thumbnailGenerated(directory: string)
     signal thumbnailGeneratedFile(filePath: string)
+
+    Connections {
+        target: Config.options?.theme ?? null
+        function onActivePresetChanged() {
+            const theme = Config.options.theme?.activePreset ?? "green"
+            const themeFolder = `${Directories.pictures}/Wallpapers/${theme}`
+            root.setDirectory(themeFolder)
+        }
+    }
 
     function load () {} // For forcing initialization
 

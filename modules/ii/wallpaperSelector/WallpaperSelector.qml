@@ -92,6 +92,11 @@ Scope {
             Wallpapers.openFallbackPicker(Appearance.m3colors.darkmode)
             return
         }
+        if (!GlobalStates.wallpaperSelectorOpen) {
+            const activePreset = Config.options.theme?.activePreset ?? "green"
+            const themeDir = `${Directories.pictures}/Wallpapers/${activePreset}`
+            Wallpapers.setDirectory(themeDir)
+        }
         GlobalStates.wallpaperSelectorOpen = !GlobalStates.wallpaperSelectorOpen
     }
 

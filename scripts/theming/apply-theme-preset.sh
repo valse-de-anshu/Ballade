@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Ballade Multi-Theme Orchestrator
+# Applies systemic themes across QuickShell, Hyprland, Kitty, KDE/Dolphin,
+# Tela Icons, rmpc, GTK, and Wallpaper Directory Routing.
+# ==============================================================================
+
+THEME_KEY="${1:-green}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$HOME/.config/illogical-impulse/config.json"
+KITTY_THEMES_DIR="$SCRIPT_DIR/kitty-themes"
+WALLPAPERS_BASE="$HOME/Pictures/Wallpapers"
+
+case "$THEME_KEY" in
+    green|everforest)
+        PRESET_NAME="green"
+        PRIMARY_HEX="#5F875F"
+        ICON_THEME="Tela-circle-manjaro-dark"
+        KDE_SCHEME="EverforestDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/everforest.conf"
+        RMPC_THEME="everforest"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/green"
+        ;;
+    pink|sakura)
+        PRESET_NAME="pink"
+        PRIMARY_HEX="#E05688"
+        ICON_THEME="Tela-circle-pink-dark"
+        KDE_SCHEME="PinkDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/pink.conf"
+        RMPC_THEME="pink"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/pink"
+        ;;
+    red|crimson)
+        PRESET_NAME="red"
+        PRIMARY_HEX="#D32F2F"
+        ICON_THEME="Tela-circle-red-dark"
+        KDE_SCHEME="RedDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/red.conf"
+        RMPC_THEME="red"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/red"
+        ;;
+    purple|amethyst)
+        PRESET_NAME="purple"
+        PRIMARY_HEX="#9C27B0"
+        ICON_THEME="Tela-circle-purple-dark"
+        KDE_SCHEME="PurpleDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/purple.conf"
+        RMPC_THEME="purple"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/purple"
+        ;;
+    blue|tokyo_night|tokyonight)
+        PRESET_NAME="blue"
+        PRIMARY_HEX="#7AA2F7"
+        ICON_THEME="Tela-circle-blue-dark"
+        KDE_SCHEME="TokyoNightDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/tokyo-night.conf"
+        RMPC_THEME="tokyo_night"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/blue"
+        ;;
+    grayscale|nord|monochrome|bw)
+        PRESET_NAME="grayscale"
+        PRIMARY_HEX="#8892B0"
+        ICON_THEME="Tela-circle-nord-dark"
+        KDE_SCHEME="NordDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/nord.conf"
+        RMPC_THEME="nord"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/grayscale"
+        ;;
+    *)
+        echo "Unknown theme preset: $THEME_KEY. Defaulting to green."
+        PRESET_NAME="green"
+        PRIMARY_HEX="#5F875F"
+        ICON_THEME="Tela-circle-manjaro-dark"
+        KDE_SCHEME="EverforestDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/everforest.conf"
+        RMPC_THEME="everforest"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/green"
+        ;;
+esac
+
+echo "[Theme Orchestrator] Applying theme preset: $PRESET_NAME ($PRIMARY_HEX)"
+
+# 1. Ensure theme wallpaper directory exists
+mkdir -p "$WALLPAPER_DIR"
+
+# 2. Generate Material You colors for QuickShell, Hyprland, Hyprlock, Fuzzel & GTK via Matugen
+if command -v matugen &>/dev/null; then
+    matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1 &
+fi
+
+# 3. Apply Icon Theme (GTK + KDE Plasma)
+if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null &
+fi
+if command -v kwriteconfig6 &>/dev/null; then
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null &
+fi
+
+# 4. Apply KDE Color Scheme (Dolphin, Konsole, Kate, System UI)
+if command -v plasma-apply-colorscheme &>/dev/null; then
+    plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1 &
+fi
+
+# 5. Apply Kitty Theme
+if [ -f "$KITTY_THEME_FILE" ]; then
+    mkdir -p "$HOME/.config/kitty"
+    cp "$KITTY_THEME_FILE" "$HOME/.config/kitty/current-theme.conf"
+    
+    # Ensure kitty.conf includes current-theme.conf
+    if ! grep -q "include current-theme.conf" "$HOME/.config/kitty/kitty.conf" 2>/dev/null; then
+        sed -i '/# BEGIN_KITTY_THEME/,/# END_KITTY_THEME/c\# BEGIN_KITTY_THEME\ninclude current-theme.conf\n# END_KITTY_THEME' "$HOME/.config/kitty/kitty.conf"
+    fi
+    
+    # Live reload all running kitty instances
+    kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
+fi
+
+# 6. Apply rmpc Music Player Theme
+RMPC_CONFIG="$HOME/.config/rmpc/config.ron"
+if [ -f "$RMPC_CONFIG" ]; then
+    sed -i "s/theme: Some(\"[^\"]*\")/theme: Some(\"$RMPC_THEME\")/" "$RMPC_CONFIG"
+fi
+
+# 7. Update QuickShell configuration (active theme + wallpaper directory)
+if [ -f "$CONFIG_FILE" ]; then
+    tmp_config=$(mktemp)
+    jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \
+        '.theme = (.theme // {}) | .theme.activePreset = $theme | .wallpaperSelector.userPath = $dir' \
+        "$CONFIG_FILE" > "$tmp_config" && mv "$tmp_config" "$CONFIG_FILE"
+fi
+
+# 8. If an image exists in the target wallpaper folder, optionally set the first wallpaper
+# Or keep existing wallpaper if desired.
+
+echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."

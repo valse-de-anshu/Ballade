@@ -232,9 +232,105 @@ ContentPage {
         }
 
         ContentSection {
+            icon: "palette"
+            shape: MaterialShape.Shape.Pentagon
+            title: Translation.tr("Color Themes & Rice Presets")
+
+            GridLayout {
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: 12
+                rowSpacing: 12
+
+                Repeater {
+                    model: Presets.themePresets
+                    delegate: Rectangle {
+                        id: themeCard
+                        required property var modelData
+                        Layout.fillWidth: true
+                        implicitHeight: 74
+                        radius: Appearance.rounding.normal
+                        color: Presets.activeTheme === modelData.key ? Appearance.colors.colLayer2 : Appearance.colors.colLayer1
+                        border.color: Presets.activeTheme === modelData.key ? modelData.color : Appearance.colors.colOutlineVariant
+                        border.width: Presets.activeTheme === modelData.key ? 2 : 1
+
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 12
+
+                            Rectangle {
+                                width: 38
+                                height: 38
+                                radius: 19
+                                color: modelData.color
+                                border.color: Qt.lighter(modelData.color, 1.2)
+                                border.width: 1
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    symbol: modelData.icon
+                                    color: "#ffffff"
+                                    font.pixelSize: 20
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: modelData.name
+                                    font.weight: Font.DemiBold
+                                    font.pixelSize: Appearance.font.pixelSize.normal
+                                    color: Appearance.colors.colText
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: modelData.subtitle
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    color: Appearance.colors.colSubtext
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            Rectangle {
+                                visible: Presets.activeTheme === modelData.key
+                                implicitWidth: 28
+                                implicitHeight: 28
+                                radius: 14
+                                color: modelData.color
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    symbol: "check"
+                                    color: "#ffffff"
+                                    font.pixelSize: 18
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Presets.applyThemePreset(modelData.key)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ContentSection {
             icon: "wall_art"
             shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Presets")
+            title: Translation.tr("Custom Snapshots")
 
             GroupedList {
                 ConfigTextArea {
@@ -259,7 +355,7 @@ ContentPage {
                 Layout.topMargin: 40
                 visible: Presets.folderModel.count === 0
                 horizontalAlignment: Text.AlignHCenter
-                text: Translation.tr("No presets yet")
+                text: Translation.tr("No saved snapshots yet")
                 color: Appearance.colors.colSubtext
                 font.pixelSize: Appearance.font.pixelSize.normal
             }

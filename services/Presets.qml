@@ -13,6 +13,81 @@ Singleton {
     id: root
 
     property alias folderModel: presetsFolderModel
+    readonly property string activeTheme: Config.options.theme?.activePreset ?? "green"
+
+    readonly property var themePresets: [
+        {
+            key: "green",
+            name: Translation.tr("Everforest"),
+            subtitle: Translation.tr("Forest & Nature"),
+            color: "#5F875F",
+            icon: "eco",
+            telaIcon: "Tela-circle-manjaro-dark",
+            folder: "green"
+        },
+        {
+            key: "pink",
+            name: Translation.tr("Sakura"),
+            subtitle: Translation.tr("Cherry Blossom & Neon"),
+            color: "#E05688",
+            icon: "local_florist",
+            telaIcon: "Tela-circle-pink-dark",
+            folder: "pink"
+        },
+        {
+            key: "red",
+            name: Translation.tr("Crimson"),
+            subtitle: Translation.tr("Scarlet & Flame"),
+            color: "#D32F2F",
+            icon: "whatshot",
+            telaIcon: "Tela-circle-red-dark",
+            folder: "red"
+        },
+        {
+            key: "purple",
+            name: Translation.tr("Amethyst"),
+            subtitle: Translation.tr("Cyberpunk & Velvet"),
+            color: "#9C27B0",
+            icon: "auto_awesome",
+            telaIcon: "Tela-circle-purple-dark",
+            folder: "purple"
+        },
+        {
+            key: "blue",
+            name: Translation.tr("Tokyo Night"),
+            subtitle: Translation.tr("Midnight & Indigo"),
+            color: "#7AA2F7",
+            icon: "nights_stay",
+            telaIcon: "Tela-circle-blue-dark",
+            folder: "blue"
+        },
+        {
+            key: "grayscale",
+            name: Translation.tr("Nord B&W"),
+            subtitle: Translation.tr("Monochrome & Frost"),
+            color: "#8892B0",
+            icon: "contrast",
+            telaIcon: "Tela-circle-nord-dark",
+            folder: "grayscale"
+        }
+    ]
+
+    function applyThemePreset(key) {
+        if (!key) return
+        Config.options.theme.activePreset = key
+        const themeDir = `${Directories.pictures}/Wallpapers/${key}`
+        Config.options.wallpaperSelector.userPath = themeDir
+        Wallpapers.setDirectory(themeDir)
+        
+        Quickshell.execDetached([
+            "bash",
+            `${Directories.scriptPath}/theming/apply-theme-preset.sh`,
+            key
+        ])
+
+        // Reload quickshell colors
+        MaterialThemeLoader.reapplyTheme()
+    }
 
     FolderListModel {
         id: presetsFolderModel
