@@ -41,6 +41,10 @@ apply_kitty() {
     sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
   done
 
+  # Copy to kitty's config directory so it actually applies!
+  mkdir -p "$HOME/.config/kitty"
+  cp "$STATE_DIR"/user/generated/terminal/kitty-theme.conf "$HOME/.config/kitty/current-theme.conf"
+
   # Reload
   if ! pgrep -f kitty >/dev/null; then
     return
