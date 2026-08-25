@@ -443,7 +443,6 @@ ContentPage {
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                Presets.save(String(themeCard.modelData.key))
                                             }
                                         }
                                     }

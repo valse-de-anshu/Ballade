@@ -1,4 +1,3 @@
-pragma Singleton;
 
 import QtQuick
 import Qt.labs.folderlistmodel
@@ -7,6 +6,7 @@ import Quickshell.Io
 import qs
 import qs.modules.common
 import qs.modules.common.functions
+pragma Singleton
 
 Singleton {
     id: root
