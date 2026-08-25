@@ -112,7 +112,7 @@ Item {
 
         function activateCurrent() {
             const path = folderModel.get(selectedIndex, "filePath")
-            if (path) Wallpapers.apply(path)
+            if (path) Wallpapers.apply(FileUtils.trimFileProtocol(path))
             root.dismissed()
         }
 
