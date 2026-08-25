@@ -171,8 +171,6 @@ fi
 # Dolphin: restart to pick up new icon theme
 if pidof dolphin > /dev/null 2>&1; then
     pkill -x dolphin 2>/dev/null || true
-    sleep 0.5
-    env XDG_CURRENT_DESKTOP=KDE dolphin >/dev/null 2>&1 &
 fi
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
