@@ -262,7 +262,24 @@ ContentPage {
                         width: 180
                         height: 248
 
-                        // Auto-find first wallpaper in theme folder
+                        property string savedWallpaper: ""
+
+                        FileView {
+                            path: `${Directories.userPresetsPath}/${themeCard.modelData.key}.json`
+                            onLoaded: {
+                                try {
+                                    const data = JSON.parse(text())
+                                    const bg = (data && data.background) ? data.background : {}
+                                    const rawWallpaper = bg.wallpaperPath || ""
+                                    const isVideo = /\.(mp4|webm|mkv|avi|mov)$/i.test(rawWallpaper)
+                                    themeCard.savedWallpaper = isVideo ? (bg.thumbnailPath || "") : rawWallpaper
+                                } catch (e) {
+                                    themeCard.savedWallpaper = ""
+                                }
+                            }
+                        }
+
+                        // Auto-find first wallpaper in theme folder as fallback
                         FolderListModel {
                             id: wallModel
                             folder: Qt.resolvedUrl(themeCard.wallDir)
@@ -271,9 +288,11 @@ ContentPage {
                             sortField: FolderListModel.Name
                         }
 
-                        readonly property string wallPreview: wallModel.count > 0
-                            ? `${themeCard.wallDir}/${wallModel.get(0, "fileName")}`
-                            : ""
+                        readonly property string wallPreview: {
+                            if (themeCard.savedWallpaper !== "") return themeCard.savedWallpaper;
+                            if (wallModel.count > 0) return `${themeCard.wallDir}/${wallModel.get(0, "fileName")}`;
+                            return "";
+                        }
 
                         Rectangle {
                             anchors.fill: parent
