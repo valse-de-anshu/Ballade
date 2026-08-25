@@ -361,11 +361,11 @@ ContentPage {
                                 anchors.top: previewArea.bottom
                                 anchors.left: parent.left
                                 anchors.right: parent.right
-                                anchors.topMargin: -6
+                                anchors.topMargin: 8
                                 anchors.bottomMargin: 10
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 10
-                                spacing: 7
+                                spacing: 10
 
                                 // Color dot + name row
                                 RowLayout {
@@ -378,7 +378,7 @@ ContentPage {
                                         text: themeCard.modelData.name
                                         font.pixelSize: Appearance.font.pixelSize.normal
                                         font.weight: Font.DemiBold
-                                        color: Appearance.colors.colText
+                                        color: "#ffffff"
                                     }
                                     Item { Layout.fillWidth: true }
                                 }
@@ -469,90 +469,6 @@ ContentPage {
                                 }
                             }
                         }
-                    }
-                }
-            }
-
-            // ── Custom Snapshots sub-section ──────────────────────
-            StyledText {
-                Layout.topMargin: 8
-                text: Translation.tr("Snapshots")
-                font.pixelSize: Appearance.font.pixelSize.small
-                font.weight: Font.DemiBold
-                color: Appearance.colors.colSubtext
-                letterSpacing: 1
-            }
-
-            GroupedList {
-                ConfigTextArea {
-                    id: presetNameField
-                    Layout.fillWidth: true
-                    fieldWidth: 300
-                    buttonIcon: "newsmode"
-                    text: Translation.tr("New")
-                    placeholderText: Translation.tr("Name, description (optional)")
-
-                    confirmButtonVisible: presetNameField.value.trim() !== ""
-                    confirmButtonIcon: "save"
-                    onConfirmClicked: {
-                        Presets.save(presetNameField.value)
-                        presetNameField.value = ""
-                    }
-                }
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                Layout.topMargin: 20
-                visible: (Presets.folderModel ? Presets.folderModel.count : 0) === 0
-                horizontalAlignment: Text.AlignHCenter
-                text: Translation.tr("No saved snapshots yet")
-                color: Appearance.colors.colSubtext
-                font.pixelSize: Appearance.font.pixelSize.normal
-            }
-
-            Flow {
-                Layout.topMargin: 10
-                Layout.fillWidth: true
-                width: parent.width
-                spacing: 12
-                visible: Boolean(Presets.folderModel && Presets.folderModel.count > 0)
-
-                Repeater {
-                    model: Presets.folderModel
-                    delegate: PresetsCard {
-                        id: presetDelegate
-                        required property string fileName
-                        required property string filePath
-
-                        property string presetName: fileName.replace(".json", "")
-                        property string presetWallpaper: ""
-                        property string presetDescription: ""
-
-                        FileView {
-                            path: presetDelegate.filePath
-                            onLoaded: {
-                                try {
-                                    const data = JSON.parse(text())
-                                    const bg = (data && data.background) ? data.background : {}
-                                    const rawWallpaper = bg.wallpaperPath || ""
-                                    const isVideo = /\.(mp4|webm|mkv|avi|mov)$/i.test(rawWallpaper)
-                                    presetDelegate.presetWallpaper = isVideo
-                                        ? (bg.thumbnailPath || "")
-                                        : rawWallpaper
-                                    const meta = (data && data._presetMeta) ? data._presetMeta : {}
-                                    presetDelegate.presetDescription = meta.description || ""
-                                } catch (e) {
-                                    console.log("Failed to parse preset:", e)
-                                }
-                            }
-                        }
-
-                        imageSource: presetDelegate.presetWallpaper
-                        title: presetDelegate.presetName
-                        description: presetDelegate.presetDescription !== "" ? presetDelegate.presetDescription : Translation.tr("Saved preset")
-                        onApply: () => Presets.apply(presetDelegate.presetName)
-                        onRemove: () => Presets.remove(presetDelegate.presetName)
                     }
                 }
             }
