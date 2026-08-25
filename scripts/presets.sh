@@ -24,11 +24,34 @@ fi
 case "$action" in
     --save)
         description="$3"
+        
+        # Keep existing _presetMeta if preset exists (to preserve .theme key)
+        if [ -f "$PRESETS_DIR/${name}.json" ]; then
+            existing_meta=$(jq '._presetMeta // empty' "$PRESETS_DIR/${name}.json")
+        else
+            existing_meta=""
+        fi
+
+        # Base snapshot without meta
         jq 'del(._presetMeta)' "$CONFIG_FILE" > "$PRESETS_DIR/${name}.json"
-        if [ -n "$description" ]; then
-            jq --arg desc "$description" '._presetMeta = {"description": $desc}' \
-                "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
-                && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
+        
+        # Restore meta and optionally update description
+        if [ -n "$existing_meta" ] && [ "$existing_meta" != "{}" ]; then
+            if [ -n "$description" ]; then
+                jq --arg desc "$description" --argjson meta "$existing_meta" '._presetMeta = ($meta * {"description": $desc})' \
+                    "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
+                    && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
+            else
+                jq --argjson meta "$existing_meta" '._presetMeta = $meta' \
+                    "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
+                    && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
+            fi
+        else
+            if [ -n "$description" ]; then
+                jq --arg desc "$description" '._presetMeta = {"description": $desc}' \
+                    "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
+                    && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
+            fi
         fi
         ;;
     --remove)

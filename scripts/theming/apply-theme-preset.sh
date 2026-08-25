@@ -161,8 +161,4 @@ fi
 # Rebuild KDE service/icon cache
 kbuildsycoca6 --noincremental 2>/dev/null &
 
-# Reload Hyprland and Quickshell
-hyprctl reload &
-killall -SIGUSR1 quickshell 2>/dev/null || true
-
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
