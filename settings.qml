@@ -110,7 +110,7 @@ ApplicationWindow {
         }
 
         Item { // Titlebar
-            visible: Config.options?.windows.showTitlebar
+            visible: Config.options.windows.showTitlebar
             Layout.fillWidth: true
             Layout.fillHeight: false
             implicitHeight: Math.max(titleText.implicitHeight, windowControlsRow.implicitHeight)

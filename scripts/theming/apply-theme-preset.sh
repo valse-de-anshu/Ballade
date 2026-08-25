@@ -12,13 +12,13 @@ KITTY_THEMES_DIR="$SCRIPT_DIR/kitty-themes"
 WALLPAPERS_BASE="$HOME/Pictures/Wallpapers"
 
 case "$THEME_KEY" in
-    green|everforest)
+    green|atelier|everforest)
         PRESET_NAME="green"
-        PRIMARY_HEX="#5F875F"
+        PRIMARY_HEX="#7D9726"
         ICON_THEME="Tela-circle-manjaro-dark"
-        KDE_SCHEME="EverforestDark"
-        KITTY_THEME_FILE="$KITTY_THEMES_DIR/everforest.conf"
-        RMPC_THEME="everforest"
+        KDE_SCHEME="Atelier_Estuary_Dark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/green.conf"
+        RMPC_THEME="green"
         WALLPAPER_DIR="$WALLPAPERS_BASE/green"
         ;;
     pink|sakura)
@@ -69,11 +69,11 @@ case "$THEME_KEY" in
     *)
         echo "Unknown theme preset: $THEME_KEY. Defaulting to green."
         PRESET_NAME="green"
-        PRIMARY_HEX="#5F875F"
+        PRIMARY_HEX="#7D9726"
         ICON_THEME="Tela-circle-manjaro-dark"
-        KDE_SCHEME="EverforestDark"
-        KITTY_THEME_FILE="$KITTY_THEMES_DIR/everforest.conf"
-        RMPC_THEME="everforest"
+        KDE_SCHEME="Atelier_Estuary_Dark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/green.conf"
+        RMPC_THEME="green"
         WALLPAPER_DIR="$WALLPAPERS_BASE/green"
         ;;
 esac
@@ -83,9 +83,18 @@ echo "[Theme Orchestrator] Applying theme preset: $PRESET_NAME ($PRIMARY_HEX)"
 # 1. Ensure theme wallpaper directory exists
 mkdir -p "$WALLPAPER_DIR"
 
-# 2. Generate Material You colors for QuickShell, Hyprland, Hyprlock, Fuzzel & GTK via Matugen
-if command -v matugen &>/dev/null; then
-    matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1 &
+# 2. Check if a wallpaper exists in the target theme folder
+first_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
+
+if [ -n "$first_wall" ] && [ -f "$first_wall" ]; then
+    echo "[Theme Orchestrator] Applying theme wallpaper: $first_wall"
+    "$SCRIPT_DIR/../colors/switchwall.sh" --image "$first_wall" --mode dark >/dev/null 2>&1 &
+else
+    # Fallback to direct hex generation if folder has no wallpapers yet
+    if command -v matugen &>/dev/null; then
+        matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1
+        "$SCRIPT_DIR/../colors/applycolor.sh" >/dev/null 2>&1 &
+    fi
 fi
 
 # 3. Apply Icon Theme (GTK + KDE Plasma)
@@ -121,15 +130,18 @@ if [ -f "$RMPC_CONFIG" ]; then
     sed -i "s/theme: Some(\"[^\"]*\")/theme: Some(\"$RMPC_THEME\")/" "$RMPC_CONFIG"
 fi
 
-# 7. Update QuickShell configuration (active theme + wallpaper directory)
+# 7. Apply Starship Prompt Theme
+STARSHIP_PRESET="$HOME/.config/starship/${PRESET_NAME}.toml"
+if [ -f "$STARSHIP_PRESET" ]; then
+    cp "$STARSHIP_PRESET" "$HOME/.config/starship.toml"
+fi
+
+# 8. Update QuickShell configuration (active theme + wallpaper directory)
 if [ -f "$CONFIG_FILE" ]; then
     tmp_config=$(mktemp)
     jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \
         '.theme = (.theme // {}) | .theme.activePreset = $theme | .wallpaperSelector.userPath = $dir' \
         "$CONFIG_FILE" > "$tmp_config" && mv "$tmp_config" "$CONFIG_FILE"
 fi
-
-# 8. If an image exists in the target wallpaper folder, optionally set the first wallpaper
-# Or keep existing wallpaper if desired.
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."

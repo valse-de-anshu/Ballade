@@ -67,7 +67,7 @@ ApplicationWindow {
 
         Item {
             // Titlebar
-            visible: Config.options?.windows.showTitlebar
+            visible: Config.options.windows.showTitlebar
             Layout.fillWidth: true
             implicitHeight: Math.max(welcomeText.implicitHeight, windowControlsRow.implicitHeight)
             StyledText {

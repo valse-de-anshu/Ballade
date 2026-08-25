@@ -136,7 +136,7 @@ Scope {
                 width: 28
                 height: 28
                 radius: Appearance.rounding.full
-                color: closeMouseArea.containsMouse ? ColorUtils.transparentize(Appearance.colors.colError, 0.8) : "transparent"
+                color: closeMouseArea.containsMouse ? CF.ColorUtils.transparentize(Appearance.colors.colError, 0.8) : "transparent"
                 z: 10
 
                 MaterialSymbol {

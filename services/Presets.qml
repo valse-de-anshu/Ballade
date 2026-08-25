@@ -1,5 +1,4 @@
-pragma Singleton
-pragma ComponentBehavior: Bound
+pragma Singleton;
 
 import QtQuick
 import Qt.labs.folderlistmodel
@@ -13,14 +12,14 @@ Singleton {
     id: root
 
     property alias folderModel: presetsFolderModel
-    readonly property string activeTheme: Config.options.theme?.activePreset ?? "green"
+    readonly property string activeTheme: (Config.options.theme && Config.options.theme.activePreset) ? Config.options.theme.activePreset : "green"
 
     readonly property var themePresets: [
         {
             key: "green",
-            name: Translation.tr("Everforest"),
-            subtitle: Translation.tr("Forest & Nature"),
-            color: "#5F875F",
+            name: Translation.tr("Green (Atelier)"),
+            subtitle: Translation.tr("Atelier Estuary & Nature"),
+            color: "#7D9726",
             icon: "eco",
             telaIcon: "Tela-circle-manjaro-dark",
             folder: "green"
@@ -74,9 +73,15 @@ Singleton {
 
     function applyThemePreset(key) {
         if (!key) return
-        Config.options.theme.activePreset = key
+        if (Config.options.theme) {
+            Config.options.theme.activePreset = key
+        } else {
+            Config.setNestedValue("theme.activePreset", key)
+        }
         const themeDir = `${Directories.pictures}/Wallpapers/${key}`
-        Config.options.wallpaperSelector.userPath = themeDir
+        if (Config.options.wallpaperSelector) {
+            Config.options.wallpaperSelector.userPath = themeDir
+        }
         Wallpapers.setDirectory(themeDir)
         
         Quickshell.execDetached([

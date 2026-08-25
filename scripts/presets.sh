@@ -42,7 +42,14 @@ case "$action" in
         fi
         jq -s '.[0] * .[1] | del(._presetMeta)' "$CONFIG_FILE" "$preset_file" \
             > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-        "$SWITCHWALL" --noswitch
+
+        # If the preset declares a theme, run the full orchestrator
+        theme_key=$(jq -r '._presetMeta.theme // empty' "$preset_file")
+        if [ -n "$theme_key" ]; then
+            "$SCRIPT_DIR/theming/apply-theme-preset.sh" "$theme_key"
+        else
+            "$SWITCHWALL" --noswitch
+        fi
         ;;
     *)
         echo "Error: unknown action: $action" >&2

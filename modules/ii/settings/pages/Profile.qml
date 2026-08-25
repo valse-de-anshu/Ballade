@@ -234,103 +234,7 @@ ContentPage {
         ContentSection {
             icon: "palette"
             shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Color Themes & Rice Presets")
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: 2
-                columnSpacing: 12
-                rowSpacing: 12
-
-                Repeater {
-                    model: Presets.themePresets
-                    delegate: Rectangle {
-                        id: themeCard
-                        required property var modelData
-                        Layout.fillWidth: true
-                        implicitHeight: 74
-                        radius: Appearance.rounding.normal
-                        color: Presets.activeTheme === modelData.key ? Appearance.colors.colLayer2 : Appearance.colors.colLayer1
-                        border.color: Presets.activeTheme === modelData.key ? modelData.color : Appearance.colors.colOutlineVariant
-                        border.width: Presets.activeTheme === modelData.key ? 2 : 1
-
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Rectangle {
-                                width: 38
-                                height: 38
-                                radius: 19
-                                color: modelData.color
-                                border.color: Qt.lighter(modelData.color, 1.2)
-                                border.width: 1
-
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    symbol: modelData.icon
-                                    color: "#ffffff"
-                                    font.pixelSize: 20
-                                }
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                StyledText {
-                                    Layout.fillWidth: true
-                                    text: modelData.name
-                                    font.weight: Font.DemiBold
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colText
-                                }
-
-                                StyledText {
-                                    Layout.fillWidth: true
-                                    text: modelData.subtitle
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: Appearance.colors.colSubtext
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            Rectangle {
-                                visible: Presets.activeTheme === modelData.key
-                                implicitWidth: 28
-                                implicitHeight: 28
-                                radius: 14
-                                color: modelData.color
-
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    symbol: "check"
-                                    color: "#ffffff"
-                                    font.pixelSize: 18
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                Presets.applyThemePreset(modelData.key)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        ContentSection {
-            icon: "wall_art"
-            shape: MaterialShape.Shape.Pentagon
-            title: Translation.tr("Custom Snapshots")
+            title: Translation.tr("Color Themes & Presets")
 
             GroupedList {
                 ConfigTextArea {
@@ -353,7 +257,7 @@ ContentPage {
             StyledText {
                 Layout.fillWidth: true
                 Layout.topMargin: 40
-                visible: Presets.folderModel.count === 0
+                visible: (Presets.folderModel ? Presets.folderModel.count : 0) === 0
                 horizontalAlignment: Text.AlignHCenter
                 text: Translation.tr("No saved snapshots yet")
                 color: Appearance.colors.colSubtext
@@ -365,7 +269,7 @@ ContentPage {
                 Layout.fillWidth: true
                 width: parent.width
                 spacing: 12
-                visible: Presets.folderModel.count > 0
+                visible: Boolean(Presets.folderModel && Presets.folderModel.count > 0)
 
                 Repeater {
                     model: Presets.folderModel
@@ -383,12 +287,14 @@ ContentPage {
                             onLoaded: {
                                 try {
                                     const data = JSON.parse(text())
-                                    const rawWallpaper = data?.background?.wallpaperPath ?? ""
+                                    const bg = (data && data.background) ? data.background : {}
+                                    const rawWallpaper = bg.wallpaperPath || ""
                                     const isVideo = /\.(mp4|webm|mkv|avi|mov)$/i.test(rawWallpaper)
                                     presetDelegate.presetWallpaper = isVideo
-                                        ? (data?.background?.thumbnailPath ?? "")
+                                        ? (bg.thumbnailPath || "")
                                         : rawWallpaper
-                                    presetDelegate.presetDescription = data?._presetMeta?.description ?? ""
+                                    const meta = (data && data._presetMeta) ? data._presetMeta : {}
+                                    presetDelegate.presetDescription = meta.description || ""
                                 } catch (e) {
                                     console.log("Failed to parse preset:", e)
                                 }
