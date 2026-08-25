@@ -177,11 +177,3 @@ fi
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
 
-# Reload Hyprland to pick up new matugen colors
-if command -v hyprctl &>/dev/null; then
-    hyprctl reload >/dev/null 2>&1 &
-fi
-
-# Reload Quickshell so it picks up material_colors.scss changes instantly
-pkill -x qs 2>/dev/null || true
-qs -c ballade >/dev/null 2>&1 &
