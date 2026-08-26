@@ -25,16 +25,14 @@ Singleton {
 
 	property var activeTrack;
 
-	readonly property bool hasActivePlasmaIntegration: Mpris.players.values.some(
-		p => p.dbusName?.startsWith('org.mpris.MediaPlayer2.plasma-browser-integration')
-	)
+
 
 	function isRealPlayer(player) {
         if (!player || !player.dbusName) return false;
         
-        // Remove native browser buses only if plasma-browser-integration is actually active on D-Bus
-        if (hasActivePlasmaIntegration && player.dbusName.startsWith('org.mpris.MediaPlayer2.firefox')) return false;
-        if (hasActivePlasmaIntegration && player.dbusName.startsWith('org.mpris.MediaPlayer2.chromium')) return false;
+        // plasma-browser-integration often fails to emit Metadata update signals on track change.
+        // We prefer native firefox/chromium MPRIS which is much more reliable.
+        if (player.dbusName.startsWith('org.mpris.MediaPlayer2.plasma-browser-integration')) return false;
         
         // playerctld just copies other buses and we don't need duplicates
         if (player.dbusName.startsWith('org.mpris.MediaPlayer2.playerctld')) return false;
