@@ -1,182 +1,57 @@
-# 🎼 Ballade Rice: QuickShell Hybrid Configuration & Architectural Guide
+# 🎼 Ballade
 
-## 🤖 Instructions for Future AI Agents
-**READ THIS BEFORE MAKING ANY EDITS OR ATTEMPTING TO MODIFY QUICKSHELL / HYPRLAND CONFIGURATIONS.**
+A modular [QuickShell](https://quickshell.outfoxxed.me/) desktop shell for [Hyprland](https://hyprland.org/), built upon the foundation of [end-4/dots-hyprland](https://github.com/end-4/dots-hyprland) (**Illogical Impulse / `ii`**).
 
-### Context & Primary Location
-This repository, located at `/home/valse-de-anshu/.config/quickshell/ballade`, is a custom **hybrid rice** named **`ballade`**. It merges the best visual elements of **`ii` (IllogicalImpulse)** and the rich module ecosystem of **`end4-pC`**.
+`ballade` combines the frosted-glass aesthetic of `ii` with the feature-rich modules of `end4-pC` (sidebars, AI translation, panoramic wallpaper picker, and desktop widgets).
 
-* **PRIMARY WORKING DIRECTORY DIRECTIVE**: All QuickShell modifications MUST be made in `/home/valse-de-anshu/.config/quickshell/ballade/`. Do NOT write code into `end4-pC` or `ii` directly.
-* **HYPRLAND CUSTOM DIRECTORY**: Hyprland configuration overrides (blur strength, opacity, environment variables) MUST be written to `~/.config/hypr/custom/` (specifically `custom/env.lua`, `custom/rules.lua`, and `custom/general.lua`).
-* **ENVIRONMENT BINDING**: QuickShell targets `ballade` via `hl.env("qsConfig", "ballade")` in `~/.config/hypr/custom/env.lua`.
+---
 
-### 🛡️ Protection Against `./setup` Script Wipes
-The installer script `dots-hyprland/setup` executes `rsync -a --delete` on `~/.config/quickshell`, which would wipe untracked folders.
-To prevent data loss, `/home/valse-de-anshu/Desktop/git hyprland dots/dots-hyprland/sdata/subcmd-install/3.files-legacy.sh` has been patched with:
+## 🚀 Running Alongside `ii`
+
+`ballade` lives standalone in `~/.config/quickshell/ballade` and shares user preferences via `~/.config/illogical-impulse/config.json`.
+
+- **Run Ballade:**
+  ```bash
+  qs -c ballade
+  ```
+- **Run Standard ii:**
+  ```bash
+  qs -c ii
+  ```
+- **Set as default in Hyprland (`~/.config/hypr/custom/env.lua`):**
+  ```lua
+  hl.env("qsConfig", "ballade")
+  ```
+
+---
+
+## 📦 Dependencies
+
+Ensure these packages are installed:
+
+- **Shell & Compositor:** `quickshell`, `hyprland`, `qt6-declarative`, `qt6-5compat`, `qt6-svg`
+- **Audio & Media:** `pipewire`, `wireplumber`, `playerctl`, `canberra-gtk-play`, `mpv`, `pw-play`
+- **Theming & Presets:** `matugen`, `kitty`, `konsole`, `plasma-apply-colorscheme`, `tela-circle-icon-theme-git`
+- **Utilities & OCR:** `jq`, `wl-clipboard`, `cliphist`, `tesseract`, `hyprpicker`, `hyprsunset`
+
+---
+
+## ⌨️ Common IPC Commands
+
+Trigger modules via keybindings or terminal:
+
 ```bash
-install_dir__sync_exclude+=("ballade" "docs")
-```
-Additionally, `ballade` is fully initialized with its own local **Git repository** (`git init`) to track commits and restore states safely.
-
-### 📝 Documentation Maintenance Directive
-As an AI agent working on this repository, you are **REQUIRED** to keep this `README.md` file updated as you work:
-1. **Git Commits:** Whenever you successfully implement a feature or fix a bug and commit it via `git`, you MUST update the `## 📦 Git Commit History & Statistics` section at the bottom of this document. Run `git log --oneline -n 15` and replace the code block with the latest log.
-2. **Core File Glossary:** If you introduce a new major UI component, config file, logic module, or settings page, you MUST document it in the `## 📌 Important Section: Core File Glossary` at the bottom of this file. Use simple, generic terms (like "Settings UI", "Shape Engine") and explicitly describe its path, its purpose, and *when* a future agent should edit it.
-
----
-
-## 💡 Code Logic & Architectural Insights (`ii` vs `end4-pC` vs `ballade`)
-
-### 1. How `ii` (IllogicalImpulse) Worked
-* **Top Bar**: Static bar layout (`modules/ii/bar/BarContent.qml`) containing fixed positions for workspace buttons, window title, music info text, clock, system tray, and utility icons.
-* **Workspace Model**: Bound directly to `required property HyprlandMonitor monitor` in `WorkspaceModel.qml`.
-* **Aesthetics**: Heavy reliance on **Frosted Glass Blur** with medium window opacities (`0.93` active / `0.88` inactive).
-* **Limitations**: Lacked sidebars, desktop widgets, AI chat capabilities, and dynamic settings persistence.
-
-### 2. How `end4-pC` Worked
-* **Top Bar**: Fully dynamic bar powered by `BarWidgetSwitcher.qml` and `BarConfig.qml`, allowing users to drag and drop widgets between left, center, and right bar sections.
-* **Workspace Model**: Multi-monitor model using `required property var screen` in `WorkspaceModel.qml`.
-* **Sidebars & Overlays**: Introduced extensive feature panels (`sidebarLeft` with AI Chat, Translator, Booru; `sidebarRight` with QuickSliders, Volume Mixer, WiFi/Bluetooth dialogs) and a desktop Settings window (`modules/ii/settings/Settings.qml`).
-* **Settings Engine**: Settings written to `Config.options` auto-saved via `FileView` JSON adapter directly to `~/.config/illogical-impulse/config.json`.
-* **Aesthetics**: Complete transparency without heavy blur by default (disliked by the user).
-
-### 3. How `ballade` Integrates Both (The Solution)
-`ballade` combines the user's favorite aesthetics from `ii` with the powerful feature modules of `end4-pC`:
-
-1. **Ditto `ii` Top Bar with `end4-pC` Visualizer**:
-   * Restored the exact visual layout and styling of the **ditto `ii` top bar** (`modules/ii/bar/`).
-   * Replaced `ii`'s static music title text with `end4-pC`'s animated **Audio Visualizer** ([`modules/ii/bar/Media.qml`](file:///home/valse-de-anshu/.config/quickshell/ballade/modules/ii/bar/Media.qml#L45)).
-   * Left-clicking the visualizer toggles `GlobalStates.mediaControlsOpen`, opening `ii`'s native song preview & track control popup (`modules/ii/mediaControls/MediaControls.qml`).
-2. **`end4-pC` Left & Right Sidebars**:
-   * Integrated full `end4-pC` sidebars: `sidebarLeft` (AI Chat with Gemini/Ollama/OpenAI, Translator, Booru viewer) and `sidebarRight` (QuickSliders, Volume Mixer, WiFi/Bluetooth popups, Pomodoro timer).
-3. **`end4-pC` Settings Overlay (`SUPER + Escape`)**:
-   * Connected `Settings.qml` and `SettingsContent.qml` to `Config.qml` & `Directories.qml`, ensuring all 8 settings pages (Bar, General, Desktop, Interface, Services, Hyprland, Quick, Profile) write directly to `~/.config/illogical-impulse/config.json`.
-4. **Frosted Glass Blur Restoration**:
-   * Configured Hyprland window blur in `~/.config/hypr/custom/general.lua` (`size = 16`, `passes = 4`, `contrast = 1.0`, `vibrancy = 0.35`) and rules in `custom/rules.lua` (`opacity = "0.93 0.88"`).
-5. **Launcher Overlap Fix**:
-   * Disabled duplicate `fuzzel` fallback keybinds in `hyprland/keybinds.lua` so pressing `SUPER` only triggers the QuickShell launcher.
-
----
-
-## 🛠️ Critical Bugs & Log Errors Resolved
-
-During development and testing with `qs -c ballade`, several runtime QML errors were identified and resolved:
-
-| Error / Warning | Location | Root Cause | Solution Applied |
-| :--- | :--- | :--- | :--- |
-| `Cannot assign to non-existent property "monitor"` | `WorkspaceModel.qml` | `ii` bar expected `monitor` property while `end4-pC` model expected `screen`. | Restored `ii`'s `WorkspaceModel.qml` with `monitor` binding. |
-| `ReferenceError: filterDuplicatePlayers is not defined` | `SidebarRightContent.qml` | Function called in player list filter without being defined in component scope. | Added `filterDuplicatePlayers(players)` helper function with safe optional chaining. |
-| `TypeError: Cannot read property 'enable' of undefined` | `NotificationPopup.qml` | Direct property access on `forceMonitor` before initialization. | Added optional chaining (`Config.options.notifications?.forceMonitor?.enable`). |
-| `Cannot find member data` / Property override warning | `StyledSwitch.qml` & `Anime.qml` | Custom property `scale` clashed with QtQuick Item built-in `Item.scale`. | Renamed property to `switchScale`. |
-| `Detected function onHostnameChanged in Connections element` | `Profile.qml` | Attempted to handle non-existent Qt signal `hostnameChanged`. | Removed invalid `Connections` block and bound property directly to `SystemInfo.hostname`. |
-| `Unable to assign [undefined] to QQuickItem*` | `ToolbarTabBar.qml` | `contentItem.children[currentIndex]` evaluated to undefined during initial layout. | Added safe null fallback (`property Item targetItem: contentItem.children[root.currentIndex] ?? null`). |
-
----
-
-## 🗺️ System Architecture of Ballade
-
-The following diagram illustrates how QuickShell components, services, IPC socket listeners, and Hyprland rules interact inside `ballade`:
-
-```mermaid
-graph TD
-    subgraph HyprlandCompositor ["Hyprland Compositor"]
-        HL["Hyprland Core IPC"]
-        HL_RULES["custom/rules.lua - Opacity: 0.93 0.88"]
-        HL_BLUR["custom/general.lua - Blur size:16 passes:4"]
-        HL_ENV["custom/env.lua - qsConfig = ballade"]
-    end
-
-    subgraph ShellEngine ["QuickShell Shell Engine (ballade)"]
-        SHELL["shell.qml"] --> FAMILY["IllogicalImpulseFamily.qml"]
-        
-        FAMILY --> BAR["modules/ii/bar/Bar.qml - Ditto ii Top Bar"]
-        FAMILY --> SIDE_L["modules/ii/sidebarLeft/ - end4-pC AI & Tools"]
-        FAMILY --> SIDE_R["modules/ii/sidebarRight/ - end4-pC Sliders & QuickToggles"]
-        FAMILY --> SETTINGS["modules/ii/settings/Settings.qml - end4-pC Settings Overlay"]
-        FAMILY --> WIDGETS["modules/ii/background/ - Desktop Weather & Clock Widgets"]
-
-        BAR --> MEDIA["modules/ii/bar/Media.qml - end4-pC Audio Visualizer"]
-        MEDIA -->|On Left Click| POPUP["modules/ii/mediaControls/ - ii Song Preview Popup"]
-
-        SETTINGS -->|Writes options| CONFIG["modules/common/Config.qml"]
-        CONFIG -->|FileView Adapter| JSON_FILE[("~/.config/illogical-impulse/config.json")]
-
-        SIDE_L --> AI_SERV["services/Ai.qml - Gemini / Ollama / OpenAI"]
-        SIDE_R --> MPRIS["services/MprisController.qml"]
-        BAR --> WORKSPACE["modules/common/models/WorkspaceModel.qml"]
-    end
-
-    HL_ENV -->|Sets Config Name| SHELL
-    HL -->|Socket IPC| WORKSPACE
-    HL -->|Socket IPC| HL_RULES
-    MPRIS -->|Media Stream| MEDIA
+qs -c ballade ipc call sidebarLeft toggle        # Left Sidebar (AI, Translator, Music)
+qs -c ballade ipc call sidebarRight toggle       # Right Sidebar (Control Center, Audio)
+qs -c ballade ipc call overview toggle           # App Launcher / Window Overview
+qs -c ballade ipc call wallpaperSelector toggle  # Panoramic Wallpaper Picker
+qs -c ballade ipc call mediaControls toggle      # Music Player Track Popup
+qs -c ballade ipc call sessionScreen toggle      # Lock / Logout / Power Menu
+qs -c ballade ipc call osdVolume trigger         # Volume OSD HUD
 ```
 
 ---
 
-## 📦 Git Commit History & Statistics
+## 📁 Portability
 
-The repository is version-controlled locally inside `/home/valse-de-anshu/.config/quickshell/ballade`. Below is the recent chronological commit history including the wallpaper picker architecture overhaul:
-
-```text
-682788a (HEAD -> master) fix(lyrics): set English priority above Hindi and eliminate caption timing latency
-a55b785 feat(lyrics): add full Hindi lyrics and YouTube Hindi subtitles support
-b0da2cf feat(settings,sounds): add volume stepper controls with live audio preview to all sound sections
-1b78645 fix(settings): fix text wrapping and layout overlap in ConfigTextArea and sound settings
-34e3880 fix(settings): fix invalid property assignment on OptionalMaterialSymbol in ServicesConfig
-3ec9d46 fix(settings): replace GroupedList with solid Card containers in ServicesConfig
-5f5f5fb feat(portability,sounds): bundle all audio assets, systemd/udev scripts, and 1-click setup into ballade repository
-5dbe5cf feat(settings,sounds): integrate startup, battery, and USB sound events into settings UI
-af68f84 feat(settings,sounds): add notification and system event sound volume steppers with live audio preview
-fc806a4 fix(bar): lock resource indicators in place, fix spacing gaps, and eliminate number jitter
-d4e3afe feat(settings): add Up/Down arrow and PageUp/Down key scrolling, unify custom widget cards, and auto-scroll on add
-1555ae6 feat(settings,shell): prevent unintended settings dismissal, add close button, and lock shell to ii family
-a1b1b0f fix(weather,worldmap): overhaul weather parser and dynamic map coordinate pinning
-```
-
----
-
-## 📌 Important Section: Core File Glossary
-
-If you ever need to revisit, modify, or debug the components of this rice, the following acts as an architectural map to the most frequently modified core files. 
-
-### 1. The Wallpaper Picker UI (`HyprPickerContent.qml`)
-**Path:** `modules/ii/wallpaperSelector/HyprPickerContent.qml`
-**What it does:** This is the **Main UI file** for the wallpaper selector. It contains the visual layout logic, including the 3D "Cover Flow" geometry, the sliding "Mac Dock" scale animations, and the image loading logic. 
-**When to edit:** Edit this if you want to change how the wallpaper cards look, adjust the 3D curvature, modify the gap sizes, or change the border highlighters.
-
-### 2. The Settings Menu UI (`CustomWidgetsConfig.qml`)
-**Path:** `modules/ii/settings/pages/CustomWidgetsConfig.qml`
-**What it does:** This is the **Settings UI file** for the Custom Widgets page in the overlay menu. It contains the visual buttons, arrays, and text inputs (like the "Behavior" and "Card Shape" toggles) that the user interacts with.
-**When to edit:** Edit this if you want to add new buttons, toggle switches, or shape options to the settings panel.
-
-### 3. The Configuration Schema (`Config.qml`)
-**Path:** `modules/common/Config.qml`
-**What it does:** This is the **Master Configuration Schema**. It defines the JSON structure that QuickShell uses to save and load user preferences (e.g., `Config.options.wallpaperSelector.behavior`).
-**When to edit:** Edit this **before** adding new toggles to the settings menu. If a property isn't defined here, the UI buttons won't react when tapped because the property won't emit a state-change signal.
-
-### 4. The Geometry & Mask Engine (`MaterialShape.qml` & `material-shapes.js`)
-**Path:** `modules/common/widgets/MaterialShape.qml` & `modules/common/widgets/shapes/material-shapes.js`
-**What it does:** This acts as the **Shape Rendering Engine**. It uses QML `Canvas` and standard Qt transforms to draw complex geometric masks (like the `slanted` Cyberpunk parallelogram, `superellipse`, or `cookie`).
-**When to edit:** Edit this if you want to create entirely new geometric borders or clip-masks for images and widgets across the rice.
-
-### 5. The System Power & Event Audio Executor (`power-audio-executor.sh`)
-**Path:** `scripts/power-audio-executor.sh` (deployed to `~/.local/bin/power-audio-executor.sh`)
-**What it does:** This is the **System Power & Event Audio Wrapper**. It intercepts system power events (`poweroff`, `reboot`, `lock-session`, `suspend`, `hibernate`, `logout`) to play audio cues with deduplication lock protection and volume scaling. It dynamically reads user-configured audio paths and volume from `~/.config/illogical-impulse/config.json` via `jq` (`shutdownSoundPath`, `lockSoundPath`, `sleepSoundPath`, `logoutSoundPath`, `systemSoundVolume`, `enableSystemSounds`) with automated player fallbacks (`pw-play` ➔ `paplay` ➔ `mpv` ➔ `ffplay`).
-**When to edit:** Edit this when adding or altering system-level audio cues for power/lock actions, adjusting audio deduplication timeouts, or changing sound playback backends on Arch Linux.
-
-### 6. The Services, Notifications & Audio Settings (`ServicesConfig.qml`)
-**Path:** `modules/ii/settings/pages/ServicesConfig.qml`
-**What it does:** This is the **Services, Notifications & Audio Configuration UI**. It provides `-` / `+` stepper controls (0%-100%) with live test audio previews, sound file picker dialogs for notifications and system event sounds (Shutdown, Lock, Logout, Sleep), and system integration controls (AI prompts, Weather, Network user-agent, System updates).
-**When to edit:** Edit this when configuring new service settings, adding audio triggers, or adjusting volume stepper increments and audio preview handlers.
-
-### 7. The Bar Resource Indicators (`Resource.qml` & `Resources.qml`)
-**Path:** `modules/ii/bar/Resource.qml` & `modules/ii/bar/Resources.qml`
-**What it does:** This is the **Top Bar Hardware Metrics Component** (CPU, RAM, Swap, CPU Temp, Disk). It locks numerals in place using OpenType tabular figures (`tnum: 1`) to eliminate number fluctuation jitter, uses a tight `2px` gap between the circular progress icon and value, maintains a clean `6px` inter-widget spacing, and automatically reveals Swap whenever swap memory is actively being used (`> 0%`).
-**When to edit:** Edit this if customizing hardware sensors, warning thresholds, metric spacing, or top bar resource aesthetics.
-
-### 8. The Weather Service & Dynamic Dot-Map (`Weather.qml` & `WorldMap.qml`)
-**Path:** `services/Weather.qml` & `modules/common/widgets/WorldMap.qml`
-**What it does:** This is the **Weather Telemetry & Geographic Projection Engine**. It queries `wttr.in` for complete forecast data (coordinates, city, temperature, weather descriptions, precipitation) and maps the user's location coordinates with a pulsing target ring onto the world dot map canvas.
-**When to edit:** Edit this when updating weather API data formats, adding forecast details, or styling the world dot map locator.
-
+All scripts use self-resolving dynamic paths. You can copy the entire `ballade` folder directly to `~/.config/quickshell/ballade` on any device and launch immediately.
