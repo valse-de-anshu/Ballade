@@ -119,7 +119,7 @@ if command -v plasma-apply-colorscheme &>/dev/null; then
     plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1
 fi
 
-# 5. Apply Kitty Theme
+# 5. Apply Kitty & Konsole Terminal Themes
 if [ -f "$KITTY_THEME_FILE" ]; then
     mkdir -p "$HOME/.config/kitty"
     cp "$KITTY_THEME_FILE" "$HOME/.config/kitty/current-theme.conf"
@@ -131,6 +131,35 @@ if [ -f "$KITTY_THEME_FILE" ]; then
     
     # Live reload all running kitty instances
     kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
+
+    # Synchronize Konsole colorscheme
+    konsole_theme="$HOME/.local/share/konsole/Quickshell.colorscheme"
+    mkdir -p "$HOME/.local/share/konsole"
+    {
+        echo "[General]"
+        echo "Description=Dynamic Quickshell"
+        echo "Opacity=1"
+        while read -r line; do
+            key=$(echo "$line" | awk '{print $1}')
+            val=$(echo "$line" | awk '{print $2}')
+            [[ -z "$key" || -z "$val" || "$key" =~ ^# ]] && continue
+            hex="${val#\#}"
+            if [ ${#hex} -eq 6 ]; then
+                rgb="$((16#${hex:0:2})),$((16#${hex:2:2})),$((16#${hex:4:2}))"
+            else
+                rgb="0,0,0"
+            fi
+            if [[ "$key" == "background" ]]; then
+                echo -e "[Background]\nColor=$rgb"
+            elif [[ "$key" == "foreground" ]]; then
+                echo -e "[Foreground]\nColor=$rgb"
+            elif [[ "$key" =~ ^color([0-9]+)$ ]]; then
+                cnum="${BASH_REMATCH[1]}"
+                echo -e "[Color${cnum}]\nColor=$rgb"
+                echo -e "[Color${cnum}Intense]\nColor=$rgb"
+            fi
+        done < "$KITTY_THEME_FILE"
+    } > "$konsole_theme" 2>/dev/null
 fi
 
 # 6. Apply rmpc Music Player Theme

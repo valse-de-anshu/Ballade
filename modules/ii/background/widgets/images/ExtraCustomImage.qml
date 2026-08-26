@@ -229,6 +229,8 @@ Item {
         }
 
         onPressed: {
+            dragProxy.x = root.x
+            dragProxy.y = root.y
             if (!root.locked) {
                 var c = root.findCanvas()
                 if (c) c.setDragging(true)

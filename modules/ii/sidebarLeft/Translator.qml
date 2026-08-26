@@ -124,14 +124,17 @@ Item {
             }
             GroupButton {
                 id: pasteButton
-                baseWidth: height
+                implicitWidth: 32
+                implicitHeight: 32
+                baseWidth: 32
+                baseHeight: 32
                 buttonRadius: Appearance.rounding.small
                 contentItem: MaterialSymbol {
                     anchors.centerIn: parent
                     horizontalAlignment: Text.AlignHCenter
                     iconSize: Appearance.font.pixelSize.larger
                     text: "content_paste"
-                    color: deleteButton.enabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colSubtext
+                    color: Appearance.colors.colOnLayer1
                 }
                 onClicked: {
                     root.inputField.text = Quickshell.clipboardText
@@ -139,9 +142,12 @@ Item {
             }
             GroupButton {
                 id: deleteButton
-                baseWidth: height
+                implicitWidth: 32
+                implicitHeight: 32
+                baseWidth: 32
+                baseHeight: 32
                 buttonRadius: Appearance.rounding.small
-                enabled: inputCanvas.inputTextArea.text.length > 0
+                enabled: inputCanvas.inputTextArea?.text?.length > 0
                 contentItem: MaterialSymbol {
                     anchors.centerIn: parent
                     horizontalAlignment: Text.AlignHCenter
@@ -204,7 +210,10 @@ Item {
             text: hasTranslation ? root.translatedText : ""
             GroupButton {
                 id: copyButton
-                baseWidth: height
+                implicitWidth: 32
+                implicitHeight: 32
+                baseWidth: 32
+                baseHeight: 32
                 buttonRadius: Appearance.rounding.small
                 enabled: outputCanvas.displayedText.trim().length > 0
                 contentItem: MaterialSymbol {
@@ -220,7 +229,10 @@ Item {
             }
             GroupButton {
                 id: searchButton
-                baseWidth: height
+                implicitWidth: 32
+                implicitHeight: 32
+                baseWidth: 32
+                baseHeight: 32
                 buttonRadius: Appearance.rounding.small
                 enabled: outputCanvas.displayedText.trim().length > 0
                 contentItem: MaterialSymbol {

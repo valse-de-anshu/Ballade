@@ -109,7 +109,12 @@ Singleton {
     }
 
     colors: QtObject {
-        property color colSubtext: m3colors.m3outline
+        property color colSubtext: {
+            if (m3colors.darkmode && m3colors.m3outline.hslLightness < 0.45) {
+                return m3colors.m3onSurfaceVariant;
+            }
+            return m3colors.m3outline;
+        }
         // Layer 0
         property color colLayer0Base: ColorUtils.mix(m3colors.m3background, m3colors.m3primary, Config.options.appearance.extraBackgroundTint ? 0.99 : 1)
         property color colLayer0: ColorUtils.transparentize(colLayer0Base, root.backgroundTransparency)
@@ -120,8 +125,13 @@ Singleton {
         // Layer 1
         property color colLayer1Base: m3colors.m3surfaceContainerLow
         property color colLayer1: ColorUtils.solveOverlayColor(colLayer0Base, colLayer1Base, 1 - root.contentTransparency);
-        property color colOnLayer1: m3colors.m3onSurfaceVariant;
-        property color colOnLayer1Inactive: ColorUtils.mix(colOnLayer1, colLayer1, 0.45);
+        property color colOnLayer1: {
+            if (m3colors.darkmode && m3colors.m3onSurfaceVariant.hslLightness < 0.45) {
+                return m3colors.m3onSurface;
+            }
+            return m3colors.m3onSurfaceVariant;
+        }
+        property color colOnLayer1Inactive: ColorUtils.mix(colOnLayer1, colLayer1, 0.35);
         property color colLayer1Hover: ColorUtils.transparentize(ColorUtils.mix(colLayer1, colOnLayer1, 0.92), root.contentTransparency)
         property color colLayer1Active: ColorUtils.transparentize(ColorUtils.mix(colLayer1, colOnLayer1, 0.85), root.contentTransparency);
         // Layer 2
@@ -152,7 +162,15 @@ Singleton {
         property color colPrimaryContainer: m3colors.m3primaryContainer
         property color colPrimaryContainerHover: ColorUtils.mix(colors.colPrimaryContainer, colors.colOnPrimaryContainer, 0.9)
         property color colPrimaryContainerActive: ColorUtils.mix(colors.colPrimaryContainer, colors.colOnPrimaryContainer, 0.8)
-        property color colOnPrimaryContainer: m3colors.m3onPrimaryContainer
+        property color colOnPrimaryContainer: {
+            if (m3colors.darkmode && m3colors.m3onPrimaryContainer.hslLightness < 0.45) {
+                return m3colors.m3onSurface;
+            }
+            if (!m3colors.darkmode && m3colors.m3onPrimaryContainer.hslLightness > 0.65) {
+                return m3colors.m3onSurface;
+            }
+            return m3colors.m3onPrimaryContainer;
+        }
         // Secondary
         property color colSecondary: m3colors.m3secondary
         property color colSecondaryHover: ColorUtils.mix(m3colors.m3secondary, colLayer1Hover, 0.85)
@@ -161,7 +179,15 @@ Singleton {
         property color colSecondaryContainer: m3colors.m3secondaryContainer
         property color colSecondaryContainerHover: ColorUtils.mix(m3colors.m3secondaryContainer, m3colors.m3onSecondaryContainer, 0.90)
         property color colSecondaryContainerActive: ColorUtils.mix(m3colors.m3secondaryContainer, m3colors.m3onSecondaryContainer, 0.54)
-        property color colOnSecondaryContainer: m3colors.m3onSecondaryContainer
+        property color colOnSecondaryContainer: {
+            if (m3colors.darkmode && m3colors.m3onSecondaryContainer.hslLightness < 0.45) {
+                return m3colors.m3onSurface;
+            }
+            if (!m3colors.darkmode && m3colors.m3onSecondaryContainer.hslLightness > 0.65) {
+                return m3colors.m3onSurface;
+            }
+            return m3colors.m3onSecondaryContainer;
+        }
         // Tertiary
         property color colTertiary: m3colors.m3tertiary
         property color colTertiaryHover: ColorUtils.mix(m3colors.m3tertiary, colLayer1Hover, 0.85)
@@ -170,7 +196,15 @@ Singleton {
         property color colTertiaryContainerHover: ColorUtils.mix(m3colors.m3tertiaryContainer, m3colors.m3onTertiaryContainer, 0.90)
         property color colTertiaryContainerActive: ColorUtils.mix(m3colors.m3tertiaryContainer, colLayer1Active, 0.54)
         property color colOnTertiary: m3colors.m3onTertiary
-        property color colOnTertiaryContainer: m3colors.m3onTertiaryContainer
+        property color colOnTertiaryContainer: {
+            if (m3colors.darkmode && m3colors.m3onTertiaryContainer.hslLightness < 0.45) {
+                return m3colors.m3onSurface;
+            }
+            if (!m3colors.darkmode && m3colors.m3onTertiaryContainer.hslLightness > 0.65) {
+                return m3colors.m3onSurface;
+            }
+            return m3colors.m3onTertiaryContainer;
+        }
         // Surface
         property color colBackgroundSurfaceContainer: ColorUtils.transparentize(m3colors.m3surfaceContainer, root.backgroundTransparency)
         property color colSurfaceContainerLow: ColorUtils.solveOverlayColor(m3colors.m3background, m3colors.m3surfaceContainerLow, 1 - root.contentTransparency)

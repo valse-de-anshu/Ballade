@@ -31,8 +31,8 @@ Button {
     property int clickIndex: parentGroup?.clickIndex ?? -1
     property bool isAtSide: indexInParent === 0 || indexInParent === (parentGroup?.childrenCount - 1)
 
-    Layout.fillWidth: (clickIndex - 1 <= indexInParent && indexInParent <= clickIndex + 1)
-    Layout.fillHeight: (clickIndex - 1 <= indexInParent && indexInParent <= clickIndex + 1)
+    Layout.fillWidth: (clickIndex >= 0) && (clickIndex - 1 <= indexInParent && indexInParent <= clickIndex + 1)
+    Layout.fillHeight: (clickIndex >= 0) && (clickIndex - 1 <= indexInParent && indexInParent <= clickIndex + 1)
     implicitWidth: (root.down && bounce) ? clickedWidth : baseWidth
     implicitHeight: (root.down && bounce) ? clickedHeight : baseHeight
 

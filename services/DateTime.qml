@@ -19,6 +19,23 @@ Singleton {
         }
     }
     property string time: Qt.locale().toString(clock.date, Config.options?.time.format ?? "hh:mm")
+    readonly property bool is12Hour: {
+        const fmt = (Config.options?.time?.format ?? "").toLowerCase();
+        return fmt.includes("ap") || fmt.includes("a") || (fmt.includes("h") && !fmt.includes("hh"));
+    }
+    readonly property string ampm: Qt.locale().toString(clock.date, (Config.options?.time?.format ?? "").includes("ap") ? "ap" : "AP")
+    readonly property string hoursStr: {
+        if (is12Hour) {
+            const h = clock.date.getHours() % 12 || 12;
+            return String(h).padStart(2, "0");
+        }
+        return Qt.locale().toString(clock.date, "hh").padStart(2, "0");
+    }
+    readonly property string minutesStr: Qt.locale().toString(clock.date, "mm").padStart(2, "0")
+    readonly property string digitH0: hoursStr.charAt(0) || "0"
+    readonly property string digitH1: hoursStr.charAt(1) || "0"
+    readonly property string digitM0: minutesStr.charAt(0) || "0"
+    readonly property string digitM1: minutesStr.charAt(1) || "0"
     property string shortDate: Qt.locale().toString(clock.date, Config.options?.time.shortDateFormat ?? "dd/MM")
     property string date: Qt.locale().toString(clock.date, Config.options?.time.dateWithYearFormat ?? "dd/MM/yyyy")
     property string longDate: Qt.locale().toString(clock.date, Config.options?.time.dateFormat ?? "dddd, dd/MM")

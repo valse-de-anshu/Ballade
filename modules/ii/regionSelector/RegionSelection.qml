@@ -506,7 +506,7 @@ PanelWindow {
             Connections {
                 target: root
                 function onVisibleChanged() {
-                    if (!visible) return;
+                    if (!root.visible) return;
                     regionSelectionControls.anchors.bottomMargin = 8;
                     regionSelectionControls.opacity = 1;
                 }

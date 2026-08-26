@@ -28,28 +28,39 @@ colorlist=($colornames)     # Array of color names
 colorvalues=($colorstrings) # Array of color values
 
 apply_kitty() {  
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
-    echo "Template file not found for Kitty theme. Skipping that."
-    return
+  local active_preset=""
+  local config_file="$HOME/.config/illogical-impulse/config.json"
+  if [ -f "$config_file" ]; then
+    active_preset=$(jq -r '.theme.activePreset // empty' "$config_file" 2>/dev/null)
   fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-  done
 
-  # Copy to kitty's config directory so it actually applies!
-  mkdir -p "$HOME/.config/kitty"
-  cp "$STATE_DIR"/user/generated/terminal/kitty-theme.conf "$HOME/.config/kitty/current-theme.conf"
+  local preset_theme_file="$SCRIPT_DIR/../theming/kitty-themes/${active_preset}.conf"
+  if [ -n "$active_preset" ] && [ -f "$preset_theme_file" ]; then
+    mkdir -p "$HOME/.config/kitty"
+    cp "$preset_theme_file" "$HOME/.config/kitty/current-theme.conf"
+  else
+    # Check if terminal escape sequence template exists
+    if [ ! -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
+      echo "Template file not found for Kitty theme. Skipping that."
+      return
+    fi
+    # Copy template
+    mkdir -p "$STATE_DIR"/user/generated/terminal
+    cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
+    # Apply colors
+    for i in "${!colorlist[@]}"; do
+      sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
+    done
 
-  # Reload
-  if ! pgrep -f kitty >/dev/null; then
-    return
+    # Copy to kitty's config directory so it actually applies!
+    mkdir -p "$HOME/.config/kitty"
+    cp "$STATE_DIR"/user/generated/terminal/kitty-theme.conf "$HOME/.config/kitty/current-theme.conf"
   fi
-  kill -SIGUSR1 $(pidof kitty)
+
+  # Reload running Kitty instances
+  if pgrep -f kitty >/dev/null; then
+    kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
+  fi
 }
 
 apply_anyterm() {
@@ -94,29 +105,18 @@ apply_konsole() {
   echo "Description=Dynamic Quickshell" >> "$konsole_theme"
   echo "Opacity=1" >> "$konsole_theme"
 
-  local temp_kitty="/tmp/qs_konsole_kitty_template.conf"
-  if [ -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
-    cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$temp_kitty"
-    for i in "${!colorlist[@]}"; do
-      sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$temp_kitty"
-    done
-
+  local src_theme="$HOME/.config/kitty/current-theme.conf"
+  if [ -f "$src_theme" ]; then
     while read -r line; do
       local key=$(echo "$line" | awk '{print $1}')
       local val=$(echo "$line" | awk '{print $2}')
       
-      if [[ -z "$key" || -z "$val" ]]; then
+      if [[ -z "$key" || -z "$val" || "$key" =~ ^# ]]; then
         continue
       fi
       
       if [[ "$key" == "background" ]]; then
-        # To perfectly blend with Dolphin, read Dolphin's exact background from kdeglobals!
-        local kde_bg=$(grep -A 5 "^\[Colors:Window\]" "$HOME/.config/kdeglobals" 2>/dev/null | grep "^BackgroundNormal=" | cut -d= -f2)
-        if [[ -n "$kde_bg" ]]; then
-          echo -e "[Background]\nColor=$(hex2rgb "$kde_bg")" >> "$konsole_theme"
-        else
-          echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
-        fi
+        echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
       elif [[ "$key" == "foreground" ]]; then
         echo -e "[Foreground]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
       elif [[ "$key" =~ ^color([0-9]+)$ ]]; then
@@ -124,8 +124,7 @@ apply_konsole() {
         echo -e "[Color${cnum}]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
         echo -e "[Color${cnum}Intense]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
       fi
-    done < "$temp_kitty"
-    rm -f "$temp_kitty"
+    done < "$src_theme"
   fi
 
   local profile="$HOME/.local/share/konsole/Profile 1.profile"

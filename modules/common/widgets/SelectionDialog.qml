@@ -8,8 +8,8 @@ import Quickshell
 
 Item {
     id: root
-    property real dialogPadding: 15
-    property real dialogMargin: 30
+    property real dialogPadding: 12
+    property real dialogMargin: 12
     property string titleText: "Selection Dialog"
     property list<string> items: []
     property var defaultChoice
@@ -89,6 +89,8 @@ Item {
         id: dialog
         color: Appearance.m3colors.m3surfaceContainerHigh
         radius: Appearance.rounding.normal
+        border.width: 1
+        border.color: Appearance.colors.colLayer3 || "#30FFFFFF"
         anchors.fill: parent
         anchors.margins: dialogMargin
         clip: true
@@ -96,7 +98,7 @@ Item {
         ColumnLayout {
             id: dialogColumnLayout
             anchors.fill: parent
-            spacing: 10
+            spacing: 8
 
             // Header
             RowLayout {
@@ -116,26 +118,80 @@ Item {
             }
 
             // Search Bar
-            ConfigTextArea {
-                id: searchBar
+            Rectangle {
+                id: searchContainer
                 Layout.fillWidth: true
                 Layout.leftMargin: root.dialogPadding
                 Layout.rightMargin: root.dialogPadding
-                buttonIcon: "search"
-                placeholderText: Translation.tr("Search language...")
-                value: root.searchText
-                confirmButtonVisible: root.searchText.length > 0
-                confirmButtonIcon: "close"
-                onValueChanged: root.searchText = value
-                onConfirmClicked: {
-                    root.searchText = ""
-                    value = ""
+                implicitHeight: 36
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colLayer2
+                border.width: searchInput.activeFocus ? 1.5 : 1
+                border.color: searchInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 8
+                    spacing: 6
+
+                    MaterialSymbol {
+                        text: "search"
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.colors.colSubtext
+                    }
+
+                    TextInput {
+                        id: searchInput
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        clip: true
+                        color: Appearance.colors.colOnLayer1
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        text: root.searchText
+                        onTextChanged: root.searchText = text
+
+                        StyledText {
+                            anchors.fill: parent
+                            visible: !searchInput.text && !searchInput.activeFocus
+                            text: Translation.tr("Search language...")
+                            color: Appearance.colors.colSubtext
+                            font.pixelSize: Appearance.font.pixelSize.small
+                        }
+                    }
+
+                    Rectangle {
+                        implicitWidth: 22
+                        implicitHeight: 22
+                        radius: 11
+                        visible: root.searchText.length > 0
+                        color: clearMouse.containsMouse ? Appearance.colors.colLayer3 : "transparent"
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "close"
+                            iconSize: 13
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        MouseArea {
+                            id: clearMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.searchText = ""
+                                searchInput.text = ""
+                            }
+                        }
+                    }
                 }
             }
 
             Rectangle {
                 color: Appearance.m3colors.m3outline
                 implicitHeight: 1
+                opacity: 0.5
                 Layout.fillWidth: true
                 Layout.leftMargin: root.dialogPadding
                 Layout.rightMargin: root.dialogPadding
@@ -147,7 +203,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                spacing: 4
+                spacing: 3
 
                 model: ScriptModel {
                     id: choiceModel
@@ -159,9 +215,9 @@ Item {
                     required property var modelData
                     required property int index
 
+                    x: root.dialogPadding
                     width: choiceListView.width - root.dialogPadding * 2
-                    implicitHeight: 38
-                    anchors.horizontalCenter: choiceListView.horizontalCenter
+                    implicitHeight: 36
                     radius: Appearance.rounding.small
 
                     readonly property bool isSelected: root.selectedValue === modelData.toString()
@@ -173,8 +229,8 @@ Item {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 8
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 6
                         spacing: 8
 
                         // Selection indicator / icon
@@ -188,7 +244,7 @@ Item {
                         StyledText {
                             Layout.fillWidth: true
                             text: modelData.toString()
-                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.pixelSize: Appearance.font.pixelSize.small
                             font.bold: itemRow.itemPinned || itemRow.isSelected
                             color: itemRow.isSelected ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer1
                             elide: Text.ElideRight
@@ -196,15 +252,15 @@ Item {
 
                         // Pin button icon
                         Rectangle {
-                            implicitWidth: 28
-                            implicitHeight: 28
-                            radius: 14
+                            implicitWidth: 26
+                            implicitHeight: 26
+                            radius: 13
                             color: pinMouseArea.containsMouse ? Appearance.colors.colLayer3 : "transparent"
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "push_pin"
-                                iconSize: 16
+                                iconSize: 15
                                 color: itemRow.itemPinned ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                                 opacity: itemRow.itemPinned ? 1.0 : (rowMouseArea.containsMouse ? 0.6 : 0.25)
                             }
@@ -222,11 +278,15 @@ Item {
                     MouseArea {
                         id: rowMouseArea
                         anchors.fill: parent
-                        anchors.rightMargin: 36 // Don't steal click from pin button
+                        anchors.rightMargin: 34 // Don't steal click from pin button
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             root.selectedValue = modelData.toString()
+                        }
+                        onDoubleClicked: {
+                            root.selectedValue = modelData.toString()
+                            root.selected(root.selectedValue)
                         }
                     }
                 }
@@ -235,6 +295,7 @@ Item {
             Rectangle {
                 color: Appearance.m3colors.m3outline
                 implicitHeight: 1
+                opacity: 0.5
                 Layout.fillWidth: true
                 Layout.leftMargin: root.dialogPadding
                 Layout.rightMargin: root.dialogPadding
@@ -246,7 +307,10 @@ Item {
                 Layout.bottomMargin: root.dialogPadding
                 Layout.leftMargin: root.dialogPadding
                 Layout.rightMargin: root.dialogPadding
-                Layout.alignment: Qt.AlignRight
+                Layout.fillWidth: true
+                spacing: 8
+
+                Item { Layout.fillWidth: true }
 
                 DialogButton {
                     buttonText: Translation.tr("Cancel")

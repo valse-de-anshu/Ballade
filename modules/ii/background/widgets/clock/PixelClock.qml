@@ -12,17 +12,26 @@ import qs.modules.ii.background.widgets
 Item {
     id: root
 
-    readonly property bool isVertical: Config.options.background.widgets.clock.pixel.orientation === "vertical"
+    readonly property var pixelConfig: Config.options.background.widgets.clock.pixel ?? {}
+    readonly property bool isVertical: (pixelConfig.orientation ?? "vertical") === "vertical"
+    readonly property real baseSize: (pixelConfig.size && pixelConfig.size > 0) ? pixelConfig.size : (isVertical ? 252 : 150)
+    readonly property real scaleFactor: isVertical ? (baseSize / 252) : (baseSize / 150)
 
-    implicitWidth: isVertical ? 276 : 420
-    implicitHeight: isVertical ? 252 : 150
+    implicitWidth: isVertical ? (276 * scaleFactor) : (420 * scaleFactor)
+    implicitHeight: baseSize
+
+    readonly property string fontFamily: pixelConfig.font?.family ?? "Google Sans Flex"
+    readonly property int fontWeight: pixelConfig.font?.weight ?? 1000
+    readonly property real fontWidth: pixelConfig.font?.width ?? 100
+    readonly property real fontRoundness: pixelConfig.font?.roundness ?? 0
 
     readonly property string glyphTopLeft: DateTime.digitH0
     readonly property string glyphTopRight: DateTime.digitH1
     readonly property string glyphBottomLeft: DateTime.digitM0
     readonly property string glyphBottomRight: DateTime.digitM1
+    property color colText: Appearance.colors.colPrimary
     readonly property color tintSoft: Appearance.colors.colPrimaryContainer
-    readonly property color tintBold: Appearance.colors.colPrimary
+    readonly property color tintBold: colText
 
     readonly property real fringeSize: isVertical ? root.width * 0.026 : root.height * 0.03
     readonly property real tileW: isVertical ? root.width * 0.66 : root.width * 0.30
@@ -67,11 +76,15 @@ Item {
             width: root.tileW
             height: root.tileH
             font {
-                family: "Google Sans Flex"
-                weight: 1000
-                bold: true
+                family: root.fontFamily
+                weight: root.fontWeight
+                bold: root.fontWeight >= 600
                 pixelSize: root.glyphSize
-                variableAxes: ({ "wght": 1000 })
+                variableAxes: ({
+                    "wght": root.fontWeight,
+                    "wdth": root.fontWidth,
+                    "ROND": root.fontRoundness
+                })
             }
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -208,6 +221,28 @@ Item {
                 color: root.tintBold
                 anchors.horizontalCenter: parent.horizontalCenter
             }
+        }
+
+        Text {
+            visible: DateTime.is12Hour && (root.pixelConfig.showAmPm ?? true)
+            text: DateTime.ampm
+            font {
+                family: root.fontFamily
+                weight: root.fontWeight
+                bold: root.fontWeight >= 600
+                pixelSize: Math.max(14, root.glyphSize * 0.18)
+                variableAxes: ({
+                    "wght": root.fontWeight,
+                    "wdth": root.fontWidth,
+                    "ROND": root.fontRoundness
+                })
+            }
+            color: root.tintBold
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: root.isVertical ? 4 : 8
+            anchors.bottomMargin: root.isVertical ? 4 : 6
+            z: 5
         }
     }
 }

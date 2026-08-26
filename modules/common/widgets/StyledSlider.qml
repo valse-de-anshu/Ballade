@@ -19,7 +19,7 @@ Slider {
     property list<real> stopIndicatorValues: [1]
     property list<real> dividerValues: []
     enum Configuration {
-        Wavy = 4,
+        Wavy = 6,
         XS = 12,
         S = 18,
         M = 30,
@@ -29,8 +29,12 @@ Slider {
 
     property var configuration: StyledSlider.Configuration.S
 
-    property real handleDefaultWidth: 3
-    property real handlePressedWidth: 1.5
+    property bool circleHandle: (configuration === StyledSlider.Configuration.Wavy)
+    property real circleHandleSize: 14
+    property real circleHandlePressedSize: 16
+
+    property real handleDefaultWidth: circleHandle ? circleHandleSize : 4
+    property real handlePressedWidth: circleHandle ? circleHandlePressedSize : 2
     property color highlightColor: Appearance.colors.colPrimary
     property color trackColor: Appearance.colors.colSecondaryContainer
     property color handleColor: Appearance.colors.colPrimary
@@ -42,10 +46,12 @@ Slider {
         : trackWidth >= StyledSlider.Configuration.L ? 12
         : trackWidth >= StyledSlider.Configuration.M ? 9
         : trackWidth >= StyledSlider.Configuration.S ? 6
-        : height / 2
-    property real handleHeight: (configuration === StyledSlider.Configuration.Wavy) ? 24 : Math.max(33, trackWidth + 9)
+        : trackWidth / 2
+    property real handleHeight: circleHandle 
+        ? (root.pressed ? circleHandlePressedSize : circleHandleSize) 
+        : Math.max(33, trackWidth + 9)
     property real handleWidth: root.pressed ? handlePressedWidth : handleDefaultWidth
-    property real handleMargins: 4
+    property real handleMargins: circleHandle ? 0 : 4
     property real dividerMargins: 2
     property real trackDotSize: 3
     property bool usePercentTooltip: true
@@ -56,8 +62,8 @@ Slider {
     property real waveFrequency: 6
     property real waveFps: 60
 
-    leftPadding: handleMargins
-    rightPadding: handleMargins
+    leftPadding: circleHandle ? (handleWidth / 2) : handleMargins
+    rightPadding: circleHandle ? (handleWidth / 2) : handleMargins
     property real effectiveDraggingWidth: width - leftPadding - rightPadding
 
     Layout.fillWidth: true
@@ -138,9 +144,9 @@ Slider {
                 required property int index
                 anchors.verticalCenter: background.verticalCenter
                 property real leftMargin: index > 0 ? root.dividerMargins : 0
-                property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : root.handleMargins
+                property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : (root.circleHandle ? 0 : root.handleMargins)
                 x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
-                width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
+                width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === 0 ? leftPadding : 0)
                 height: root.trackWidth * 6
                 active: root.wavy
                 sourceComponent: WavyLine {
@@ -148,10 +154,10 @@ Slider {
                     frequency: root.waveFrequency
                     fullLength: root.width
                     color: root.highlightColor
-                    amplitudeMultiplier: root.wavy ? 1.5 : 0
+                    amplitudeMultiplier: root.wavy ? 1.0 : 0
                     width: parent.width
                     height: parent.height
-                    lineWidth: 1.5
+                    lineWidth: 3.5
                     Connections {
                         target: root
                         function onValueChanged() { wavyFill.requestPaint(); }
@@ -174,16 +180,16 @@ Slider {
             Rectangle {
                 required property int index
                 anchors.verticalCenter: background.verticalCenter
-                property real leftMargin: index > 0 ? root.dividerMargins : root.handleMargins
+                property real leftMargin: index > 0 ? root.dividerMargins : (root.circleHandle ? 0 : root.handleMargins)
                 property real rightMargin: index < background.rightWidths.length - 1 ? root.dividerMargins : 0
-                x: background.rightValues[index] * root.effectiveDraggingWidth + leftMargin + (index === 0 ? handleWidth / 2 : 0) + leftPadding
-                width: background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? handleWidth / 2 : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0)
+                x: background.rightValues[index] * root.effectiveDraggingWidth + leftMargin + (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + leftPadding
+                width: background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0)
                 height: trackWidth
                 color: root.trackColor
                 topRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
                 bottomRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
-                topLeftRadius: root.unsharpenRadius
-                bottomLeftRadius: root.unsharpenRadius
+                topLeftRadius: (index === 0 && root.circleHandle) ? root.trackRadius : root.unsharpenRadius
+                bottomLeftRadius: (index === 0 && root.circleHandle) ? root.trackRadius : root.unsharpenRadius
             }
         }
 
@@ -208,7 +214,13 @@ Slider {
         radius: Appearance.rounding.full
         color: root.handleColor
 
+        border.width: root.circleHandle ? 2 : 0
+        border.color: Appearance.colors.colLayer0 || "#ffffff"
+
         Behavior on implicitWidth {
+            animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
+        }
+        Behavior on implicitHeight {
             animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
         }
 

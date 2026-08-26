@@ -13,8 +13,7 @@ Rectangle {
     property string text: ""
     property color containerColor: Appearance.colors.colPrimaryContainer
     property var inputTextArea: isInput ? inputLoader.item : undefined
-    readonly property string displayedText: isInput ? inputLoader.item.text : 
-        root.text.length > 0 ? outputLoader.item.text : ""
+    readonly property string displayedText: isInput ? (inputLoader.item?.text ?? "") : root.text
     default property alias actionButtons: actions.data
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -23,65 +22,82 @@ Rectangle {
 
     signal inputTextChanged(); // Signal emitted when text changes
 
-    ColumnLayout {
-        id: inputColumn
-        anchors.fill: parent
-        spacing: 0
-
-        Loader {
-            id: inputLoader
-            active: root.isInput
-            visible: root.isInput
-            Layout.fillWidth: true
-            sourceComponent: StyledTextArea { // Input area
-                id: inputTextArea
-                placeholderText: root.placeholderText
-                wrapMode: TextEdit.Wrap
-                textFormat: TextEdit.PlainText
-                font.pixelSize: Appearance.font.pixelSize.small
-                color: Appearance.colors.colOnLayer1
-                padding: 15
-                background: null
-                onTextChanged: root.inputTextChanged()
-            }
+    // Input text area
+    Loader {
+        id: inputLoader
+        active: root.isInput
+        visible: root.isInput
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: statusRow.top
+        anchors.margins: 4
+        sourceComponent: StyledTextArea {
+            id: inputTextArea
+            anchors.fill: parent
+            placeholderText: root.placeholderText
+            wrapMode: TextEdit.Wrap
+            textFormat: TextEdit.PlainText
+            font.pixelSize: Appearance.font.pixelSize.small
+            color: Appearance.colors.colOnLayer1
+            padding: 12
+            background: null
+            onTextChanged: root.inputTextChanged()
         }
+    }
 
-        Loader {
-            id: outputLoader
-            active: !root.isInput
-            visible: !root.isInput
-            Layout.fillWidth: true
-            sourceComponent: StyledText { // Output area
+    // Output text area
+    Loader {
+        id: outputLoader
+        active: !root.isInput
+        visible: !root.isInput
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: statusRow.top
+        anchors.margins: 4
+        sourceComponent: Flickable {
+            anchors.fill: parent
+            contentWidth: width
+            contentHeight: outputTextArea.implicitHeight + 24
+            clip: true
+
+            StyledText {
                 id: outputTextArea
-                padding: 15
+                width: parent.width - 24
+                x: 12
+                y: 12
                 wrapMode: Text.Wrap
                 font.pixelSize: Appearance.font.pixelSize.small
                 color: root.text.length > 0 ? Appearance.colors.colOnLayer1 : Appearance.colors.colSubtext
                 text: root.text.length > 0 ? root.text : root.placeholderText
             }
         }
+    }
 
-        Item { Layout.fillHeight: true } 
+    // Status bar pinned directly at the bottom of the card
+    RowLayout {
+        id: statusRow
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 14
+        anchors.rightMargin: 14
+        anchors.bottomMargin: 10
+        spacing: 8
 
-        RowLayout { // Status row
-            Layout.fillWidth: true
-            Layout.margins: 10
-            spacing: 10
+        StyledText {
+            visible: root.isInput
+            text: Translation.tr("%1 characters").arg(inputLoader.item?.text?.length ?? 0)
+            color: Appearance.colors.colOnLayer1
+            font.pixelSize: Appearance.font.pixelSize.smaller
+        }
 
-            Loader {
-                active: root.isInput
-                visible: root.isInput
-                Layout.leftMargin: 10
-                sourceComponent: StyledText {
-                    text: Translation.tr("%1 characters").arg(inputLoader.item?.text.length ?? 0)
-                    color: Appearance.colors.colOnLayer1
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                }
-            }
-            Item { Layout.fillWidth: true }
-            ButtonGroup {
-                id: actions
-            }
+        Item { Layout.fillWidth: true }
+
+        RowLayout {
+            id: actions
+            spacing: 6
         }
     }
 }

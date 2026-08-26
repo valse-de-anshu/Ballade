@@ -31,18 +31,15 @@ Item {
         event.accepted = true;
     }
 
-    // ---- Tunables ----
-    property int    animDuration  : 200
-    property int    scrollSpeed   : 6000
-    property real   zoomScale     : 0.88
-    property real   edgeScale     : 0.50
-    property int    baseSpacing   : 18
-    property int    visibleTiles  : 5
-    property string activeShape   : Config.options.wallpaperSelector.shape || "cyberpunk"
-    property string activeBehavior: Config.options.wallpaperSelector.behavior || "standard"
-    readonly property bool isPanoramic: activeBehavior === "panoramic"
-    // ------------------
-
+    // ---- Settings / Tunables ----
+    property int    animDuration      : 180
+    property int    scrollSpeed       : 5000
+    property real   zoomScale         : 0.94       // Center tile scale
+    property real   edgeScale         : 0.48       // Edge tile scale
+    property int    baseSpacing       : 12
+    property int    numberOfPictures  : 14         // Target visible tiles across screen width
+    property string activeShape       : Config.options.wallpaperSelector.shape || "cyberpunk"
+    // ----------------------------
 
     // Folder model — points at the same directory ballade's Wallpapers service watches
     FolderListModel {
@@ -53,37 +50,62 @@ Item {
         sortField: FolderListModel.Name
     }
 
-    // --- Main Carousel ---
+    // --- Main Panoramic Carousel ---
     ListView {
         id: list
         anchors.centerIn: parent
         width: parent.width
-        height: parent.height * 0.78
+        height: Math.round(parent.height * 0.54)
         focus: true
 
         model: folderModel
         orientation: ListView.Horizontal
-        spacing: 0
+        spacing: root.baseSpacing
         clip: false
-        cacheBuffer: 600
+        cacheBuffer: 1200
 
-        property bool isPanoramic  : root.activeBehavior === "panoramic"
-        // Dynamically adjust gaping according to wallpaper numbers!
-        // For lots of wallpapers, they overlap (perfect panoramic). 
-        // For 2-4 wallpapers, the width is clamped to 220 so the gap isn't immense.
-        property real tileSlotWidth : isPanoramic
-                                      ? Math.max(60, Math.min(220, width / Math.max(1, folderModel.count * 1.5)))
-                                      : Math.round(width / 5.0)
-        property int  selectedIndex : 0
-        property bool _initializedIndex: false
+        property int selectedIndex: 0
+        property real tileWidth: folderModel.count > 0 
+            ? Math.max(50, Math.min(240, (width - (spacing * Math.max(0, folderModel.count - 1))) / folderModel.count))
+            : 120
+        property real totalContentWidth: folderModel.count * tileWidth + Math.max(0, folderModel.count - 1) * spacing
+        leftMargin: totalContentWidth < width ? Math.max(0, (width - totalContentWidth) / 2) : 0
+        rightMargin: leftMargin
+        property real viewportCenterX: width / 2
+
+        function clampIndex(i) { return Math.max(0, Math.min(i, count - 1)) }
+        function clampX(x)     { return Math.max(0, Math.min(x, contentWidth - width)) }
+
+        function activateCurrent() {
+            const path = folderModel.get(selectedIndex, "filePath")
+            if (path) Wallpapers.apply(FileUtils.trimFileProtocol(path))
+            root.dismissed()
+        }
+
+        function ensureVisible(i) {
+            const step = tileWidth + spacing
+            const start = i * step
+            const end   = start + tileWidth + 20
+            if (start < contentX)
+                contentX = clampX(start)
+            else if (end > contentX + width)
+                contentX = clampX(start - (width - step))
+        }
+
+        function moveSelection(delta) {
+            selectedIndex = clampIndex(selectedIndex + delta)
+            ensureVisible(selectedIndex)
+        }
+
+        Behavior on contentX {
+            SmoothedAnimation { duration: root.animDuration; velocity: root.scrollSpeed }
+        }
 
         Connections {
             target: folderModel
             function onCountChanged() {
-                if (!list._initializedIndex && folderModel.count > 0) {
-                    list._initializedIndex = true;
-                    
-                    let activePath = Config.options.background.wallpaperPath;
+                if (folderModel.count > 0) {
+                    let activePath = Config.options.background?.wallpaperPath;
                     let foundIndex = -1;
                     if (activePath) {
                         for (let i = 0; i < folderModel.count; i++) {
@@ -94,103 +116,48 @@ Item {
                             }
                         }
                     }
-                    
                     if (foundIndex !== -1) {
                         list.selectedIndex = foundIndex;
                     } else {
                         list.selectedIndex = Math.max(0, Math.floor((folderModel.count - 1) / 2));
                     }
+                    list.ensureVisible(list.selectedIndex);
                 }
             }
-        }
-
-        // Center all items if they don't fill the screen, otherwise allow normal scrolling
-        property real totalContentWidth: folderModel.count * tileSlotWidth
-        leftMargin: totalContentWidth < width ? (width - totalContentWidth) / 2 : width / 2
-        rightMargin: leftMargin
-
-        currentIndex: selectedIndex
-        preferredHighlightBegin: (width - tileSlotWidth) / 2
-        preferredHighlightEnd:   (width + tileSlotWidth) / 2
-        highlightRangeMode:      ListView.StrictlyEnforceRange
-        highlightMoveDuration:   180
-        interactive:             true
-
-        function clampIndex(i) { return Math.max(0, Math.min(i, count - 1)) }
-
-        function activateCurrent() {
-            const path = folderModel.get(selectedIndex, "filePath")
-            if (path) Wallpapers.apply(FileUtils.trimFileProtocol(path))
-            root.dismissed()
-        }
-
-        function moveSelection(delta) {
-            selectedIndex = clampIndex(selectedIndex + delta)
         }
 
         delegate: Item {
             id: tile
-            width: list.tileSlotWidth
+            width: list.tileWidth
             height: list.height
             property bool active: index === list.selectedIndex
-            property int distFromSelected: Math.abs(index - list.selectedIndex)
-            property int deltaIndex: index - list.selectedIndex
 
-            // ONLY calculate continuous physical distance for NON-PANORAMIC (scrolling modes)
-            property real itemCenter: x + width / 2
-            property real viewCenter: list.contentX + list.width / 2
-            property real continuousDelta: list.isPanoramic ? deltaIndex : ((itemCenter - viewCenter) / list.tileSlotWidth)
-            property real distFromCenter: Math.abs(continuousDelta)
-
-            z: 100 - Math.round(distFromCenter * 10)
-
-            property real targetScale: {
-                if (list.isPanoramic) {
-                    if (distFromSelected === 0) return 1.15;
-                    return Math.max(0.50, 0.85 - ((distFromSelected - 1) * 0.03));
-                } else {
-                    return 0.88 + Math.max(0, (1.0 - distFromCenter)) * 0.20;
-                }
+            // Horizontal stretch boost — active tile expands wider
+            property real widthBoost: active ? 0.35 : 0.0
+            Behavior on widthBoost {
+                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
 
-            property real targetY: {
-                if (list.isPanoramic) {
-                    if (distFromSelected === 0) return -40;
-                    return Math.min(100, (distFromSelected - 1) * 5);
-                } else {
-                    return -20 * Math.max(0, (1.0 - distFromCenter));
-                }
+            // Vertical boost — active tile also grows slightly taller
+            property real selectionBoost: active ? 0.06 : 0.0
+            Behavior on selectionBoost {
+                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
 
-            property real targetXOffset: {
-                if (list.isPanoramic) {
-                    if (distFromSelected === 0) return 0;
-                    let push = 140; // Restored to create proper cover-flow overlap
-                    return deltaIndex < 0 ? -push : push;
-                }
-                return 0;
-            }
+            // Position-based magnification (smoothstep panorama arc)
+            property real tileCenterX: list.leftMargin + (index * (list.tileWidth + list.spacing)) - list.contentX + (list.tileWidth / 2)
+            property real frac: Math.min(1.0, Math.abs(tileCenterX - list.viewportCenterX) / Math.max(1, list.viewportCenterX))
+            property real smoothT: 1.0 - frac * frac * (3.0 - 2.0 * frac)
+            property real scaleFactor: root.edgeScale + (root.zoomScale - root.edgeScale) * smoothT + selectionBoost
 
-            // Keep opaque for all 3 modes
-            property real targetOpacity: 1.0
-
-            Behavior on targetScale { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-            Behavior on targetY { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-            Behavior on targetXOffset { enabled: list.isPanoramic; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            z: active ? 100 : Math.round(scaleFactor * 50)
 
             Item {
                 id: content
-                x: parent.width / 2 - width / 2 + tile.targetXOffset
-                y: parent.height / 2 - height / 2 + tile.targetY
-                
-                // For panoramic, visual card is large and overlaps tightly packed slots
-                width: list.isPanoramic ? 320 : parent.width - root.baseSpacing
-                height: parent.height * 0.94
-                
-                scale: tile.targetScale
-                opacity: tile.targetOpacity
-                transform: Shear { xFactor: root.activeShape === "cyberpunk" ? -0.12 : 0.0 }
-
+                anchors.centerIn: parent
+                width: parent.width * (1.0 + tile.widthBoost)
+                height: parent.height * Math.min(1.0, tile.scaleFactor)
+                transform: Shear { xFactor: root.activeShape === "cyberpunk" ? -0.10 : 0.0 }
 
                 Item {
                     id: imageContainer
@@ -202,7 +169,7 @@ Item {
                         maskSource: Rectangle {
                             width: imageContainer.width
                             height: imageContainer.height
-                            radius: 20
+                            radius: 18
                         }
                     }
 
@@ -221,8 +188,7 @@ Item {
 
                         source: "file://" + FileUtils.trimFileProtocol(filePath)
 
-                        sourceSize.width: 500
-                        sourceSize.height: 700
+                        sourceSize: Qt.size(Math.max(1, Math.round(tile.width * 2.5)), Math.max(1, Math.round(list.height * 1.5)))
 
                         Timer {
                             id: retryTimer
@@ -235,12 +201,12 @@ Item {
                     }
                 }
 
-                // Active Border Highlighter (Clean 20px radius card border, zero bleed!)
+                // Active Border Highlighter (Clean 18px radius card border)
                 Rectangle {
                     id: activeHighlight
                     z: 10
                     anchors.fill: parent
-                    radius: 20
+                    radius: 18
                     visible: tile.active
                     color: "transparent"
                     border.width: 3.5
@@ -252,10 +218,10 @@ Item {
                     z: 12
                     anchors.bottom: parent.bottom
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottomMargin: 14
-                    width: Math.min(parent.width - 16, nameLabel.implicitWidth + 28)
-                    height: 30
-                    radius: 15
+                    anchors.bottomMargin: 10
+                    width: Math.min(parent.width - 12, nameLabel.implicitWidth + 24)
+                    height: 28
+                    radius: 14
                     color: "#E0101014"
                     border.width: 1
                     border.color: "#40FFFFFF"
@@ -267,21 +233,25 @@ Item {
                         anchors.centerIn: parent
                         text: fileName
                         color: "#FFFFFF"
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         font.weight: Font.Medium
-                        font.letterSpacing: 0.5
+                        font.letterSpacing: 0.4
                         elide: Text.ElideMiddle
-                        width: parent.width - 16
+                        width: parent.width - 12
                         horizontalAlignment: Text.AlignHCenter
-                        transform: Shear { xFactor: root.activeShape === "cyberpunk" ? 0.12 : 0.0 }
+                        transform: Shear { xFactor: root.activeShape === "cyberpunk" ? 0.10 : 0.0 }
                     }
                 }
             }
+
             MouseArea {
-                anchors.fill: content
+                anchors.fill: parent
                 hoverEnabled: true
-                onEntered: list.selectedIndex = index
-                onClicked:  list.activateCurrent()
+                onEntered: {
+                    list.selectedIndex = index
+                    list.ensureVisible(index)
+                }
+                onClicked: list.activateCurrent()
                 onWheel: function(wheel) {
                     list.moveSelection(wheel.angleDelta.y < 0 ? 1 : -1)
                     wheel.accepted = true

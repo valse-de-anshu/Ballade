@@ -354,6 +354,7 @@ ContentPage {
 
             readonly property bool digitalPresent: stylePresent("digital")
             readonly property bool cookiePresent: stylePresent("cookie")
+            readonly property bool pixelPresent: stylePresent("pixel")
 
             GroupedList {
                 ConfigSwitch {
@@ -829,15 +830,14 @@ ContentPage {
             }
             
             ContentSubsection {
-                visible: Config.options.background.widgets.clock.style === "pixel"
-                title: Translation.tr("Pixel Clock Settings")
+                visible: settingsClock.pixelPresent
+                title: Translation.tr("Pixel clock settings")
+
                 GroupedList {
-                    visible: Config.options.background.widgets.clock.style === "pixel"
                     ConfigSelectionArray {
-                        text: Translation.tr("Pixel clock orientation")
-                        visible: Config.options.background.widgets.clock.style === "pixel"
+                        text: Translation.tr("Orientation")
                         icon: "screen_rotation"
-                        currentValue: Config.options.background.widgets.clock.pixel.orientation
+                        currentValue: Config.options.background.widgets.clock.pixel.orientation ?? "vertical"
                         onSelected: newValue => {
                             Config.options.background.widgets.clock.pixel.orientation = newValue;
                         }
@@ -853,6 +853,99 @@ ContentPage {
                                 value: "vertical"
                             }
                         ]
+                    }
+
+                    ConfigSwitch {
+                        buttonIcon: "schedule"
+                        text: Translation.tr("Show AM/PM")
+                        checked: Config.options.background.widgets.clock.pixel.showAmPm ?? true
+                        onCheckedChanged: {
+                            Config.options.background.widgets.clock.pixel.showAmPm = checked;
+                        }
+                    }
+                }
+
+                MaterialTextArea {
+                    Layout.fillWidth: true
+                    placeholderText: Translation.tr("Font family")
+                    text: Config.options.background.widgets.clock.pixel.font?.family ?? "Google Sans Flex"
+                    wrapMode: TextEdit.Wrap
+
+                    Timer {
+                        id: pixelFontDebounceTimer
+                        interval: 500
+                        repeat: false
+                        onTriggered: {
+                            if (!Config.options.background.widgets.clock.pixel.font)
+                                Config.options.background.widgets.clock.pixel.font = {};
+                            Config.options.background.widgets.clock.pixel.font.family = parent.text;
+                        }
+                    }
+
+                    onTextChanged: {
+                        pixelFontDebounceTimer.restart();
+                    }
+                }
+
+                GroupedList {
+                    Layout.topMargin: 10
+
+                    ConfigSlider {
+                        text: Translation.tr("Clock size")
+                        value: Config.options.background.widgets.clock.pixel.size ?? 252
+                        usePercentTooltip: false
+                        buttonIcon: "format_size"
+                        from: 100
+                        to: 500
+                        stopIndicatorValues: [252]
+                        onValueChanged: {
+                            Config.options.background.widgets.clock.pixel.size = value;
+                        }
+                    }
+
+                    ConfigSlider {
+                        text: Translation.tr("Font weight")
+                        value: Config.options.background.widgets.clock.pixel.font?.weight ?? 1000
+                        usePercentTooltip: false
+                        buttonIcon: "format_bold"
+                        from: 100
+                        to: 1000
+                        stopIndicatorValues: [1000]
+                        onValueChanged: {
+                            if (!Config.options.background.widgets.clock.pixel.font)
+                                Config.options.background.widgets.clock.pixel.font = {};
+                            Config.options.background.widgets.clock.pixel.font.weight = value;
+                        }
+                    }
+
+                    ConfigSlider {
+                        text: Translation.tr("Font width")
+                        value: Config.options.background.widgets.clock.pixel.font?.width ?? 100
+                        usePercentTooltip: false
+                        buttonIcon: "fit_width"
+                        from: 25
+                        to: 150
+                        stopIndicatorValues: [100]
+                        onValueChanged: {
+                            if (!Config.options.background.widgets.clock.pixel.font)
+                                Config.options.background.widgets.clock.pixel.font = {};
+                            Config.options.background.widgets.clock.pixel.font.width = value;
+                        }
+                    }
+
+                    ConfigSlider {
+                        text: Translation.tr("Font roundness")
+                        value: Config.options.background.widgets.clock.pixel.font?.roundness ?? 0
+                        usePercentTooltip: false
+                        buttonIcon: "line_curve"
+                        from: 0
+                        to: 100
+                        stopIndicatorValues: [0]
+                        onValueChanged: {
+                            if (!Config.options.background.widgets.clock.pixel.font)
+                                Config.options.background.widgets.clock.pixel.font = {};
+                            Config.options.background.widgets.clock.pixel.font.roundness = value;
+                        }
                     }
                 }
             }

@@ -225,6 +225,8 @@ Item {
         }
 
         onPressed: {
+            dragProxy.x = root.x
+            dragProxy.y = root.y
             if (!root.locked) {
                 var c = root.findCanvas()
                 console.log("[CustomImage] onPressed findCanvas result:", c)

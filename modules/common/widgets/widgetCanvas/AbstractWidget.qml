@@ -53,6 +53,18 @@ MouseArea {
         canvas.setCenterActive(nearX, nearY)
     }
 
+    onPressed: {
+        dragProxy.x = root.x
+        dragProxy.y = root.y
+    }
+
+    onXChanged: {
+        if (!root.dragging) dragProxy.x = root.x
+    }
+    onYChanged: {
+        if (!root.dragging) dragProxy.y = root.y
+    }
+
     Item {
         id: dragProxy
         parent: root.parent

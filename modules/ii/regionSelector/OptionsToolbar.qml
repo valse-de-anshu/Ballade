@@ -29,11 +29,11 @@ Toolbar {
             {"icon": "activity_zone", "name": Translation.tr("Rect")},
             {"icon": "gesture", "name": Translation.tr("Circle")}
         ]
-        Component.onCompleted: syncIndex()
+        Component.onCompleted: tabBar.syncIndex()
         
         Connections {
             target: root
-            function onSelectionModeChanged() { syncIndex() }
+            function onSelectionModeChanged() { tabBar.syncIndex() }
         }
 
         function syncIndex() {

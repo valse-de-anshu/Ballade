@@ -11,8 +11,8 @@ import QtQuick.Controls
 ProgressBar {
     id: root
     property real valueBarWidth: 120
-    property real valueBarHeight: 4
-    property real valueBarGap: 4
+    property real valueBarHeight: 6
+    property real valueBarGap: 6
     property color highlightColor: Appearance?.colors.colPrimary ?? "#685496"
     property color trackColor: Appearance?.m3colors.m3secondaryContainer ?? "#F1D3F9"
     property bool wavy: false // If true, the progress bar will have a wavy fill effect
@@ -48,10 +48,10 @@ ProgressBar {
                 id: wavyFill
                 frequency: root.waveFrequency
                 color: root.highlightColor
-                amplitudeMultiplier: root.wavy ? 1.5 : 0
+                amplitudeMultiplier: root.wavy ? 1.0 : 0
                 height: contentItem.height * 6
                 width: contentItem.width * root.visualPosition
-                lineWidth: 1.5
+                lineWidth: 3.5
                 fullLength: root.width
                 Connections {
                     target: root
@@ -80,18 +80,22 @@ ProgressBar {
         
         Rectangle { // Right remaining part fill
             anchors.right: parent.right
-            width: (1 - root.visualPosition) * parent.width - valueBarGap
+            width: Math.max(0, (1 - root.visualPosition) * parent.width)
             height: parent.height
             radius: height / 2
             color: root.trackColor
         }
         
-        Rectangle { // Stop point
-            anchors.right: parent.right
-            width: valueBarGap
-            height: valueBarGap
+        // Circular head
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.max(0, contentItem.width * root.visualPosition - (width / 2))
+            width: 14
+            height: 14
             radius: height / 2
             color: root.highlightColor
+            border.width: 2
+            border.color: Appearance?.colors.colLayer0 ?? "#ffffff"
         }
     }
 }

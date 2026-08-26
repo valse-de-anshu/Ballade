@@ -263,8 +263,17 @@ ContentPage {
                         height: 248
 
                         property string savedWallpaper: ""
+                        property bool justSaved: false
+
+                        Timer {
+                            id: savedTimer
+                            interval: 1800
+                            repeat: false
+                            onTriggered: themeCard.justSaved = false
+                        }
 
                         FileView {
+                            id: presetFileView
                             path: `${Directories.userPresetsPath}/${themeCard.modelData.key}.json`
                             watchChanges: true
                             onLoaded: {
@@ -277,6 +286,15 @@ ContentPage {
                                 } catch (e) {
                                     themeCard.savedWallpaper = ""
                                 }
+                            }
+                        }
+
+                        Connections {
+                            target: Presets.folderModel
+                            function onCountChanged() {
+                                let p = presetFileView.path;
+                                presetFileView.path = "";
+                                presetFileView.path = p;
                             }
                         }
 
@@ -326,7 +344,7 @@ ContentPage {
                                     fillMode: Image.PreserveAspectCrop
                                     source: themeCard.wallPreview
                                     visible: themeCard.wallPreview !== ""
-                                    cache: true
+                                    cache: false
                                     antialiasing: true
                                     sourceSize.width: 360
                                     sourceSize.height: 320
@@ -420,26 +438,32 @@ ContentPage {
                                         Layout.fillWidth: true
                                         height: 30
                                         radius: 15
-                                        color: saveHover.containsMouse
-                                            ? Qt.alpha(themeCard.modelData.color, 0.18)
-                                            : Qt.alpha(themeCard.modelData.color, 0.08)
-                                        border.color: Qt.alpha(themeCard.modelData.color, 0.35)
-                                        border.width: 1
-                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        color: themeCard.justSaved
+                                            ? Qt.alpha(themeCard.modelData.color, 0.35)
+                                            : (saveHover.containsMouse
+                                                ? Qt.alpha(themeCard.modelData.color, 0.18)
+                                                : Qt.alpha(themeCard.modelData.color, 0.08))
+                                        border.color: themeCard.justSaved
+                                            ? themeCard.modelData.color
+                                            : Qt.alpha(themeCard.modelData.color, 0.35)
+                                        border.width: themeCard.justSaved ? 1.5 : 1
+                                        Behavior on color { ColorAnimation { duration: 150 } }
 
                                         RowLayout {
                                             anchors.centerIn: parent
                                             spacing: 3
                                             MaterialSymbol {
-                                                text: "save"
+                                                text: themeCard.justSaved ? "check" : "save"
                                                 iconSize: 13
-                                                color: themeCard.modelData.color
+                                                color: themeCard.justSaved ? "#ffffff" : themeCard.modelData.color
+                                                Behavior on color { ColorAnimation { duration: 150 } }
                                             }
                                             StyledText {
-                                                text: "Save"
+                                                text: themeCard.justSaved ? "Saved!" : "Save"
                                                 font.pixelSize: Appearance.font.pixelSize.small
-                                                font.weight: Font.Medium
-                                                color: themeCard.modelData.color
+                                                font.weight: themeCard.justSaved ? Font.DemiBold : Font.Medium
+                                                color: themeCard.justSaved ? "#ffffff" : themeCard.modelData.color
+                                                Behavior on color { ColorAnimation { duration: 150 } }
                                             }
                                         }
 
@@ -449,8 +473,20 @@ ContentPage {
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
+                                                const currentWall = (Config.options.background?.wallpaperPath || Wallpapers.confirmedPath || "");
+                                                if (currentWall && currentWall.length > 0) {
+                                                    themeCard.savedWallpaper = currentWall;
+                                                }
+                                                themeCard.justSaved = true;
+                                                savedTimer.restart();
                                                 Presets.save(String(themeCard.modelData.key));
-                                                Presets.apply(String(themeCard.modelData.key));
+                                                Quickshell.execDetached([
+                                                    "notify-send",
+                                                    "-a", "Presets",
+                                                    "-i", "document-save",
+                                                    "Preset Saved",
+                                                    `Saved current setup to ${themeCard.modelData.name} preset`
+                                                ]);
                                             }
                                         }
                                     }

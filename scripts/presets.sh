@@ -53,6 +53,15 @@ case "$action" in
                     && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
             fi
         fi
+
+        # Ensure theme key is preserved/set for core theme presets
+        case "$name" in
+            green|pink|red|purple|blue|grayscale)
+                jq --arg t "$name" '._presetMeta = ((._presetMeta // {}) * {"theme": $t})' \
+                    "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
+                    && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
+                ;;
+        esac
         ;;
     --remove)
         rm -f "$PRESETS_DIR/${name}.json"

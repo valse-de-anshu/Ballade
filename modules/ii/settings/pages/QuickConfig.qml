@@ -174,7 +174,7 @@ ContentPage {
                                     anchors.margins: 8
                                     text: modelData.icon
                                     iconSize: Appearance.font.pixelSize.larger
-                                    color: parent.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnPrimaryContainer
+                                    color: parent.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
                                 }
 
                                 StyledText {
@@ -184,7 +184,7 @@ ContentPage {
                                     text: modelData.displayName
                                     font.pixelSize: Appearance.font.pixelSize.smaller
                                     font.weight: Font.Medium
-                                    color: parent.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnPrimaryContainer
+                                    color: parent.isSelected ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
                                 }
 
                                 MouseArea {

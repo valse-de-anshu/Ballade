@@ -395,18 +395,15 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
-                        if (root.player && root.player.volumeSupported) {
-                            root.player.volume = (root.player.volume > 0) ? 0 : 1.0  
-                        } else {
-                            Audio.toggleMute()
-                        }
+                        Audio.toggleMute();
+                        GlobalStates.osdVolumeOpen = true;
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18
                         fill: 1
                         horizontalAlignment: Text.AlignHCenter
                         color: blendedColors.colOnSecondaryContainer
-                        text: (Audio.muted || (root.player?.volume ?? 1) <= 0) ? "volume_off"
+                        text: (Audio.sink?.audio?.muted || Audio.volume <= 0) ? "volume_off"
                             : (Audio.volume < 0.5) ? "volume_down"
                             : "volume_up"
                     }
@@ -421,11 +418,11 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
+                        Audio.decrementVolume(0.05);
                         if (root.player && root.player.volumeSupported) {
-                            root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.05)  
-                        } else {
-                            Audio.decrementVolume(0.05)
+                            root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.05);
                         }
+                        GlobalStates.osdVolumeOpen = true;
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18
@@ -445,11 +442,11 @@ Item {
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
                     downAction: () => {
+                        Audio.incrementVolume(0.05);
                         if (root.player && root.player.volumeSupported) {
-                            root.player.volume = Math.min(1.0, (root.player.volume ?? 1) + 0.05)  
-                        } else {
-                            Audio.incrementVolume(0.05)
+                            root.player.volume = Math.min(1.0, (root.player.volume ?? 1) + 0.05);
                         }
+                        GlobalStates.osdVolumeOpen = true;
                     }
                     contentItem: MaterialSymbol {
                         iconSize: 18

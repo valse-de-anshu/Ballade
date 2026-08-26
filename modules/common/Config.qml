@@ -257,6 +257,14 @@ Singleton {
                         }
                         property JsonObject pixel: JsonObject {
                             property string orientation: "vertical"
+                            property real size: 252
+                            property bool showAmPm: true
+                            property JsonObject font: JsonObject {
+                                property string family: "Google Sans Flex"
+                                property real weight: 1000
+                                property real width: 100
+                                property real roundness: 0
+                            }
                         }
                         property JsonObject quote: JsonObject {
                             property bool enable: false

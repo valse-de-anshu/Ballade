@@ -26,7 +26,7 @@ AbstractBackgroundWidget {
         return Appearance.colors[propName] ?? root.colText;
     }
     property bool wallpaperSafetyTriggered: false
-    needsColText: clockStyle === "digital"
+    needsColText: clockStyle === "digital" || clockStyle === "pixel"
     x: forceCenter ? ((root.screenWidth - root.width) / 2) : targetX
     y: forceCenter ? ((root.screenHeight - root.height) / 2) : targetY
     visibleWhenLocked: true
@@ -77,7 +77,9 @@ AbstractBackgroundWidget {
             anchors.horizontalCenter: parent.horizontalCenter
             shown: root.clockStyle === "pixel" && (root.shouldShow)
             fade: false
-            sourceComponent: PixelClock {}
+            sourceComponent: PixelClock {
+                colText: root.resolvedClockColor
+            }
         }
 
         FadeLoader {
