@@ -16,32 +16,52 @@ import qs.modules.common
  */
 Singleton {
 	id: root;
-	property var players: Mpris.players.values.filter(player => isRealPlayer(player));
-	property MprisPlayer trackedPlayer: null;
-	property MprisPlayer activePlayer: trackedPlayer ?? root.players[0] ?? null;
 	signal trackChanged(reverse: bool);
-
 	property bool __reverse: false;
-
 	property var activeTrack;
 
+	readonly property bool hasActivePlasmaIntegration: {
+		let count = Mpris.players.count;
+		let list = Mpris.players.values || [];
+		return list.some(p => p && p.dbusName && p.dbusName.includes('plasma-browser-integration'));
+	}
 
+	property var players: {
+		let count = Mpris.players.count;
+		let plasma = hasActivePlasmaIntegration;
+		let list = Mpris.players.values || [];
+		return list.filter(player => {
+			if (!player || !player.dbusName) return false;
+			if (plasma && (player.dbusName.includes('firefox') || player.dbusName.includes('chromium'))) return false;
+			if (player.dbusName.includes('playerctld')) return false;
+			if (player.dbusName.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd')) return false;
+			return true;
+		});
+	}
 
-	function isRealPlayer(player) {
-        if (!player || !player.dbusName) return false;
-        
-        // plasma-browser-integration often fails to emit Metadata update signals on track change.
-        // We prefer native firefox/chromium MPRIS which is much more reliable.
-        if (player.dbusName.startsWith('org.mpris.MediaPlayer2.plasma-browser-integration')) return false;
-        
-        // playerctld just copies other buses and we don't need duplicates
-        if (player.dbusName.startsWith('org.mpris.MediaPlayer2.playerctld')) return false;
-        
-        // Non-instance mpd bus
-        if (player.dbusName.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd')) return false;
-        
-        return true;
-    }
+	property MprisPlayer trackedPlayer: null;
+	property MprisPlayer activePlayer: {
+		if (trackedPlayer && isPlayerValid(trackedPlayer)) {
+			// If trackedPlayer is a native browser bus but plasma is active, switch to plasma
+			if (hasActivePlasmaIntegration && (trackedPlayer.dbusName.includes('firefox') || trackedPlayer.dbusName.includes('chromium'))) {
+				let plasma = root.players.find(p => p.dbusName && p.dbusName.includes('plasma-browser-integration'));
+				if (plasma) return plasma;
+			}
+			return trackedPlayer;
+		}
+		// Prefer plasma if active
+		let plasma = root.players.find(p => p.dbusName && p.dbusName.includes('plasma-browser-integration'));
+		if (plasma) return plasma;
+		// Prefer playing player
+		let playing = root.players.find(p => p.isPlaying);
+		if (playing) return playing;
+		return root.players[0] ?? null;
+	}
+
+	function isPlayerValid(player) {
+		if (!player || !player.dbusName) return false;
+		return root.players.some(p => p === player);
+	}
 
 	Instantiator {
 		model: root.players;
@@ -51,28 +71,22 @@ Singleton {
 			target: modelData;
 
 			Component.onCompleted: {
-				if (root.trackedPlayer == null || modelData.isPlaying) {
+				if (modelData.dbusName && modelData.dbusName.includes('plasma-browser-integration')) {
+					root.trackedPlayer = modelData;
+				} else if (root.trackedPlayer == null) {
 					root.trackedPlayer = modelData;
 				}
 			}
 
-			Component.onDestruction: {
-				if (root.trackedPlayer == null || !root.trackedPlayer.isPlaying) {
-					for (let i = 0; i < root.players.length; i++) {
-						if (root.players[i].isPlaying) {
-							root.trackedPlayer = root.players[i];
-							break;
-						}
-					}
-
-					if (trackedPlayer == null && root.players.length != 0) {
-						trackedPlayer = root.players[0];
+			function onPlaybackStateChanged() {
+				if (modelData.dbusName && modelData.dbusName.includes('plasma-browser-integration')) {
+					root.trackedPlayer = modelData;
+				} else if (modelData.isPlaying) {
+					// Only track if not a suppressed native browser bus
+					if (!hasActivePlasmaIntegration || (!modelData.dbusName.includes('firefox') && !modelData.dbusName.includes('chromium'))) {
+						root.trackedPlayer = modelData;
 					}
 				}
-			}
-
-			function onPlaybackStateChanged() {
-				if (root.trackedPlayer !== modelData) root.trackedPlayer = modelData;
 			}
 		}
 	}
@@ -85,26 +99,44 @@ Singleton {
 		}
 
 		function onTrackArtUrlChanged() {
-			// console.log("arturl:", activePlayer.trackArtUrl)
-			// root.updateTrack();
-			if (root.activePlayer.uniqueId == root.activeTrack.uniqueId && root.activePlayer.trackArtUrl != root.activeTrack.artUrl) {
-				// cantata likes to send cover updates *BEFORE* updating the track info.
-				// as such, art url changes shouldn't be able to break the reverse animation
-				const r = root.__reverse;
-				root.updateTrack();
-				root.__reverse = r;
+			root.updateTrack();
+		}
 
-			}
+		function onTrackTitleChanged() {
+			root.updateTrack();
 		}
 	}
 
 	onActivePlayerChanged: this.updateTrack();
 
+	property string fallbackArtUrl: ""
+
+	Process {
+		id: ytFallbackProcess
+		property string dbusName: root.activePlayer?.dbusName ?? ""
+		command: ["bash", "-c", `busctl --user get-property ${dbusName} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata | grep -o 'https://music.youtube.com/watch[^&" ]*' | sed -n 's/.*v=\\([^&" ]*\\).*/\\1/p' | head -n 1`]
+		onExited: (exitCode, exitStatus) => {
+			if (exitCode === 0 && ytFallbackProcess.stdout && ytFallbackProcess.stdout.trim().length > 0) {
+				let url = "https://img.youtube.com/vi/" + ytFallbackProcess.stdout.trim() + "/hqdefault.jpg";
+				root.fallbackArtUrl = url;
+				Qt.callLater(() => root.triggerArtDownload(url))
+			} else {
+				root.fallbackArtUrl = "";
+			}
+		}
+	}
+
 	function updateTrack() {
-		//console.log(`update: ${this.activePlayer?.trackTitle ?? ""} : ${this.activePlayer?.trackArtists}`)
+		let art = this.activePlayer?.trackArtUrl ?? "";
+		if (!art || art.length === 0) {
+			ytFallbackProcess.running = true;
+		} else {
+			root.fallbackArtUrl = "";
+		}
+
 		this.activeTrack = {
 			uniqueId: this.activePlayer?.uniqueId ?? 0,
-			artUrl: this.activePlayer?.trackArtUrl ?? "",
+			artUrl: art,
 			title: this.activePlayer?.trackTitle || Translation.tr("Unknown Title"),
 			artist: this.activePlayer?.trackArtist || Translation.tr("Unknown Artist"),
 			album: this.activePlayer?.trackAlbum || Translation.tr("Unknown Album"),
@@ -112,27 +144,141 @@ Singleton {
 
 		this.trackChanged(__reverse);
 		this.__reverse = false;
-	}
 
-	property bool isPlaying: this.activePlayer && this.activePlayer.isPlaying;
-	property bool canTogglePlaying: this.activePlayer?.canTogglePlaying ?? false;
-	function togglePlaying() {
-		if (this.canTogglePlaying) this.activePlayer.togglePlaying();
-	}
-
-	property bool canGoPrevious: this.activePlayer?.canGoPrevious ?? false;
-	function previous() {
-		if (this.canGoPrevious) {
-			this.__reverse = true;
-			this.activePlayer.previous();
+		// Trigger art download for tracks that already have an art URL
+		if (art && art.length > 0) {
+			Qt.callLater(() => root.triggerArtDownload(art))
 		}
 	}
 
-	property bool canGoNext: this.activePlayer?.canGoNext ?? false;
+	function triggerArtDownload(url) {
+		if (!url || url.length === 0) {
+			readyArtFilePath = ""
+			return
+		}
+		let fname = Qt.md5(url) + ".jpg"
+		let fpath = artDownloadLocation + "/" + fname
+
+		// If it's a permanent local file outside /tmp/ (e.g. from MPD), use it immediately!
+		if (url.startsWith("file://") && !url.includes("/tmp/")) {
+			readyArtFilePath = url;
+			return;
+		}
+
+		centralArtDownloader.targetFile = url
+		centralArtDownloader.destPath = fpath
+		centralArtDownloader.running = false
+		Qt.callLater(() => {
+			centralArtDownloader.running = true
+		})
+	}
+
+	property string effectiveArtUrl: (activeTrack && activeTrack.artUrl && activeTrack.artUrl.length > 0) ? activeTrack.artUrl : fallbackArtUrl
+
+	property string artDownloadLocation: Directories.coverArt
+	property string artFileName: effectiveArtUrl ? (Qt.md5(effectiveArtUrl) + ".jpg") : ""
+	property string artFilePath: `${artDownloadLocation}/${artFileName}`
+	property string readyArtFilePath: ""
+
+	Process {
+		id: centralArtDownloader
+		property string targetFile: root.effectiveArtUrl
+		property string destPath: root.artFilePath
+		command: ["bash", "-c", `
+			targetFile="${targetFile}"
+			destPath="${destPath}"
+			if [ -z "\${targetFile}" ]; then exit 1; fi
+			if [ -f "\${destPath}" ] && [ -s "\${destPath}" ] && file "\${destPath}" | grep -qiE "image|bitmap"; then exit 0; fi
+
+			if [[ "\${targetFile}" == file://* ]]; then
+				src="${(targetFile || '').replace('file://', '')}"
+				last_size=-1
+				stable_count=0
+				for i in {1..60}; do
+					if [ -f "$src" ]; then
+						curr_size=$(stat -c%s "$src" 2>/dev/null || echo 0)
+						if [ "$curr_size" -gt 0 ] && [ "$curr_size" -eq "$last_size" ]; then
+							stable_count=$((stable_count+1))
+							if [ $stable_count -ge 2 ]; then break; fi
+						else
+							stable_count=0
+						fi
+						last_size=$curr_size
+					fi
+					sleep 0.05
+				done
+				
+				if [ -f "$src" ] && [ "$last_size" -gt 0 ]; then 
+					cp "$src" "\${destPath}"
+					if file "\${destPath}" | grep -qiE "image|bitmap"; then exit 0; else rm -f "\${destPath}"; exit 1; fi
+				else
+					exit 1
+				fi
+			else
+				curl -4 -sSL "\${targetFile}" -o "\${destPath}"
+				if file "\${destPath}" | grep -qiE "image|bitmap"; then exit 0; else rm -f "\${destPath}"; exit 1; fi
+			fi
+		`]
+		onExited: (exitCode) => {
+			if (exitCode === 0) {
+				root.readyArtFilePath = "file://" + destPath
+			} else {
+				if (destPath === root.artFilePath) {
+					retryTimer.targetFile = centralArtDownloader.targetFile
+					retryTimer.destPath = destPath
+					retryTimer.restart()
+				}
+			}
+		}
+	}
+
+	Timer {
+		id: retryTimer
+		property string targetFile: ""
+		property string destPath: ""
+		interval: 1500
+		repeat: false
+		onTriggered: {
+			if (targetFile && targetFile.length > 0 && destPath === root.artFilePath) {
+				centralArtDownloader.running = false
+				centralArtDownloader.targetFile = targetFile
+				centralArtDownloader.destPath = destPath
+				centralArtDownloader.running = true
+			}
+		}
+	}
+
+	Component.onCompleted: {
+		Qt.callLater(() => root.updateTrack())
+	}
+
+	property bool isPlaying: this.activePlayer && this.activePlayer.isPlaying;
+	property bool canTogglePlaying: this.activePlayer?.canTogglePlaying ?? true;
+	function togglePlaying() {
+		if (this.activePlayer && this.activePlayer.canTogglePlaying) {
+			this.activePlayer.togglePlaying();
+		} else {
+			Quickshell.execDetached(["playerctl", "play-pause"]);
+		}
+	}
+
+	property bool canGoPrevious: this.activePlayer?.canGoPrevious ?? true;
+	function previous() {
+		this.__reverse = true;
+		if (this.activePlayer && this.activePlayer.canGoPrevious) {
+			this.activePlayer.previous();
+		} else {
+			Quickshell.execDetached(["playerctl", "previous"]);
+		}
+	}
+
+	property bool canGoNext: this.activePlayer?.canGoNext ?? true;
 	function next() {
-		if (this.canGoNext) {
-			this.__reverse = false;
+		this.__reverse = false;
+		if (this.activePlayer && this.activePlayer.canGoNext) {
 			this.activePlayer.next();
+		} else {
+			Quickshell.execDetached(["playerctl", "next"]);
 		}
 	}
 

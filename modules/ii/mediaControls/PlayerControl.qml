@@ -15,30 +15,12 @@ import Quickshell.Services.Mpris
 Item { // Player instance
     id: root
     required property MprisPlayer player
-    property string effectiveArtUrl: {
-        const url = root.player?.trackUrl || ""
-        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-        if (ytMatch && ytMatch[1]) {
-            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
-        }
-        return root.player?.trackArtUrl ?? ""
-    }
-    
-    property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
-    property string artFilePath: `${artDownloadLocation}/${artFileName}`
+    property string displayedArtFilePath: MprisController.readyArtFilePath
     property color artDominantColor: ColorUtils.mix((colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
-    property bool downloaded: false
     property list<real> visualizerPoints: []
     property real maxVisualizerValue: 1000 // Max value in the data points
     property int visualizerSmoothing: 2 // Number of points to average for smoothing
     property real radius
-
-    property string displayedArtFilePath: {
-        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
-        if (downloaded) return Qt.resolvedUrl(artFilePath)
-        return ""
-    }
 
     component TrackChangeButton: RippleButton {
         implicitWidth: 24
@@ -68,40 +50,6 @@ Item { // Player instance
         repeat: true
         onTriggered: {
             root.player.positionChanged()
-        }
-    }
-
-    onArtFilePathChanged: {
-        if (!effectiveArtUrl || effectiveArtUrl.length == 0) {
-            root.artDominantColor = Appearance.m3colors.m3secondaryContainer
-            return;
-        }
-
-        // Binding does not work in Process
-        coverArtDownloader.targetFile = effectiveArtUrl 
-        coverArtDownloader.artFilePath = root.artFilePath
-        // Download
-        root.downloaded = false
-        coverArtDownloader.running = true
-    }
-
-    Process { // Cover art downloader
-        id: coverArtDownloader
-        property string targetFile: root.effectiveArtUrl
-        property string artFilePath: root.artFilePath
-        command: [ "bash", "-c", `
-            if [ -f '${artFilePath}' ]; then exit 0; fi
-            if [[ '${targetFile}' == file://* ]]; then
-                src_file="${targetFile.replace("file://", "")}"
-                for i in {1..20}; do
-                    if [ -s "$src_file" ]; then break; fi
-                    sleep 0.1
-                done
-            fi
-            curl -4 -sSL '${targetFile}' -o '${artFilePath}'
-        ` ]
-        onExited: (exitCode, exitStatus) => {
-            root.downloaded = true
         }
     }
 
@@ -252,7 +200,7 @@ Item { // Player instance
                         }
                         TrackChangeButton {
                             iconName: "skip_previous"
-                            downAction: () => root.player?.previous()
+                            downAction: () => MprisController.previous()
                         }
                         Item {
                             id: progressBarContainer
@@ -295,7 +243,7 @@ Item { // Player instance
                         }
                         TrackChangeButton {
                             iconName: "skip_next"
-                            downAction: () => root.player?.next()
+                            downAction: () => MprisController.next()
                         }
                     }
 

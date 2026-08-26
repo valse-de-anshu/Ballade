@@ -132,7 +132,7 @@ Item {
 
                     TrackChangeButton {
                         iconName: "skip_previous"
-                        downAction: () => root.player?.previous()
+                        downAction: () => MprisController.previous()
                     }
 
                     Item {
@@ -161,19 +161,18 @@ Item {
                                 left: parent.left
                                 right: parent.right
                             }
-                            active: !(root.player?.canSeek ?? false)
+                            active: !sliderLoader.active
                             sourceComponent: StyledProgressBar {
-                                wavy: root.player?.isPlaying
                                 highlightColor: root.blendedColors.colPrimary
                                 trackColor: root.blendedColors.colSecondaryContainer
-                                value: root.player?.position / root.player?.length
+                                value: (root.player?.position ?? 0) / (root.player?.length ?? 1)
                             }
                         }
                     }
 
                     TrackChangeButton {
                         iconName: "skip_next"
-                        downAction: () => root.player?.next()
+                        downAction: () => MprisController.next()
                     }
 
                     TrackChangeButton {
@@ -191,7 +190,7 @@ Item {
                     property real size: 44
                     implicitWidth: size
                     implicitHeight: size
-                    downAction: () => root.player.togglePlaying()
+                    downAction: () => MprisController.togglePlaying()
 
                     buttonRadius: root.player?.isPlaying ? Appearance?.rounding.normal : size / 2
                     colBackground: root.player?.isPlaying ? root.blendedColors.colPrimary : root.blendedColors.colSecondaryContainer

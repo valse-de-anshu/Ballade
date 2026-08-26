@@ -23,67 +23,18 @@ AbstractBackgroundWidget {
 
     readonly property var playerList: MprisController.players
     property MprisPlayer currentPlayer: MprisController.activePlayer
-    property string effectiveArtUrl: {
-        const url = root.currentPlayer?.trackUrl || ""
-        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-        if (ytMatch && ytMatch[1]) {
-            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
-        }
-        return root.currentPlayer?.trackArtUrl ?? ""
-    }
-
-    property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
-    property string artFilePath: `${artDownloadLocation}/${artFileName}`
-
+    property string displayedArtFilePath: MprisController.readyArtFilePath
     property real widgetWidth: 450
     property real widgetHeight: 126
     property real artSize: 98
     property real buttonSize: 34
     property real buttonIconSize: 18
-
-    property bool downloaded: false
     property bool showLyrics: false
-
-    property string displayedArtFilePath: {
-        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
-        if (downloaded) return Qt.resolvedUrl(artFilePath)
-        return ""
-    }
 
     implicitHeight: card.implicitHeight
     implicitWidth: card.implicitWidth
 
-    onArtFilePathChanged: updateArt()
 
-    function updateArt() {
-        if (!effectiveArtUrl || effectiveArtUrl.length === 0) {
-            root.downloaded = false
-            return
-        }
-        coverArtDownloader.targetFile = effectiveArtUrl
-        coverArtDownloader.artFilePath = root.artFilePath
-        root.downloaded = false
-        coverArtDownloader.running = true
-    }
-
-    Process {
-        id: coverArtDownloader
-        property string targetFile: root.effectiveArtUrl
-        property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `
-            if [ -f '${artFilePath}' ]; then exit 0; fi
-            if [[ '${targetFile}' == file://* ]]; then
-                src_file="${targetFile.replace("file://", "")}"
-                for i in {1..20}; do
-                    if [ -s "$src_file" ]; then break; fi
-                    sleep 0.1
-                done
-            fi
-            curl -sSL '${targetFile}' -o '${artFilePath}'
-        `]
-        onExited: (exitCode, exitStatus) => { root.downloaded = true }
-    }
 
     StyledRectangularShadow {
         target: card
@@ -325,7 +276,7 @@ AbstractBackgroundWidget {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.currentPlayer?.togglePlaying()
+                                    onClicked: MprisController.togglePlaying()
                                 }
                             }
 
@@ -336,8 +287,8 @@ AbstractBackgroundWidget {
                                 colBackground: "transparent"
                                 colBackgroundHover: Appearance.colors.colPrimaryContainerHover
                                 colRipple: Appearance.colors.colPrimaryContainerActive
-                                downAction: () => root.currentPlayer?.next()
-                                altAction: () => root.currentPlayer?.previous()
+                                downAction: () => MprisController.next()
+                                altAction: () => MprisController.previous()
 
                                 MaterialSymbol {
                                     anchors.centerIn: parent

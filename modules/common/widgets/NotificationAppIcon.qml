@@ -70,7 +70,7 @@ MaterialShape { // App icon
 
                 source: root.image
                 fillMode: Image.PreserveAspectCrop
-                cache: false
+                cache: true
                 antialiasing: true
                 asynchronous: true
 

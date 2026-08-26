@@ -16,18 +16,8 @@ import Quickshell.Services.Mpris
 Item {
     id: root
     property var player: MprisController.activePlayer
-    property string effectiveArtUrl: {
-        const url = root.player?.trackUrl || ""
-        let ytMatch = url.match(/(?:v=|\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-        if (ytMatch && ytMatch[1]) {
-            return "https://img.youtube.com/vi/" + ytMatch[1] + "/hqdefault.jpg"
-        }
-        return root.player?.trackArtUrl ?? ""
-    }
-    
-    property string artDownloadLocation: Directories.coverArt
-    property string artFileName: Qt.md5(effectiveArtUrl) + ".jpg"
-    property string artFilePath: `${artDownloadLocation}/${artFileName}`
+    property string displayedArtFilePath: MprisController.readyArtFilePath
+
     property color artDominantColor: Config.options.sidebar.media.artColors
         ? ColorUtils.mix(
             (colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary),
@@ -35,17 +25,11 @@ Item {
             0.8
           )
         : Appearance.colors.colPrimaryContainer
-    property bool downloaded: false
+
     property list<real> visualizerPoints: []
     property real maxVisualizerValue: 1000
     property int visualizerSmoothing: 2
     property real radius
-
-    property string displayedArtFilePath: {
-        if (!effectiveArtUrl || effectiveArtUrl.length === 0) return ""
-        if (downloaded) return Qt.resolvedUrl(artFilePath)
-        return ""
-    }
 
     Timer {
         running: root.player?.playbackState == MprisPlaybackState.Playing
@@ -54,35 +38,6 @@ Item {
         onTriggered: root.player?.positionChanged()  
     }
 
-    onArtFilePathChanged: {
-        if (!effectiveArtUrl || effectiveArtUrl.length == 0) {
-            root.artDominantColor = Appearance.m3colors.m3secondaryContainer
-            root.downloaded = false
-            return
-        }
-        coverArtDownloader.targetFile = effectiveArtUrl
-        coverArtDownloader.artFilePath = root.artFilePath
-        root.downloaded = false
-        coverArtDownloader.running = true
-    }
-
-    Process {
-        id: coverArtDownloader
-        property string targetFile: root.effectiveArtUrl
-        property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `
-            if [ -f '${artFilePath}' ]; then exit 0; fi
-            if [[ '${targetFile}' == file://* ]]; then
-                src_file="${targetFile.replace("file://", "")}"
-                for i in {1..20}; do
-                    if [ -s "$src_file" ]; then break; fi
-                    sleep 0.1
-                done
-            fi
-            curl -sSL '${targetFile}' -o '${artFilePath}'
-        `]
-        onExited: (exitCode, exitStatus) => { root.downloaded = true }
-    }
 
     ColorQuantizer {
         id: colorQuantizer
@@ -159,9 +114,9 @@ Item {
                         return name
                     })
                     currentIndex: Math.max(0, MprisController.players.indexOf(MprisController.activePlayer))
-                    onCurrentIndexChanged: {
-                        if (currentIndex >= 0 && currentIndex < MprisController.players.length) {
-                            MprisController.setActivePlayer(MprisController.players[currentIndex])
+                    onActivated: (index) => {
+                        if (index >= 0 && index < MprisController.players.length) {
+                            MprisController.setActivePlayer(MprisController.players[index])
                         }
                     }
                 }
@@ -375,7 +330,7 @@ Item {
                     colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => root.player?.previous()
+                    downAction: () => MprisController.previous()
                     contentItem: MaterialSymbol {
                         iconSize: 25
                         fill: 1
@@ -393,7 +348,7 @@ Item {
                     colBackground: (root.player?.isPlaying ?? false) ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
                     colBackgroundHover: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
                     colRipple: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
-                    downAction: () => root.player?.togglePlaying()  
+                    downAction: () => MprisController.togglePlaying()  
                     contentItem: MaterialSymbol {
                         iconSize: 50
                         fill: 1
@@ -414,7 +369,7 @@ Item {
                     colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
                     colBackgroundHover: blendedColors.colSecondaryContainerHover
                     colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => root.player?.next()
+                    downAction: () => MprisController.next()
                     contentItem: MaterialSymbol {
                         iconSize: 25
                         fill: 1

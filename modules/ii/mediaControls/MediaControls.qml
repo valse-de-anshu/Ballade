@@ -42,8 +42,10 @@ Scope {
                 }
             }
 
-            // Pick the one with non-empty trackArtUrl, or fallback to the first
-            let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
+            // Pick plasma-browser-integration first if present, then one with non-empty trackArtUrl, or fallback to the first
+            let chosenIdx = group.find(idx => players[idx] && players[idx].dbusName && players[idx].dbusName.includes('plasma-browser-integration'));
+            if (chosenIdx === undefined)
+                chosenIdx = group.find(idx => players[idx] && players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
             if (chosenIdx === undefined)
                 chosenIdx = group[0];
 
