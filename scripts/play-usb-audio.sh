@@ -3,7 +3,8 @@
 # Usage: play-usb-audio.sh "usb in.flac" OR play-usb-audio.sh "usb out.flac" OR play-usb-audio.sh add OR play-usb-audio.sh remove
 
 readonly CONFIG_FILE="$HOME/.config/illogical-impulse/config.json"
-readonly BALLADE_DIR="$HOME/.config/quickshell/ballade"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly BALLADE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 AUDIO_EVENT="$1"
 ENABLED="true"
