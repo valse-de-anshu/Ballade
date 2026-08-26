@@ -68,7 +68,12 @@ Item {
         cacheBuffer: 600
 
         property bool isPanoramic  : root.activeBehavior === "panoramic"
-        property real tileSlotWidth : Math.round(width / 5.0) // Standardize slot width to prevent massive gaps
+        // Dynamically adjust gaping according to wallpaper numbers!
+        // For lots of wallpapers, they overlap (perfect panoramic). 
+        // For 2-4 wallpapers, the width is clamped to 220 so the gap isn't immense.
+        property real tileSlotWidth : isPanoramic
+                                      ? Math.max(60, Math.min(220, width / Math.max(1, folderModel.count * 1.5)))
+                                      : Math.round(width / 5.0)
         property int  selectedIndex : 0
         property bool _initializedIndex: false
 
@@ -160,7 +165,7 @@ Item {
             property real targetXOffset: {
                 if (list.isPanoramic) {
                     if (distFromSelected === 0) return 0;
-                    let push = 30; // Reduced from 160 to fix massive gap
+                    let push = 140; // Restored to create proper cover-flow overlap
                     return deltaIndex < 0 ? -push : push;
                 }
                 return 0;
