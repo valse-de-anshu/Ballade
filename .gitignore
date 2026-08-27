@@ -7,3 +7,5 @@ defaults/ai/prompts/*.local.md
 *.qslog
 __pycache__/
 .cache/
+.~lock.*
+*~
