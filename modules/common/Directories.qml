@@ -56,11 +56,17 @@ Singleton {
     property string userPresetsPath: FileUtils.trimFileProtocol(`${Directories.shellConfig}/presets`)
     property string presetsScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/presets.sh`)
     property string generatedLockMaterialThemePath: FileUtils.trimFileProtocol(`${Directories.state}/user/generated/colors-lock.json`)
-    // Cleanup on init
+    // Cleanup & Auto-Initialization on init
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", `${userPresetsPath}`])
         Quickshell.execDetached(["mkdir", "-p", `${shellConfig}`])
         Quickshell.execDetached(["mkdir", "-p", `${favicons}`])
+        Quickshell.execDetached(["mkdir", "-p", FileUtils.trimFileProtocol(`${Directories.pictures}/Wallpapers`)])
+        for (const preset of ["green", "purple", "pink", "red", "blue", "grayscale"]) {
+            Quickshell.execDetached(["mkdir", "-p", FileUtils.trimFileProtocol(`${Directories.pictures}/Wallpapers/${preset}`)])
+        }
+        Quickshell.execDetached(["mkdir", "-p", FileUtils.trimFileProtocol(`${Directories.home}/.local/share/konsole`)])
+        Quickshell.execDetached(["mkdir", "-p", FileUtils.trimFileProtocol(`${Directories.home}/.config/kitty`)])
         Quickshell.execDetached(["bash", "-c", `mkdir -p '${coverArt}' && find '${coverArt}' -type f -mmin +60 -delete`])
         Quickshell.execDetached(["bash", "-c", `rm -rf '${booruPreviews}'; mkdir -p '${booruPreviews}'`])
         Quickshell.execDetached(["bash", "-c", `rm -rf '${latexOutput}'; mkdir -p '${latexOutput}'`])

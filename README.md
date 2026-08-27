@@ -1,27 +1,118 @@
 # 🎼 Ballade
 
-A modular, high-performance [QuickShell](https://quickshell.outfoxxed.me/) desktop shell suite for [Hyprland](https://hyprland.org/), built upon the foundation of [end-4/dots-hyprland](https://github.com/end-4/dots-hyprland) (**Illogical Impulse / `ii`**).
+A modular, high-performance [QuickShell](https://quickshell.outfoxxed.me/) desktop shell suite for [Hyprland](https://hyprland.org/).
 
-`ballade` combines the signature frosted-glass aesthetic of `ii` with the expanded modular capabilities of `end4-pC` (feature-rich sidebars, AI translation, panoramic wallpaper selector, and desktop widgets).
+`ballade` is a custom **hybrid rice** crafted by merging the design strengths of two major configurations, enriched with unique personal tweaks and overhauls:
+
+1. **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)** (The original, official **Illogical Impulse / `ii`** by `end-4`):
+   - Foundation for the iconic **Frosted-Glass Blur aesthetic**, window opacity balance, clean bar geometry, and desktop architecture.
+2. **[pctrade/end4-pC](https://github.com/pctrade/end4-pC)** (A feature-rich custom fork of Illogical Impulse by `pctrade`):
+   - Provided the expanded modular ecosystem: AI conversational assistant, multi-engine translator, animated audio waveform visualizer, comprehensive sidebars, and desktop settings overlay.
+3. **Personal Innovations & Custom Ballade Tweaks**:
+   - **3D Panoramic Cover-Flow Wallpaper Picker (`HyprPickerContent.qml`)**: Overhauled to display all wallpapers in the active folder simultaneously across the entire screen without horizontal pagination clipping.
+   - **Modern Music Slider Design (`StyledSlider.qml`)**: Redesigned wavy progress track with thicker stroke and an interactive circular knob handle head across all media widgets.
+   - **Sidebar Master Volume Feedback**: Direct PipeWire volume control with instant On-Screen Display (OSD) HUD triggers from the left sidebar buttons.
+   - **Harmonized Multi-App Theme Presets**: Handcrafted, cohesive 16-color palettes (Crimson Red, Sakura Pink, Amethyst Purple, Forest Green, Tokyo Night, Nord) synchronized across QuickShell, Kitty (`current-theme.conf`), Konsole (`Quickshell.colorscheme`), GTK icons, and KDE Plasma.
+   - **Multi-Language Synchronized Lyrics (`scripts/lyrics/`)**: Fast lyrics streaming supporting English, Hindi, and YouTube timed subtitles.
+   - **Standalone Portability Engine**: Converted all scripts to dynamically self-resolve their root paths, eliminating hardcoded user paths for seamless drop-in multi-device deployment.
 
 ---
 
-## 🚀 Running Alongside `ii`
+## ⚡ Quick Navigation
 
-`ballade` lives standalone in `~/.config/quickshell/ballade/` and shares user preferences with `~/.config/illogical-impulse/config.json`.
+- 🚀 [Quick Start (How to Install & Run)](#-quick-start-how-to-install--run)
+- 📦 [Dependencies](#-dependencies)
+- ⌨️ [Common IPC Commands](#️-common-ipc-commands)
+- 🌐 [External Tools & Daemons Used](#-external-dependencies-daemons--tools-used)
+- 💎 [Complete Feature Matrix](#-complete-feature-matrix-of-ballade)
+- 🏗️ [Architecture & Component Breakdown](#️-architecture--component-breakdown)
+- 🎨 [Dynamic Theming & Presets](#-dynamic-theming--color-engine)
+- ⚙️ [Configuration & Customization](#️-configuration--customization)
+- 📂 [Directory Structure](#-directory-structure)
+- 💡 [Troubleshooting & Tips](#-troubleshooting--tips)
+- 💖 [Credits & Acknowledgements](#-credits--acknowledgements)
 
-- **Run Ballade:**
-  ```bash
-  qs -c ballade
-  ```
-- **Run Standard ii:**
-  ```bash
-  qs -c ii
-  ```
-- **Set as default in Hyprland (`~/.config/hypr/custom/env.lua`):**
+---
+
+## 🚀 Quick Start: How to Install & Run
+
+Follow these simple steps to get Ballade running on your system:
+
+### Step 1: Install Required Packages
+On Arch Linux / CachyOS, install the necessary runtime dependencies:
+```bash
+sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayland \
+    pipewire wireplumber playerctl canberra-gtk-play mpv jq wl-clipboard cliphist \
+    tesseract tesseract-data-eng hyprpicker hyprsunset kitty
+```
+
+### Step 2: Place Ballade in QuickShell Config Directory
+Clone or copy the `ballade` folder directly into your QuickShell configurations folder:
+```bash
+# Target path: ~/.config/quickshell/ballade
+git clone https://github.com/valse-de-anshu/ballade.git ~/.config/quickshell/ballade
+```
+
+### Step 3: Run 1-Click Environment Initializer (Optional)
+Ballade includes an automated setup script that creates wallpaper folders, sound hooks, and permissions:
+```bash
+cd ~/.config/quickshell/ballade
+./setup.sh
+```
+
+### Step 4: Run Ballade
+To test and launch Ballade immediately from your terminal:
+```bash
+qs -c ballade
+```
+
+### Step 5: Set as Default Shell in Hyprland (Auto-Start)
+To make Ballade start automatically every time you log into Hyprland:
+
+- **If using dots-hyprland (`~/.config/hypr/custom/env.lua`):**
+  Add the following line to your custom environment config:
   ```lua
   hl.env("qsConfig", "ballade")
   ```
+
+- **Or directly in `~/.config/hypr/hyprland.conf`:**
+  ```ini
+  exec-once = qs -c ballade
+  ```
+
+### Step 6: Dual Coexistence (Switching between `ballade` and `ii`)
+`ballade` does not overwrite standard `ii`. You can switch anytime:
+- **Run Ballade:** `qs -c ballade`
+- **Run Standard ii:** `qs -c ii`
+- Both setups read and write to `~/.config/illogical-impulse/config.json` seamlessly.
+
+---
+
+## 🛠️ Automated Initialization vs Manual Steps
+
+To make migration to any new PC completely painless, Ballade handles directory creation automatically, but here is what is automated vs what you can customize manually:
+
+### ✅ What Ballade Creates Automatically:
+When you launch Ballade (or run `./setup.sh`), it automatically creates:
+- `~/Pictures/Wallpapers/` and all 6 preset subdirectories (`green`, `purple`, `pink`, `red`, `blue`, `grayscale`).
+- Starter fallback wallpapers in empty preset folders so the wallpaper selector is never blank.
+- `~/.config/illogical-impulse/` and `~/.config/illogical-impulse/presets/` for persistent settings.
+- `~/.local/share/konsole/` and `~/.config/kitty/` for terminal theme synchronization.
+- `~/.cache/illogical-impulse/` and `/tmp/quickshell/` for cover art, favicons, and OCR temporary buffers.
+
+### 📝 What You Must Do Manually:
+1. **Drop in Your Wallpapers**:
+   - Add your favorite wallpapers into `~/Pictures/Wallpapers/<preset>/` matching each color theme (e.g., place anime/pink wallpapers in `~/Pictures/Wallpapers/pink`, nature wallpapers in `~/Pictures/Wallpapers/green`, neon wallpapers in `~/Pictures/Wallpapers/purple`).
+2. **Configure Weather Location**:
+   - Open Settings (**`SUPER + Escape`**) ➔ **Services** ➔ enter your city name (e.g., `London`, `Tokyo`, `New York`) for live `wttr.in` forecast telemetry.
+3. **Set Gemini AI API Key (Optional)**:
+   - If using Google Gemini in the Left Sidebar AI Chat, generate a free API key from [Google AI Studio](https://aistudio.google.com/) and paste it into **Settings** ➔ **Services** ➔ **Gemini API Key**.
+4. **USB Hardware Sound Detection (Optional)**:
+   - If you want physical USB plug/unplug audio chimes, copy the udev rule with sudo:
+     ```bash
+     sudo cp ~/.config/quickshell/ballade/scripts/system/99-usb-audio.rules /etc/udev/rules.d/
+     sudo udevadm control --reload-rules && sudo udevadm trigger
+     ```
 
 ---
 
@@ -136,12 +227,17 @@ Ballade interacts with the following system backends, daemons, D-Bus interfaces,
 - **Center Scale on Hover**: Smooth zoom and border highlight on hovered wallpapers.
 - **Dynamic Material Adaptation**: Selecting a wallpaper instantly triggers `switchwall.sh` to extract a new Material You color palette and re-theme the entire desktop environment.
 
+![Panoramic 3D Wallpaper Selector](assets/screenshots/wallpaper-picker.png)
+
 ### 5. Desktop & Home Screen Widgets (`modules/ii/background/`)
 - **Desktop Music Player Widget**: Floating desktop widget with frosted glass blur, album artwork, track info, and a wavy progress bar.
 - **Digital & Analog Clock Widgets**: Multiple clock widget styles including Cookie Clock and Pixel Clock.
 - **Live Weather & World Dot-Map Widget**: Displays temperature, city name, weather icons, and projects the user's geographic coordinates with a target ring onto a world dot-map.
 - **Sticky Notes & To-Do Widgets**: Interactive desktop note pads that automatically persist tasks and text to local storage.
 - **Custom Profile & Image Cards**: Customizable pinned photos and system profile banners.
+
+![Desktop Home Screen & Widgets (Forest Green Theme)](assets/screenshots/home-green.png)
+![Left Sidebar Music & Lyrics with Desktop Widgets](assets/screenshots/widgets-lyrics.png)
 
 ### 6. Overlays, Hubs & Popups
 - **App Launcher / Overview (`modules/ii/overview/`)**: Full-screen fuzzy app search, math calculator, command execution, and window switcher.
@@ -170,6 +266,47 @@ Ballade interacts with the following system backends, daemons, D-Bus interfaces,
 ### 9. Master Settings Overlay (`SUPER + Escape` / `modules/ii/settings/`)
 - **8 Comprehensive Configuration Pages**: Quick Config, Bar Configuration, Interface & Corner Shapes (`round`, `slanted`, `superellipse`, `cookie`), Desktop Widgets, Profile Info, Hyprland Rules, Services & Audio Steppers, and General Options.
 - **Auto-Saving**: All changes write directly to `~/.config/illogical-impulse/config.json`.
+
+---
+
+## 🎨 Dynamic Theming & Presets Showcase
+
+Ballade features a dual-engine theming system: **Material Design 3 dynamic color generation** from any wallpaper, and **6 handcrafted presets** with multi-app synchronization across QuickShell, terminals, and desktop managers:
+
+| Theme Preset | Color Highlight | Accent Palette | Aesthetic |
+| :--- | :--- | :--- | :--- |
+| **`green`** | `#4CAF50` (Forest Green) | Sage, Olive, Dark Pine | Atelier Estuary calm nature vibe |
+| **`purple`** | `#9C27B0` (Amethyst) | Lavender, Deep Violet, Indigo | Cyberpunk night with neon accents |
+| **`pink`** | `#E05688` (Sakura Pink) | Pastel Orchid, Rose, Ruby | Vibrant anime aesthetic |
+| **`red`** | `#D32F2F` (Crimson Scarlet) | Salmon Rose, Peach, Bright Red | High-intensity scarlet with pure error red |
+| **`blue`** | `#2196F3` (Tokyo Night) | Cyan, Midnight Navy, Sky Blue | Deep ocean nocturnal theme |
+| **`grayscale`** | `#78909C` (Nord Slate) | Charcoal, Ash, Frost White | Distraction-free monochrome |
+
+### 📸 Visual Gallery
+
+#### 🌲 1. Forest Green Preset — Desktop Home Screen & Widgets
+> *Featuring live weather telemetry, multi-timezone analog clocks, sticky notes, and frosted glass desktop music player.*
+![Desktop Home Screen & Widgets (Forest Green Theme)](assets/screenshots/home-green.png)
+
+#### 🌌 2. 3D Panoramic Cover-Flow Wallpaper Picker
+> *Displays every wallpaper in the active folder simultaneously across the entire screen with fluid center scaling on hover.*
+![Panoramic 3D Wallpaper Selector](assets/screenshots/wallpaper-picker.png)
+
+#### 🔮 3. Amethyst Purple Theme Preset
+> *Demonstrating Material You dynamic color adaptation across clock widgets, calendar, and music progress bars.*
+![Amethyst Purple Theme Preset](assets/screenshots/theme-purple.png)
+
+#### 🌸 4. Sakura Pink Theme Preset & Anime Explorer
+> *Left Sidebar Booru image search and Right Sidebar Control Center with QuickSliders.*
+![Sakura Pink Theme Preset & Anime Explorer](assets/screenshots/theme-pink.png)
+
+#### 🎵 5. Music Controller & Synchronized Lyrics Engine
+> *Real-time English, Hindi, and YouTube synced lyrics streaming alongside the wavy progress slider.*
+![Left Sidebar Music & Lyrics with Desktop Widgets](assets/screenshots/widgets-lyrics.png)
+
+#### ⚙️ 6. Master Settings Overlay — Themes & Presets Manager (`SUPER + Escape`)
+> *One-click switching and live saving between color presets, corner shapes, and blur profiles.*
+![Master Settings Overlay - Themes & Presets Manager](assets/screenshots/settings-presets.png)
 
 ---
 
@@ -274,3 +411,15 @@ All scripts use self-resolving dynamic paths. You can copy the entire `ballade` 
   ```
 - **Inspect Logs:** Run `qs log` or view `/run/user/1000/quickshell/by-id/*/log.qslog`.
 - **Audio Feedback Not Showing:** Ensure `wireplumber` is running and the volume buttons in the left sidebar or keybindings invoke `Audio.incrementVolume()` / `Audio.decrementVolume()`.
+
+---
+
+## 💖 Credits & Acknowledgements
+
+Ballade is built upon the incredible work of the Hyprland and QuickShell communities:
+
+- **[end-4](https://github.com/end-4)**: Creator of **[dots-hyprland (Illogical Impulse)](https://github.com/end-4/dots-hyprland)** — the core foundation, aesthetic vision, and architectural base of this setup.
+- **[pctrade](https://github.com/pctrade)**: Creator of **[end4-pC](https://github.com/pctrade/end4-pC)** — whose extensive modular expansions (AI integration, audio visualizer, sidebars, and settings overlay) inspired Ballade's feature set.
+- **[Outfoxxed](https://github.com/outfoxxed)**: Creator of **[QuickShell](https://quickshell.outfoxxed.me/)** — the powerful, next-generation QML desktop shell engine for Wayland.
+- **[Vaxry](https://github.com/vaxerski)** & the **[Hyprland Team](https://hyprland.org/)**: For creating the most fluid, feature-rich dynamic tiling compositor for Linux.
+
