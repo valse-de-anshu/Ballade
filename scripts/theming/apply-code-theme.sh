@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Ballade VS Code / Code-OSS / Antigravity / Cursor Ultra-Detailed Themer
-# Full Workbench UI Customizations + Rich Syntax Token Highlighting
+# Full Workbench UI (Minimap, Status Bar, Notifications, Gutters) + Syntax Tokens
 # ==============================================================================
 
 THEME_KEY="${1:-green}"
@@ -84,12 +84,16 @@ workbench_colors = {
     "foreground": fg,
     "selection.background": sel,
     "scrollbar.shadow": "#00000044",
+    
+    # Activity Bar
     "activityBar.background": bg_dark,
     "activityBar.foreground": "#ffffff",
     "activityBar.inactiveForeground": fg_muted,
     "activityBar.activeBorder": accent_bright,
     "activityBarBadge.background": accent_bright,
     "activityBarBadge.foreground": "#ffffff",
+    
+    # Side Bar
     "sideBar.background": bg,
     "sideBar.foreground": fg,
     "sideBar.border": border,
@@ -97,6 +101,8 @@ workbench_colors = {
     "sideBarSectionHeader.foreground": fg,
     "sideBarSectionHeader.border": border,
     "sideBarTitle.foreground": fg,
+    
+    # Lists & Trees
     "list.activeSelectionBackground": accent_bright + "44",
     "list.activeSelectionForeground": "#ffffff",
     "list.inactiveSelectionBackground": bg_light,
@@ -105,12 +111,26 @@ workbench_colors = {
     "list.hoverForeground": fg,
     "list.focusBackground": bg_light,
     "list.highlightForeground": accent_bright,
+    
+    # Status Bar
     "statusBar.background": bg_dark,
     "statusBar.foreground": fg,
     "statusBar.border": border,
+    "statusBar.debuggingBackground": bg_light,
+    "statusBar.debuggingForeground": fg,
+    "statusBar.noFolderBackground": bg_dark,
+    "statusBar.noFolderForeground": fg,
+    "statusBarItem.hoverBackground": bg_light,
+    "statusBarItem.prominentBackground": accent + "44",
+    "statusBarItem.prominentHoverBackground": accent + "66",
     "statusBarItem.remoteBackground": accent,
     "statusBarItem.remoteForeground": "#ffffff",
-    "statusBarItem.hoverBackground": bg_light,
+    "statusBarItem.errorBackground": "#ff5252",
+    "statusBarItem.errorForeground": "#ffffff",
+    "statusBarItem.warningBackground": "#ffd740",
+    "statusBarItem.warningForeground": "#000000",
+    
+    # Title Bar & Menus
     "titleBar.activeBackground": bg_dark,
     "titleBar.activeForeground": fg,
     "titleBar.inactiveBackground": bg_dark,
@@ -121,6 +141,8 @@ workbench_colors = {
     "menu.selectionBackground": accent_bright,
     "menu.selectionForeground": "#ffffff",
     "menu.separatorBackground": border,
+    
+    # Buttons & Inputs
     "button.background": accent,
     "button.foreground": "#ffffff",
     "button.hoverBackground": accent_bright,
@@ -128,6 +150,8 @@ workbench_colors = {
     "input.foreground": fg,
     "input.border": border,
     "inputOption.activeBorder": accent_bright,
+    
+    # Editor Base
     "editor.background": bg,
     "editor.foreground": fg,
     "editor.selectionBackground": sel,
@@ -142,10 +166,33 @@ workbench_colors = {
     "editorRuler.foreground": border,
     "editorBracketMatch.background": accent + "33",
     "editorBracketMatch.border": accent_bright,
+    
+    # Editor Minimap
+    "minimap.background": bg,
+    "minimap.selectionHighlight": sel,
+    "minimapSlider.background": accent + "33",
+    "minimapSlider.hoverBackground": accent + "55",
+    "minimapSlider.activeBackground": accent_bright + "77",
+    "minimapGutter.addedBackground": "#81c784",
+    "minimapGutter.modifiedBackground": accent,
+    "minimapGutter.deletedBackground": "#ff5252",
+    
+    # Editor Gutter & Overview Ruler
     "editorGutter.background": bg,
     "editorGutter.addedBackground": "#81c784",
     "editorGutter.modifiedBackground": accent,
     "editorGutter.deletedBackground": "#ff5252",
+    "editorOverviewRuler.border": border,
+    "editorOverviewRuler.findMatchForeground": accent_bright,
+    "editorOverviewRuler.selectionHighlightForeground": sel,
+    "editorOverviewRuler.modifiedForeground": accent,
+    "editorOverviewRuler.addedForeground": "#81c784",
+    "editorOverviewRuler.deletedForeground": "#ff5252",
+    "editorOverviewRuler.errorForeground": "#ff5252",
+    "editorOverviewRuler.warningForeground": "#ffd740",
+    "editorOverviewRuler.infoForeground": accent_bright,
+    
+    # Tabs & Editor Groups
     "tab.activeBackground": bg,
     "tab.activeForeground": "#ffffff",
     "tab.activeBorderTop": accent_bright,
@@ -154,6 +201,8 @@ workbench_colors = {
     "tab.border": border,
     "editorGroupHeader.tabsBackground": bg_dark,
     "editorGroupHeader.tabsBorder": border,
+    
+    # Panel & Terminal
     "panel.background": bg,
     "panel.border": border,
     "panelTitle.activeBorder": accent_bright,
@@ -164,6 +213,23 @@ workbench_colors = {
     "terminal.selectionBackground": sel,
     "terminalCursor.foreground": accent_bright,
     "terminal.border": border,
+    
+    # Notifications & Toasts
+    "notifications.background": bg_dark,
+    "notifications.foreground": fg,
+    "notifications.border": border,
+    "notificationToast.border": accent_bright,
+    "notificationCenter.border": border,
+    "notificationCenterHeader.background": bg_dark,
+    "notificationCenterHeader.foreground": fg,
+    "notificationsInfoIcon.foreground": accent_bright,
+    "notificationsWarningIcon.foreground": "#ffd740",
+    "notificationsErrorIcon.foreground": "#ff5252",
+    
+    # Scrollbars & Badges
+    "scrollbarSlider.background": border + "88",
+    "scrollbarSlider.hoverBackground": accent + "66",
+    "scrollbarSlider.activeBackground": accent_bright + "99",
     "breadcrumb.background": bg,
     "breadcrumb.foreground": fg_muted,
     "breadcrumb.focusForeground": fg,
