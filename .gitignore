@@ -1,0 +1,9 @@
+# User AI Prompts (Private)
+defaults/ai/prompts/ii-Default.md
+defaults/ai/prompts/*.local.md
+
+# Cache & Logs
+*.log
+*.qslog
+__pycache__/
+.cache/
