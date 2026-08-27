@@ -54,6 +54,125 @@ qs -c ballade ipc call cliphist toggle           # Wayland Clipboard History Man
 
 ---
 
+## 🌐 External Dependencies, Daemons & Tools Used
+
+Ballade interacts with the following system backends, daemons, D-Bus interfaces, and CLI tools:
+
+### 1. Compositor & Display Protocol
+- **`hyprland`**: Manages window tiling, workspace states, animations, blur shaders, and window opacity rules via socket IPC (`HyprlandCore` / `HyprlandData.qml`).
+- **`hyprsunset`**: Background blue-light filter daemon controlling screen color temperature/gamma via D-Bus (`Hyprsunset.qml`).
+- **`hyprpicker`**: Wayland color picker utility for desktop pixel sampling (`RegionSelection.qml`).
+- **`ydotool`**: Virtual input generator for synthetic keypresses and automation (`Ydotool.qml`).
+
+### 2. Audio & Media Subsystem
+- **`pipewire` & `wireplumber`**: Core sound server and session manager for live volume scaling, device routing, and volume spike protection (`Audio.qml`).
+- **`playerctl` & MPRIS (D-Bus)**: Native media player controller capturing track metadata, playback states, and album artwork from Spotify, browsers, MPD, etc. (`MprisController.qml`).
+- **`pw-play` / `paplay` / `mpv` / `canberra-gtk-play`**: Low-latency multi-backend audio players for system sounds (USB, startup, shutdown, lock).
+- **`easyeffects`**: PipeWire DSP audio effects manager for equalizer and noise suppression presets (`EasyEffects.qml`).
+- **`songrec`**: Open-source Shazam client for recognizing music playing from any desktop audio stream (`SongRec.qml`).
+
+### 3. Dynamic Theming & Color Engine
+- **`matugen` / Python `material-color-utilities`**: Extracts Material Design 3 palettes (Primary, Secondary, Tertiary, Surface, Container tones) directly from wallpaper images.
+- **`plasma-apply-colorscheme` & `kdeglobals`**: Synchronizes KDE Plasma apps (Dolphin, Kate, Gwenview) with the active wallpaper/preset.
+- **`kitty` (`current-theme.conf`)**: Automatically live-reloaded via `SIGUSR1` to apply matching 16-color ANSI palettes.
+- **`konsole` (`Quickshell.colorscheme`)**: Dynamically writes matching RGB color schemes for Konsole and Dolphin's embedded terminal.
+- **`kvantum` (`adwsvg.py` / `adwsvgDark.py`)**: Regenerates Kvantum theme SVGs for Qt application styling.
+- **`gsettings`**: Synchronizes GTK 3/4 theme colors and `Tela-circle-*` icon themes.
+- **`starship`**: Replaces `~/.config/starship.toml` presets to match the terminal theme.
+
+### 4. AI Models, Cloud APIs & LaTeX
+- **Google Gemini API (`@google/genai`)**: Cloud-powered conversational AI and translation inside the sidebar (`Ai.qml`).
+- **Ollama (Local LLM Daemon)**: Connects to local models (e.g. `llama3`, `mistral`, `deepseek`) over `http://localhost:11434`.
+- **OpenAI API**: ChatGPT endpoints for chat and text assistance.
+- **LaTeX / MicroTeX (`latex-render.sh`)**: Compiles and renders math formulas directly within AI responses.
+
+### 5. OCR & Real-Time Screen Translation
+- **`tesseract` & `tesseract-data-*`**: OCR engine extracting text from selected screen regions (`ScreenTranslator.qml`).
+- **Google Translate / DeepL Engines**: Translates extracted OCR text and sidebar translator input.
+
+### 6. System Utilities & Daemons
+- **`jq`**: JSON processor used across shell scripts to read/write `~/.config/illogical-impulse/config.json`.
+- **`cliphist` & `wl-clipboard`**: Manages clipboard history (`wl-copy`, `wl-paste`) with image/text thumbnail preview (`Cliphist.qml`).
+- **`nmcli` (NetworkManager)**: Scans Wi-Fi SSIDs, checks signal strength, and handles connections (`Network.qml`).
+- **`bluetoothctl` (BlueZ)**: Handles Bluetooth device pairing, connecting, disconnecting, and battery reporting (`BluetoothStatus.qml`).
+- **`brightnessctl` / `ddcutil`**: Hardware backlight control for laptop screens and external DDC/CI monitors (`Brightness.qml`).
+- **`upower` & `/sys/class/power_supply`**: Reads battery level, charging status, and low-battery alerts (`Battery.qml`).
+- **`wttr.in`**: Weather telemetry provider returning temperatures, humidity, weather icons, and city coordinates (`Weather.qml`).
+- **`checkupdates` / `pacman`**: Tracks pending Arch Linux system upgrades (`Updates.qml`).
+- **`systemd` (User Services)**: Manages audio daemons (`power-audio-executor.sh` and `usb-audio@.service`).
+
+---
+
+## 💎 Complete Feature Matrix of Ballade
+
+### 1. Top Status Bar (`modules/ii/bar/`)
+- **Workspace Indicator**: Dynamic morphing dot indicators tracking active, occupied, and empty workspaces across multi-monitor setups.
+- **Active Window Title**: Displays current focused window title and application class name.
+- **Audio Waveform Visualizer**: Animated sound visualizer synced with playing audio. Left-click opens track controls popup; right-click toggles play/pause.
+- **Hardware Resource Monitors**: Live CPU %, RAM %, Swap %, and CPU Temperature meters formatted with tabular figures (`tnum`) to eliminate number jitter. Swap automatically reveals itself when swap memory is actively in use (`> 0%`).
+- **System Tray**: Wayland status notifier tray with application icons, context menus, and tooltips.
+- **Status Icons**: Real-time indicators for Wi-Fi SSID/Ethernet, Bluetooth, Battery percentage with charging states, and Volume level.
+- **Updates Counter**: Pending system update counter with a 1-click terminal launcher.
+- **Clock & Date**: Formatted time/date with click-to-open calendar popup and world timezone clock.
+- **Vertical Bar Mode (`modules/ii/verticalBar/`)**: Full alternative side-docked bar orientation.
+
+### 2. Left Sidebar (`modules/ii/sidebarLeft/`)
+- **Conversational AI Assistant**: Chat interface supporting Google Gemini, Ollama local LLMs, and OpenAI ChatGPT with Markdown rendering, code highlighting, and chat history.
+- **Full-Featured Translator**: Side-by-side source and translated text panels with auto-detection, character counter, copy/search buttons, and a compact modal language selector (`SelectionDialog.qml`) with pinned languages.
+- **Real-Time Synchronized Lyrics (`scripts/lyrics/`)**: Live music lyrics engine supporting English, Hindi, and YouTube synced captions.
+- **Sidebar Music Controller**: Album art preview, metadata, seekable wavy slider with a circular knob handle, play/next/previous, and master volume buttons that trigger instant OSD HUD visual feedback.
+- **Booru Wallpaper Explorer**: Search and browse anime/art wallpapers directly from image boards with a 1-click "Set as Wallpaper" action.
+
+### 3. Right Sidebar / Control Center (`modules/ii/sidebarRight/`)
+- **Quick-Toggle Tiles**: 1-click toggles for Wi-Fi, Bluetooth, Night Light Gamma, Anti-Flashbang Shader, Audio Sink Router, and Pomodoro Timer.
+- **Master QuickSliders**: Smooth touch- and mouse-friendly sliders for System Output Volume, Microphone Input Gain, and Display Brightness.
+- **Audio Sink/Source Selector**: Expandable audio router to switch playback between Headphones, Speakers, Bluetooth, and HDMI outputs on the fly.
+- **Network & Bluetooth Dialogs**: Wi-Fi connection manager with password prompt and Bluetooth device pairing/connecting manager.
+- **Pomodoro Focus Timer**: Customizable work/break focus timer with notification audio cues.
+- **Notification History Center**: Grouped notification cards with action buttons and clear-all functionality.
+
+### 4. Panoramic Wallpaper Selector (`modules/ii/wallpaperSelector/`)
+- **Panoramic 3D Cover-Flow View**: Displays all wallpapers in the active folder simultaneously across the entire screen without horizontal scrolling.
+- **Center Scale on Hover**: Smooth zoom and border highlight on hovered wallpapers.
+- **Dynamic Material Adaptation**: Selecting a wallpaper instantly triggers `switchwall.sh` to extract a new Material You color palette and re-theme the entire desktop environment.
+
+### 5. Desktop & Home Screen Widgets (`modules/ii/background/`)
+- **Desktop Music Player Widget**: Floating desktop widget with frosted glass blur, album artwork, track info, and a wavy progress bar.
+- **Digital & Analog Clock Widgets**: Multiple clock widget styles including Cookie Clock and Pixel Clock.
+- **Live Weather & World Dot-Map Widget**: Displays temperature, city name, weather icons, and projects the user's geographic coordinates with a target ring onto a world dot-map.
+- **Sticky Notes & To-Do Widgets**: Interactive desktop note pads that automatically persist tasks and text to local storage.
+- **Custom Profile & Image Cards**: Customizable pinned photos and system profile banners.
+
+### 6. Overlays, Hubs & Popups
+- **App Launcher / Overview (`modules/ii/overview/`)**: Full-screen fuzzy app search, math calculator, command execution, and window switcher.
+- **Session & Power Screen (`modules/ii/sessionScreen/`)**: Fullscreen power menu with Lock, Logout, Suspend, Hibernate, Reboot, and Shutdown triggers.
+- **Screen Region Translator (`modules/ii/screenTranslator/`)**: Snip any region on your screen to perform real-time OCR text extraction and translation.
+- **On-Screen Display HUD (`modules/ii/onScreenDisplay/`)**: Non-intrusive overlays for Volume percentage, Brightness level, and Night Light Gamma.
+- **Virtual On-Screen Keyboard (`modules/ii/onScreenKeyboard/`)**: Touch-friendly virtual keyboard for 2-in-1s and tablets.
+- **Hyprland Keybindings Cheatsheet (`modules/ii/cheatsheet/`)**: Searchable overlay listing all configured Hyprland shortcuts.
+- **Lock Screen (`modules/common/panels/lock/`)**: Frosted glass lockscreen with PAM authentication, password input, media controls, and battery status.
+
+### 7. Audio Events & System Sound Cues (`scripts/` & `assets/`)
+- **Bundled Sound Library**: Built-in audio cues for Startup, Shutdown, Lock session, Logout, Sleep, Battery Low, and USB connect/disconnect.
+- **Volume Steppers & Previews**: Dedicated volume sliders and test-audio preview buttons in the settings UI.
+- **Low-Latency Player Fallback**: Automatic fallback pipeline (`pw-play` ➔ `paplay` ➔ `mpv` ➔ `canberra-gtk-play`).
+
+### 8. Handcrafted Theme Presets (`scripts/theming/`)
+- **6 Handcrafted Presets**:
+  - **`green`**: Atelier Estuary Forest Dark (Green/Sage commands and paths).
+  - **`pink`**: Sakura Neon Pink (Deep Rose commands `#E05688`, Pastel Orchid parameters `#F48FB1`, and Crimson error `#FF1744`).
+  - **`red`**: Crimson Scarlet (Scarlet commands `#D32F2F`, Salmon Rose parameters `#FF8A80`, and Pure Error Red `#FF1744`).
+  - **`purple`**: Amethyst Cyberpunk (Rich Violet commands `#9C27B0` and Lavender parameters `#CE93D8`).
+  - **`blue`**: Tokyo Night / Deep Blue.
+  - **`grayscale`**: Nord Monochrome Slate.
+- **Unified Multi-App Sync**: Synchronizes QuickShell, Kitty (`current-theme.conf`), Konsole (`Quickshell.colorscheme`), KDE Plasma (`kdeglobals`), GTK icons, and Starship prompt in one go.
+
+### 9. Master Settings Overlay (`SUPER + Escape` / `modules/ii/settings/`)
+- **8 Comprehensive Configuration Pages**: Quick Config, Bar Configuration, Interface & Corner Shapes (`round`, `slanted`, `superellipse`, `cookie`), Desktop Widgets, Profile Info, Hyprland Rules, Services & Audio Steppers, and General Options.
+- **Auto-Saving**: All changes write directly to `~/.config/illogical-impulse/config.json`.
+
+---
+
 ## 🏗️ Architecture & Component Breakdown
 
 ```mermaid
@@ -94,55 +213,6 @@ graph TD
     MPRIS_SRV --> DESKTOP
     WALL_SRV --> WALL_PICKER
 ```
-
-### 1. Top Status Bar (`modules/ii/bar/`)
-- **Workspaces & Windows:** Active workspace dots with smooth transition animations and current window title display.
-- **Audio Visualizer & Media:** Real-time audio waveform visualizer. Left-clicking opens the track popup (`MediaControls.qml`); right-clicking toggles play/pause.
-- **Hardware Metrics:** CPU, RAM, Swap, and CPU Temp indicators locked with tabular figures (`tnum`) to eliminate number jitter. Swap automatically appears whenever swap is in use (`> 0%`).
-- **System Tray & Quick Status:** Network status, battery level, volume icons, updates counter, and live clock.
-
-### 2. Left Sidebar (`modules/ii/sidebarLeft/`)
-- **AI Assistant:** Direct conversational client supporting Google Gemini API, Ollama (local LLMs), and OpenAI models.
-- **Translator & OCR:** Side-by-side source and translated textboxes with full copy/search actions, character counter, and compact language selector dialog (`SelectionDialog.qml`).
-- **Music Player & Volume Controls:** Integrated track artwork, title, artist, seek bar, play/next/previous, and volume up/down/mute buttons connected to master PipeWire volume with instant OSD HUD feedback.
-- **Booru Viewer:** Anime wallpaper and image board search tool.
-
-### 3. Right Sidebar (`modules/ii/sidebarRight/`)
-- **Control Center:** Quick-toggle tiles for WiFi, Bluetooth, Night Light (Gamma), Anti-Flashbang shader, Audio Sinks, and Pomodoro focus timer.
-- **Master QuickSliders:** Touch/mouse-friendly sliders for System Volume, Microphone Gain, and Display Brightness.
-- **Audio Device Switcher:** Expandable sink/source router allowing one-click output switching between headphones, speakers, and HDMI.
-- **Notification History Center:** Dismissable notifications list with application icons, timestamps, and actionable buttons.
-
-### 4. Panoramic Wallpaper Selector (`modules/ii/wallpaperSelector/`)
-- **3D Cover-Flow View:** Displays every wallpaper from the active theme folder simultaneously across the entire screen in a smooth panoramic arc without horizontal pagination clipping.
-- **Interactive Center Scale:** Wallpapers scale up fluidly on hover, with keyboard arrow navigation and single-click application.
-- **Live Theme Adaptation:** Applying a wallpaper triggers `switchwall.sh`, extracting a Material You palette and instantly synchronizing the entire desktop environment.
-
-### 5. Desktop & Home Widgets (`modules/ii/background/`)
-- **Desktop Music Player Widget:** Floating desktop widget featuring album cover art, title/artist metadata, and a modern wavy progress bar with a circular handle.
-- **Clock & Weather Widgets:** Customizable analog/digital clocks, location forecast telemetry from `wttr.in`, and dynamic world dot-map location projection.
-
----
-
-## 🎨 Dynamic Theming & Color Engine
-
-`ballade` features a two-tiered theming pipeline:
-
-### 1. Wallpaper Palette Generation (`scripts/colors/`)
-When a wallpaper is selected:
-1. `switchwall.sh` processes the image using `matugen` (or Python `material-color-utilities`).
-2. Extracts Primary, Secondary, Tertiary, Surface, and Container colors according to Material Design 3 guidelines.
-3. Generates `material_colors.scss` and invokes `applycolor.sh`.
-4. Updates QuickShell UI colors live, synchronizes the GTK/Kvantum theme, and writes the color scheme to Kitty terminal (`current-theme.conf`) and Konsole (`Quickshell.colorscheme`).
-
-### 2. Handcrafted Theme Presets (`scripts/theming/`)
-You can switch to handcrafted, cohesive color presets using `apply-theme-preset.sh <preset>`:
-- **`green`**: Atelier Estuary Forest Dark (Green/Sage commands and paths).
-- **`pink`**: Sakura Neon Pink (Deep Rose commands `#E05688`, Pastel Orchid parameters `#F48FB1`, and Crimson error `#FF1744`).
-- **`red`**: Crimson Scarlet (Scarlet commands `#D32F2F`, Salmon Rose parameters `#FF8A80`, and Pure Error Red `#FF1744`).
-- **`purple`**: Amethyst Cyberpunk (Rich Violet commands `#9C27B0` and Lavender parameters `#CE93D8`).
-- **`blue`**: Tokyo Night / Deep Blue.
-- **`grayscale`**: Nord Monochrome Slate.
 
 ---
 
@@ -190,6 +260,12 @@ ballade/
 
 ---
 
+## 📁 Portability
+
+All scripts use self-resolving dynamic paths. You can copy the entire `ballade` folder directly to `~/.config/quickshell/ballade` on any device and launch immediately.
+
+---
+
 ## 💡 Troubleshooting & Tips
 
 - **Live Reload QuickShell:** Press **`Ctrl + Shift + R`** while focusing the bar, or run:
@@ -198,4 +274,3 @@ ballade/
   ```
 - **Inspect Logs:** Run `qs log` or view `/run/user/1000/quickshell/by-id/*/log.qslog`.
 - **Audio Feedback Not Showing:** Ensure `wireplumber` is running and the volume buttons in the left sidebar or keybindings invoke `Audio.incrementVolume()` / `Audio.decrementVolume()`.
-- **Multi-Device Portability:** The entire `ballade` folder is self-resolving and contains zero hardcoded user paths. It can be cloned or pasted directly onto any Arch/Hyprland system running `quickshell`.
