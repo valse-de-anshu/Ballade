@@ -79,15 +79,6 @@ Item {
     property bool useSineCookie: Config.options.background.widgets.clock.cookie.useSineCookie
     StyledDropShadow {
         target: root.useSineCookie ? sineCookieLoader : roundedPolygonCookieLoader
-
-        RotationAnimation on rotation {
-            running: Config.options.background.widgets.clock.cookie.constantlyRotate
-            duration: 30000
-            easing.type: Easing.Linear
-            loops: Animation.Infinite
-            from: 360
-            to: 0
-        }
     }
     Loader {
         id: sineCookieLoader
@@ -98,6 +89,15 @@ Item {
             implicitSize: root.implicitSize
             sides: Config.options.background.widgets.clock.cookie.sides
             color: root.colBackground
+
+            RotationAnimation on rotation {
+                running: Config.options.background.widgets.clock.cookie.constantlyRotate && root.visible && !GlobalStates.screenLocked
+                duration: 30000
+                easing.type: Easing.Linear
+                loops: Animation.Infinite
+                from: 360
+                to: 0
+            }
         }
     }
     Loader {
@@ -109,6 +109,15 @@ Item {
             implicitSize: root.implicitSize
             sides: Config.options.background.widgets.clock.cookie.sides
             color: root.colBackground
+
+            RotationAnimation on rotation {
+                running: Config.options.background.widgets.clock.cookie.constantlyRotate && root.visible && !GlobalStates.screenLocked
+                duration: 30000
+                easing.type: Easing.Linear
+                loops: Animation.Infinite
+                from: 360
+                to: 0
+            }
         }
     }
 

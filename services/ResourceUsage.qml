@@ -101,10 +101,19 @@ Singleton {
 
             root.updateHistories()
             interval = Config.options?.resources?.updateInterval ?? 3000
+        }
+	}
+
+    Timer {
+        interval: 8000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
             diskPollProc.running = true
             tempPollProc.running = true
         }
-	}
+    }
 
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }

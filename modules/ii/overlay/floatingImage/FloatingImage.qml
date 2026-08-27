@@ -58,7 +58,7 @@ StyledOverlayWidget {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         }
 
-        layer.enabled: true
+        layer.enabled: bg.radius > 0
         layer.effect: OpacityMask {
             maskSource: Rectangle {
                 width: bg.width
@@ -77,7 +77,7 @@ StyledOverlayWidget {
                 return Qt.size(width * dpr, height * dpr);
             }
 
-            playing: visible
+            playing: visible && !GlobalStates.screenLocked
             asynchronous: true
             source: ""
 

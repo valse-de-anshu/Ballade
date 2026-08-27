@@ -24,6 +24,7 @@ AbstractBackgroundWidget {
     readonly property int barCount: Math.max(1, Math.floor(screenWidth / (barWidth + barSpacing)))
 
     readonly property var smoothedPoints: {
+        if (!root.isPlaying || root.activityOpacity <= 0.01) return Array(barCount).fill(0)
         let raw = points
         if (!raw || raw.length === 0) return Array(barCount).fill(0)
         let count = barCount
@@ -61,7 +62,7 @@ AbstractBackgroundWidget {
     }
 
     onPointsChanged: {
-        if (points.some(p => p > 0)) {
+        if (root.isPlaying && points.some(p => p > 0)) {
             root.activityOpacity = 1.0
             silenceTimer.restart()
         }
