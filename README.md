@@ -25,6 +25,10 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 | :---: | :---: |
 | <img src="assets/screenshots/home-green.png" width="460" alt="Home Green" /> | <img src="assets/screenshots/theme-purple.png" width="460" alt="Theme Purple" /> |
 
+| 🔴 Crimson Red Theme & YouTube Subtitles `[CC]` | 🌌 Tokyo Night Blue, rmpc & Animated GIFs |
+| :---: | :---: |
+| <img src="assets/screenshots/theme-red-ytcc.png" width="460" alt="Red Theme YouTube CC" /> | <img src="assets/screenshots/theme-blue-rmpc-gifs.png" width="460" alt="Blue Theme rmpc GIFs" /> |
+
 | 🌌 3D Panoramic Wallpaper Picker | 🌸 Sakura Pink Theme & Sidebar |
 | :---: | :---: |
 | <img src="assets/screenshots/wallpaper-picker.png" width="460" alt="Wallpaper Picker" /> | <img src="assets/screenshots/theme-pink.png" width="460" alt="Theme Pink" /> |
@@ -42,8 +46,9 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 ## 🧭 Table of Contents
 - [⚡ Quick Start](#-quick-start)
 - [✨ Key Features & Modules](#-key-features--modules)
+- [🎨 Dynamic Theming & Multi-App Engine](#-dynamic-theming--multi-app-configuration-engine)
 - [⌨️ IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
-- [📦 System Prerequisites](#-system-prerequisites)
+- [📦 System Prerequisites](#-system-prerequisites--dependencies)
 - [📂 Directory Anatomy](#-directory-anatomy)
 - [💖 Credits & Upstream](#-credits--upstream)
 
@@ -102,7 +107,8 @@ qs -c ballade
 ### 🧠 2. Intelligent Left Sidebar (`end4-pC` + `ballade`)
 * **Conversational AI Companion**: Direct chat client supporting Google Gemini API, local Ollama models (`llama3`, `deepseek`), and OpenAI ChatGPT with Markdown rendering, code highlighting, and chat history.
 * **Live Side-by-Side Translator**: Full translator (Google Translate / DeepL) with auto-detection, character counter, quick copy/search buttons, and a compact modal language selector (`SelectionDialog.qml`).
-* **Acoustic Player & Synced Lyrics**: Seekable wavy progress slider with an ergonomic circular knob handle, track cover preview, and real-time timed subtitle streaming for English, Hindi, and YouTube tracks.
+* **Acoustic Player & Synced Lyrics**: Seekable wavy progress slider with an ergonomic circular knob handle, track cover preview, and real-time timed subtitle streaming for English, Hindi, and LRC lyrics.
+* **YouTube Subtitle Streaming (`[CC]` Button)**: Dedicated **`[CC]`** caption button that instantly fetches and streams real-time YouTube subtitles/captions via `yt-dlp` directly on your desktop.
 * **Sidebar Master Volume Controls**: Dedicated volume up/down/mute buttons connected to master PipeWire volume with instant On-Screen Display (OSD) HUD feedback.
 * **Booru Art Explorer**: Search and browse anime art and wallpaper boards with tag search and a 1-click "Apply as Wallpaper" shortcut.
 
@@ -118,8 +124,10 @@ qs -c ballade
 * **Panoramic 3D Cover-Flow View**: Displays every wallpaper in the active preset directory across the screen in an uninterrupted panoramic arc without horizontal pagination clipping.
 * **Interactive Center Scale**: Fluid zoom and border highlight on hovered wallpapers with keyboard arrow navigation and instant Material You color extraction.
 
-### 🖥️ 5. Desktop Home Widgets (`end4-pC` + `ballade`)
-* **Frosted Desktop Music Player**: Floating music card with wavy progress tracks and playback controls.
+### 🖥️ 5. Desktop Home Widgets & Mascot GIFs (`end4-pC` + `ballade`)
+* **Frosted Desktop Music Player**: Floating music card with wavy progress tracks, lyrics, and YouTube `[CC]` toggle.
+* **Unlimited Desktop Mascot GIFs & Stickers**: Place, scale, and layer unlimited animated GIF mascots, stickers, and pixel pets directly on your desktop canvas.
+* **`rmpc` Music Client Integration**: Synchronized styling and color-matching for the `rmpc` (Rust Music Player Client) terminal music player.
 * **World Telemetry & Clocks**: Live weather telemetry from `wttr.in`, geographic dot-map locator projection, and customizable digital, analog, and pixel clocks.
 * **Persistent Desktop Notes & Tasks**: Auto-saving sticky notes and to-do checklists.
 
