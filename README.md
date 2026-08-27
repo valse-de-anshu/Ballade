@@ -176,6 +176,8 @@ Ballade features a dual-tier automated theming pipeline: **Material Design 3 ext
 When you apply a preset (`scripts/theming/apply-theme-preset.sh`) or switch a wallpaper (`scripts/colors/switchwall.sh`), Ballade automatically writes and synchronizes configurations across your entire desktop environment:
 - 🐱 **Kitty Terminal**: Applies matching 16-color ANSI templates to `~/.config/kitty/current-theme.conf` and sends `SIGUSR1` for instant live reloading.
 - 💻 **Konsole & Dolphin Terminal**: Dynamically writes native RGB color maps to `~/.local/share/konsole/Quickshell.colorscheme` and registers it in `~/.config/konsolerc`.
+- 📝 **Micro Text Editor**: Automatically generates and activates matching syntax and UI colorschemes in `~/.config/micro/colorschemes/ballade.micro`.
+- 💻 **VS Code, VSCodium & Cursor**: Synchronizes `workbench.colorCustomizations` and `material-code.primaryColor` in `settings.json` across Code, Code - OSS, VSCodium, Cursor, and Antigravity.
 - 🐬 **KDE Plasma & Dolphin**: Applies matching colorschemes via `plasma-apply-colorscheme` and updates `kdeglobals`.
 - 🎨 **Kvantum Qt Engine**: Generates and compiles Material theme SVGs via `scripts/kvantum/materialQT.sh`.
 - 🏷️ **GTK & Icons**: Updates `gsettings` to synchronize GTK 3/4 theme colors and `Tela-circle-*` icon packs.

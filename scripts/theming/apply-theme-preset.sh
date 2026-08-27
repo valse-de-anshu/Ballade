@@ -171,7 +171,17 @@ if [ -f "$STARSHIP_PRESET" ]; then
     cp "$STARSHIP_PRESET" "$HOME/.config/starship.toml"
 fi
 
-# 8. Update QuickShell configuration (active theme + wallpaper directory)
+# 8. Apply Micro Text Editor Theme
+if [ -f "$SCRIPT_DIR/apply-micro-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-micro-theme.sh" "$PRESET_NAME" >/dev/null 2>&1 &
+fi
+
+# 9. Apply VS Code / Code-OSS / Antigravity / Cursor Theme
+if [ -f "$SCRIPT_DIR/apply-code-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-code-theme.sh" "$PRESET_NAME" >/dev/null 2>&1 &
+fi
+
+# 10. Update QuickShell configuration (active theme + wallpaper directory)
 if [ -f "$CONFIG_FILE" ]; then
     tmp_config=$(mktemp)
     jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \

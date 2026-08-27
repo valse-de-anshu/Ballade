@@ -30,6 +30,7 @@ done
 
 mkdir -p "$HOME/.config/illogical-impulse/presets"
 mkdir -p "$HOME/.config/kitty"
+mkdir -p "$HOME/.config/micro/colorschemes"
 mkdir -p "$HOME/.local/share/konsole"
 mkdir -p "$HOME/.local/bin"
 mkdir -p "$HOME/.cache/illogical-impulse"
