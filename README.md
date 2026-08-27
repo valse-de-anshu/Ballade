@@ -11,17 +11,6 @@
 
 <br/>
 
-[![dotfiles](https://img.shields.io/badge/tag-dotfiles-238636?style=flat-square)](#)
-[![hyprland](https://img.shields.io/badge/tag-hyprland-1f6feb?style=flat-square)](#)
-[![linux](https://img.shields.io/badge/tag-linux-8957e5?style=flat-square)](#)
-[![material-design](https://img.shields.io/badge/tag-material--design-da3633?style=flat-square)](#)
-[![quickshell](https://img.shields.io/badge/tag-quickshell-3fb950?style=flat-square)](#)
-[![rice](https://img.shields.io/badge/tag-rice-d29922?style=flat-square)](#)
-[![ricing](https://img.shields.io/badge/tag-ricing-f0883e?style=flat-square)](#)
-[![unixporn](https://img.shields.io/badge/tag-unixporn-a371f7?style=flat-square)](#)
-[![wayland](https://img.shields.io/badge/tag-wayland-58a6ff?style=flat-square)](#)
-
-<br/>
 
 **Ballade** is a complete, modular desktop shell and widget suite for **Hyprland**, built using **QuickShell** and Qt6 QML.  
 It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-featured utility sidebars, an AI assistant, real-time synchronized music lyrics, 3D panoramic wallpaper picking, and desktop home widgets into a seamless Wayland desktop experience.
@@ -53,10 +42,8 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 ## 🧭 Table of Contents
 - [⚡ Quick Start](#-quick-start)
 - [✨ Key Features & Modules](#-key-features--modules)
-- [🎨 Dynamic Theming & Presets](#-dynamic-theming--presets)
 - [⌨️ IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
 - [📦 System Prerequisites](#-system-prerequisites)
-- [🏗️ Under the Hood: Architecture](#️-under-the-hood-architecture)
 - [📂 Directory Anatomy](#-directory-anatomy)
 - [💖 Credits & Upstream](#-credits--upstream)
 
@@ -181,49 +168,6 @@ qs -c ballade ipc call sessionScreen toggle      # Power & Session Menu (Lock/Sh
 qs -c ballade ipc call osdVolume trigger         # Volume On-Screen Display HUD
 qs -c ballade ipc call cheatsheet toggle         # Keybindings Cheatsheet
 qs -c ballade ipc call cliphist toggle           # Clipboard History Manager
-```
-
----
-
-## 🏗️ Under the Hood: Architecture
-
-```mermaid
-graph TD
-    subgraph Compositor ["Wayland Compositor (Hyprland)"]
-        HL_IPC["Hyprland Socket IPC"]
-        HL_ENV["~/.config/hypr/custom/env.lua (qsConfig = ballade)"]
-        HL_RULES["~/.config/hypr/custom/rules.lua (Opacity & Blur)"]
-    end
-
-    subgraph CoreEngine ["QuickShell Shell Engine (ballade)"]
-        ROOT["shell.qml"] --> ILLOGICAL["panelFamilies/IllogicalImpulseFamily.qml"]
-        
-        ILLOGICAL --> BAR["modules/ii/bar/ (Top Status Bar)"]
-        ILLOGICAL --> SIDE_L["modules/ii/sidebarLeft/ (AI, Translator, Music)"]
-        ILLOGICAL --> SIDE_R["modules/ii/sidebarRight/ (Control Center, Sliders)"]
-        ILLOGICAL --> WALL["modules/ii/wallpaperSelector/ (3D Panoramic Picker)"]
-        ILLOGICAL --> DESK["modules/ii/background/ (Desktop Music & Widgets)"]
-        ILLOGICAL --> OVER["modules/ii/overview/ (App Launcher & Search)"]
-        ILLOGICAL --> OSD["modules/ii/onScreenDisplay/ (HUD Overlays)"]
-        ILLOGICAL --> SETT["modules/ii/settings/ (Settings Hub Overlay)"]
-
-        SETT -->|Auto-Saves| CONFIG["modules/common/Config.qml"]
-        CONFIG -->|JSON Adapter| STORE[("~/.config/illogical-impulse/config.json")]
-    end
-
-    subgraph Services ["Reactive Singletons (services/)"]
-        AUDIO["Audio.qml (PipeWire Sound Engine)"]
-        MPRIS["MprisController.qml (MPRIS Controller)"]
-        WALL_SRV["Wallpapers.qml (Wallpaper Scanner)"]
-        STATE["GlobalStates.qml (Navigation & Visibility)"]
-    end
-
-    HL_IPC --> BAR
-    AUDIO --> OSD
-    AUDIO --> SIDE_L
-    MPRIS --> BAR
-    MPRIS --> DESK
-    WALL_SRV --> WALL
 ```
 
 ---
