@@ -40,6 +40,14 @@ if [ -f "$SCRIPTS_DIR/setup-system-sounds.sh" ]; then
     bash "$SCRIPTS_DIR/setup-system-sounds.sh" || true
 fi
 
+# 4. Setup Custom Hyprland Overrides (Blur, Opacity & Keybindings)
+if [ -d "$BALLADE_DIR/hyprland-custom" ] && [ -d "$HOME/.config/hypr" ]; then
+    mkdir -p "$HOME/.config/hypr/custom"
+    cp -rn "$BALLADE_DIR/hyprland-custom/"* "$HOME/.config/hypr/custom/" 2>/dev/null || true
+    echo "🪟 Installed Hyprland custom blur, rules, and keybinding overrides to ~/.config/hypr/custom/"
+fi
+
 echo ""
 echo "✨ QuickShell Ballade setup is complete!"
 echo "🚀 You can now launch Ballade anytime with: qs -c ballade"
+

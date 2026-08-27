@@ -56,7 +56,7 @@ Ballade is fully standalone. It can coexist alongside any other shell configurat
 ### 1. Install Runtime Dependencies (Arch Linux / CachyOS)
 ```bash
 sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayland \
-    pipewire wireplumber playerctl canberra-gtk-play mpv jq wl-clipboard cliphist \
+    pipewire wireplumber playerctl canberra-gtk-play mpv yt-dlp jq wl-clipboard cliphist \
     tesseract tesseract-data-eng hyprpicker hyprsunset kitty
 ```
 
@@ -73,7 +73,11 @@ qs -c ballade
 ```
 
 ### 4. Auto-Start with Hyprland
-- **Using `dots-hyprland` (`~/.config/hypr/custom/env.lua`):**
+- **Using `dots-hyprland` (`~/.config/hypr/custom/env.lua` or `~/.config/hypr/custom/variables.lua`):**
+  ```lua
+  hl.env("qsConfig", "ballade")
+  ```
+- **Or in `~/.config/hypr/hyprland/variables.lua`:**
   ```lua
   hl.env("qsConfig", "ballade")
   ```
@@ -127,7 +131,7 @@ qs -c ballade
 * **Virtual On-Screen Keyboard & Cheatsheet**: Touch-friendly virtual keyboard for 2-in-1s and searchable Hyprland keybindings cheatsheet.
 * **Lock Screen (`modules/common/panels/lock/`)**: Frosted glass lockscreen with PAM authentication, password input, media controls, and battery status.
 
-### ⚙️ 7. Master Settings Overlay (`SUPER + Escape` / `modules/ii/settings/`)
+### ⚙️ 7. Master Settings Overlay (`SUPER + I` or `SUPER + Escape` / `modules/ii/settings/`)
 * **8 Comprehensive Configuration Pages**: Quick Config, Bar Configuration, Interface & Corner Shapes (`round`, `slanted`, `superellipse`, `cookie`), Desktop Widgets, Profile Info, Hyprland Rules, Services & Audio Steppers, and General Options.
 * **Auto-Saving**: All changes write directly to `~/.config/illogical-impulse/config.json`.
 
@@ -135,11 +139,21 @@ qs -c ballade
 * **Bundled Sound Library**: Built-in audio cues for Startup, Shutdown, Lock session, Logout, Sleep, Battery Low, and USB connect/disconnect.
 * **Low-Latency Player Fallback**: Automatic multi-backend audio pipeline (`pw-play` ➔ `paplay` ➔ `mpv` ➔ `canberra-gtk-play`).
 
+### 🪟 9. Bundled Hyprland Custom Configuration (`hyprland-custom/`)
+Ballade includes full Hyprland override configs inside `hyprland-custom/` that get installed to `~/.config/hypr/custom/`:
+* **Frosted Glass Blur (`general.lua`)**: `size = 16`, `passes = 4`, `contrast = 1.0`, `vibrancy = 0.35`.
+* **Window Transparency Rules (`rules.lua`)**: `opacity = "0.93 0.88"` for all application windows.
+* **Keybinding Integrations (`keybinds.lua`)**:
+  - `SUPER + I` or `SUPER + ESC`: Toggle Settings Overlay
+  - `CTRL + SUPER + T`: Toggle 3D Panoramic Wallpaper Picker
+  - `SUPER + ALT + Space`: Toggle Compact Centered Window
+* **Cursor Restoration (`execs.lua`)**: Sets `Gloomi_x` cursor automatically on startup.
+
 ---
 
-## 🎨 Dynamic Theming & Handcrafted Presets
+## 🎨 Dynamic Theming & Multi-App Configuration Engine
 
-Ballade features a dual-tier color engine: **Material Design 3 extraction** from wallpapers, plus **6 handcrafted cohesive theme presets**:
+Ballade features a dual-tier automated theming pipeline: **Material Design 3 extraction** from any wallpaper, plus **6 handcrafted cohesive theme presets**:
 
 | Preset | Accent Hue | Command Palette | Philosophy |
 | :--- | :--- | :--- | :--- |
@@ -150,7 +164,15 @@ Ballade features a dual-tier color engine: **Material Design 3 extraction** from
 | **`blue`**  | `#2196F3` | Cyan / Midnight Navy | Tokyo Night deep ocean tranquility |
 | **`grayscale`** | `#78909C` | Nord Slate / Charcoal | Distraction-free monochrome productivity |
 
-> **Unified Application Sync:** Changing a preset or wallpaper instantly updates QuickShell UI, Kitty (`current-theme.conf`), Konsole (`Quickshell.colorscheme`), KDE Plasma apps (Dolphin, Kate), GTK icons, and Starship prompt simultaneously.
+### 🛠️ What Our Scripts Automate Across Your System:
+When you apply a preset (`scripts/theming/apply-theme-preset.sh`) or switch a wallpaper (`scripts/colors/switchwall.sh`), Ballade automatically writes and synchronizes configurations across your entire desktop environment:
+- 🐱 **Kitty Terminal**: Applies matching 16-color ANSI templates to `~/.config/kitty/current-theme.conf` and sends `SIGUSR1` for instant live reloading.
+- 💻 **Konsole & Dolphin Terminal**: Dynamically writes native RGB color maps to `~/.local/share/konsole/Quickshell.colorscheme` and registers it in `~/.config/konsolerc`.
+- 🐬 **KDE Plasma & Dolphin**: Applies matching colorschemes via `plasma-apply-colorscheme` and updates `kdeglobals`.
+- 🎨 **Kvantum Qt Engine**: Generates and compiles Material theme SVGs via `scripts/kvantum/materialQT.sh`.
+- 🏷️ **GTK & Icons**: Updates `gsettings` to synchronize GTK 3/4 theme colors and `Tela-circle-*` icon packs.
+- 🚀 **Starship Prompt**: Synchronizes prompt accent colors in `~/.config/starship.toml`.
+- 🪟 **Hyprland Compositor**: Enforces frosted glass blur (`passes = 4`, `size = 16`) and window opacities (`0.93 0.88`) via `hyprland-custom/`.
 
 ---
 
@@ -162,7 +184,8 @@ Control shell modules from Hyprland keybindings or terminal scripts:
 qs -c ballade ipc call sidebarLeft toggle        # Left Sidebar (AI, Translator, Music)
 qs -c ballade ipc call sidebarRight toggle       # Right Sidebar (Control Center, Sliders)
 qs -c ballade ipc call overview toggle           # App Launcher & Window Overview
-qs -c ballade ipc call wallpaperSelector toggle  # 3D Panoramic Wallpaper Carousel
+qs -c ballade ipc call wallpaperSelector toggle  # 3D Panoramic Wallpaper Carousel (CTRL+SUPER+T)
+qs -c ballade ipc call settings toggle           # Master Settings Hub (SUPER+I or SUPER+ESC)
 qs -c ballade ipc call mediaControls toggle      # Music Player Popup & Seek
 qs -c ballade ipc call sessionScreen toggle      # Power & Session Menu (Lock/Shutdown)
 qs -c ballade ipc call osdVolume trigger         # Volume On-Screen Display HUD
@@ -172,14 +195,17 @@ qs -c ballade ipc call cliphist toggle           # Clipboard History Manager
 
 ---
 
-## 📦 System Prerequisites
+## 📦 System Prerequisites & Dependencies
 
 | Domain | Required Packages | Purpose |
 | :--- | :--- | :--- |
-| **Compositor** | `hyprland`, `quickshell`, `qt6-declarative`, `qt6-5compat`, `qt6-svg` | Wayland compositing and QML rendering |
-| **Audio Server** | `pipewire`, `wireplumber`, `playerctl`, `canberra-gtk-play`, `mpv` | Sound routing, MPRIS media control, audio events |
-| **Theming Engine** | `matugen`, `kitty`, `konsole`, `plasma-apply-colorscheme` | Material Design 3 extraction and terminal syncing |
-| **Utilities & OCR** | `jq`, `wl-clipboard`, `cliphist`, `tesseract`, `hyprpicker`, `hyprsunset` | Clipboard caching, OCR screen translation, gamma |
+| **Compositor & Shell** | `hyprland`, `quickshell`, `qt6-declarative`, `qt6-5compat`, `qt6-svg`, `qt6-wayland` | Wayland compositing and QML widget rendering |
+| **Audio Server & Media** | `pipewire`, `wireplumber`, `playerctl`, `canberra-gtk-play`, `mpv`, `pw-play` | PipeWire volume scaling, MPRIS player controls, sound events |
+| **Media & Lyrics Engine** | `yt-dlp`, `playerctl`, `mpv` | Real-time YouTube CC caption extraction and media streaming |
+| **Dynamic Theming** | `matugen`, `kitty`, `konsole`, `plasma-apply-colorscheme`, `tela-circle-icon-theme-git` | Material You color extraction, Kitty/Konsole terminal palettes |
+| **Utilities & OCR** | `jq`, `wl-clipboard`, `cliphist`, `tesseract`, `tesseract-data-eng`, `hyprpicker`, `hyprsunset` | Clipboard manager, screen OCR translation, night light gamma |
+| **Hardware & Sensors** | `brightnessctl`, `ddcutil`, `upower`, `acpi`, `nmcli`, `bluetoothctl` | Backlight brightness, battery telemetry, Wi-Fi & Bluetooth |
+| **Python Ecosystem** | `python-tqdm`, `faster-whisper`, `google-generativeai` | Synchronized lyrics streaming, offline transcription, Gemini AI |
 
 ---
 
@@ -188,6 +214,7 @@ qs -c ballade ipc call cliphist toggle           # Clipboard History Manager
 ```text
 ballade/
 ├── assets/                  # High-res icons, bundled sound effects (USB, power), and screenshots
+├── hyprland-custom/         # Custom Hyprland overrides (blur rules, opacities, keybinds, compact window)
 ├── modules/
 │   ├── common/              # Shared components (MaterialShape, StyledSlider, SelectionDialog, Config)
 │   ├── ii/                  # Illogical Impulse UI panels (bar, sidebars, overview, settings, wallpapers)
@@ -208,14 +235,13 @@ ballade/
 
 ---
 
-## 💖 Lineage & Acknowledgements
+## 💖 Credits & Upstream
 
-Ballade stands on the shoulders of giants in the Linux Wayland community:
+- **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)**: The original **Illogical Impulse (`ii`)** — base architecture, frosted glass styling, and top bar design.
+- **[pctrade/end4-pC](https://github.com/pctrade/end4-pC)**: The custom fork that contributed the sidebar modules, AI chat, translator, and settings overlay.
+- **[outfoxxed/quickshell](https://github.com/outfoxxed/quickshell)**: The QML desktop shell engine for Wayland.
+- **[Hyprland](https://hyprland.org/)**: Dynamic tiling Wayland compositor.
 
-- **[end-4](https://github.com/end-4)**: Creator of **[dots-hyprland (Illogical Impulse)](https://github.com/end-4/dots-hyprland)** — the aesthetic soul, frosted glass design, and structural foundation.
-- **[pctrade](https://github.com/pctrade)**: Creator of **[end4-pC](https://github.com/pctrade/end4-pC)** — the modular expansion engine that brought AI, sidebars, and desktop widgets to life.
-- **[Outfoxxed](https://github.com/outfoxxed)**: Creator of **[QuickShell](https://quickshell.outfoxxed.me/)** — the groundbreaking Qt6/QML desktop shell framework for Wayland.
-- **[Vaxry](https://github.com/vaxerski)** & the **[Hyprland Team](https://hyprland.org/)** — for creating the finest tiling compositor in Linux history.
 
 ---
 

@@ -129,9 +129,6 @@ if [ -f "$KITTY_THEME_FILE" ]; then
         sed -i '/# BEGIN_KITTY_THEME/,/# END_KITTY_THEME/c\# BEGIN_KITTY_THEME\ninclude current-theme.conf\n# END_KITTY_THEME' "$HOME/.config/kitty/kitty.conf"
     fi
     
-    # Live reload all running kitty instances
-    kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
-
     # Synchronize Konsole colorscheme
     konsole_theme="$HOME/.local/share/konsole/Quickshell.colorscheme"
     mkdir -p "$HOME/.local/share/konsole"

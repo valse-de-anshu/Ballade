@@ -34,58 +34,36 @@ apply_kitty() {
     active_preset=$(jq -r '.theme.activePreset // empty' "$config_file" 2>/dev/null)
   fi
 
-  local preset_theme_file="$SCRIPT_DIR/../theming/kitty-themes/${active_preset}.conf"
+  local preset_file=""
+  case "$active_preset" in
+    blue|tokyo_night|tokyonight) preset_file="blue.conf" ;;
+    grayscale|nord|monochrome|bw) preset_file="grayscale.conf" ;;
+    green|atelier|everforest) preset_file="green.conf" ;;
+    pink|sakura) preset_file="pink.conf" ;;
+    purple|amethyst) preset_file="purple.conf" ;;
+    red|crimson) preset_file="red.conf" ;;
+    *) preset_file="${active_preset}.conf" ;;
+  esac
+
+  local preset_theme_file="$SCRIPT_DIR/../theming/kitty-themes/$preset_file"
   if [ -n "$active_preset" ] && [ -f "$preset_theme_file" ]; then
     mkdir -p "$HOME/.config/kitty"
     cp "$preset_theme_file" "$HOME/.config/kitty/current-theme.conf"
-  else
-    # Check if terminal escape sequence template exists
-    if [ ! -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
-      echo "Template file not found for Kitty theme. Skipping that."
-      return
-    fi
-    # Copy template
-    mkdir -p "$STATE_DIR"/user/generated/terminal
-    cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-    # Apply colors
-    for i in "${!colorlist[@]}"; do
-      sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-    done
-
-    # Copy to kitty's config directory so it actually applies!
+  elif [ -f "$SCRIPT_DIR/../theming/kitty-themes/nord.conf" ]; then
+    # Fallback to a clean, crisp dark theme instead of generating broken light mode
     mkdir -p "$HOME/.config/kitty"
-    cp "$STATE_DIR"/user/generated/terminal/kitty-theme.conf "$HOME/.config/kitty/current-theme.conf"
+    cp "$SCRIPT_DIR/../theming/kitty-themes/nord.conf" "$HOME/.config/kitty/current-theme.conf"
   fi
 
-  # Reload running Kitty instances
-  if pgrep -f kitty >/dev/null; then
+  # Reload running Kitty instances safely
+  if pidof kitty >/dev/null 2>&1; then
     kill -SIGUSR1 $(pidof kitty) 2>/dev/null || true
   fi
 }
 
 apply_anyterm() {
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/sequences.txt" ]; then
-    echo "Template file not found for Terminal. Skipping that."
-    return
-  fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/sequences.txt" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  done
-
-  sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR/user/generated/terminal/sequences.txt"
-
-  for file in /dev/pts/*; do
-    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
-      {
-      cat "$STATE_DIR"/user/generated/terminal/sequences.txt >"$file"
-      } & disown || true
-    fi
-  done
+  # Kitty and modern Wayland terminals reload via config/signal, avoid raw pts dumping to prevent raster corruption
+  return 0
 }
 
 apply_konsole() {
