@@ -1,36 +1,48 @@
 <div align="center">
 
-# 🎼 B A L L A D E
-### *A Symphonic Wayland Desktop Shell for Hyprland*
+# 🎼 Ballade
+### A Feature-Rich, Modern Wayland Desktop Shell for Hyprland
 
-[![Hyprland](https://img.shields.io/badge/Compositor-Hyprland-00B0FF?style=for-the-badge&logo=archlinux&logoColor=white)](https://hyprland.org/)
-[![QuickShell](https://img.shields.io/badge/Shell_Engine-QuickShell_0.2.1-7C4DFF?style=for-the-badge)](https://quickshell.outfoxxed.me/)
-[![Qt6](https://img.shields.io/badge/Toolkit-Qt6_QML-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://www.qt.io/)
-[![Material You](https://img.shields.io/badge/Colors-Material_Design_3-FF4081?style=for-the-badge)](https://m3.material.io/)
-[![License](https://img.shields.io/badge/License-GPLv3-yellow?style=for-the-badge)](LICENSE)
+[![Hyprland](https://img.shields.io/badge/hyprland-00B0FF?style=for-the-badge&logo=archlinux&logoColor=white)](https://hyprland.org/)
+[![QuickShell](https://img.shields.io/badge/quickshell-7C4DFF?style=for-the-badge)](https://quickshell.outfoxxed.me/)
+[![Wayland](https://img.shields.io/badge/wayland-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://wayland.freedesktop.org/)
+[![Material Design](https://img.shields.io/badge/material--design--3-FF4081?style=for-the-badge)](https://m3.material.io/)
+[![Qt6](https://img.shields.io/badge/Qt6_QML-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://www.qt.io/)
 
 <br/>
 
-> **"A desktop should not just be a tool; it should be an atmosphere."**  
-> *Ballade blends the ethereal frosted-glass minimalism of classic Linux ricing with an intelligent, modular ecosystem designed for fluid everyday focus.*
+[![dotfiles](https://img.shields.io/badge/tag-dotfiles-238636?style=flat-square)](#)
+[![hyprland](https://img.shields.io/badge/tag-hyprland-1f6feb?style=flat-square)](#)
+[![linux](https://img.shields.io/badge/tag-linux-8957e5?style=flat-square)](#)
+[![material-design](https://img.shields.io/badge/tag-material--design-da3633?style=flat-square)](#)
+[![quickshell](https://img.shields.io/badge/tag-quickshell-3fb950?style=flat-square)](#)
+[![rice](https://img.shields.io/badge/tag-rice-d29922?style=flat-square)](#)
+[![ricing](https://img.shields.io/badge/tag-ricing-f0883e?style=flat-square)](#)
+[![unixporn](https://img.shields.io/badge/tag-unixporn-a371f7?style=flat-square)](#)
+[![wayland](https://img.shields.io/badge/tag-wayland-58a6ff?style=flat-square)](#)
+
+<br/>
+
+**Ballade** is a complete, modular desktop shell and widget suite for **Hyprland**, built using **QuickShell** and Qt6 QML.  
+It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-featured utility sidebars, an AI assistant, real-time synchronized music lyrics, 3D panoramic wallpaper picking, and desktop home widgets into a seamless Wayland desktop experience.
 
 <br/>
 
 ---
 
-### 🌟 Visual Showcase
+### 📸 Screenshots
 
-| 🌲 Forest Green Serenity | 🔮 Amethyst Nocturne |
+| 🌲 Forest Green Theme & Widgets | 🔮 Amethyst Purple Theme |
 | :---: | :---: |
-| <img src="assets/screenshots/home-green.png" width="460" alt="Forest Green Home Screen" /> | <img src="assets/screenshots/theme-purple.png" width="460" alt="Amethyst Purple Theme" /> |
+| <img src="assets/screenshots/home-green.png" width="460" alt="Home Green" /> | <img src="assets/screenshots/theme-purple.png" width="460" alt="Theme Purple" /> |
 
-| 🌌 3D Panoramic Wallpaper Carousel | 🌸 Sakura Ambient Workspace |
+| 🌌 3D Panoramic Wallpaper Picker | 🌸 Sakura Pink Theme & Sidebar |
 | :---: | :---: |
-| <img src="assets/screenshots/wallpaper-picker.png" width="460" alt="Panoramic Wallpaper Picker" /> | <img src="assets/screenshots/theme-pink.png" width="460" alt="Sakura Pink Theme" /> |
+| <img src="assets/screenshots/wallpaper-picker.png" width="460" alt="Wallpaper Picker" /> | <img src="assets/screenshots/theme-pink.png" width="460" alt="Theme Pink" /> |
 
-| 🎵 Acoustic Control & Synced Lyrics | ⚙️ Unified Presets & Settings Hub |
+| 🎵 Music Player & Synced Lyrics | ⚙️ Themes & Settings Hub |
 | :---: | :---: |
-| <img src="assets/screenshots/widgets-lyrics.png" width="460" alt="Music Controller & Lyrics" /> | <img src="assets/screenshots/settings-presets.png" width="460" alt="Settings & Presets Manager" /> |
+| <img src="assets/screenshots/widgets-lyrics.png" width="460" alt="Music and Lyrics" /> | <img src="assets/screenshots/settings-presets.png" width="460" alt="Settings Presets" /> |
 
 ---
 
@@ -38,49 +50,15 @@
 
 <br/>
 
-## 🧭 Navigation
-- 📖 [Design Philosophy & Lineage](#-design-philosophy--lineage)
-- ⚡ [60-Second Quick Start](#-60-second-quick-start)
-- 🎛️ [Core Experiences & Capabilities](#️-core-experiences--capabilities)
-- 🎨 [Dynamic Theming & Handcrafted Presets](#-dynamic-theming--handcrafted-presets)
-- ⌨️ [IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
-- 🏗️ [Under the Hood: Architecture](#️-under-the-hood-architecture)
-- 📦 [System Prerequisites](#-system-prerequisites)
-- 📂 [Directory Anatomy](#-directory-anatomy)
-- 💖 [Lineage & Acknowledgements](#-lineage--acknowledgements)
-
----
-
-## 📖 Design Philosophy & Lineage
-
-Most desktop environments force a choice between **barebones minimalism** and **cluttered feature suites**. **Ballade** was forged to eliminate that compromise.
-
-```
-       [ end-4 / dots-hyprland ]                 [ pctrade / end4-pC ]
-     (Illogical Impulse Aesthetic)              (Modular AI & Panel Power)
-                   │                                         │
-                   └────────────────────┬────────────────────┘
-                                        ▼
-                                 ╔══════════════╗
-                                 ║   BALLADE    ║
-                                 ╚══════════════╝
-                                        ▲
-                                        │
-                         [ Personal Refinements & Overhauls ]
-                         • 3D Panoramic Cover-Flow Carousel
-                         • Fluid Tactile Music Controls
-                         • Harmonized 16-Color ANSI Palettes
-                         • Multi-Language Synced Lyrics
-                         • Self-Resolving Portability
-```
-
-### The Three Pillars of Ballade:
-1. **The Glass & Geometry of `ii` ([end-4/dots-hyprland](https://github.com/end-4/dots-hyprland))**:  
-   Honoring the iconic frosted-glass blur, non-intrusive status geometry, and disciplined visual typography of the original Illogical Impulse.
-2. **The Modular Intelligence of `end4-pC` ([pctrade/end4-pC](https://github.com/pctrade/end4-pC))**:  
-   Integrating full-featured sidebars, multi-model AI companions, instant screen OCR translation, and desktop widgets into a single cohesive runtime.
-3. **Personal Innovations (`valse-de-anshu`)**:  
-   Overhauling the wallpaper picker into a true 3D panoramic carousel, engineering thicker ergonomic wavy audio progress sliders with circular handles, synchronizing master volume triggers with instant visual OSD feedback, curating 6 handcrafted ANSI terminal palettes, and automating standalone deployment.
+## 🧭 Table of Contents
+- [⚡ Quick Start](#-quick-start)
+- [✨ Key Features & Modules](#-key-features--modules)
+- [🎨 Dynamic Theming & Presets](#-dynamic-theming--presets)
+- [⌨️ IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
+- [📦 System Prerequisites](#-system-prerequisites)
+- [🏗️ Under the Hood: Architecture](#️-under-the-hood-architecture)
+- [📂 Directory Anatomy](#-directory-anatomy)
+- [💖 Credits & Upstream](#-credits--upstream)
 
 ---
 
@@ -119,34 +97,56 @@ qs -c ballade
 
 ---
 
-## 🎛️ Core Experiences & Capabilities
+## ✨ Key Features & Modules
 
-### 🌲 1. Ambient Top Bar
-* **Living Workspaces**: Smooth morphing dot indicators track active, occupied, and empty virtual desktops across multiple monitors with zero latency.
-* **Audio Waveform Visualizer**: Live audio wave animation reflects system sound output in real-time. Left-click to inspect track preview; right-click to play/pause.
-* **Jitter-Free Telemetry**: CPU %, RAM %, Swap %, and Temp meters utilize OpenType tabular figures (`tnum`) to eliminate number twitching. Swap auto-hides when unused (`0%`).
-* **Interactive Tray & Calendar**: Context-aware status notifier tray, live weather forecast pill, and click-to-open calendar with world clock timezones.
+### 🌲 1. Top Status Bar (Ditto `ii` Bar + `end4-pC` Visualizer)
+* **Living Workspaces**: Dynamic morphing dot indicators tracking active, occupied, and empty virtual desktops across single and multi-monitor setups.
+* **Active Window Information**: Live window title display and application class detection.
+* **Audio Waveform Visualizer**: Animated sound wave visualizer reacting to audio in real-time. Left-click opens track preview & controls (`MediaControls.qml`); right-click toggles play/pause.
+* **Jitter-Free Hardware Telemetry**: CPU %, RAM %, Swap %, and Temp meters locked with OpenType tabular figures (`tnum`) to eliminate number twitching. Swap automatically reveals itself when swap memory is actively in use (`> 0%`).
+* **Interactive System Tray & Quick Icons**: Wayland status notifier tray, Wi-Fi SSID / Ethernet status, Bluetooth, Battery percentage with charging states, and Volume indicators.
+* **Update Tracker & Calendar**: Pending system updates counter with a 1-click terminal launcher, plus formatted time/date with click-to-open calendar popup and world timezone clock.
+* **Vertical Bar Mode (`modules/ii/verticalBar/`)**: Full alternative side-docked bar orientation.
 
-### 🧠 2. Intelligent Left Sidebar
-* **Conversational AI Companion**: Built-in support for Google Gemini API, local Ollama models (`llama3`, `deepseek`), and OpenAI ChatGPT with Markdown rendering and syntax-highlighted code blocks.
-* **Live Side-by-Side Translator**: Instant multi-language translation (Google / DeepL) with auto-detection, character metrics, quick-copy actions, and a sleek modal language picker (`SelectionDialog.qml`).
-* **Acoustic Player & Synced Lyrics**: Seekable wavy progress slider with an ergonomic circular handle head, track cover preview, and real-time timed subtitle streaming for English, Hindi, and YouTube tracks.
-* **Booru Art Explorer**: Browse anime art and wallpaper boards with tag search and a 1-click "Apply as Wallpaper" shortcut.
+### 🧠 2. Intelligent Left Sidebar (`end4-pC` + `ballade`)
+* **Conversational AI Companion**: Direct chat client supporting Google Gemini API, local Ollama models (`llama3`, `deepseek`), and OpenAI ChatGPT with Markdown rendering, code highlighting, and chat history.
+* **Live Side-by-Side Translator**: Full translator (Google Translate / DeepL) with auto-detection, character counter, quick copy/search buttons, and a compact modal language selector (`SelectionDialog.qml`).
+* **Acoustic Player & Synced Lyrics**: Seekable wavy progress slider with an ergonomic circular knob handle, track cover preview, and real-time timed subtitle streaming for English, Hindi, and YouTube tracks.
+* **Sidebar Master Volume Controls**: Dedicated volume up/down/mute buttons connected to master PipeWire volume with instant On-Screen Display (OSD) HUD feedback.
+* **Booru Art Explorer**: Search and browse anime art and wallpaper boards with tag search and a 1-click "Apply as Wallpaper" shortcut.
 
-### 🎚️ 3. Tactile Right Sidebar (Control Center)
+### 🎚️ 3. Tactile Right Sidebar / Control Center (`end4-pC`)
 * **Quick-Toggle Tiles**: 1-click toggles for Wi-Fi, Bluetooth, Night Light (Gamma temperature), Anti-Flashbang shader, Audio Sink Router, and Pomodoro Timer.
 * **Master QuickSliders**: Smooth touch- and mouse-friendly sliders for Master Volume, Microphone Input Gain, and Display Brightness.
-* **Live Audio Router**: Expandable output selector to redirect playback between Headphones, Speakers, Bluetooth headsets, and HDMI outputs on the fly.
+* **Live Audio Sink/Source Router**: Expandable output selector to redirect playback between Headphones, Speakers, Bluetooth headsets, and HDMI outputs on the fly.
+* **Network & Bluetooth Dialogs**: Wi-Fi network scanner with password prompt and Bluetooth device pairing/connecting manager.
+* **Pomodoro Focus Timer**: Customizable work/break focus timer with notification audio cues.
 * **Notification History Center**: Grouped notifications with actionable buttons, timestamps, and one-click clear.
 
-### 🌌 4. 3D Panoramic Cover-Flow Carousel
-* Displays every wallpaper in the active preset directory across the screen in an uninterrupted panoramic arc.
-* Smooth zoom-on-hover with keyboard arrow navigation and instant Material You color extraction.
+### 🌌 4. 3D Panoramic Cover-Flow Wallpaper Picker (`ballade`)
+* **Panoramic 3D Cover-Flow View**: Displays every wallpaper in the active preset directory across the screen in an uninterrupted panoramic arc without horizontal pagination clipping.
+* **Interactive Center Scale**: Fluid zoom and border highlight on hovered wallpapers with keyboard arrow navigation and instant Material You color extraction.
 
-### 🖥️ 5. Desktop Home Widgets
+### 🖥️ 5. Desktop Home Widgets (`end4-pC` + `ballade`)
 * **Frosted Desktop Music Player**: Floating music card with wavy progress tracks and playback controls.
 * **World Telemetry & Clocks**: Live weather telemetry from `wttr.in`, geographic dot-map locator projection, and customizable digital, analog, and pixel clocks.
 * **Persistent Desktop Notes & Tasks**: Auto-saving sticky notes and to-do checklists.
+
+### 🪟 6. Overlays, Hubs & System Screens (`end4-pC`)
+* **App Launcher / Overview (`modules/ii/overview/`)**: Full-screen fuzzy app search, math calculator, command execution, and window switcher.
+* **Session & Power Screen (`modules/ii/sessionScreen/`)**: Fullscreen power menu with Lock, Logout, Suspend, Hibernate, Reboot, and Shutdown triggers.
+* **Screen Region Translator (`modules/ii/screenTranslator/`)**: Snip any region on your screen to perform real-time OCR text extraction and translation.
+* **On-Screen Display HUD (`modules/ii/onScreenDisplay/`)**: Non-intrusive overlays for Volume percentage, Brightness level, and Night Light Gamma.
+* **Virtual On-Screen Keyboard & Cheatsheet**: Touch-friendly virtual keyboard for 2-in-1s and searchable Hyprland keybindings cheatsheet.
+* **Lock Screen (`modules/common/panels/lock/`)**: Frosted glass lockscreen with PAM authentication, password input, media controls, and battery status.
+
+### ⚙️ 7. Master Settings Overlay (`SUPER + Escape` / `modules/ii/settings/`)
+* **8 Comprehensive Configuration Pages**: Quick Config, Bar Configuration, Interface & Corner Shapes (`round`, `slanted`, `superellipse`, `cookie`), Desktop Widgets, Profile Info, Hyprland Rules, Services & Audio Steppers, and General Options.
+* **Auto-Saving**: All changes write directly to `~/.config/illogical-impulse/config.json`.
+
+### 🔊 8. Audio Events & System Sound Cues (`scripts/` & `assets/`)
+* **Bundled Sound Library**: Built-in audio cues for Startup, Shutdown, Lock session, Logout, Sleep, Battery Low, and USB connect/disconnect.
+* **Low-Latency Player Fallback**: Automatic multi-backend audio pipeline (`pw-play` ➔ `paplay` ➔ `mpv` ➔ `canberra-gtk-play`).
 
 ---
 
