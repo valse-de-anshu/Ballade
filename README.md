@@ -51,6 +51,7 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 - [⚡ Quick Start](#-quick-start)
 - [✨ Key Features & Modules](#-key-features--modules)
 - [🎨 Dynamic Theming & Multi-App Engine](#-dynamic-theming--multi-app-configuration-engine)
+- [📖 App Theming & Setup Guide (Discord, Joplin, Obsidian)](docs/APP_THEMING_GUIDE.md)
 - [⌨️ IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
 - [📦 System Prerequisites](#-system-prerequisites--dependencies)
 - [📂 Directory Anatomy](#-directory-anatomy)
