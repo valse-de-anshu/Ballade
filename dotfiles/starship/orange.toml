@@ -1,29 +1,33 @@
+# Don't print a new line at the start of the prompt
 add_newline = true
 
+# The r/unixporn "Pill" layout with Live Time added
 format = """
 $username$directory$time$git_branch$git_status$cmd_duration
 $character"""
 
 [character]
 success_symbol = "[╰─](bold fg:#ff9248) "
-error_symbol = "[╰─](bold fg:#cf5d44) "
+error_symbol = "[╰─](bold fg:#e04f4f) "
 
 [username]
 show_always = true
-style_user = "bg:#452c22 fg:#ff9248 bold"
-style_root = "bg:#452c22 fg:#cf5d44 bold"
-format = "[╭─](bold fg:#452c22)[󰭹 $user]($style)[](bold fg:#452c22) "
+style_user = "bg:#3d2216 fg:#ff9248 bold"
+style_root = "bg:#3d2216 fg:#e04f4f bold"
+# Added the closing curve [] and a space to the end of this format string
+format = "[╭─](bold fg:#3d2216)[󰭹 $user]($style)[](bold fg:#3d2216) "
 
 [hostname]
+# Disabled the hostname so "anshu" stops printing a second time
 disabled = true
 
 [directory]
 home_symbol = " "
 read_only = " "
-style = "bg:#291e1a fg:#e8dcd5 bold"
+style = "bg:#2a160d fg:#faeae3 bold"
 truncation_length = 3
 truncation_symbol = "••/"
-format = "[](bold fg:#291e1a)[$path]($style)[](bold fg:#291e1a) "
+format = "[](bold fg:#2a160d)[$path]($style)[](bold fg:#2a160d) "
 
 [directory.substitutions]
 "Desktop" = " "
@@ -35,21 +39,29 @@ format = "[](bold fg:#291e1a)[$path]($style)[](bold fg:#291e1a) "
 "GitHub" = "󰊤 "
 
 [git_branch]
-symbol = " "
-style = "bg:#452c22 fg:#9fb865 bold"
-format = "[](bold fg:#452c22)[$symbol$branch]($style)[](bold fg:#452c22) "
+symbol = "󰘬 "
+style = "bg:#ff9248 fg:#200f07 bold"
+format = "[](bold fg:#ff9248)[$symbol$branch]($style)[](bold fg:#ff9248) "
 
 [git_status]
-style = "bg:#452c22 fg:#f7bb63 bold"
-format = "[$all_status$ahead_behind]($style)"
-
-[time]
-disabled = false
-time_format = "%R"
-style = "bg:#291e1a fg:#f7bb63 bold"
-format = "[](bold fg:#291e1a)[󱑎 $time]($style)[](bold fg:#291e1a) "
+style = "bg:#e04f4f fg:#200f07 bold"
+format = "[](bold fg:#e04f4f)[$all_status$ahead_behind]($style)[](bold fg:#e04f4f) "
+# Simplified, universally understood status icons:
+conflicted = "!! "
+ahead = "↑ "
+behind = "↓ "
+diverged = "↕ "
+untracked = "? "
+stashed = "S "
+modified = "! "
+staged = "+ "
+renamed = "» "
+deleted = "x "
 
 [cmd_duration]
-min_time = 2_000
-style = "bg:#452c22 fg:#d49a7a bold"
-format = "[](bold fg:#452c22)[󱐋 $duration]($style)[](bold fg:#452c22) "
+min_time = 500
+style = "bg:#e0762f fg:#200f07 bold"
+format = "[](bold fg:#e0762f)[󰪢 $duration]($style)[](bold fg:#e0762f)"
+
+[package]
+disabled = true

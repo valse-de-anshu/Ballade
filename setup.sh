@@ -17,7 +17,7 @@ chmod +x "$BALLADE_DIR/setup.sh" 2>/dev/null || true
 # 2. Create standard directories
 echo "📁 Creating standard user directories..."
 mkdir -p "$HOME/Pictures/Wallpapers"
-for preset in green purple pink red blue grayscale; do
+for preset in green purple pink red blue golden orange grayscale; do
     mkdir -p "$HOME/Pictures/Wallpapers/$preset"
     # Provide starter wallpaper if folder is completely empty
     if [ -z "$(ls -A "$HOME/Pictures/Wallpapers/$preset" 2>/dev/null)" ]; then
@@ -58,6 +58,10 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                 mkdir -p "$HOME/.icons"
                 cp -rn "$app/"* "$HOME/.icons/" 2>/dev/null || true
                 echo "   ↳ Custom cursor theme (Gloomi_x) installed to ~/.icons/"
+            elif [ "$app_name" = "color-schemes" ]; then
+                mkdir -p "$HOME/.local/share/color-schemes"
+                cp -rn "$app/"* "$HOME/.local/share/color-schemes/" 2>/dev/null || true
+                echo "   ↳ KDE color schemes installed to ~/.local/share/color-schemes/"
             else
                 mkdir -p "$HOME/.config/$app_name"
                 cp -rn "$app/"* "$HOME/.config/$app_name/" 2>/dev/null || true
@@ -67,9 +71,14 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
     if [ -f "$BALLADE_DIR/dotfiles/starship/starship.toml" ]; then
         cp -n "$BALLADE_DIR/dotfiles/starship/starship.toml" "$HOME/.config/starship.toml" 2>/dev/null || true
     fi
-    if [ -d "$BALLADE_DIR/dotfiles/color-schemes" ]; then
-        mkdir -p "$HOME/.local/share/color-schemes"
-        cp -rn "$BALLADE_DIR/dotfiles/color-schemes/"* "$HOME/.local/share/color-schemes/" 2>/dev/null || true
+    if [ -d "$BALLADE_DIR/scripts/theming/micro-themes" ]; then
+        mkdir -p "$HOME/.config/micro/colorschemes"
+        cp -rn "$BALLADE_DIR/scripts/theming/micro-themes/"* "$HOME/.config/micro/colorschemes/" 2>/dev/null || true
+    fi
+    if [ -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" ]; then
+        mkdir -p "$HOME/.local/bin"
+        cp -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" "$HOME/.local/bin/fastfetch"
+        chmod +x "$HOME/.local/bin/fastfetch"
     fi
     echo "   ↳ Application dotfiles installed to ~/.config/ and ~/.local/share/"
 fi

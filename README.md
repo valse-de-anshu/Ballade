@@ -37,9 +37,9 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 | :---: | :---: |
 | <img src="assets/screenshots/widgets-lyrics.png" width="460" alt="Music and Lyrics" /> | <img src="assets/screenshots/settings-presets.png" width="460" alt="Settings Presets" /> |
 
-| 💻 Multi-App Ecosystem: VS Code, Micro Editor, Dolphin & Kitty Terminal |
-| :---: |
-| <img src="assets/screenshots/code-micro-dolphin.png" width="940" alt="VS Code, Micro, Dolphin, Kitty Ecosystem" /> |
+| 💻 Multi-App Ecosystem: VS Code, Micro Editor, Dolphin & Kitty | 📟 Terminal Rice: Fastfetch & rmpc Music Player |
+| :---: | :---: |
+| <img src="assets/screenshots/code-micro-dolphin.png" width="460" alt="VS Code, Micro, Dolphin, Kitty Ecosystem" /> | <img src="assets/screenshots/fastfetch-rmpc.png" width="460" alt="Fastfetch and rmpc Terminal Rice" /> |
 
 ---
 
@@ -187,9 +187,9 @@ Ballade features an automated, multi-tier theming pipeline: **Dynamic Material D
 
 ---
 
-### 🛠️ What Our Scripts Automate Across Your System (11 Connected Subsystems):
+### 🛠️ What Our Scripts Automate Across Your System (15 Connected Subsystems):
 
-When you apply a preset from the **Settings Hub (`SUPER + I`)**, run `scripts/theming/apply-theme-preset.sh`, or switch a wallpaper via `scripts/colors/switchwall.sh`, Ballade automatically synchronizes **11 core subsystems** across your desktop environment in real-time:
+When you apply a preset from the **Settings Hub (`SUPER + I`)**, run `scripts/theming/apply-theme-preset.sh`, or switch a wallpaper via `scripts/colors/switchwall.sh`, Ballade automatically synchronizes **15 core subsystems** across your desktop environment in real-time:
 
 1. **🖥️ QuickShell Desktop & Shell UI**:
    - Automatically extracts Material Design 3 tokens into `~/.local/state/quickshell/user/generated/colors.json` from the active preset's wallpaper folder (`~/Pictures/Wallpapers/<preset>/`).
@@ -214,6 +214,17 @@ When you apply a preset from the **Settings Hub (`SUPER + I`)**, run `scripts/th
     - Recompiles and applies Material SVG themes via `scripts/kvantum/materialQT.sh`.
 11. **🖱️ Custom System Cursor (`Gloomi_x`)**:
     - Bundled `Gloomi-x-Cursor-Custom` in `dotfiles/icons/` installed to `~/.icons/` and auto-loaded by Hyprland on startup.
+12. **📟 Fastfetch Terminal Telemetry & Dynamic Asset Shuffler**:
+    - Generates a categorized tree hierarchy (`SYSTEM`, `DESKTOP`, `HARDWARE`) with NVMe/mountpoints and dot gauges (`[ ●●●●●○○○○○ ]`) harmonized to the active theme's accent palette.
+    - **Add Your Own Images**: Powered by a **Zero-Duplicate Deck Shuffler** in `scripts/theming/fastfetch-wrapper.sh`. You can drop any of your own artwork (`.png`, `.jpg`, `.jpeg`, `.webp`) directly into `~/.config/fastfetch/asset/` and it will automatically be included in the dynamic shuffle cycle!
+13. **📓 Joplin Note-Taking Suite**:
+    - Full Catppuccin-grade 3-tier depth styling (`userchrome.css`) and rendered markdown theme (`userstyle.css`) across all 8 presets.
+    - Automated background reload daemon (`scripts/theming/restart-joplin.py`) that cleanly restarts Joplin minimized to the system tray with your new theme whenever presets change.
+14. **💬 Discord & Vencord (Discord+)**:
+    - Synchronizes Discord+ with your exact active desktop wallpaper (encoded as an inline Base64 data-URI to bypass Chromium file security).
+    - Harmonizes theme accent HSL colors, cleans message card padding, restores standard 40px avatars, and tints sidebar action buttons (`+` Add Server, `🧭` Discover) to your preset.
+15. **💎 Obsidian Knowledge Base**:
+    - Deploys translucent frosted glass themes and preset accent highlights via `scripts/theming/apply-obsidian-theme.sh`.
 
 ---
 

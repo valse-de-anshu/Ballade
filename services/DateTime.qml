@@ -13,7 +13,8 @@ Singleton {
     property var clock: SystemClock {
         id: clock
         precision: {
-            if (Config.options.time.secondPrecision || GlobalStates.screenLocked)
+            const cookieSeconds = (Config.options?.background?.widgets?.clock?.cookie?.secondHandStyle ?? "hide") !== "hide";
+            if (Config.options.time.secondPrecision || GlobalStates.screenLocked || cookieSeconds)
                 return SystemClock.Seconds;
             return SystemClock.Minutes;
         }

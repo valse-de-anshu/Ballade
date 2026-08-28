@@ -7,15 +7,15 @@ $username$directory$time$git_branch$git_status$cmd_duration
 $character"""
 
 [character]
-success_symbol = "[╰─](bold fg:#7aa2f7) "
-error_symbol = "[╰─](bold fg:#f7768e) "
+success_symbol = "[╰─](bold fg:#a5993c) "
+error_symbol = "[╰─](bold fg:#ba6257) "
 
 [username]
 show_always = true
-style_user = "bg:#283457 fg:#7aa2f7 bold"
-style_root = "bg:#283457 fg:#f7768e bold"
+style_user = "bg:#435653 fg:#a5993c bold"
+style_root = "bg:#435653 fg:#ba6257 bold"
 # Added the closing curve [] and a space to the end of this format string
-format = "[╭─](bold fg:#283457)[󰭹 $user]($style)[](bold fg:#283457) "
+format = "[╭─](bold fg:#435653)[󰭹 $user]($style)[](bold fg:#435653) "
 
 [hostname]
 # Disabled the hostname so "anshu" stops printing a second time
@@ -24,10 +24,10 @@ disabled = true
 [directory]
 home_symbol = " "
 read_only = " "
-style = "bg:#15161e fg:#c0caf5 bold"
+style = "bg:#303c3b fg:#e2e8e7 bold"
 truncation_length = 3
 truncation_symbol = "••/"
-format = "[](bold fg:#15161e)[$path]($style)[](bold fg:#15161e) "
+format = "[](bold fg:#303c3b)[$path]($style)[](bold fg:#303c3b) "
 
 [directory.substitutions]
 "Desktop" = " "
@@ -40,12 +40,12 @@ format = "[](bold fg:#15161e)[$path]($style)[](bold fg:#15161e) "
 
 [git_branch]
 symbol = "󰘬 "
-style = "bg:#7dcfff fg:#1a1b26 bold"
-format = "[](bold fg:#7dcfff)[$symbol$branch]($style)[](bold fg:#7dcfff) "
+style = "bg:#36a6a2 fg:#222c2b bold"
+format = "[](bold fg:#36a6a2)[$symbol$branch]($style)[](bold fg:#36a6a2) "
 
 [git_status]
-style = "bg:#f7768e fg:#1a1b26 bold"
-format = "[](bold fg:#f7768e)[$all_status$ahead_behind]($style)[](bold fg:#f7768e) "
+style = "bg:#ba6257 fg:#222c2b bold"
+format = "[](bold fg:#ba6257)[$all_status$ahead_behind]($style)[](bold fg:#ba6257) "
 # Simplified, universally understood status icons:
 conflicted = "!! "
 ahead = "↑ "
@@ -60,8 +60,8 @@ deleted = "x "
 
 [cmd_duration]
 min_time = 500
-style = "bg:#e0af68 fg:#1a1b26 bold"
-format = "[](bold fg:#e0af68)[󰪢 $duration]($style)[](bold fg:#e0af68)"
+style = "bg:#ae7313 fg:#222c2b bold"
+format = "[](bold fg:#ae7313)[󰪢 $duration]($style)[](bold fg:#ae7313)"
 
 [package]
 disabled = true

@@ -16,9 +16,8 @@ MouseArea {
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || Translation.tr("No media")
 
-    Layout.fillHeight: true
-    implicitHeight: mediaCircProg.implicitHeight
-    implicitWidth: Appearance.sizes.verticalBarWidth
+    implicitHeight: visualizer.visible ? visualizer.implicitHeight : mediaCircProg.implicitHeight
+    implicitWidth: Appearance.sizes.baseVerticalBarWidth
 
     Timer {
         running: activePlayer?.playbackState == MprisPlaybackState.Playing
@@ -41,10 +40,21 @@ MouseArea {
         }
     }
 
+    Bar.Visualizer {
+        id: visualizer
+        anchors.centerIn: parent
+        vertical: true
+        barCount: 14
+        dotSize: 2.5
+        dotSpacing: 2.5
+        visible: activePlayer?.isPlaying ?? false
+    }
+
     ClippedFilledCircularProgress {
         id: mediaCircProg
         anchors.centerIn: parent
         implicitSize: 20
+        visible: !visualizer.visible
 
         lineWidth: Appearance.rounding.unsharpen
         value: activePlayer?.position / activePlayer?.length

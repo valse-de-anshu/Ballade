@@ -7,6 +7,7 @@ import qs.modules.ii.bar as Bar
 
 MouseArea {
     id: root
+    property bool vertical: true
     property bool borderless: Config.options.bar.borderless
     readonly property var chargeState: Battery.chargeState
     readonly property bool isCharging: Battery.isCharging
@@ -14,54 +15,42 @@ MouseArea {
     readonly property real percentage: Battery.percentage
     readonly property bool isLow: percentage <= Config.options.battery.low / 100
 
-    implicitHeight: batteryProgress.implicitHeight
+    implicitWidth: Appearance.sizes.baseVerticalBarWidth
+    implicitHeight: batteryProgress.valueBarWidth + 8
+
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
 
     ClippedProgressBar {
         id: batteryProgress
         anchors.centerIn: parent
-        vertical: true
-        valueBarWidth: 20
-        valueBarHeight: 36
         value: percentage
-        // value: 1
+        rotation: -90
         highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
 
-        font {
-            pixelSize: 13
-            weight: Font.DemiBold
-        }
-
-        textMask: Item {
+        Item {
             anchors.centerIn: parent
             width: batteryProgress.valueBarWidth
             height: batteryProgress.valueBarHeight
 
-            Column {
+            ColumnLayout {
+                rotation: 90
                 anchors.centerIn: parent
-                spacing: -4
+                spacing: -7
 
                 MaterialSymbol {
-                    id: boltIcon
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
                     fill: 1
-                    text: {
-                        if (batteryProgress.value == 1) {
-                            return "check";
-                        } else if (root.isCharging) {
-                            return "bolt";
-                        } else {
-                            return Icons.getBatteryIcon(Battery.percentage * 100);
-                        }
-                    }
-                    iconSize: Appearance.font.pixelSize.normal
-                    animateChange: true
+                    text: "bolt"
+                    Layout.topMargin: 4
+                    iconSize: Appearance.font.pixelSize.smaller
+                    visible: root.isCharging && root.percentage < 1
                 }
                 StyledText {
-                    visible: text.length <= 2
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.topMargin: root.isCharging ? 2 : 4
                     font: batteryProgress.font
-                    text: batteryProgress.text
+                    text: Math.round(root.percentage * 100)
+                    visible: root.percentage < 1 || !root.isCharging
                 }
             }
         }

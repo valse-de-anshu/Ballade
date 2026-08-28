@@ -30,15 +30,14 @@ for cmd in poweroff reboot shutdown; do
 done
 echo "✅ Installed power-audio-executor.sh and power command links in ~/.local/bin"
 
-# 4. Prompt to install udev rules for USB hardware detection
+# 4. Install udev rules for USB hardware detection (if root permissions are available)
 if [ -d "/etc/udev/rules.d" ]; then
-    echo "📋 Installing udev rules (requires sudo)..."
-    if sudo cp -f "$SYSTEM_DIR/99-usb-audio.rules" /etc/udev/rules.d/; then
-        sudo udevadm control --reload-rules && sudo udevadm trigger
+    if sudo -n cp -f "$SYSTEM_DIR/99-usb-audio.rules" /etc/udev/rules.d/ 2>/dev/null; then
+        sudo -n udevadm control --reload-rules 2>/dev/null && sudo -n udevadm trigger 2>/dev/null || true
         echo "✅ Installed & reloaded /etc/udev/rules.d/99-usb-audio.rules"
     else
-        echo "⚠️ Could not copy udev rule automatically. You can copy manually:"
-        echo "   sudo cp $SYSTEM_DIR/99-usb-audio.rules /etc/udev/rules.d/ && sudo udevadm control --reload"
+        echo "ℹ️ Note: Optional USB sound udev rule can be installed anytime with:"
+        echo "   sudo cp ~/.config/quickshell/ballade/scripts/system/99-usb-audio.rules /etc/udev/rules.d/ && sudo udevadm control --reload"
     fi
 fi
 

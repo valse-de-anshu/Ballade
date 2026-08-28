@@ -153,5 +153,15 @@ else
   echo "Config file not found at $CONFIG_FILE. Applying terminal theming by default."
   apply_term &
 fi
-
 # apply_qt & # Qt theming is already handled by kde-material-colors
+
+# Discord: update frosted glass theme with active preset
+active_preset="green"
+if [ -f "$CONFIG_FILE" ]; then
+  active_preset=$(jq -r '.theme.activePreset // "green"' "$CONFIG_FILE" 2>/dev/null)
+fi
+fi
+
+# Joplin: restart with new theme if running, otherwise do nothing
+python3 "$SCRIPT_DIR/../theming/restart-joplin.py" &
+disown

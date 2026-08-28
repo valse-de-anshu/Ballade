@@ -30,10 +30,12 @@ Item {
         popup: false
     }
 
+    readonly property bool bottomCollapsed: Persistent.states?.sidebar?.bottomGroup?.collapsed ?? true
+
     // Placeholder when list is empty
     PagePlaceholder {
         anchors.fill: listview
-        shown: Notifications.list.length === 0
+        shown: (Notifications.list.length === 0) && root.bottomCollapsed
         icon: "notifications_active"
         description: Translation.tr("Nothing")
         shape: MaterialShape.Shape.Ghostish

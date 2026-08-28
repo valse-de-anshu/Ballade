@@ -102,8 +102,29 @@ echo "[Theme Orchestrator] Applying theme preset: $PRESET_NAME ($PRIMARY_HEX)"
 mkdir -p "$WALLPAPER_DIR"
 
 # 2. Apply Wallpaper & Colors
-# Search for wallpapers directly in the target theme folder
-target_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
+PRESETS_DIR="$HOME/.config/illogical-impulse/presets"
+target_wall=""
+
+# Priority 1: Check if a wallpaper is saved specifically in this preset's snapshot
+if [ -f "$PRESETS_DIR/${PRESET_NAME}.json" ]; then
+    saved_wall=$(jq -r '.background.wallpaperPath // empty' "$PRESETS_DIR/${PRESET_NAME}.json" 2>/dev/null)
+    if [ -n "$saved_wall" ] && [ -f "$saved_wall" ]; then
+        target_wall="$saved_wall"
+    fi
+fi
+
+# Priority 2: Check if current config.json already has a wallpaper inside this preset's directory
+if [ -z "$target_wall" ] && [ -f "$CONFIG_FILE" ]; then
+    curr_wall=$(jq -r '.background.wallpaperPath // empty' "$CONFIG_FILE" 2>/dev/null)
+    if [ -n "$curr_wall" ] && [ -f "$curr_wall" ] && [[ "$curr_wall" == "$WALLPAPER_DIR"* ]]; then
+        target_wall="$curr_wall"
+    fi
+fi
+
+# Priority 3: Fallback to first available wallpaper in the theme folder
+if [ -z "$target_wall" ]; then
+    target_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) 2>/dev/null | sort | head -n 1)
+fi
 
 if [ -n "$target_wall" ] && [ -f "$target_wall" ]; then
     echo "[Theme Orchestrator] Applying theme wallpaper: $target_wall"
@@ -221,7 +242,33 @@ if [ -f "$SCRIPT_DIR/apply-code-theme.sh" ]; then
     bash "$SCRIPT_DIR/apply-code-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
 fi
 
-# 10. Update QuickShell configuration (active theme + wallpaper directory)
+# 10. Apply Fastfetch Theme (Image logo + Accent palette)
+if [ -f "$SCRIPT_DIR/apply-fastfetch-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-fastfetch-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+fi
+
+# 11. Apply Obsidian Theme (Translucency + Preset Accents)
+if [ -f "$SCRIPT_DIR/apply-obsidian-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-obsidian-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+fi
+
+# 12. Apply Joplin Theme (Catppuccin-Grade 3-Tier Depth UI + Rendered Markdown)
+if [ -f "$SCRIPT_DIR/apply-joplin-theme.sh" ]; then
+# 13. Apply Discord+ Theme (Current Wallpaper Sync)
+if [ -f "$SCRIPT_DIR/apply-discord-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-discord-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+fi
+    bash "$SCRIPT_DIR/apply-joplin-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+# 13. Apply Discord+ Theme (Current Wallpaper Sync)
+if [ -f "$SCRIPT_DIR/apply-discord-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-discord-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+fi
+fi
+
+# 13. Apply Discord / Vesktop / Vencord Theme
+fi
+
+# 14. Update QuickShell configuration (active theme + wallpaper directory)
 if [ -f "$CONFIG_FILE" ]; then
     tmp_config=$(mktemp)
     jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \
@@ -248,6 +295,10 @@ fi
 if pidof dolphin > /dev/null 2>&1; then
     pkill -x dolphin 2>/dev/null || true
 fi
+
+# Joplin: restart with new theme if running, otherwise do nothing
+python3 "$SCRIPT_DIR/restart-joplin.py" &
+disown
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
 

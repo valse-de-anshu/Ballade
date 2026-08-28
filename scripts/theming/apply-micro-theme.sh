@@ -36,6 +36,9 @@ if [ -f "$SRC_SCHEME" ]; then
         else
             sed -i 's/"colorscheme": *"[^"]*"/"colorscheme": "ballade"/' "$MICRO_SETTINGS"
         fi
-        echo "[Micro Themer] Applied $THEME_NAME theme to $MICRO_SETTINGS"
+    else
+        mkdir -p "$MICRO_CONFIG_DIR"
+        echo '{"colorscheme": "ballade"}' > "$MICRO_SETTINGS"
     fi
+    echo "[Micro Themer] Applied $THEME_NAME theme to $MICRO_SETTINGS"
 fi
