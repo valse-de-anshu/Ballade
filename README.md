@@ -207,6 +207,8 @@ When you apply a preset from the **Settings Hub (`SUPER + I`)**, run `scripts/th
    - Injects 60+ keys of `workbench.colorCustomizations` (empty editor background, watermarks, shortcut badges, rainbow brackets) and syntax token colors (`editor.tokenColorCustomizations`) via `scripts/theming/apply-code-theme.sh`.
 7. **🎵 rmpc Music Player (TUI)**:
    - Switches active theme in `~/.config/rmpc/config.ron` using 8 bundled `.ron` color themes in `dotfiles/rmpc/themes/`.
+   - Includes custom `rmpc-run` (startup wrapper) and `rmpc-fetch-lyrics` (Python LRCLIB scraper) scripts.
+   - 📖 **Read the [Complete rmpc Architecture Guide](dotfiles/rmpc/README.md)** for details on dual-drive MPD setups, lyrics routing, and required system tweaks.
 8. **🐬 Dolphin File Manager & KDE Plasma**:
    - Deploys custom KDE color schemes (`GoldenDark.colors`, `OrangeDark.colors`, etc.) to `~/.local/share/color-schemes/` and applies them live via `plasma-apply-colorscheme` and `kdeglobals` AccentColor.
 9. **🏷️ GTK 3 / GTK 4 & Icon Themes**:

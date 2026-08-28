@@ -96,6 +96,14 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
         cp -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" "$HOME/.local/bin/fastfetch"
         chmod +x "$HOME/.local/bin/fastfetch"
     fi
+    if [ -d "$BALLADE_DIR/scripts/rmpc" ]; then
+        mkdir -p "$HOME/.local/bin"
+        cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-run" "$HOME/.local/bin/rmpc-run"
+        cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-fetch-lyrics" "$HOME/.local/bin/rmpc-fetch-lyrics"
+        chmod +x "$HOME/.local/bin/rmpc-run"
+        chmod +x "$HOME/.local/bin/rmpc-fetch-lyrics"
+        echo "   ↳ rmpc custom scripts installed to ~/.local/bin/"
+    fi
     echo "   ↳ Application dotfiles installed to ~/.config/ and ~/.local/share/"
 fi
 

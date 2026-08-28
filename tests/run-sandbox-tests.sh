@@ -75,7 +75,11 @@ with tempfile.TemporaryDirectory(prefix='ballade_sandbox_', ignore_cleanup_error
         ('.config/matugen/config.toml', 'Matugen Color Config'),
         ('.config/kdeglobals', 'KDE Globals'),
         ('.local/share/konsole/Quickshell.colorscheme', 'Konsole Theme'),
-        ('.local/share/color-schemes/PurpleDark.colors', 'KDE Color Scheme')
+        ('.local/share/color-schemes/PurpleDark.colors', 'KDE Color Scheme'),
+        ('.config/rmpc/config.ron', 'rmpc Base Config'),
+        ('.config/rmpc/themes/purple.ron', 'rmpc Purple Theme'),
+        ('.local/bin/rmpc-run', 'rmpc-run Script'),
+        ('.local/bin/rmpc-fetch-lyrics', 'rmpc-fetch-lyrics Script')
     ]
 
     all_passed = True

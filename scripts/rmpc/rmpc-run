@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# rmpc-run / rmpc-launch: Bulletproof rmpc session manager.
+# - Cleanly restarts all services on startup.
+# - Automatically detects added/removed songs and triggers a database rescan.
+# - Truly terminates all backend daemons (MPD, mpDris2, FIFO) on exit.
+
+set -e
+
+cleanup() {
+    echo -e "\n\033[1;33m[rmpc-run] Stopping all services...\033[0m"
+    pkill -9 -x mpDris2 2>/dev/null || true
+    systemctl --user stop mpd.service 2>/dev/null || mpd --kill 2>/dev/null || pkill -9 -x mpd 2>/dev/null || true
+    rm -f /tmp/mpd.fifo 2>/dev/null || true
+    echo -e "\033[1;32m[rmpc-run] All services stopped cleanly.\033[0m"
+}
+
+trap cleanup EXIT INT TERM HUP
+
+# --- 1. Clean Stale Processes & Recreate Directories ---
+pkill -9 -x mpDris2 2>/dev/null || true
+rm -f /tmp/mpd.fifo 2>/dev/null || true
+
+mkdir -p $HOME/Music/internal_music/lyrics
+mkdir -p ~/.local/share/rmpc/lyrics
+mkdir -p ~/.config/mpd/playlists
+mkdir -p ~/.config/mpDris2
+mkdir -p ~/.config/rmpc/themes
+
+ln -sfn $HOME/Music/internal_music/lyrics ~/.local/share/rmpc/lyrics/internal_music
+
+# --- 2. Self-Heal External Portable Storage Symlinks ---
+if [ -d "${RMPC_EXTERNAL_DRIVE:-/mnt/storage}" ]; then
+    mkdir -p ${RMPC_EXTERNAL_DRIVE:-/mnt/storage}/portable_music/lyrics 2>/dev/null || true
+fi
+
+if [ -d "${RMPC_EXTERNAL_DRIVE:-/mnt/storage}/portable_music" ]; then
+    ln -sfn ${RMPC_EXTERNAL_DRIVE:-/mnt/storage}/portable_music $HOME/Music/portable_music
+    ln -sfn ${RMPC_EXTERNAL_DRIVE:-/mnt/storage}/portable_music/lyrics ~/.local/share/rmpc/lyrics/portable_music
+fi
+
+# --- 3. Restart MPD Service & mpDris2 Fresh ---
+echo "[rmpc-run] Starting fresh MPD service..."
+systemctl --user restart mpd.service 2>/dev/null || (mpd --kill 2>/dev/null || true; sleep 0.2; mpd)
+
+# Wait briefly for MPD socket to become ready
+for i in {1..10}; do
+    if systemctl --user is-active --quiet mpd.service 2>/dev/null || pgrep -x mpd >/dev/null; then
+        break
+    fi
+    sleep 0.1
+done
+
+# Rescan library so MPD automatically detects added, removed, or modified tracks
+rmpc rescan &>/dev/null || true
+
+if ! pgrep -x mpDris2 >/dev/null; then
+    mpDris2 &>/dev/null &
+fi
+
+# --- 5. Launch rmpc TUI ---
+echo "[rmpc-run] Launching rmpc TUI..."
+rmpc "$@"

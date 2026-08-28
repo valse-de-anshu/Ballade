@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+# rmpc-fetch-lyrics: Robust synchronized lyrics fetcher for rmpc/mpd.
+# Automatically downloads .lrc lyrics from LRCLIB and never crashes rmpc.
+
+import sys, os, json, urllib.request, urllib.parse, subprocess
+
+try:
+    res = subprocess.run(["rmpc", "song"], capture_output=True, text=True)
+    if res.returncode != 0 or not res.stdout.strip():
+        sys.exit(0)
+    song = json.loads(res.stdout)
+    if not song or not isinstance(song, dict):
+        sys.exit(0)
+
+    metadata = song.get("metadata", {})
+    file_path = song.get("file", "")
+    if not file_path:
+        sys.exit(0)
+
+    artist = metadata.get("artist", "") or ""
+    title = metadata.get("title", "") or ""
+
+    base_name = os.path.splitext(os.path.basename(file_path))[0]
+    if not title:
+        title = base_name
+
+    # Determine lyrics destination directory
+    if file_path.startswith("portable_music/"):
+        target_dir = os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage") + "/portable_music/lyrics"
+    elif file_path.startswith("internal_music/"):
+        target_dir = os.path.expanduser("~/Music/internal_music/lyrics")
+    else:
+        target_dir = os.path.expanduser("~/Music/internal_music/lyrics")
+
+    os.makedirs(target_dir, exist_ok=True)
+    target_lrc = os.path.join(target_dir, f"{base_name}.lrc")
+
+    if os.path.exists(target_lrc) and os.path.getsize(target_lrc) > 0:
+        sys.exit(0)
+
+    # Fetch from LRCLIB API
+    params = {"track_name": title}
+    if artist:
+        params["artist_name"] = artist
+    url = f"https://lrclib.net/api/get?{urllib.parse.urlencode(params)}"
+    
+    req = urllib.request.Request(url, headers={"User-Agent": "rmpc-lyrics-fetcher/1.0"})
+    lyrics_content = None
+    try:
+        with urllib.request.urlopen(req, timeout=4) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode("utf-8"))
+                lyrics_content = data.get("syncedLyrics") or data.get("plainLyrics")
+    except Exception:
+        pass
+
+    if not lyrics_content:
+        # Fallback to search endpoint
+        search_query = f"{artist} {title}".strip()
+        search_url = f"https://lrclib.net/api/search?{urllib.parse.urlencode({'q': search_query})}"
+        search_req = urllib.request.Request(search_url, headers={"User-Agent": "rmpc-lyrics-fetcher/1.0"})
+        try:
+            with urllib.request.urlopen(search_req, timeout=4) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode("utf-8"))
+                    if isinstance(data, list) and len(data) > 0:
+                        lyrics_content = data[0].get("syncedLyrics") or data[0].get("plainLyrics")
+        except Exception:
+            pass
+
+    if lyrics_content and lyrics_content.strip():
+        with open(target_lrc, "w", encoding="utf-8") as f:
+            f.write(lyrics_content)
+except Exception:
+    pass
+
+sys.exit(0)
+
