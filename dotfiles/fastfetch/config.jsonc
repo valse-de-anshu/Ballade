@@ -14,7 +14,7 @@
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "38;2;212;101;154"
+      "keys": "38;2;125;151;38"
     },
     "percent": {
       "type": 3
@@ -32,15 +32,15 @@
       "type": "title",
       "format": " 󰣇  {user-name} @ {host-name}",
       "color": {
-        "user": "38;2;240;98;146",
-        "at": "38;2;212;101;154",
-        "host": "38;2;240;98;146"
+        "user": "38;2;165;152;13",
+        "at": "38;2;125;151;38",
+        "host": "38;2;165;152;13"
       }
     },
     "break",
     {
       "type": "custom",
-      "format": " {#38;2;212;101;154}󰅐 SYSTEM{#}"
+      "format": " {#38;2;125;151;38}󰅐 SYSTEM{#}"
     },
     {
       "type": "os",
@@ -63,7 +63,7 @@
     "break",
     {
       "type": "custom",
-      "format": " {#38;2;212;101;154} DESKTOP{#}"
+      "format": " {#38;2;125;151;38} DESKTOP{#}"
     },
     {
       "type": "wm",
@@ -88,7 +88,7 @@
     "break",
     {
       "type": "custom",
-      "format": " {#38;2;212;101;154}󰻠 HARDWARE{#}"
+      "format": " {#38;2;125;151;38}󰻠 HARDWARE{#}"
     },
     {
       "type": "cpu",

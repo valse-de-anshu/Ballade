@@ -254,18 +254,12 @@ fi
 
 # 12. Apply Joplin Theme (Catppuccin-Grade 3-Tier Depth UI + Rendered Markdown)
 if [ -f "$SCRIPT_DIR/apply-joplin-theme.sh" ]; then
-# 13. Apply Discord+ Theme (Current Wallpaper Sync)
-if [ -f "$SCRIPT_DIR/apply-discord-theme.sh" ]; then
-    bash "$SCRIPT_DIR/apply-discord-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
-fi
     bash "$SCRIPT_DIR/apply-joplin-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
-# 13. Apply Discord+ Theme (Current Wallpaper Sync)
-if [ -f "$SCRIPT_DIR/apply-discord-theme.sh" ]; then
-    bash "$SCRIPT_DIR/apply-discord-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
-fi
 fi
 
-# 13. Apply Discord / Vesktop / Vencord Theme
+# 13. Apply Discord+ Theme (Current Wallpaper Sync)
+if [ -f "$SCRIPT_DIR/apply-discord-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-discord-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
 fi
 
 # 14. Update QuickShell configuration (active theme + wallpaper directory)

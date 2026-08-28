@@ -14,6 +14,7 @@ hl.window_rule({
     opacity = "0.93 0.88",
 })
 
+
 -- NOTE: Kitty and Dolphin no longer auto-open in compact float mode.
 -- Use Super+Alt+Space to manually toggle any window into a centered compact float.
 -- The auto-tile daemon (auto_tile_multiwindow.py) will tile them when a 2nd window opens.

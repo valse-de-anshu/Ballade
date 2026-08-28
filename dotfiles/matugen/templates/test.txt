@@ -1,0 +1,1 @@
+{{colors.primary.default.rgb.r}},{{colors.primary.default.rgb.g}},{{colors.primary.default.rgb.b}}
