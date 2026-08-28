@@ -21,25 +21,25 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 
 ### 📸 Screenshots
 
-| 🌲 Forest Green Theme & Widgets | 🔮 Amethyst Purple Theme |
+| 🌲 Forest Green Theme & Widgets | 🔴 Crimson Red Theme & YouTube Subtitles `[CC]` |
 | :---: | :---: |
-| <img src="assets/screenshots/home-green.png" width="460" alt="Home Green" /> | <img src="assets/screenshots/theme-purple.png" width="460" alt="Theme Purple" /> |
+| <img src="assets/screenshots/theme-green-widgets.png" width="460" alt="Green Theme" /> | <img src="assets/screenshots/theme-red-ytcc.png" width="460" alt="Red Theme YouTube CC" /> |
 
-| 🔴 Crimson Red Theme & YouTube Subtitles `[CC]` | 🌌 Tokyo Night Blue, rmpc & Animated GIFs |
+| 🌸 Sakura Pink Theme & Sidebar | 🔮 Amethyst Purple Theme: rmpc & Fastfetch |
 | :---: | :---: |
-| <img src="assets/screenshots/theme-red-ytcc.png" width="460" alt="Red Theme YouTube CC" /> | <img src="assets/screenshots/theme-blue-rmpc-gifs.png" width="460" alt="Blue Theme rmpc GIFs" /> |
+| <img src="assets/screenshots/theme-pink.png" width="460" alt="Pink Theme" /> | <img src="assets/screenshots/theme-purple-rmpc-fastfetch.png" width="460" alt="Purple Theme rmpc" /> |
 
-| 🌌 3D Panoramic Wallpaper Picker | 🌸 Sakura Pink Theme & Sidebar |
+| 🌌 Tokyo Night Blue: Discord & Obsidian | 🪙 Golden Theme: Settings & Presets |
 | :---: | :---: |
-| <img src="assets/screenshots/wallpaper-picker.png" width="460" alt="Wallpaper Picker" /> | <img src="assets/screenshots/theme-pink.png" width="460" alt="Theme Pink" /> |
+| <img src="assets/screenshots/theme-blue-discord-obsidian.png" width="460" alt="Blue Theme Apps" /> | <img src="assets/screenshots/theme-gold-settings.png" width="460" alt="Gold Theme Settings" /> |
 
-| 🎵 Music Player & Synced Lyrics | ⚙️ Themes & Settings Hub (8 Presets) |
+| 🦊 Sunset Orange: VS Code & Micro | 🌑 Grayscale Theme: Dolphin & Joplin |
 | :---: | :---: |
-| <img src="assets/screenshots/widgets-lyrics.png" width="460" alt="Music and Lyrics" /> | <img src="assets/screenshots/settings-presets.png" width="460" alt="Settings Presets" /> |
+| <img src="assets/screenshots/theme-orange-code-micro.png" width="460" alt="Orange Theme Code" /> | <img src="assets/screenshots/theme-grayscale-dolphin-joplin.png" width="460" alt="Grayscale Theme Dolphin" /> |
 
-| 💻 Multi-App Ecosystem: VS Code, Micro Editor, Dolphin & Kitty | 📟 Terminal Rice: Fastfetch & rmpc Music Player |
+| 🌇 Crimson Red: 3D Panorama & Kitty Terminal | |
 | :---: | :---: |
-| <img src="assets/screenshots/code-micro-dolphin.png" width="460" alt="VS Code, Micro, Dolphin, Kitty Ecosystem" /> | <img src="assets/screenshots/fastfetch-rmpc.png" width="460" alt="Fastfetch and rmpc Terminal Rice" /> |
+| <img src="assets/screenshots/theme-red-panorama-kitty.png" width="460" alt="Red Theme Panorama" /> | |
 
 ---
 
@@ -52,14 +52,14 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 - [✨ Key Features & Modules](#-key-features--modules)
 - [🎨 Dynamic Theming & Multi-App Engine](#-dynamic-theming--multi-app-configuration-engine)
 - [📖 App Theming & Setup Guide (Discord, Joplin, Obsidian)](docs/APP_THEMING_GUIDE.md)
-- [⌨️ IPC & Keybinding Shortcuts](#️-ipc--keybinding-shortcuts)
+- [⌨️ IPC & Keybinding Shortcuts](#-ipc--keybinding-shortcuts)
 - [📦 System Prerequisites](#-system-prerequisites--dependencies)
 - [📂 Directory Anatomy](#-directory-anatomy)
 - [💖 Credits & Upstream](#-credits--upstream)
 
 ---
 
-## ⚡ 60-Second Quick Start
+## ⚡ Quick Start
 
 Ballade is built on top of the **`illogical-impulse`** (`dots-hyprland`) base framework. Follow these 3 simple steps to get running:
 
@@ -168,6 +168,10 @@ Ballade includes full Hyprland override configs inside `hyprland-custom/` that g
   - `CTRL + SUPER + T`: Toggle 3D Panoramic Wallpaper Picker
   - `SUPER + ALT + Space`: Toggle Compact Centered Window
 * **Cursor Restoration (`execs.lua`)**: Sets `Gloomi_x` cursor automatically on startup.
+### 💎 10. Multi-App Synchronized Theming
+* **Discord+ & Vencord**: Translucent frosted glass UI with live wallpaper background mirroring and clean padded avatars.
+* **Joplin Notes Engine**: Fully stylized 3-tier deep CSS (`userchrome.css` / `userstyle.css`) with smart tray auto-reload daemon.
+* **Obsidian Knowledge Base**: Injectable CSS snippets (`ballade-theme.css`) to match highlights, tags, and frosted UI.
 
 ---
 
@@ -258,7 +262,7 @@ yay -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayl
     pipewire wireplumber playerctl libcanberra mpv yt-dlp cava \
     kitty micro starship fastfetch btop rmpc wlogout \
     jq python python-mutagen wl-clipboard cliphist tesseract tesseract-data-eng \
-    hyprpicker hyprsunset fuzzel kvantum matugen-bin
+    hyprpicker hyprsunset fuzzel kvantum discord obsidian matugen-bin discord obsidian
 ```
 
 #### Option B: Using `pacman` (Official Repositories):
@@ -267,7 +271,7 @@ sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg 
     pipewire wireplumber playerctl libcanberra mpv yt-dlp cava \
     kitty micro starship fastfetch btop rmpc \
     jq python python-mutagen wl-clipboard cliphist tesseract tesseract-data-eng \
-    hyprpicker hyprsunset fuzzel kvantum
+    hyprpicker hyprsunset fuzzel kvantum discord obsidian
 ```
 
 ---
@@ -278,6 +282,7 @@ sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg 
 | **Audio Server & Media** | `pipewire`, `wireplumber`, `playerctl`, `canberra-gtk-play`, `mpv`, `pw-play` | PipeWire volume scaling, MPRIS player controls, sound events |
 | **Media & Lyrics Engine** | `yt-dlp`, `playerctl`, `mpv` | Real-time YouTube CC caption extraction and media streaming |
 | **Dynamic Theming** | `matugen`, `kitty`, `konsole`, `plasma-apply-colorscheme`, `tela-circle-icon-theme-git` | Material You color extraction, Kitty/Konsole terminal palettes |
+| **Ecosystem Apps** | `discord`, `vencord`, `joplin`, `obsidian` | Frosted glass theming, custom markdown rendering, and CSS sync |
 | **Utilities & OCR** | `jq`, `wl-clipboard`, `cliphist`, `tesseract`, `tesseract-data-eng`, `hyprpicker`, `hyprsunset` | Clipboard manager, screen OCR translation, night light gamma |
 | **Hardware & Sensors** | `brightnessctl`, `ddcutil`, `upower`, `acpi`, `nmcli`, `bluetoothctl` | Backlight brightness, battery telemetry, Wi-Fi & Bluetooth |
 | **Python Ecosystem** | `python-tqdm`, `faster-whisper`, `google-generativeai` | Synchronized lyrics streaming, offline transcription, Gemini AI |
@@ -289,15 +294,18 @@ sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg 
 ```text
 ballade/
 ├── assets/                  # High-res icons, bundled sound effects (USB, power), and screenshots
+├── docs/                    # App Theming Guides (Discord, Joplin, Obsidian) and rmpc Architecture Docs
 ├── dotfiles/                # Complete bundled application configurations & custom cursors
 │   ├── color-schemes/       # KDE / Dolphin color schemes (GoldenDark, OrangeDark, TokyoNight, etc.)
 │   ├── icons/               # Gloomi_x custom cursor theme
-│   ├── rmpc/                # rmpc music player config & 8 themes (.ron)
+│   ├── rmpc/                # rmpc music player config, themes & architecture guide
 │   ├── mpv/                 # mpv configuration, input binds, and cinematic shaders
 │   ├── starship/            # 8 unified Unixporn Pill Starship prompt themes
 │   ├── micro/               # Micro text editor configs & syntax colorschemes
 │   ├── kitty/               # Kitty terminal configs & color themes
-│   └── fastfetch, cava, btop, wlogout, fuzzel
+│   ├── joplin/              # Joplin custom UI & markdown themes
+│   ├── vencord/             # Discord+ Frosted Glass themes
+│   └── fastfetch, cava, btop, wlogout, fuzzel, kde, konsole, Kvantum, matugen
 ├── hyprland-custom/         # Custom Hyprland overrides (blur rules, opacities, keybinds, compact window)
 ├── modules/
 │   ├── common/              # Shared components (MaterialShape, StyledSlider, SelectionDialog, Config)
@@ -306,11 +314,13 @@ ballade/
 ├── panelFamilies/           # Panel family definitions (IllogicalImpulseFamily.qml)
 ├── scripts/
 │   ├── colors/              # switchwall.sh, applycolor.sh, generate_colors_material.py
+│   ├── rmpc/                # Robust python lyrics fetcher and daemon startup scripts
 │   ├── theming/             # apply-theme-preset.sh, apply-code-theme.sh, apply-micro-theme.sh
 │   ├── kvantum/             # Material Kvantum / Qt widget theme generators
 │   ├── lyrics/              # Real-time multi-language synchronized lyrics engine
 │   └── play-usb-audio.sh    # Low-latency USB hardware event player
 ├── services/                # Reactive singletons (Audio.qml, MprisController.qml, Wallpapers.qml, Presets.qml)
+├── tests/                   # Isolated temporary sandbox testing suite for configuration validation
 ├── translations/            # Localization dictionary files (en_US, zh_CN, etc.)
 ├── GlobalStates.qml         # Central state manager for modal visibility
 ├── setup.sh                 # 1-Click environment initializer & permissions setup

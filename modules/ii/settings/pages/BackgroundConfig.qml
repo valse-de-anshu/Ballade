@@ -767,36 +767,7 @@ ContentPage {
                         },
                     ]
                 }
-                ConfigSelectionArray {
-                    text: Translation.tr("Second hand")
-                    icon: "pen_size_1"
-                    currentValue: Config.options.background.widgets.clock.cookie.secondHandStyle
-                    onSelected: newValue => {
-                        Config.options.background.widgets.clock.cookie.secondHandStyle = newValue;
-                    }
-                    options: [
-                        {
-                            displayName: "",
-                            icon: "block",
-                            value: "hide"
-                        },
-                        {
-                            displayName: Translation.tr("Classic"),
-                            icon: "radio",
-                            value: "classic"
-                        },
-                        {
-                            displayName: Translation.tr("Line"),
-                            icon: "line_end",
-                            value: "line"
-                        },
-                        {
-                            displayName: Translation.tr("Dot"),
-                            icon: "adjust",
-                            value: "dot"
-                        },
-                    ]
-                }
+
                 ConfigSelectionArray {
                     text: Translation.tr("Date style")
                     icon: "date_range"
