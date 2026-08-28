@@ -168,33 +168,48 @@ Ballade includes full Hyprland override configs inside `hyprland-custom/` that g
 
 ## 🎨 Dynamic Theming & Multi-App Configuration Engine
 
-Ballade features a dual-tier automated theming pipeline: **Material Design 3 extraction** from any wallpaper, plus **6 handcrafted cohesive theme presets**:
+Ballade features an automated, multi-tier theming pipeline: **Dynamic Material Design 3 extraction** from any wallpaper, plus **8 handcrafted, perfectly harmonized theme presets**:
 
-| Preset | Accent Hue | Command Palette | Philosophy |
-| :--- | :--- | :--- | :--- |
-| **`green`** | `#7D9726` | Forest Sage / Olive | Atelier Estuary calm, natural focus |
-| **`purple`**| `#9C27B0` | Amethyst Violet / Lavender | Cyberpunk midnight with glowing accents |
-| **`pink`**  | `#E05688` | Deep Rose / Pastel Orchid | Sakura vibrant anime aesthetic |
-| **`red`**   | `#D32F2F` | Scarlet / Salmon Rose | High-energy crimson with pure error alerts |
-| **`blue`**  | `#7AA2F7` | Cyan / Midnight Navy | Tokyo Night deep ocean tranquility |
-| **`golden`**| `#FFB300` | Radiant Amber / Gold | Warm honey espresso with glowing accents |
-| **`orange`**| `#FF7043` | Sunset Tangerine / Peach | Warm campfire dusk glow and citrus warmth |
-| **`grayscale`** | `#8892B0` | Nord Slate / Charcoal | Distraction-free monochrome productivity |
+| Preset | Accent Hue | Command Palette | Philosophy | Icon Theme | KDE Color Scheme |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| 🌲 **`green`** | `#7D9726` | Forest Sage / Olive | Atelier Estuary calm, natural focus | `Tela-circle-manjaro-dark` | `Atelier_Estuary_Dark` |
+| 🌸 **`pink`**  | `#D4659A` | Deep Rose / Orchid | Sakura vibrant anime aesthetic | `Tela-circle-pink-dark` | `PinkDark` |
+| 🔴 **`red`**   | `#BF3F43` | Crimson / Salmon | High-energy scarlet with pure error alerts | `Tela-circle-red-dark` | `RedDark` |
+| 🔮 **`purple`**| `#9C5ADB` | Amethyst / Lavender | Cyberpunk midnight with glowing accents | `Tela-circle-purple-dark` | `PurpleDark` |
+| 🌌 **`blue`**  | `#7AA2F7` | Cyan / Tokyo Navy | Tokyo Night deep ocean tranquility | `Tela-circle-blue-dark` | `TokyoNightDark` |
+| 🌟 **`golden`**| `#F0B849` | Luminous Amber / Gold | Warm honey espresso with radiant topaz | `Tela-circle-yellow-dark` | `GoldenDark` |
+| 🍊 **`orange`**| `#FF9248` | Autumn Sunset / Citrus | Roasted cocoa dusk with glowing citrus | `Tela-circle-ubuntu-dark` | `OrangeDark` |
+| ❄️ **`grayscale`** | `#8892B0` | Nord Slate / Frost | Distraction-free monochrome productivity | `Tela-circle-grey-dark` | `NordDark` |
 
-### 🛠️ What Our Scripts Automate Across Your System:
-When you apply a preset (`scripts/theming/apply-theme-preset.sh`) or switch a wallpaper (`scripts/colors/switchwall.sh`), Ballade automatically writes and synchronizes configurations across your entire desktop environment:
-- 🐱 **Kitty Terminal**: Applies matching 16-color ANSI templates to `~/.config/kitty/current-theme.conf` and sends `SIGUSR1` for instant live reloading.
-- 💻 **Konsole & Dolphin Terminal**: Dynamically writes native RGB color maps to `~/.local/share/konsole/Quickshell.colorscheme` and registers it in `~/.config/konsolerc`.
-- 📝 **Micro Text Editor**: Automatically generates and activates matching syntax and UI colorschemes in `~/.config/micro/colorschemes/ballade.micro`.
-- 💻 **VS Code, VSCodium & Cursor**: Synchronizes 100% of UI tokens (`workbench.colorCustomizations`) including **empty editor backgrounds**, **watermarks**, **shortcuts**, **brackets**, and syntax tokens (`editor.tokenColorCustomizations`) across Code, Code - OSS, VSCodium, Cursor, and Antigravity.
-- 🎵 **rmpc Music Client**: Synchronizes full visual themes across 8 presets in `~/.config/rmpc/themes/`.
-- 🎬 **mpv Video Player**: Bundled custom cinematic shaders, keybindings, and scripts (`~/.config/mpv/`).
-- 🚀 **Starship Prompt**: Synchronizes prompt accent colors in `~/.config/starship.toml`.
-- 📊 **Fastfetch, Cava, Btop, Wlogout & Fuzzel**: Full dotfiles bundled in `dotfiles/` and installed via `./setup.sh`.
-- 🐬 **KDE Plasma & Dolphin**: Applies matching colorschemes via `plasma-apply-colorscheme` and updates `kdeglobals`.
-- 🎨 **Kvantum Qt Engine**: Generates and compiles Material theme SVGs via `scripts/kvantum/materialQT.sh`.
-- 🏷️ **GTK & Icons**: Updates `gsettings` to synchronize GTK 3/4 theme colors and `Tela-circle-*` icon packs.
-- 🪟 **Hyprland Compositor**: Enforces frosted glass blur (`passes = 4`, `size = 16`) and window opacities (`0.93 0.88`) via `hyprland-custom/`.
+---
+
+### 🛠️ What Our Scripts Automate Across Your System (11 Connected Subsystems):
+
+When you apply a preset from the **Settings Hub (`SUPER + I`)**, run `scripts/theming/apply-theme-preset.sh`, or switch a wallpaper via `scripts/colors/switchwall.sh`, Ballade automatically synchronizes **11 core subsystems** across your desktop environment in real-time:
+
+1. **🖥️ QuickShell Desktop & Shell UI**:
+   - Automatically extracts Material Design 3 tokens into `~/.local/state/quickshell/user/generated/colors.json` from the active preset's wallpaper folder (`~/Pictures/Wallpapers/<preset>/`).
+   - Top status bar, audio visualizer, sidebars, desktop widgets, and OSD HUDs instantly repaint.
+2. **🐱 Kitty Terminal**:
+   - Injects full 16-color ANSI palettes into `~/.config/kitty/current-theme.conf` and reloads live terminals via `kill -SIGUSR1` without disrupting active shell sessions.
+3. **💻 Konsole & Dolphin Embedded Terminal**:
+   - Generates native RGB color maps in `~/.local/share/konsole/Quickshell.colorscheme` and registers `ColorScheme=Quickshell` in `~/.config/konsolerc` and active profiles.
+4. **🚀 Starship Shell Prompt**:
+   - Deploys full **Unixporn Pill Prompts** (`~/.config/starship.toml`) with Live Time, Directory Glyphs, and Git Branch status pills customized for each theme.
+5. **📝 Micro Text Editor (TUI)**:
+   - Generates and activates custom syntax and UI colorschemes in `~/.config/micro/colorschemes/ballade.micro` (`"colorscheme": "ballade"`).
+6. **💻 VS Code, VSCodium, Cursor & Antigravity IDEs**:
+   - Injects 60+ keys of `workbench.colorCustomizations` (empty editor background, watermarks, shortcut badges, rainbow brackets) and syntax token colors (`editor.tokenColorCustomizations`) via `scripts/theming/apply-code-theme.sh`.
+7. **🎵 rmpc Music Player (TUI)**:
+   - Switches active theme in `~/.config/rmpc/config.ron` using 8 bundled `.ron` color themes in `dotfiles/rmpc/themes/`.
+8. **🐬 Dolphin File Manager & KDE Plasma**:
+   - Deploys custom KDE color schemes (`GoldenDark.colors`, `OrangeDark.colors`, etc.) to `~/.local/share/color-schemes/` and applies them live via `plasma-apply-colorscheme` and `kdeglobals` AccentColor.
+9. **🏷️ GTK 3 / GTK 4 & Icon Themes**:
+   - Updates `gsettings` and `kdeglobals` to apply dedicated `Tela-circle-*` icon packs and dark mode themes.
+10. **🎨 Kvantum Qt Theme Engine**:
+    - Recompiles and applies Material SVG themes via `scripts/kvantum/materialQT.sh`.
+11. **🖱️ Custom System Cursor (`Gloomi_x`)**:
+    - Bundled `Gloomi-x-Cursor-Custom` in `dotfiles/icons/` installed to `~/.icons/` and auto-loaded by Hyprland on startup.
 
 ---
 
@@ -256,6 +271,15 @@ sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg 
 ```text
 ballade/
 ├── assets/                  # High-res icons, bundled sound effects (USB, power), and screenshots
+├── dotfiles/                # Complete bundled application configurations & custom cursors
+│   ├── color-schemes/       # KDE / Dolphin color schemes (GoldenDark, OrangeDark, TokyoNight, etc.)
+│   ├── icons/               # Gloomi_x custom cursor theme
+│   ├── rmpc/                # rmpc music player config & 8 themes (.ron)
+│   ├── mpv/                 # mpv configuration, input binds, and cinematic shaders
+│   ├── starship/            # 8 unified Unixporn Pill Starship prompt themes
+│   ├── micro/               # Micro text editor configs & syntax colorschemes
+│   ├── kitty/               # Kitty terminal configs & color themes
+│   └── fastfetch, cava, btop, wlogout, fuzzel
 ├── hyprland-custom/         # Custom Hyprland overrides (blur rules, opacities, keybinds, compact window)
 ├── modules/
 │   ├── common/              # Shared components (MaterialShape, StyledSlider, SelectionDialog, Config)
@@ -264,11 +288,11 @@ ballade/
 ├── panelFamilies/           # Panel family definitions (IllogicalImpulseFamily.qml)
 ├── scripts/
 │   ├── colors/              # switchwall.sh, applycolor.sh, generate_colors_material.py
-│   ├── theming/             # apply-theme-preset.sh and handcrafted kitty-themes/
+│   ├── theming/             # apply-theme-preset.sh, apply-code-theme.sh, apply-micro-theme.sh
 │   ├── kvantum/             # Material Kvantum / Qt widget theme generators
 │   ├── lyrics/              # Real-time multi-language synchronized lyrics engine
 │   └── play-usb-audio.sh    # Low-latency USB hardware event player
-├── services/                # Reactive singletons (Audio.qml, MprisController.qml, Wallpapers.qml)
+├── services/                # Reactive singletons (Audio.qml, MprisController.qml, Wallpapers.qml, Presets.qml)
 ├── translations/            # Localization dictionary files (en_US, zh_CN, etc.)
 ├── GlobalStates.qml         # Central state manager for modal visibility
 ├── setup.sh                 # 1-Click environment initializer & permissions setup
