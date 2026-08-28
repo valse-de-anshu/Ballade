@@ -50,7 +50,7 @@ fi
 
 # 5. Install Bundled Application Dotfiles & Cursor Themes
 if [ -d "$BALLADE_DIR/dotfiles" ]; then
-    echo "📦 Installing application configurations (rmpc, mpv, starship, fastfetch, cava, btop, wlogout, fuzzel, micro, kitty)..."
+    echo "📦 Installing application configurations (rmpc, mpv, starship, fastfetch, cava, btop, wlogout, fuzzel, micro, kitty, Kvantum, matugen, Joplin, Vencord, KDE)..."
     for app in "$BALLADE_DIR/dotfiles"/*; do
         if [ -d "$app" ]; then
             app_name="$(basename "$app")"
@@ -62,6 +62,22 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                 mkdir -p "$HOME/.local/share/color-schemes"
                 cp -rn "$app/"* "$HOME/.local/share/color-schemes/" 2>/dev/null || true
                 echo "   ↳ KDE color schemes installed to ~/.local/share/color-schemes/"
+            elif [ "$app_name" = "konsole" ]; then
+                mkdir -p "$HOME/.local/share/konsole"
+                [ -d "$app/share" ] && cp -rn "$app/share/"* "$HOME/.local/share/konsole/" 2>/dev/null || true
+                [ -f "$app/konsolerc" ] && cp -n "$app/konsolerc" "$HOME/.config/konsolerc" 2>/dev/null || true
+                echo "   ↳ Konsole configurations installed"
+            elif [ "$app_name" = "kde" ]; then
+                [ -f "$app/kdeglobals" ] && cp -n "$app/kdeglobals" "$HOME/.config/kdeglobals" 2>/dev/null || true
+                echo "   ↳ KDE globals installed"
+            elif [ "$app_name" = "joplin" ]; then
+                mkdir -p "$HOME/.config/joplin-desktop"
+                cp -rn "$app/"* "$HOME/.config/joplin-desktop/" 2>/dev/null || true
+                echo "   ↳ Joplin theme styles installed to ~/.config/joplin-desktop/"
+            elif [ "$app_name" = "vencord" ]; then
+                mkdir -p "$HOME/.config/Vencord/themes"
+                cp -rn "$app/"* "$HOME/.config/Vencord/themes/" 2>/dev/null || true
+                echo "   ↳ Vencord DiscordPlus theme installed to ~/.config/Vencord/themes/"
             else
                 mkdir -p "$HOME/.config/$app_name"
                 cp -rn "$app/"* "$HOME/.config/$app_name/" 2>/dev/null || true

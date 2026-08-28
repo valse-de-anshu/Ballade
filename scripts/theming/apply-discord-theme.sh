@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# Discord+ Theme Dynamic Wallpaper & Performance-Optimized Clean Sync
-# Native Crisp Avatar Layout, No Top-Left Glitch, Zero-Lag Hardware Rendering
-# ==============================================================================
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 THEME_KEY="${1:-purple}"
 
 python3 -c "
@@ -11,6 +8,8 @@ import os, sys, base64, json, re
 from PIL import Image
 import io
 
+script_dir = '$SCRIPT_DIR'
+config_dir = '$CONFIG_DIR'
 theme_key = '$THEME_KEY'
 
 presets_hsl = {
@@ -41,7 +40,6 @@ if os.path.exists(config_path):
         print(f'Error reading config.json: {e}', file=sys.stderr)
 
 if not wall_path or not os.path.exists(wall_path):
-    theme_key = '$THEME_KEY'
     wall_dir = os.path.expanduser(f'~/Pictures/Wallpapers/{theme_key}')
     if os.path.isdir(wall_dir):
         files = [os.path.join(wall_dir, f) for f in os.listdir(wall_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
@@ -64,9 +62,35 @@ if wall_path and os.path.exists(wall_path):
 template_path = os.path.expanduser('~/Downloads/DiscordPlus.theme.css')
 if not os.path.exists(template_path):
     template_path = os.path.expanduser('~/.config/Vencord/themes/DiscordPlus.theme.css')
+if not os.path.exists(template_path):
+    repo_fallback = os.path.join(config_dir, 'dotfiles/vencord/DiscordPlus.theme.css')
+    if os.path.exists(repo_fallback):
+        template_path = repo_fallback
 
-with open(template_path, 'r') as f:
-    template = f.read()
+if os.path.exists(template_path):
+    with open(template_path, 'r') as f:
+        template = f.read()
+else:
+    template = \"\"\"/**
+ * @name Discord+
+ * @version 3.4.1
+ */
+@import url('https://plusinsta.github.io/discord-plus/src/DiscordPlus-source.theme.css');
+.theme-dark {
+  --dplus-backdrop: url('');
+  --dplus-accent-color-hue: 320;
+  --dplus-accent-color-saturation: 60%;
+  --dplus-accent-color-lightness: 31%;
+  --dplus-foreground-color-hue-base: 210;
+  --dplus-foreground-color-hue-links: 197;
+  --dplus-foreground-color-saturation-amount: 1;
+  --dplus-foreground-color-lightness-amount: 1;
+  --dplus-background-color-hue: 320;
+  --dplus-background-color-saturation-amount: 1;
+  --dplus-background-color-lightness-amount: 1;
+  --dplus-background-color-alpha: 0.8;
+}
+\"\"\"
 
 # Update backdrop
 updated = re.sub(r'--dplus-backdrop:\s*url\([^)]+\);', f'--dplus-backdrop: url(\"{b64_uri}\");', template)

@@ -79,7 +79,7 @@ Scope {
         id: mediaControlsLoader
         active: GlobalStates.mediaControlsOpen
         onActiveChanged: {
-            if (!mediaControlsLoader.active && root.realPlayers.length === 0) {
+            if (!mediaControlsLoader.active && root.activePlayer === null) {
                 GlobalStates.mediaControlsOpen = false;
             }
         }
@@ -130,18 +130,13 @@ Scope {
                 anchors.fill: parent
                 spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
 
-                Repeater {
-                    model: ScriptModel {
-                        values: root.meaningfulPlayers
-                    }
-                    delegate: PlayerControl {
-                        required property MprisPlayer modelData
-                        player: modelData
-                        visualizerPoints: root.visualizerPoints
-                        implicitWidth: root.widgetWidth
-                        implicitHeight: root.widgetHeight
-                        radius: root.popupRounding
-                    }
+                PlayerControl {
+                    visible: root.activePlayer !== null
+                    player: root.activePlayer
+                    visualizerPoints: root.visualizerPoints
+                    implicitWidth: root.widgetWidth
+                    implicitHeight: root.widgetHeight
+                    radius: root.popupRounding
                 }
 
                 Item {
@@ -155,7 +150,7 @@ Scope {
                     }
                     Layout.leftMargin: Appearance.sizes.hyprlandGapsOut
                     Layout.rightMargin: Appearance.sizes.hyprlandGapsOut
-                    visible: root.meaningfulPlayers.length === 0
+                    visible: root.activePlayer === null
                     implicitWidth: placeholderBackground.implicitWidth + Appearance.sizes.elevationMargin
                     implicitHeight: placeholderBackground.implicitHeight + Appearance.sizes.elevationMargin
 

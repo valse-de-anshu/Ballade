@@ -2,10 +2,22 @@
 defaults/ai/prompts/ii-Default.md
 defaults/ai/prompts/*.local.md
 
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+scripts/venv/
+.venv/
+env/
+
 # Cache & Logs
 *.log
 *.qslog
-__pycache__/
 .cache/
 .~lock.*
 *~
+.DS_Store
+
+# Temporary sandbox test directories
+/tmp/ballade_sandbox_*
