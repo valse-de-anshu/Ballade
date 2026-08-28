@@ -33,9 +33,13 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 | :---: | :---: |
 | <img src="assets/screenshots/wallpaper-picker.png" width="460" alt="Wallpaper Picker" /> | <img src="assets/screenshots/theme-pink.png" width="460" alt="Theme Pink" /> |
 
-| 🎵 Music Player & Synced Lyrics | ⚙️ Themes & Settings Hub |
+| 🎵 Music Player & Synced Lyrics | ⚙️ Themes & Settings Hub (8 Presets) |
 | :---: | :---: |
 | <img src="assets/screenshots/widgets-lyrics.png" width="460" alt="Music and Lyrics" /> | <img src="assets/screenshots/settings-presets.png" width="460" alt="Settings Presets" /> |
+
+| 💻 Multi-App Ecosystem: VS Code, Micro Editor, Dolphin & Kitty Terminal |
+| :---: |
+| <img src="assets/screenshots/code-micro-dolphin.png" width="940" alt="VS Code, Micro, Dolphin, Kitty Ecosystem" /> |
 
 ---
 
