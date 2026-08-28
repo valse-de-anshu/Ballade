@@ -1,0 +1,109 @@
+{
+  "colorscheme": "ballade",
+  "autoindent": true,
+  "autoclose": true,
+  "autosave": 0,
+  "backup": true,
+  "backupdir": "",
+  "comment": true,
+  "cursorline": false,
+  "diffgutter": true,
+  "divchars": "│─",
+  "divreverse": true,
+  "encoding": "utf-8",
+  "eofnewline": true,
+  "fastdirty": false,
+  "fileformat": "unix",
+  "filetype": "unknown",
+  "fmtcmd": "",
+  "hlsearch": true,
+  "ignorecase": true,
+  "incsearch": true,
+  "indentchar": " ",
+  "keepautoindent": true,
+  "keymenu": false,
+  "linter": true,
+  "literate": true,
+  "matchbrace": true,
+  "mouse": true,
+  "multiopen": "tab",
+  "paste": false,
+  "pluginchannels": [
+    "https://raw.githubusercontent.com/micro-editor/plugin-channel/master/channel.json"
+  ],
+  "pluginrepos": [],
+  "readonly": false,
+  "relativeruler": false,
+  "reload": "prompt",
+  "rmtrailingws": true,
+  "ruler": true,
+  "savecursor": true,
+  "savehistory": true,
+  "saveundo": true,
+  "scrollbar": false,
+  "scrollmargin": 3,
+  "scrollspeed": 2,
+  "smartpaste": true,
+  "softwrap": true,
+  "splitbottom": true,
+  "splitright": true,
+  "statusformatl": "$(filename) $(modified)($(line),$(col)) $(status.paste)| ft:$(opt:filetype) | $(opt:fileformat) | $(opt:encoding)",
+  "statusformatr": "$(bind:ToggleKeyMenu): bindings, $(bind:ToggleHelp): help",
+  "statusline": true,
+  "sucmd": "sudo",
+  "syntax": true,
+  "tabmovement": false,
+  "tabsize": 4,
+  "tabstospaces": true,
+  "termtitle": true,
+  "useprimary": true,
+  "wordwrap": false,
+  "xterm": false,
+  "*.go": {
+    "tabstospaces": false,
+    "tabsize": 4
+  },
+  "*.py": {
+    "tabsize": 4,
+    "tabstospaces": true,
+    "rmtrailingws": true
+  },
+  "*.rs": {
+    "tabsize": 4,
+    "tabstospaces": true
+  },
+  "*.js": {
+    "tabsize": 2,
+    "tabstospaces": true
+  },
+  "*.ts": {
+    "tabsize": 2,
+    "tabstospaces": true
+  },
+  "*.json": {
+    "tabsize": 2,
+    "tabstospaces": true
+  },
+  "*.yaml": {
+    "tabsize": 2,
+    "tabstospaces": true
+  },
+  "*.yml": {
+    "tabsize": 2,
+    "tabstospaces": true
+  },
+  "*.md": {
+    "softwrap": true,
+    "wordwrap": true,
+    "tabsize": 2,
+    "ruler": false
+  },
+  "*.sh": {
+    "tabstospaces": false,
+    "tabsize": 4
+  },
+  "*.lua": {
+    "tabsize": 4,
+    "tabstospaces": true
+  }
+}

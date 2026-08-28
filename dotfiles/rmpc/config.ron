@@ -1,0 +1,371 @@
+#![enable(implicit_some)]
+#![enable(unwrap_newtypes)]
+#![enable(unwrap_variant_newtypes)]
+(
+    address: "127.0.0.1:6600",
+    password: None,
+    theme: Some("tokyo_night"),
+    cache_dir: None,
+    lyrics_dir: Some("/home/valse-de-anshu/Music/lyrics"),
+    enable_lyrics_index: true,
+    enable_lyrics_hot_reload: true,
+    on_song_change: ["/home/valse-de-anshu/.local/bin/rmpc-fetch-lyrics"],
+    volume_step: 5,
+    max_fps: 60,
+    scrolloff: 2,
+    wrap_navigation: true,
+    enable_mouse: true,
+    scroll_amount: 1,
+    enable_config_hot_reload: true,
+    status_update_interval_ms: 500,
+    rewind_to_start_sec: Some(3),
+    keep_state_on_song_change: true,
+    reflect_changes_to_playlist: false,
+    select_current_song_on_change: true,
+    ignore_leading_the: true,
+    browser_song_sort: [Disc, Track, Artist, Title],
+    directories_sort: SortFormat(group_by_type: true, reverse: false),
+    auto_open_downloads: true,
+    album_art: (
+        method: Auto,
+        max_size_px: (width: 400, height: 400),
+        disabled_protocols: ["http://", "https://"],
+        vertical_align: Center,
+        horizontal_align: Center,
+    ),
+    cava: (
+        framerate: 60,
+        autosens: true,
+        sensitivity: 100,
+        lower_cutoff_freq: 50,
+        higher_cutoff_freq: 10000,
+        input: (
+            method: Fifo,
+            source: "/tmp/mpd.fifo",
+            sample_rate: 44100,
+            sample_bits: 16,
+        ),
+        smoothing: (
+            noise_reduction: 50,
+            monstercat: false,
+            waves: false,
+        ),
+    ),
+    keybinds: (
+        global: {
+            "q": Quit,
+            "?": ShowHelp,
+            ":": CommandMode,
+            "oI": ShowCurrentSongInfo,
+            "oo": ShowOutputs,
+            "op": ShowDecoders,
+            "od": ShowDownloads,
+            "z": ToggleRepeat,
+            "x": ToggleRandom,
+            "c": ToggleConsume,
+            "v": ToggleSingle,
+            "p": TogglePause,
+            "s": Stop,
+            ">": NextTrack,
+            "<": PreviousTrack,
+            "f": SeekForward,
+            "b": SeekBack,
+            "+": VolumeUp,
+            "=": VolumeUp,
+            "-": VolumeDown,
+            ".": VolumeUp,
+            ",": VolumeDown,
+            "<Tab>": NextTab,
+            "gt": NextTab,
+            "<S-Tab>": PreviousTab,
+            "gT": PreviousTab,
+            "1": SwitchToTab("Queue"),
+            "2": SwitchToTab("Directories"),
+            "3": SwitchToTab("Artists"),
+            "4": SwitchToTab("Playlists"),
+            "5": SwitchToTab("Search"),
+            "6": SwitchToTab("Keybindings"),
+            "<C-u>": Update,
+            "<C-U>": Rescan,
+            "R": AddRandom,
+        },
+        navigation: {
+            "<C-c>": Close,
+            "<Esc>": Close,
+            "<CR>": Confirm,
+            "k": Up,
+            "<Up>": Up,
+            "j": Down,
+            "<Down>": Down,
+            "h": Left,
+            "<Left>": Left,
+            "l": Right,
+            "<Right>": Right,
+            "K": MoveUp,
+            "J": MoveDown,
+            "<C-u>": UpHalf,
+            "<C-d>": DownHalf,
+            "<C-b>": PageUp,
+            "<PageUp>": PageUp,
+            "<C-f>": PageDown,
+            "<PageDown>": PageDown,
+            "gg": Top,
+            "G": Bottom,
+            "<Space>": Select,
+            "<C-Space>": InvertSelection,
+            "/": EnterSearch,
+            "n": NextResult,
+            "N": PreviousResult,
+            "a": Add,
+            "A": AddAll,
+            "D": Delete,
+            "<C-r>": Rename,
+            "i": FocusInput,
+            "oi": ShowInfo,
+            "<C-z>": ContextMenu(),
+            "m": ContextMenu(),
+            "<C-s>s": Save(kind: Modal(all: false, duplicates_strategy: Ask)),
+            "<C-s>a": Save(kind: Modal(all: true, duplicates_strategy: Ask)),
+        },
+        queue: {
+            "d": Delete,
+            "D": DeleteAll,
+            "<CR>": Play,
+            "C": JumpToCurrent,
+            "X": Shuffle,
+        },
+    ),
+    search: (
+        case_sensitive: false,
+        ignore_diacritics: true,
+        search_button: false,
+        mode: Contains,
+        tags: [
+            (value: "any", label: "Any Tag"),
+            (value: "artist", label: "Artist"),
+            (value: "album", label: "Album"),
+            (value: "albumartist", label: "Album Artist"),
+            (value: "title", label: "Title"),
+            (value: "filename", label: "Filename"),
+            (value: "genre", label: "Genre"),
+        ],
+    ),
+    artists: (
+        album_display_mode: NameOnly,
+        album_sort_by: Name,
+        album_date_tags: [Date],
+    ),
+    tabs: [
+        (
+            name: "Queue",
+            pane: Split(
+                direction: Horizontal,
+                panes: [
+                    (
+                        size: "24%",
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (
+                                    size: "40%",
+                                    borders: "ALL",
+                                    border_symbols: Rounded,
+                                    border_title: [(kind: Text(" Album Art "))],
+                                    border_title_alignment: Left,
+                                    pane: Pane(AlbumArt)
+                                ),
+                                (
+                                    size: "20%",
+                                    borders: "ALL",
+                                    border_symbols: Rounded,
+                                    border_title: [(kind: Text(" Visualizer "))],
+                                    border_title_alignment: Left,
+                                    pane: Pane(Cava)
+                                ),
+                                (
+                                    size: "40%",
+                                    borders: "ALL",
+                                    border_symbols: Rounded,
+                                    border_title: [(kind: Text(" Synced Lyrics "))],
+                                    border_title_alignment: Left,
+                                    pane: Pane(Lyrics)
+                                ),
+                            ],
+                        ),
+                    ),
+                    (
+                        size: "76%",
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (
+                                    size: "3",
+                                    borders: "ALL",
+                                    border_symbols: Rounded,
+                                    pane: Split(
+                                        direction: Horizontal,
+                                        panes: [
+                                            (size: "1", pane: Pane(Empty())),
+                                            (size: "100%", pane: Pane(QueueHeader())),
+                                        ]
+                                    )
+                                ),
+                                (
+                                    size: "100%",
+                                    borders: "ALL",
+                                    border_symbols: Rounded,
+                                    pane: Split(
+                                        direction: Horizontal,
+                                        panes: [
+                                            (size: "1", pane: Pane(Empty())),
+                                            (size: "100%", pane: Pane(Queue)),
+                                        ]
+                                    )
+                                ),
+                            ],
+                        )
+                    ),
+                ],
+            ),
+        ),
+        (
+            name: "Directories",
+            borders: "ALL",
+            border_symbols: Rounded,
+            pane: Split(
+                size: "100%",
+                direction: Vertical,
+                panes: [(pane: Pane(Directories), size: "100%", borders: "ALL", border_symbols: Rounded)],
+            )
+        ),
+        (
+            name: "Artists",
+            borders: "ALL",
+            border_symbols: Rounded,
+            pane: Split(
+                size: "100%",
+                direction: Vertical,
+                panes: [(pane: Pane(Artists), size: "100%", borders: "ALL", border_symbols: Rounded)],
+            )
+        ),
+        (
+            name: "Playlists",
+            borders: "ALL",
+            border_symbols: Rounded,
+            pane: Split(
+                size: "100%",
+                direction: Vertical,
+                panes: [(pane: Pane(Playlists), size: "100%", borders: "ALL", border_symbols: Rounded)],
+            )
+        ),
+        (
+            name: "Search",
+            borders: "ALL",
+            border_symbols: Rounded,
+            pane: Split(
+                size: "100%",
+                direction: Vertical,
+                panes: [(pane: Pane(Search), size: "100%", borders: "ALL", border_symbols: Rounded)],
+            )
+        ),
+        (
+            name: "Keybindings",
+            borders: "ALL",
+            border_symbols: Rounded,
+            pane: Split(
+                direction: Horizontal,
+                panes: [
+                    (
+                        size: "25%",
+                        borders: "ALL",
+                        border_symbols: Rounded,
+                        border_title: [(kind: Text(" 🌟 Daily Essentials "))],
+                        border_title_alignment: Left,
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (size: "1", pane: Pane(Empty())),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  p          "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Play / Pause"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  > / <      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Next / Prev Track"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  f / b      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Seek 5s Fwd / Back"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  + / -      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Volume Up / Down"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  j / k      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Move Up / Down"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  Enter      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Play / Open Item"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  /          "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Search Filter"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  n / N      "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Next / Prev Match"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  q          "), style: (fg: "#88c0d0", modifiers: "Bold")), (kind: Text("Quit Player"))]))),
+                                (size: "100%", pane: Pane(Empty())),
+                            ]
+                        )
+                    ),
+                    (
+                        size: "25%",
+                        borders: "ALL",
+                        border_symbols: Rounded,
+                        border_title: [(kind: Text(" 📁 Playlists & Selection "))],
+                        border_title_alignment: Left,
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (size: "1", pane: Pane(Empty())),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  m / C-z    "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Context Menu"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-s s      "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Save Song to PL"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-s a      "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Save Queue to PL"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  Space      "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Select / Checkmark"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-Space    "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Invert Selection"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  a / A      "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Add / Add All"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  d          "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Delete Item"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  D          "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Clear Queue"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-r        "), style: (fg: "#a3be8c", modifiers: "Bold")), (kind: Text("Rename (in Tab 4)"))]))),
+                                (size: "100%", pane: Pane(Empty())),
+                            ]
+                        )
+                    ),
+                    (
+                        size: "25%",
+                        borders: "ALL",
+                        border_symbols: Rounded,
+                        border_title: [(kind: Text(" 🎛️ Modes & Navigation "))],
+                        border_title_alignment: Left,
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (size: "1", pane: Pane(Empty())),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  1 .. 6     "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Jump to Tab 1-6"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  Tab        "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Next Tab"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  S-Tab      "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Previous Tab"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  z          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Toggle Repeat"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  x          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Toggle Random"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  c          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Toggle Consume"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  v          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Toggle Single Track"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  X          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Shuffle Queue"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  s          "), style: (fg: "#ebcb8b", modifiers: "Bold")), (kind: Text("Stop Playback"))]))),
+                                (size: "100%", pane: Pane(Empty())),
+                            ]
+                        )
+                    ),
+                    (
+                        size: "25%",
+                        borders: "ALL",
+                        border_symbols: Rounded,
+                        border_title: [(kind: Text(" 🔧 Library & Info "))],
+                        border_title_alignment: Left,
+                        pane: Split(
+                            direction: Vertical,
+                            panes: [
+                                (size: "1", pane: Pane(Empty())),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-u        "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("Scan for New Songs"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C-U        "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("Full Library Rescan"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  R          "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("Add Random Songs"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  C          "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("Jump to Playing Track"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  i          "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("View Song Metadata"))]))),
+                                (size: "1", pane: Pane(Property(content: [(kind: Text("  ?          "), style: (fg: "#b48ead", modifiers: "Bold")), (kind: Text("Open Built-in Help"))]))),
+                                (size: "100%", pane: Pane(Empty())),
+                            ]
+                        )
+                    ),
+                ]
+            )
+        ),
+    ],
+)

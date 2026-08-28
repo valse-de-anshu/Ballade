@@ -48,6 +48,28 @@ if [ -d "$BALLADE_DIR/hyprland-custom" ] && [ -d "$HOME/.config/hypr" ]; then
     echo "🪟 Installed Hyprland custom blur, rules, and keybinding overrides to ~/.config/hypr/custom/"
 fi
 
+# 5. Install Bundled Application Dotfiles & Cursor Themes
+if [ -d "$BALLADE_DIR/dotfiles" ]; then
+    echo "📦 Installing application configurations (rmpc, mpv, starship, fastfetch, cava, btop, wlogout, fuzzel, micro, kitty)..."
+    for app in "$BALLADE_DIR/dotfiles"/*; do
+        if [ -d "$app" ]; then
+            app_name="$(basename "$app")"
+            if [ "$app_name" = "icons" ]; then
+                mkdir -p "$HOME/.icons"
+                cp -rn "$app/"* "$HOME/.icons/" 2>/dev/null || true
+                echo "   ↳ Custom cursor theme (Gloomi_x) installed to ~/.icons/"
+            else
+                mkdir -p "$HOME/.config/$app_name"
+                cp -rn "$app/"* "$HOME/.config/$app_name/" 2>/dev/null || true
+            fi
+        fi
+    done
+    if [ -f "$BALLADE_DIR/dotfiles/starship/starship.toml" ]; then
+        cp -n "$BALLADE_DIR/dotfiles/starship/starship.toml" "$HOME/.config/starship.toml" 2>/dev/null || true
+    fi
+    echo "   ↳ Application dotfiles installed to ~/.config/"
+fi
+
 echo ""
 echo "✨ QuickShell Ballade setup is complete!"
 echo "🚀 You can now launch Ballade anytime with: qs -c ballade"

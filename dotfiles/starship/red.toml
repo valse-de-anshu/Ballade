@@ -1,0 +1,67 @@
+# Don't print a new line at the start of the prompt
+add_newline = true
+
+# The r/unixporn "Pill" layout with Live Time added
+format = """
+$username$directory$time$git_branch$git_status$cmd_duration
+$character"""
+
+[character]
+success_symbol = "[╰─](bold fg:#ff5252) "
+error_symbol = "[╰─](bold fg:#ff1744) "
+
+[username]
+show_always = true
+style_user = "bg:#5c1d22 fg:#ff5252 bold"
+style_root = "bg:#5c1d22 fg:#ff1744 bold"
+# Added the closing curve [] and a space to the end of this format string
+format = "[╭─](bold fg:#5c1d22)[󰭹 $user]($style)[](bold fg:#5c1d22) "
+
+[hostname]
+# Disabled the hostname so "anshu" stops printing a second time
+disabled = true
+
+[directory]
+home_symbol = " "
+read_only = " "
+style = "bg:#281d1e fg:#eed8d9 bold"
+truncation_length = 3
+truncation_symbol = "••/"
+format = "[](bold fg:#281d1e)[$path]($style)[](bold fg:#281d1e) "
+
+[directory.substitutions]
+"Desktop" = " "
+"Documents" = " "
+"Downloads" = " "
+"Music" = "󰎈 "
+"Pictures" = " "
+"Videos" = " "
+"GitHub" = "󰊤 "
+
+[git_branch]
+symbol = "󰘬 "
+style = "bg:#ff6e6e fg:#1a1415 bold"
+format = "[](bold fg:#ff6e6e)[$symbol$branch]($style)[](bold fg:#ff6e6e) "
+
+[git_status]
+style = "bg:#ff1744 fg:#1a1415 bold"
+format = "[](bold fg:#ff1744)[$all_status$ahead_behind]($style)[](bold fg:#ff1744) "
+# Simplified, universally understood status icons:
+conflicted = "!! "
+ahead = "↑ "
+behind = "↓ "
+diverged = "↕ "
+untracked = "? "
+stashed = "S "
+modified = "! "
+staged = "+ "
+renamed = "» "
+deleted = "x "
+
+[cmd_duration]
+min_time = 500
+style = "bg:#ffd740 fg:#1a1415 bold"
+format = "[](bold fg:#ffd740)[󰪢 $duration]($style)[](bold fg:#ffd740)"
+
+[package]
+disabled = true

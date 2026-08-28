@@ -1,0 +1,18 @@
+[color]
+
+# Setting background to default allows your wallpaper's dark ocean to show through
+background = default
+
+# Enabling the vertical gradient for that butter-smooth look
+gradient = 1
+
+# THE MID-TONES (Starting the bars with saturated violet)
+gradient_color_1 = '#3a3f8c'
+gradient_color_2 = '#5c64b8'
+
+# THE GLOW (The bright lavender 'pop' for the top of the bars)
+gradient_color_3 = '#8a94e0'
+gradient_color_4 = '#aab4f5'
+
+# Ensure no other colors or horizontal gradients interfere
+horizontal_gradient = 0

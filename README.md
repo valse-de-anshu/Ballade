@@ -56,39 +56,46 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 
 ## ⚡ 60-Second Quick Start
 
-Ballade is fully standalone. It can coexist alongside any other shell configuration without touching your personal files.
+Ballade is built on top of the **`illogical-impulse`** (`dots-hyprland`) base framework. Follow these 3 simple steps to get running:
 
-### 1. Install Runtime Dependencies (Arch Linux / CachyOS)
+---
+
+### Step 1: Install Base Layer — `illogical-impulse`
+> [!IMPORTANT]
+> **Ballade requires `illogical-impulse` as its base foundation.**
+> Refer to the official [illogical-impulse Installation Guide](https://ii.clsty.link/en/ii-qs/01setup/#automated-installation).
+
+Run the automated one-line installer for Arch Linux / CachyOS / EndeavourOS:
 ```bash
-sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayland \
-    pipewire wireplumber playerctl canberra-gtk-play mpv yt-dlp jq wl-clipboard cliphist \
-    tesseract tesseract-data-eng hyprpicker hyprsunset kitty
+bash <(curl -s https://ii.clsty.link/get)
 ```
+*(Or manually clone and run: `git clone --recursive https://github.com/end-4/dots-hyprland ~/.cache/dots-hyprland && cd ~/.cache/dots-hyprland && ./setup install`)*
 
-### 2. Clone into QuickShell Directory
+---
+
+### Step 2: Download & Install `Ballade`
+Clone Ballade directly into your QuickShell configurations folder and run the automated initializer:
+
 ```bash
+# 1. Clone into QuickShell directory
 git clone https://github.com/valse-de-anshu/Ballade.git ~/.config/quickshell/ballade
-```
 
-### 3. Initialize & Launch
-```bash
+# 2. Run 1-Click Environment Setup (Installs all app dotfiles, Hyprland custom rules & themes)
 cd ~/.config/quickshell/ballade
 ./setup.sh
-qs -c ballade
 ```
 
-### 4. Auto-Start with Hyprland
-- **Using `dots-hyprland` (`~/.config/hypr/custom/env.lua` or `~/.config/hypr/custom/variables.lua`):**
+---
+
+### Step 3: Set Ballade as Active Shell & Launch
+
+- **In `~/.config/hypr/custom/env.lua` or `~/.config/hypr/hyprland/variables.lua`:**
   ```lua
   hl.env("qsConfig", "ballade")
   ```
-- **Or in `~/.config/hypr/hyprland/variables.lua`:**
-  ```lua
-  hl.env("qsConfig", "ballade")
-  ```
-- **Using standard `hyprland.conf`:**
-  ```ini
-  exec-once = qs -c ballade
+- **Or launch immediately from your terminal:**
+  ```bash
+  qs -c ballade
   ```
 
 ---
@@ -177,11 +184,14 @@ When you apply a preset (`scripts/theming/apply-theme-preset.sh`) or switch a wa
 - 🐱 **Kitty Terminal**: Applies matching 16-color ANSI templates to `~/.config/kitty/current-theme.conf` and sends `SIGUSR1` for instant live reloading.
 - 💻 **Konsole & Dolphin Terminal**: Dynamically writes native RGB color maps to `~/.local/share/konsole/Quickshell.colorscheme` and registers it in `~/.config/konsolerc`.
 - 📝 **Micro Text Editor**: Automatically generates and activates matching syntax and UI colorschemes in `~/.config/micro/colorschemes/ballade.micro`.
-- 💻 **VS Code, VSCodium & Cursor**: Synchronizes `workbench.colorCustomizations` and `material-code.primaryColor` in `settings.json` across Code, Code - OSS, VSCodium, Cursor, and Antigravity.
+- 💻 **VS Code, VSCodium & Cursor**: Synchronizes 100% of UI tokens (`workbench.colorCustomizations`) including **empty editor backgrounds**, **watermarks**, **shortcuts**, **brackets**, and syntax tokens (`editor.tokenColorCustomizations`) across Code, Code - OSS, VSCodium, Cursor, and Antigravity.
+- 🎵 **rmpc Music Client**: Synchronizes full visual themes across 8 presets in `~/.config/rmpc/themes/`.
+- 🎬 **mpv Video Player**: Bundled custom cinematic shaders, keybindings, and scripts (`~/.config/mpv/`).
+- 🚀 **Starship Prompt**: Synchronizes prompt accent colors in `~/.config/starship.toml`.
+- 📊 **Fastfetch, Cava, Btop, Wlogout & Fuzzel**: Full dotfiles bundled in `dotfiles/` and installed via `./setup.sh`.
 - 🐬 **KDE Plasma & Dolphin**: Applies matching colorschemes via `plasma-apply-colorscheme` and updates `kdeglobals`.
 - 🎨 **Kvantum Qt Engine**: Generates and compiles Material theme SVGs via `scripts/kvantum/materialQT.sh`.
 - 🏷️ **GTK & Icons**: Updates `gsettings` to synchronize GTK 3/4 theme colors and `Tela-circle-*` icon packs.
-- 🚀 **Starship Prompt**: Synchronizes prompt accent colors in `~/.config/starship.toml`.
 - 🪟 **Hyprland Compositor**: Enforces frosted glass blur (`passes = 4`, `size = 16`) and window opacities (`0.93 0.88`) via `hyprland-custom/`.
 
 ---
@@ -203,9 +213,29 @@ qs -c ballade ipc call cheatsheet toggle         # Keybindings Cheatsheet
 qs -c ballade ipc call cliphist toggle           # Clipboard History Manager
 ```
 
----
-
 ## 📦 System Prerequisites & Dependencies
+
+### ⚡ 1-Click Package Installation Commands (Verified on Arch / CachyOS / EndeavourOS)
+
+#### Option A: Using `yay` (Recommended — Installs All Official Packages + AUR Tools):
+```bash
+yay -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayland qt6-multimedia \
+    pipewire wireplumber playerctl libcanberra mpv yt-dlp cava \
+    kitty micro starship fastfetch btop rmpc wlogout \
+    jq python python-mutagen wl-clipboard cliphist tesseract tesseract-data-eng \
+    hyprpicker hyprsunset fuzzel kvantum matugen-bin
+```
+
+#### Option B: Using `pacman` (Official Repositories):
+```bash
+sudo pacman -S --needed quickshell hyprland qt6-declarative qt6-5compat qt6-svg qt6-wayland qt6-multimedia \
+    pipewire wireplumber playerctl libcanberra mpv yt-dlp cava \
+    kitty micro starship fastfetch btop rmpc \
+    jq python python-mutagen wl-clipboard cliphist tesseract tesseract-data-eng \
+    hyprpicker hyprsunset fuzzel kvantum
+```
+
+---
 
 | Domain | Required Packages | Purpose |
 | :--- | :--- | :--- |

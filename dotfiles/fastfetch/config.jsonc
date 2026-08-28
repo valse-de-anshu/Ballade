@@ -1,0 +1,96 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    "source": "/home/valse-de-anshu/.config/fastfetch/Text File.tx",
+    "type": "kitty",
+    "width": 35,
+    "height": 19, // Adjusted slightly higher to frame the extra modules perfectly
+    "padding": {
+      "top": 1,
+      "left": 2,
+      "right": 4
+    }
+  },
+  "display": {
+    "separator": " ",
+    "color": {
+      "keys": "38;2;122;162;247" // Tokyo Night Blue
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "format": "   valse-de-anshu",
+      "color": {
+        "user": "38;2;187;154;247" // Tokyo Night Purple
+      }
+    },
+    {
+      "type": "custom",
+      "format": " ─────────────────────────────────────",
+      "outputColor": "38;2;65;72;104" // Dark divider line
+    },
+    {
+      "type": "os",
+      "key": " 󰣇  os    "
+    },
+    {
+      "type": "host",
+      "key": " 󰌢  sys   "
+    },
+    {
+      "type": "kernel",
+      "key": " 󰒋  ker   "
+    },
+    {
+      "type": "uptime",
+      "key": " 󱎫  up    "
+    },
+
+    {
+      "type": "shell",
+      "key": " 󱆃  sh    "
+    },
+    {
+      "type": "display",
+      "key": " 󰍹  res   "
+    },
+    {
+      "type": "wm",
+      "key": " 󱂬  wm    "
+    },
+    {
+      "type": "terminal",
+      "key": " 󰆍  term  "
+    },
+    {
+      "type": "cpu",
+      "key": " 󰻠  cpu   ",
+      "format": "{1}" // Just displays the clean model name
+    },
+    {
+      "type": "gpu",
+      "key": " 󰢮  gpu   ",
+      "format": "{1}" // Clean model name omitting unnecessary vendor strings
+    },
+    {
+      "type": "memory",
+      "key": " 󰍛  mem   "
+    },
+    {
+      "type": "disk",
+      "key": " 󰋊  disk  "
+    },
+    {
+      "type": "custom",
+      "format": " ─────────────────────────────────────",
+      "outputColor": "38;2;65;72;104"
+    },
+    "break",
+    {
+      "type": "colors",
+      "symbol": "circle",
+      "paddingLeft": 4
+    }
+  ]
+}

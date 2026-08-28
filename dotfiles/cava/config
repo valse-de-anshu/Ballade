@@ -1,0 +1,46 @@
+## CAVA Configuration — Optimized for rmpc integration
+## Source: MPD FIFO at /tmp/mpd.fifo
+
+[general]
+framerate = 60
+autosens = 1
+sensitivity = 150
+bars = 0
+bar_width = 2
+bar_spacing = 1
+sleep_timer = 5
+
+[input]
+method = fifo
+source = /tmp/mpd.fifo
+sample_rate = 44100
+sample_bits = 16
+channels = 2
+
+[output]
+method = noncurses
+channels = mono
+mono_option = average
+reverse = 0
+continuous_rendering = 1
+
+[color]
+gradient = 1
+gradient_color_1 = '#1e1e2e'
+gradient_color_2 = '#313244'
+gradient_color_3 = '#45475a'
+gradient_color_4 = '#89b4fa'
+gradient_color_5 = '#b4befe'
+gradient_color_6 = '#cba6f7'
+gradient_color_7 = '#f38ba8'
+gradient_color_8 = '#fab387'
+
+[smoothing]
+noise_reduction = 50
+
+[eq]
+1 = 1.2
+2 = 1.1
+3 = 1.0
+4 = 1.0
+5 = 0.9
