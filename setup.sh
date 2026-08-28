@@ -67,7 +67,11 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
     if [ -f "$BALLADE_DIR/dotfiles/starship/starship.toml" ]; then
         cp -n "$BALLADE_DIR/dotfiles/starship/starship.toml" "$HOME/.config/starship.toml" 2>/dev/null || true
     fi
-    echo "   ↳ Application dotfiles installed to ~/.config/"
+    if [ -d "$BALLADE_DIR/dotfiles/color-schemes" ]; then
+        mkdir -p "$HOME/.local/share/color-schemes"
+        cp -rn "$BALLADE_DIR/dotfiles/color-schemes/"* "$HOME/.local/share/color-schemes/" 2>/dev/null || true
+    fi
+    echo "   ↳ Application dotfiles installed to ~/.config/ and ~/.local/share/"
 fi
 
 echo ""

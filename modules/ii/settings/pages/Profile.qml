@@ -243,12 +243,14 @@ ContentPage {
 
                 Repeater {
                     model: [
-                        { key: "green",     name: "Green",      folder: "green",     color: "#7d9726", icon: "forest"         },
-                        { key: "pink",      name: "Pink",       folder: "pink",      color: "#d4659a", icon: "local_florist"  },
-                        { key: "red",       name: "Red",        folder: "red",       color: "#bf3f43", icon: "whatshot"       },
-                        { key: "purple",    name: "Purple",     folder: "purple",    color: "#9c5adb", icon: "nights_stay"    },
-                        { key: "blue",      name: "Tokyo Night",folder: "blue",      color: "#7aa2f7", icon: "location_city"  },
-                        { key: "grayscale", name: "Grayscale",  folder: "grayscale", color: "#888899", icon: "invert_colors"  }
+                        { key: "green",     name: "Green",        folder: "green",     color: "#7d9726", icon: "forest"         },
+                        { key: "pink",      name: "Pink",         folder: "pink",      color: "#d4659a", icon: "local_florist"  },
+                        { key: "red",       name: "Red",          folder: "red",       color: "#bf3f43", icon: "whatshot"       },
+                        { key: "purple",    name: "Purple",       folder: "purple",    color: "#9c5adb", icon: "nights_stay"    },
+                        { key: "blue",      name: "Tokyo Night",  folder: "blue",      color: "#7aa2f7", icon: "location_city"  },
+                        { key: "golden",    name: "Golden Amber", folder: "golden",    color: "#f0b849", icon: "wb_sunny"       },
+                        { key: "orange",    name: "Sunset Orange",folder: "orange",    color: "#ff9248", icon: "flare"          },
+                        { key: "grayscale", name: "Grayscale",    folder: "grayscale", color: "#888899", icon: "invert_colors"  }
                     ]
 
                     delegate: Item {

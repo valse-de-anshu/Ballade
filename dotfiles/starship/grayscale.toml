@@ -1,7 +1,5 @@
-# Don't print a new line at the start of the prompt
 add_newline = true
 
-# The r/unixporn "Pill" layout with Live Time added
 format = """
 $username$directory$time$git_branch$git_status$cmd_duration
 $character"""
@@ -14,17 +12,15 @@ error_symbol = "[╰─](bold fg:#bf616a) "
 show_always = true
 style_user = "bg:#434c5e fg:#88c0d0 bold"
 style_root = "bg:#434c5e fg:#bf616a bold"
-# Added the closing curve [] and a space to the end of this format string
 format = "[╭─](bold fg:#434c5e)[󰭹 $user]($style)[](bold fg:#434c5e) "
 
 [hostname]
-# Disabled the hostname so "anshu" stops printing a second time
 disabled = true
 
 [directory]
 home_symbol = " "
 read_only = " "
-style = "bg:#2e3440 fg:#d8dee9 bold"
+style = "bg:#2e3440 fg:#eceff4 bold"
 truncation_length = 3
 truncation_symbol = "••/"
 format = "[](bold fg:#2e3440)[$path]($style)[](bold fg:#2e3440) "
@@ -39,29 +35,21 @@ format = "[](bold fg:#2e3440)[$path]($style)[](bold fg:#2e3440) "
 "GitHub" = "󰊤 "
 
 [git_branch]
-symbol = "󰘬 "
-style = "bg:#81a1c1 fg:#242933 bold"
-format = "[](bold fg:#81a1c1)[$symbol$branch]($style)[](bold fg:#81a1c1) "
+symbol = " "
+style = "bg:#434c5e fg:#a3be8c bold"
+format = "[](bold fg:#434c5e)[$symbol$branch]($style)[](bold fg:#434c5e) "
 
 [git_status]
-style = "bg:#bf616a fg:#242933 bold"
-format = "[](bold fg:#bf616a)[$all_status$ahead_behind]($style)[](bold fg:#bf616a) "
-# Simplified, universally understood status icons:
-conflicted = "!! "
-ahead = "↑ "
-behind = "↓ "
-diverged = "↕ "
-untracked = "? "
-stashed = "S "
-modified = "! "
-staged = "+ "
-renamed = "» "
-deleted = "x "
+style = "bg:#434c5e fg:#ebcb8b bold"
+format = "[$all_status$ahead_behind]($style)"
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#2e3440 fg:#81a1c1 bold"
+format = "[](bold fg:#2e3440)[󱑎 $time]($style)[](bold fg:#2e3440) "
 
 [cmd_duration]
-min_time = 500
-style = "bg:#ebcb8b fg:#242933 bold"
-format = "[](bold fg:#ebcb8b)[󰪢 $duration]($style)[](bold fg:#ebcb8b)"
-
-[package]
-disabled = true
+min_time = 2_000
+style = "bg:#434c5e fg:#b48ead bold"
+format = "[](bold fg:#434c5e)[󱐋 $duration]($style)[](bold fg:#434c5e) "

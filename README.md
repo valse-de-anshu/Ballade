@@ -172,12 +172,14 @@ Ballade features a dual-tier automated theming pipeline: **Material Design 3 ext
 
 | Preset | Accent Hue | Command Palette | Philosophy |
 | :--- | :--- | :--- | :--- |
-| **`green`** | `#4CAF50` | Forest Sage / Olive | Atelier Estuary calm, natural focus |
+| **`green`** | `#7D9726` | Forest Sage / Olive | Atelier Estuary calm, natural focus |
 | **`purple`**| `#9C27B0` | Amethyst Violet / Lavender | Cyberpunk midnight with glowing accents |
 | **`pink`**  | `#E05688` | Deep Rose / Pastel Orchid | Sakura vibrant anime aesthetic |
 | **`red`**   | `#D32F2F` | Scarlet / Salmon Rose | High-energy crimson with pure error alerts |
-| **`blue`**  | `#2196F3` | Cyan / Midnight Navy | Tokyo Night deep ocean tranquility |
-| **`grayscale`** | `#78909C` | Nord Slate / Charcoal | Distraction-free monochrome productivity |
+| **`blue`**  | `#7AA2F7` | Cyan / Midnight Navy | Tokyo Night deep ocean tranquility |
+| **`golden`**| `#FFB300` | Radiant Amber / Gold | Warm honey espresso with glowing accents |
+| **`orange`**| `#FF7043` | Sunset Tangerine / Peach | Warm campfire dusk glow and citrus warmth |
+| **`grayscale`** | `#8892B0` | Nord Slate / Charcoal | Distraction-free monochrome productivity |
 
 ### 🛠️ What Our Scripts Automate Across Your System:
 When you apply a preset (`scripts/theming/apply-theme-preset.sh`) or switch a wallpaper (`scripts/colors/switchwall.sh`), Ballade automatically writes and synchronizes configurations across your entire desktop environment:

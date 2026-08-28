@@ -55,6 +55,22 @@ case "$THEME_KEY" in
         FUNCS="#88c0d0"; TYPES="#8fbcbb"; COMMENTS="#4c566a"
         BRACKET1="#88c0d0"; BRACKET2="#ebcb8b"; BRACKET3="#81a1c1"; BRACKET4="#a3be8c"; BRACKET5="#b48ead"
         ;;
+    golden|gold|amber|yellow)
+        PRESET="golden"
+        BG="#1c1810"; BG_DARK="#14110b"; BG_LIGHT="#262016"; BG_HOVER="#362c1e"
+        FG="#ebd8a0"; FG_MUTED="#7a6744"; ACCENT="#f0b849"; ACCENT_BRIGHT="#fed268"
+        SEL="#3d3019"; BORDER="#2e2414"; STRINGS="#a8b340"; NUMS="#e0ad4f"; KEYWORDS="#f0b849"
+        FUNCS="#f0b849"; TYPES="#ffd268"; COMMENTS="#7a6744"
+        BRACKET1="#f0b849"; BRACKET2="#fed268"; BRACKET3="#a8b340"; BRACKET4="#cbb06d"; BRACKET5="#e0ad4f"
+        ;;
+    orange|sunset|tangerine)
+        PRESET="orange"
+        BG="#1c1512"; BG_DARK="#140e0c"; BG_LIGHT="#291e1a"; BG_HOVER="#382923"
+        FG="#e8dcd5"; FG_MUTED="#7a594c"; ACCENT="#ff9248"; ACCENT_BRIGHT="#f7bb63"
+        SEL="#452c22"; BORDER="#2f201a"; STRINGS="#9fb865"; NUMS="#f7a26d"; KEYWORDS="#ff9248"
+        FUNCS="#ff9248"; TYPES="#f7bb63"; COMMENTS="#7a594c"
+        BRACKET1="#ff9248"; BRACKET2="#f7bb63"; BRACKET3="#9fb865"; BRACKET4="#d49a7a"; BRACKET5="#f7a26d"
+        ;;
     *)
         PRESET="green"
         BG="#18211e"; BG_DARK="#121917"; BG_LIGHT="#202c28"; BG_HOVER="#25352f"
@@ -396,10 +412,16 @@ paths = [
 ]
 
 for p in paths:
-    if os.path.exists(p):
+    parent_dir = os.path.dirname(p)
+    if os.path.exists(parent_dir):
         try:
-            with open(p, "r") as f:
-                data = json.load(f)
+            data = {}
+            if os.path.exists(p) and os.path.getsize(p) > 0:
+                with open(p, "r") as f:
+                    try:
+                        data = json.load(f)
+                    except json.JSONDecodeError:
+                        data = {}
             data["workbench.colorCustomizations"] = workbench_colors
             data["editor.tokenColorCustomizations"] = token_customizations
             data["material-code.primaryColor"] = accent

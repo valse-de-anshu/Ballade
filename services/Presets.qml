@@ -61,6 +61,24 @@ Singleton {
             folder: "blue"
         },
         {
+            key: "golden",
+            name: Translation.tr("Golden Amber"),
+            subtitle: Translation.tr("Luminous Honey & Espresso"),
+            color: "#F0B849",
+            icon: "wb_sunny",
+            telaIcon: "Tela-circle-yellow-dark",
+            folder: "golden"
+        },
+        {
+            key: "orange",
+            name: Translation.tr("Sunset Orange"),
+            subtitle: Translation.tr("Warm Autumn & Citrus Ember"),
+            color: "#FF9248",
+            icon: "flare",
+            telaIcon: "Tela-circle-orange-dark",
+            folder: "orange"
+        },
+        {
             key: "grayscale",
             name: Translation.tr("Nord B&W"),
             subtitle: Translation.tr("Monochrome & Frost"),

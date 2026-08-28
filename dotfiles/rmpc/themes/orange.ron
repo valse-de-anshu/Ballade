@@ -1,0 +1,61 @@
+#![enable(implicit_some)]
+#![enable(unwrap_newtypes)]
+#![enable(unwrap_custom)]
+(
+    album_art_position: Left,
+    album_art_width_percent: 40,
+    default_album_art_path: None,
+    show_song_table_header: true,
+    draw_borders: true,
+    browser_column_widths: [20, 38, 42],
+    background_color: "#1a120e",
+    text_color: "#fbe9e7",
+    header_background_color: "#261712",
+    modal_background_color: "#261712",
+    tab_bar: (
+        enabled: true,
+        active_style: (fg: "#1a120e", bg: "#ff7043", modifiers: "Bold"),
+        inactive_style: (fg: "#ffab91", bg: "#261712"),
+    ),
+    highlighted_item_style: (fg: "#1a120e", bg: "#ff7043", modifiers: "Bold"),
+    current_item_style: (fg: "#ff7043", bg: "#382017", modifiers: "Bold"),
+    borders_style: (fg: "#ff7043"),
+    highlight_border_style: (fg: "#ffab91"),
+    symbols: (song: "🎵", dir: "📁", marker: "▶", ellipsis: "..."),
+    progress_bar: (
+        symbols: ["━", "━", "─"],
+        track_style: (fg: "#382017"),
+        elapsed_style: (fg: "#ff7043"),
+        thumb_style: (fg: "#ffab91"),
+    ),
+    scrollbar: (
+        symbols: ["│", "█", "▲", "▼"],
+        track_style: (fg: "#382017"),
+        ends_style: (fg: "#ff7043"),
+        thumb_style: (fg: "#ffab91"),
+    ),
+    song_table_format: [
+        (prop: (kind: Property(Title), style: (fg: "#fbe9e7"), default: (kind: Text("Unknown"))), width_percent: 35),
+        (prop: (kind: Property(Artist), style: (fg: "#ffab91"), default: (kind: Text("Unknown"))), width_percent: 30),
+        (prop: (kind: Property(Album), style: (fg: "#ffb74d"), default: (kind: Text("Unknown"))), width_percent: 35),
+    ],
+    header: (
+        rows: [
+            (left: [
+                (kind: Text("[Playing] "), style: (fg: "#81c784", modifiers: "Bold")),
+                (kind: Property(Song(Title)), style: (fg: "#fbe9e7", modifiers: "Bold"), default: (kind: Text("No Song"))),
+                (kind: Text(" - "), style: (fg: "#7a4636")),
+                (kind: Property(Song(Artist)), style: (fg: "#ffab91"), default: (kind: Text("No Artist"))),
+            ], right: [
+                (kind: Property(Status(Elapsed)), style: (fg: "#ffb74d")),
+                (kind: Text(" / "), style: (fg: "#7a4636")),
+                (kind: Property(Status(Duration)), style: (fg: "#ffb74d")),
+            ]),
+        ],
+    ),
+    browser_song_format: [
+        (prop: (kind: Property(Track), style: (fg: "#81c784")), width_percent: 10),
+        (prop: (kind: Property(Title), style: (fg: "#fbe9e7")), width_percent: 60),
+        (prop: (kind: Property(Duration), style: (fg: "#ffb74d")), width_percent: 30),
+    ],
+)

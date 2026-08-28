@@ -42,6 +42,8 @@ apply_kitty() {
     pink|sakura) preset_file="pink.conf" ;;
     purple|amethyst) preset_file="purple.conf" ;;
     red|crimson) preset_file="red.conf" ;;
+    golden|gold|amber|yellow) preset_file="golden.conf" ;;
+    orange|sunset|tangerine) preset_file="orange.conf" ;;
     *) preset_file="${active_preset}.conf" ;;
   esac
 
@@ -82,6 +84,7 @@ apply_konsole() {
   echo "[General]" > "$konsole_theme"
   echo "Description=Dynamic Quickshell" >> "$konsole_theme"
   echo "Opacity=1" >> "$konsole_theme"
+  echo "Wallpaper=" >> "$konsole_theme"
 
   local src_theme="$HOME/.config/kitty/current-theme.conf"
   if [ -f "$src_theme" ]; then
@@ -94,25 +97,41 @@ apply_konsole() {
       fi
       
       if [[ "$key" == "background" ]]; then
-        echo -e "[Background]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        local rgb=$(hex2rgb "$val")
+        echo -e "[Background]\nColor=$rgb" >> "$konsole_theme"
+        echo -e "[BackgroundFaint]\nColor=$rgb" >> "$konsole_theme"
+        echo -e "[BackgroundIntense]\nColor=$rgb" >> "$konsole_theme"
       elif [[ "$key" == "foreground" ]]; then
-        echo -e "[Foreground]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        local rgb=$(hex2rgb "$val")
+        echo -e "[Foreground]\nColor=$rgb" >> "$konsole_theme"
+        echo -e "[ForegroundFaint]\nColor=$rgb" >> "$konsole_theme"
+        echo -e "[ForegroundIntense]\nColor=$rgb" >> "$konsole_theme"
       elif [[ "$key" =~ ^color([0-9]+)$ ]]; then
         local cnum="${BASH_REMATCH[1]}"
-        echo -e "[Color${cnum}]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
-        echo -e "[Color${cnum}Intense]\nColor=$(hex2rgb "$val")" >> "$konsole_theme"
+        local rgb=$(hex2rgb "$val")
+        echo -e "[Color${cnum}]\nColor=$rgb" >> "$konsole_theme"
+        echo -e "[Color${cnum}Intense]\nColor=$rgb" >> "$konsole_theme"
       fi
     done < "$src_theme"
   fi
 
-  local profile="$HOME/.local/share/konsole/Profile 1.profile"
-  if [ -f "$profile" ]; then
-    if grep -q "^ColorScheme=" "$profile"; then
-      sed -i "s/^ColorScheme=.*/ColorScheme=Quickshell/" "$profile"
+  # Enforce ColorScheme in konsolerc
+  if [ -f "$HOME/.config/konsolerc" ]; then
+    if grep -q "ColorScheme=" "$HOME/.config/konsolerc"; then
+      sed -i 's/^ColorScheme=.*/ColorScheme=Quickshell/' "$HOME/.config/konsolerc"
     else
-      sed -i '1s/^/[Appearance]\nColorScheme=Quickshell\n\n/' "$profile"
+      echo -e "\n[UiSettings]\nColorScheme=Quickshell" >> "$HOME/.config/konsolerc"
     fi
   fi
+  for prof in "$HOME/.local/share/konsole/"*.profile; do
+    if [ -f "$prof" ]; then
+      if grep -q "ColorScheme=" "$prof"; then
+        sed -i 's/^ColorScheme=.*/ColorScheme=Quickshell/' "$prof"
+      else
+        sed -i '1s/^/[Appearance]\nColorScheme=Quickshell\n\n/' "$prof"
+      fi
+    fi
+  done
 }
 
 apply_term() {

@@ -66,6 +66,24 @@ case "$THEME_KEY" in
         RMPC_THEME="nord"
         WALLPAPER_DIR="$WALLPAPERS_BASE/grayscale"
         ;;
+    golden|gold|amber|yellow)
+        PRESET_NAME="golden"
+        PRIMARY_HEX="#F0B849"
+        ICON_THEME="Tela-circle-yellow-dark"
+        KDE_SCHEME="GoldenDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/golden.conf"
+        RMPC_THEME="golden"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/golden"
+        ;;
+    orange|sunset|tangerine)
+        PRESET_NAME="orange"
+        PRIMARY_HEX="#FF9248"
+        ICON_THEME="Tela-circle-ubuntu-dark"
+        KDE_SCHEME="OrangeDark"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/orange.conf"
+        RMPC_THEME="orange"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/orange"
+        ;;
     *)
         echo "Unknown theme preset: $THEME_KEY. Defaulting to green."
         PRESET_NAME="green"
@@ -84,45 +102,41 @@ echo "[Theme Orchestrator] Applying theme preset: $PRESET_NAME ($PRIMARY_HEX)"
 mkdir -p "$WALLPAPER_DIR"
 
 # 2. Apply Wallpaper & Colors
-# Check if a wallpaper was loaded into config.json from the preset snapshot
-saved_wall=$(jq -r '.background.wallpaperPath // empty' "$CONFIG_FILE" 2>/dev/null)
+# Search for wallpapers directly in the target theme folder
+target_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
 
-if [ -n "$saved_wall" ] && [ -f "$saved_wall" ]; then
-    echo "[Theme Orchestrator] Applying saved wallpaper: $saved_wall"
-    "$SCRIPT_DIR/../colors/switchwall.sh" --image "$saved_wall" --mode dark >/dev/null 2>&1 &
+if [ -n "$target_wall" ] && [ -f "$target_wall" ]; then
+    echo "[Theme Orchestrator] Applying theme wallpaper: $target_wall"
+    "$SCRIPT_DIR/../colors/switchwall.sh" --image "$target_wall" --mode dark >/dev/null 2>&1
 else
-    # Fallback: check if a wallpaper exists in the target theme folder
-    first_wall=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | head -n 1)
-
-    if [ -n "$first_wall" ] && [ -f "$first_wall" ]; then
-        echo "[Theme Orchestrator] Applying fallback theme wallpaper: $first_wall"
-        "$SCRIPT_DIR/../colors/switchwall.sh" --image "$first_wall" --mode dark >/dev/null 2>&1 &
-    else
-        # Fallback to direct hex generation if folder has no wallpapers yet
-        if command -v matugen &>/dev/null; then
-            matugen color hex "$PRIMARY_HEX" --mode dark >/dev/null 2>&1
-            "$SCRIPT_DIR/../colors/applycolor.sh" >/dev/null 2>&1 &
-        fi
-    fi
+    echo "[Theme Orchestrator] Applying solid color background: $PRIMARY_HEX"
+    "$SCRIPT_DIR/../colors/switchwall.sh" --color "$PRIMARY_HEX" --mode dark >/dev/null 2>&1
 fi
 
-# 3. Apply Icon Theme (GTK + KDE Plasma)
-if command -v gsettings &>/dev/null; then
-    gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null &
-fi
+# 3. Apply GTK, KDE, Dolphin & Icon Themes
+gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+
+# Update KDE kdeglobals for Dolphin and Qt settings
 if command -v kwriteconfig6 &>/dev/null; then
-    kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null || true
+    kwriteconfig6 --file kdeglobals --group General --key AccentColor "$PRIMARY_HEX" 2>/dev/null || true
+    kwriteconfig6 --file kdeglobals --group General --key LastUsedCustomAccentColor "$PRIMARY_HEX" 2>/dev/null || true
+elif command -v kwriteconfig5 &>/dev/null; then
+    kwriteconfig5 --file kdeglobals --group Icons --key Theme "$ICON_THEME" 2>/dev/null || true
+    kwriteconfig5 --file kdeglobals --group General --key AccentColor "$PRIMARY_HEX" 2>/dev/null || true
 fi
 
-# 4. Apply KDE Color Scheme (Dolphin, Konsole, Kate, System UI)
-if command -v plasma-apply-colorscheme &>/dev/null; then
-    plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1
+# 4. Apply KDE / Dolphin Colorscheme
+if command -v plasma-apply-colorscheme >/dev/null 2>&1; then
+    plasma-apply-colorscheme "$KDE_SCHEME" >/dev/null 2>&1 || true
 fi
 
-# 5. Apply Kitty & Konsole Terminal Themes
+# 5. Apply Kitty Terminal Theme
 if [ -f "$KITTY_THEME_FILE" ]; then
     mkdir -p "$HOME/.config/kitty"
-    cp "$KITTY_THEME_FILE" "$HOME/.config/kitty/current-theme.conf"
+    cp -f "$KITTY_THEME_FILE" "$HOME/.config/kitty/current-theme.conf"
     
     # Ensure kitty.conf includes current-theme.conf
     if ! grep -q "include current-theme.conf" "$HOME/.config/kitty/kitty.conf" 2>/dev/null; then
@@ -136,6 +150,7 @@ if [ -f "$KITTY_THEME_FILE" ]; then
         echo "[General]"
         echo "Description=Dynamic Quickshell"
         echo "Opacity=1"
+        echo "Wallpaper="
         while read -r line; do
             key=$(echo "$line" | awk '{print $1}')
             val=$(echo "$line" | awk '{print $2}')
@@ -148,8 +163,12 @@ if [ -f "$KITTY_THEME_FILE" ]; then
             fi
             if [[ "$key" == "background" ]]; then
                 echo -e "[Background]\nColor=$rgb"
+                echo -e "[BackgroundFaint]\nColor=$rgb"
+                echo -e "[BackgroundIntense]\nColor=$rgb"
             elif [[ "$key" == "foreground" ]]; then
                 echo -e "[Foreground]\nColor=$rgb"
+                echo -e "[ForegroundFaint]\nColor=$rgb"
+                echo -e "[ForegroundIntense]\nColor=$rgb"
             elif [[ "$key" =~ ^color([0-9]+)$ ]]; then
                 cnum="${BASH_REMATCH[1]}"
                 echo -e "[Color${cnum}]\nColor=$rgb"
@@ -157,6 +176,24 @@ if [ -f "$KITTY_THEME_FILE" ]; then
             fi
         done < "$KITTY_THEME_FILE"
     } > "$konsole_theme" 2>/dev/null
+
+    # Enforce ColorScheme=Quickshell in ~/.config/konsolerc and default profile
+    if [ -f "$HOME/.config/konsolerc" ]; then
+        if grep -q "ColorScheme=" "$HOME/.config/konsolerc"; then
+            sed -i 's/^ColorScheme=.*/ColorScheme=Quickshell/' "$HOME/.config/konsolerc"
+        else
+            echo -e "\n[UiSettings]\nColorScheme=Quickshell" >> "$HOME/.config/konsolerc"
+        fi
+    fi
+    for prof in "$HOME/.local/share/konsole/"*.profile; do
+        if [ -f "$prof" ]; then
+            if grep -q "ColorScheme=" "$prof"; then
+                sed -i 's/^ColorScheme=.*/ColorScheme=Quickshell/' "$prof"
+            else
+                sed -i '1s/^/[Appearance]\nColorScheme=Quickshell\n\n/' "$prof"
+            fi
+        fi
+    done
 fi
 
 # 6. Apply rmpc Music Player Theme
@@ -166,19 +203,22 @@ if [ -f "$RMPC_CONFIG" ]; then
 fi
 
 # 7. Apply Starship Prompt Theme
-STARSHIP_PRESET="$HOME/.config/starship/${PRESET_NAME}.toml"
-if [ -f "$STARSHIP_PRESET" ]; then
-    cp "$STARSHIP_PRESET" "$HOME/.config/starship.toml"
+STARSHIP_SRC="$HOME/.config/starship/${PRESET_NAME}.toml"
+if [ ! -f "$STARSHIP_SRC" ]; then
+    STARSHIP_SRC="$SCRIPT_DIR/../../dotfiles/starship/${PRESET_NAME}.toml"
+fi
+if [ -f "$STARSHIP_SRC" ]; then
+    cp -f "$STARSHIP_SRC" "$HOME/.config/starship.toml"
 fi
 
 # 8. Apply Micro Text Editor Theme
 if [ -f "$SCRIPT_DIR/apply-micro-theme.sh" ]; then
-    bash "$SCRIPT_DIR/apply-micro-theme.sh" "$PRESET_NAME" >/dev/null 2>&1 &
+    bash "$SCRIPT_DIR/apply-micro-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
 fi
 
 # 9. Apply VS Code / Code-OSS / Antigravity / Cursor Theme
 if [ -f "$SCRIPT_DIR/apply-code-theme.sh" ]; then
-    bash "$SCRIPT_DIR/apply-code-theme.sh" "$PRESET_NAME" >/dev/null 2>&1 &
+    bash "$SCRIPT_DIR/apply-code-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
 fi
 
 # 10. Update QuickShell configuration (active theme + wallpaper directory)

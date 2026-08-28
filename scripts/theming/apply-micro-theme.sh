@@ -17,6 +17,8 @@ case "$THEME_KEY" in
     red|crimson) THEME_NAME="red" ;;
     blue|tokyo_night|tokyonight) THEME_NAME="blue" ;;
     grayscale|nord|monochrome|bw) THEME_NAME="grayscale" ;;
+    golden|gold|amber|yellow) THEME_NAME="golden" ;;
+    orange|sunset|tangerine) THEME_NAME="orange" ;;
     *) THEME_NAME="green" ;;
 esac
 

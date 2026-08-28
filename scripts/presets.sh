@@ -56,7 +56,7 @@ case "$action" in
 
         # Ensure theme key is preserved/set for core theme presets
         case "$name" in
-            green|pink|red|purple|blue|grayscale)
+            green|pink|red|purple|blue|golden|orange|grayscale)
                 jq --arg t "$name" '._presetMeta = ((._presetMeta // {}) * {"theme": $t})' \
                     "$PRESETS_DIR/${name}.json" > "$PRESETS_DIR/${name}.json.tmp" \
                     && mv "$PRESETS_DIR/${name}.json.tmp" "$PRESETS_DIR/${name}.json"
@@ -69,8 +69,17 @@ case "$action" in
     --apply)
         preset_file="$PRESETS_DIR/${name}.json"
         if [ ! -f "$preset_file" ]; then
-            echo "Error: preset not found: $name" >&2
-            exit 1
+            # If it's a built-in theme preset without a custom snapshot, apply directly via orchestrator
+            case "$name" in
+                green|pink|red|purple|blue|golden|orange|grayscale)
+                    "$SCRIPT_DIR/theming/apply-theme-preset.sh" "$name"
+                    exit 0
+                    ;;
+                *)
+                    echo "Error: preset not found: $name" >&2
+                    exit 1
+                    ;;
+            esac
         fi
         jq -s '.[0] * .[1] | del(._presetMeta)' "$CONFIG_FILE" "$preset_file" \
             > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"

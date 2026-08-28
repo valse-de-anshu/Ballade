@@ -1,33 +1,29 @@
-# Don't print a new line at the start of the prompt
 add_newline = true
 
-# The r/unixporn "Pill" layout with Live Time added
 format = """
 $username$directory$time$git_branch$git_status$cmd_duration
 $character"""
 
 [character]
-success_symbol = "[╰─](bold fg:#a5993c) "
-error_symbol = "[╰─](bold fg:#ba6257) "
+success_symbol = "[╰─](bold fg:#7d9726) "
+error_symbol = "[╰─](bold fg:#ba6236) "
 
 [username]
 show_always = true
-style_user = "bg:#435653 fg:#a5993c bold"
-style_root = "bg:#435653 fg:#ba6257 bold"
-# Added the closing curve [] and a space to the end of this format string
-format = "[╭─](bold fg:#435653)[󰭹 $user]($style)[](bold fg:#435653) "
+style_user = "bg:#303c3b fg:#7d9726 bold"
+style_root = "bg:#303c3b fg:#ba6236 bold"
+format = "[╭─](bold fg:#303c3b)[󰭹 $user]($style)[](bold fg:#303c3b) "
 
 [hostname]
-# Disabled the hostname so "anshu" stops printing a second time
 disabled = true
 
 [directory]
 home_symbol = " "
 read_only = " "
-style = "bg:#303c3b fg:#e2e8e7 bold"
+style = "bg:#1f2927 fg:#e7e6df bold"
 truncation_length = 3
 truncation_symbol = "••/"
-format = "[](bold fg:#303c3b)[$path]($style)[](bold fg:#303c3b) "
+format = "[](bold fg:#1f2927)[$path]($style)[](bold fg:#1f2927) "
 
 [directory.substitutions]
 "Desktop" = " "
@@ -39,29 +35,21 @@ format = "[](bold fg:#303c3b)[$path]($style)[](bold fg:#303c3b) "
 "GitHub" = "󰊤 "
 
 [git_branch]
-symbol = "󰘬 "
-style = "bg:#36a6a2 fg:#222c2b bold"
-format = "[](bold fg:#36a6a2)[$symbol$branch]($style)[](bold fg:#36a6a2) "
+symbol = " "
+style = "bg:#303c3b fg:#7d9726 bold"
+format = "[](bold fg:#303c3b)[$symbol$branch]($style)[](bold fg:#303c3b) "
 
 [git_status]
-style = "bg:#ba6257 fg:#222c2b bold"
-format = "[](bold fg:#ba6257)[$all_status$ahead_behind]($style)[](bold fg:#ba6257) "
-# Simplified, universally understood status icons:
-conflicted = "!! "
-ahead = "↑ "
-behind = "↓ "
-diverged = "↕ "
-untracked = "? "
-stashed = "S "
-modified = "! "
-staged = "+ "
-renamed = "» "
-deleted = "x "
+style = "bg:#303c3b fg:#a5980d bold"
+format = "[$all_status$ahead_behind]($style)"
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#1f2927 fg:#a5980d bold"
+format = "[](bold fg:#1f2927)[󱑎 $time]($style)[](bold fg:#1f2927) "
 
 [cmd_duration]
-min_time = 500
-style = "bg:#ae7313 fg:#222c2b bold"
-format = "[](bold fg:#ae7313)[󰪢 $duration]($style)[](bold fg:#ae7313)"
-
-[package]
-disabled = true
+min_time = 2_000
+style = "bg:#303c3b fg:#5f9182 bold"
+format = "[](bold fg:#303c3b)[󱐋 $duration]($style)[](bold fg:#303c3b) "
