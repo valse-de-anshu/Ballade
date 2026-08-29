@@ -348,6 +348,7 @@ Singleton {
                     }
 
                     property JsonObject media: JsonObject {
+                        property string sizeMode: "1x3"
                         property bool enable: false
                         property bool showControls: true
                         property bool showLyrics: false

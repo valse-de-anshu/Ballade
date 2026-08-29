@@ -16,6 +16,7 @@ import qs.modules.ii.background.widgets
 
 AbstractBackgroundWidget {
     id: root
+    hoverEnabled: true
 
     signal requestReset()
 
@@ -24,17 +25,41 @@ AbstractBackgroundWidget {
     readonly property var playerList: MprisController.players
     property MprisPlayer currentPlayer: MprisController.activePlayer
     property string displayedArtFilePath: MprisController.readyArtFilePath
-    property real widgetWidth: 450
     property real widgetHeight: 126
     property real artSize: 98
     property real buttonSize: 34
     property real buttonIconSize: 18
     property bool showLyrics: false
 
+    property string sizeMode: root.configEntry.sizeMode ?? "1x3"
+
+    readonly property real singleWidth: 132
+    readonly property real snapWidth1: root.singleWidth
+    readonly property real snapWidth2: 276
+    readonly property real snapWidth3: 450
+
+    property real widgetWidth: {
+        switch (root.sizeMode) {
+            case "1x1": return root.snapWidth1
+            case "2x2": return root.snapWidth2
+            default:    return root.snapWidth3
+        }
+    }
+
+    Behavior on widgetWidth {
+        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    }
+
+    function modeForWidth(value) {
+        var mid1 = (root.snapWidth1 + root.snapWidth2) / 2
+        var mid2 = (root.snapWidth2 + root.snapWidth3) / 2
+        if (value < mid1) return "1x1"
+        if (value < mid2) return "2x2"
+        return "1x3"
+    }
+
     implicitHeight: card.implicitHeight
     implicitWidth: card.implicitWidth
-
-
 
     StyledRectangularShadow {
         target: card
@@ -44,10 +69,18 @@ AbstractBackgroundWidget {
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
-        implicitHeight: root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
+        implicitHeight: {
+            if (root.sizeMode === "1x1") return root.singleWidth
+            if (root.sizeMode === "2x2") return 252
+            return root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
+        }
         radius: Appearance.rounding?.verylarge ?? 30
         color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
         clip: true
+
+        Behavior on implicitHeight {
+            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        }
 
         layer.enabled: true
         layer.effect: OpacityMask {
@@ -58,11 +91,279 @@ AbstractBackgroundWidget {
             }
         }
 
-        Behavior on implicitHeight {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+        Loader {
+            anchors.fill: parent
+            sourceComponent: {
+                if (root.sizeMode === "1x1") return oneByOneContent
+                if (root.sizeMode === "2x2") return twoByTwoContent
+                return oneByThreeContent
+            }
         }
 
-        Image {
+        Component {
+            id: oneByOneContent
+            Item {
+                anchors.fill: parent
+
+                // Crisp, pure cover art (no blur)
+                StyledImage {
+                    anchors.fill: parent
+                    source: root.displayedArtFilePath
+                    fillMode: Image.PreserveAspectCrop
+                    cache: false
+                    antialiasing: true
+                    sourceSize.width: 264
+                    sourceSize.height: 264
+                    visible: root.displayedArtFilePath !== ""
+                }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "music_note"
+                    iconSize: 40
+                    color: Appearance.colors.colOnSecondaryContainer
+                    visible: root.displayedArtFilePath === ""
+                }
+
+                // Compact, refined floating play/pause button at bottom middle
+                Item {
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        bottom: parent.bottom
+                        bottomMargin: 10
+                    }
+                    implicitWidth: 26
+                    implicitHeight: 26
+
+                    MaterialShape {
+                        id: miniSpinShape
+                        anchors.fill: parent
+                        color: Appearance.colors.colPrimary
+                        shape: MaterialShape.Shape.Cookie12Sided
+
+                        RotationAnimation on rotation {
+                            from: 0; to: 360
+                            duration: 22000
+                            loops: Animation.Infinite
+                            running: root.currentPlayer?.isPlaying ?? false
+                            easing.type: Easing.Linear
+                        }
+                    }
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: root.currentPlayer?.isPlaying ? "pause" : "play_arrow"
+                        iconSize: 14
+                        fill: 1
+                        color: Appearance.colors.colOnPrimary
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: MprisController.togglePlaying()
+                    }
+                }
+            }
+        }
+
+        Component {
+            id: twoByTwoContent
+            Item {
+                anchors.fill: parent
+
+                Image {
+                    id: blurredArt
+                    anchors.fill: parent
+                    source: root.displayedArtFilePath
+                    sourceSize.width: card.width
+                    sourceSize.height: card.height
+                    fillMode: Image.PreserveAspectCrop
+                    cache: false
+                    antialiasing: true
+                    asynchronous: true
+                    visible: root.displayedArtFilePath !== ""
+
+                    layer.enabled: true
+                    layer.effect: StyledBlurEffect {
+                        source: blurredArt
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.45)
+                        radius: card.radius
+                    }
+                }
+
+                ColumnLayout {
+                    anchors {
+                        fill: parent
+                        margins: 16
+                    }
+                    spacing: 0
+
+                    Item { Layout.fillHeight: true }
+
+                    // Centered Album Art Card
+                    Rectangle {
+                        id: artCard
+                        Layout.preferredWidth: 96
+                        Layout.preferredHeight: 96
+                        Layout.alignment: Qt.AlignHCenter
+                        color: Appearance.colors.colSurfaceContainerLow
+                        radius: 20
+                        clip: true
+
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: artCard.width
+                                height: artCard.height
+                                radius: artCard.radius
+                            }
+                        }
+
+                        StyledImage {
+                            anchors.fill: parent
+                            source: root.displayedArtFilePath
+                            fillMode: Image.PreserveAspectCrop
+                            cache: false
+                            antialiasing: true
+                            sourceSize.width: 192
+                            sourceSize.height: 192
+                            visible: root.displayedArtFilePath !== ""
+                        }
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "music_note"
+                            iconSize: 40
+                            color: Appearance.colors.colOnSurfaceVariant
+                            visible: root.displayedArtFilePath === ""
+                        }
+                    }
+
+                    Item { Layout.preferredHeight: 12 }
+
+                    // Centered Title & Artist Info
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 2
+                        
+                        StyledText {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            text: root.currentPlayer?.trackTitle ?? Translation.tr("No media playing")
+                            font {
+                                pixelSize: Appearance.font.pixelSize.normal ?? 14
+                                weight: Font.DemiBold
+                            }
+                            color: Appearance.colors.colOnPrimaryContainer
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            text: root.currentPlayer?.trackArtist ?? Translation.tr("Unknown artist")
+                            font {
+                                pixelSize: Appearance.font.pixelSize.small ?? 12
+                            }
+                            color: Appearance.colors.colOnPrimaryContainer
+                            opacity: 0.65
+                        }
+                    }
+                    
+                    Item { Layout.preferredHeight: 12 }
+
+                    // Centered Controls Row
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 16
+
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding?.full ?? 999
+                            colBackground: "transparent"
+                            colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                            colRipple: Appearance.colors.colPrimaryContainerActive
+                            downAction: () => MprisController.previous()
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "skip_previous"
+                                iconSize: 20
+                                fill: 1
+                                color: Appearance.colors.colOnPrimaryContainer
+                            }
+                        }
+
+                        Item {
+                            implicitWidth: 46
+                            implicitHeight: 46
+
+                            MaterialShape {
+                                id: spinShape
+                                anchors.fill: parent
+                                color: Appearance.colors.colPrimary
+                                shape: MaterialShape.Shape.Cookie12Sided
+
+                                RotationAnimation on rotation {
+                                    from: 0; to: 360
+                                    duration: 22000
+                                    loops: Animation.Infinite
+                                    running: root.currentPlayer?.isPlaying ?? false
+                                    easing.type: Easing.Linear
+                                }
+                            }
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: root.currentPlayer?.isPlaying ? "pause" : "play_arrow"
+                                iconSize: 22
+                                fill: 1
+                                color: Appearance.colors.colOnPrimary
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: MprisController.togglePlaying()
+                            }
+                        }
+
+                        RippleButton {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            buttonRadius: Appearance.rounding?.full ?? 999
+                            colBackground: "transparent"
+                            colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                            colRipple: Appearance.colors.colPrimaryContainerActive
+                            downAction: () => MprisController.next()
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "skip_next"
+                                iconSize: 20
+                                fill: 1
+                                color: Appearance.colors.colOnPrimaryContainer
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+                }
+            }
+        }
+        Component {
+            id: oneByThreeContent
+            Item {
+                anchors.fill: parent
+Image {
             id: blurredArt
             anchors.fill: parent
             source: root.displayedArtFilePath
@@ -325,7 +626,7 @@ AbstractBackgroundWidget {
                             const s = Math.floor(pos % 60)
                             return m + ":" + (s < 10 ? "0" : "") + s
                         }
-                        font.pixelSize: Appearance.font.pixelSize.smaller ?? 10
+                        font.pixelSize: Appearance.font.pixelSize.smaller ?? 12 ?? 10
                         color: Appearance.colors.colOnPrimaryContainer
                         opacity: 0.5
                         font.features: { "tnum": 1 }
@@ -358,7 +659,7 @@ AbstractBackgroundWidget {
                             const s = Math.floor(len % 60)
                             return m + ":" + (s < 10 ? "0" : "") + s
                         }
-                        font.pixelSize: Appearance.font.pixelSize.smaller ?? 10
+                        font.pixelSize: Appearance.font.pixelSize.smaller ?? 12 ?? 10
                         color: Appearance.colors.colOnPrimaryContainer
                         opacity: 0.5
                         font.features: { "tnum": 1 }
@@ -413,6 +714,24 @@ AbstractBackgroundWidget {
                         indicatorShapeColor: Appearance.colors.colOnPrimary
                     }
                 }
+            }
+        }
+    
+            }
+        }
+    }
+
+    ResizeHandler {
+        anchorItem: card
+        hoverActive: root.containsMouse
+        locked: Config.options.background.widgetsLocked
+        currentWidth: root.widgetWidth
+        onResized: (newWidth) => {
+            root.sizeMode = root.modeForWidth(newWidth)
+        }
+        onResizeFinished: {
+            if (root.configEntry) {
+                root.configEntry.sizeMode = root.sizeMode
             }
         }
     }

@@ -12,7 +12,6 @@ MouseArea {
     property bool centerYActive: false
 
     function setDragging(active) {
-        console.log("[WidgetCanvas] setDragging:", active)
         root.showGrid = active
         if (!active) {
             root.centerXActive = false
@@ -124,7 +123,6 @@ MouseArea {
     }
 
     function flashLines(verticalPositions, horizontalPositions) {
-        console.log("[WidgetCanvas] flashLines:", verticalPositions, horizontalPositions)
         for (let i = 0; i < verticalPositions.length; i++)
             flashLineComponent.createObject(root, { vertical: true, linePos: verticalPositions[i] })
         for (let i = 0; i < horizontalPositions.length; i++)

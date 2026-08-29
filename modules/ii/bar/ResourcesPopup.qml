@@ -7,14 +7,16 @@ import QtQuick.Layouts
 StyledPopup {
     id: root
 
-    // Helper function to format KB to GB
-    function formatKB(kb) {
-        return (kb / (1024 * 1024)).toFixed(1) + " GB";
-    }
-
     Row {
+        id: contentRow
         anchors.centerIn: parent
         spacing: 12
+
+        // Helper function to format KB to GB
+        function formatKB(kb) {
+            if (kb === undefined || isNaN(kb)) return "-- GB";
+            return (kb / (1024 * 1024)).toFixed(1) + " GB";
+        }
 
         Column {
             anchors.top: parent.top
@@ -29,17 +31,17 @@ StyledPopup {
                 StyledPopupValueRow {
                     icon: "clock_loader_60"
                     label: Translation.tr("Used:")
-                    value: root.formatKB(ResourceUsage.memoryUsed)
+                    value: contentRow.formatKB(ResourceUsage.memoryUsed)
                 }
                 StyledPopupValueRow {
                     icon: "check_circle"
                     label: Translation.tr("Free:")
-                    value: root.formatKB(ResourceUsage.memoryFree)
+                    value: contentRow.formatKB(ResourceUsage.memoryFree)
                 }
                 StyledPopupValueRow {
                     icon: "empty_dashboard"
                     label: Translation.tr("Total:")
-                    value: root.formatKB(ResourceUsage.memoryTotal)
+                    value: contentRow.formatKB(ResourceUsage.memoryTotal)
                 }
             }
         }
@@ -58,17 +60,17 @@ StyledPopup {
                 StyledPopupValueRow {
                     icon: "clock_loader_60"
                     label: Translation.tr("Used:")
-                    value: root.formatKB(ResourceUsage.swapUsed)
+                    value: contentRow.formatKB(ResourceUsage.swapUsed)
                 }
                 StyledPopupValueRow {
                     icon: "check_circle"
                     label: Translation.tr("Free:")
-                    value: root.formatKB(ResourceUsage.swapFree)
+                    value: contentRow.formatKB(ResourceUsage.swapFree)
                 }
                 StyledPopupValueRow {
                     icon: "empty_dashboard"
                     label: Translation.tr("Total:")
-                    value: root.formatKB(ResourceUsage.swapTotal)
+                    value: contentRow.formatKB(ResourceUsage.swapTotal)
                 }
             }
         }
@@ -110,12 +112,12 @@ StyledPopup {
                 StyledPopupValueRow {
                     icon: "clock_loader_60"
                     label: Translation.tr("Used:")
-                    value: `${root.formatKB(ResourceUsage.diskUsed)} / ${root.formatKB(ResourceUsage.diskTotal)}`
+                    value: `${contentRow.formatKB(ResourceUsage.diskUsed)} / ${contentRow.formatKB(ResourceUsage.diskTotal)}`
                 }
                 StyledPopupValueRow {
                     icon: "check_circle"
                     label: Translation.tr("Free:")
-                    value: root.formatKB(ResourceUsage.diskFree)
+                    value: contentRow.formatKB(ResourceUsage.diskFree)
                 }
             }
         }
