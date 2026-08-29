@@ -1,11 +1,16 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.widgets.widgetCanvas
+import qs.modules.common.functions
 import qs.modules.ii.background.widgets
+import "IndianCalendar.js" as IndianCalendar
 
 AbstractBackgroundWidget {
     id: root
@@ -18,7 +23,7 @@ AbstractBackgroundWidget {
 
     readonly property real snapWidth1: singleWidth            
     readonly property real snapWidth2: singleWidth * 2 + cardSpacing  
-    readonly property real snapWidth3: singleWidth * 2 + cardSpacing  
+    readonly property real snapWidth3: 640  
 
     property string sizeMode: root.configEntry.sizeMode ?? "2x2"
 
@@ -32,18 +37,137 @@ AbstractBackgroundWidget {
 
     function modeForWidth(value) {
         var mid1 = (snapWidth1 + snapWidth2) / 2
+        var mid2 = (snapWidth2 + snapWidth3) / 2
         if (value < mid1) return "1x1"
-        return root.sizeMode === "1x2" ? "1x2" : "2x2"
+        if (value < mid2) return "1x2"
+        return "2x2"
     }
 
     property int monthShift: 0
     readonly property var today: new Date()
+    property var selectedDate: new Date()
+    property var viewingDate: new Date()
 
-    property var viewingDate: {
+    function updateViewingMonth() {
         let d = new Date()
         d.setDate(1)
-        d.setMonth(d.getMonth() + monthShift)
-        return d
+        d.setMonth(d.getMonth() + root.monthShift)
+        root.viewingDate = d
+        root.weeks = root.getMonthMatrix(d)
+    }
+
+    onMonthShiftChanged: {
+        updateViewingMonth()
+    }
+
+    Component.onCompleted: {
+        updateViewingMonth()
+    }
+
+    function formatDateKey(date) {
+        var y = date.getFullYear()
+        var m = date.getMonth() + 1
+        var d = date.getDate()
+        var mm = m < 10 ? "0" + m : "" + m
+        var dd = d < 10 ? "0" + d : "" + d
+        return y + "-" + mm + "-" + dd
+    }
+
+    function getWeekNumber(d) {
+        var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+        var dayNum = date.getUTCDay() || 7
+        date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+        var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7)
+    }
+
+    // ----------------------------------------------------
+    // User Events / Scratchpad Persistent Storage
+    // ----------------------------------------------------
+    property var userEvents: []
+    property bool isAddingEvent: false
+    property string newEventText: ""
+
+    onIsAddingEventChanged: {
+        GlobalStates.desktopWidgetKeyboardFocus = root.isAddingEvent
+    }
+
+    function addEvent(dateKey, text) {
+        if (!text || text.trim() === "") return
+        var item = {
+            id: Date.now().toString() + "-" + Math.floor(Math.random() * 10000),
+            date: dateKey,
+            text: text.trim(),
+            createdAt: Date.now()
+        }
+        var updated = userEvents.slice(0)
+        updated.push(item)
+        root.userEvents = updated
+        eventsFileView.setText(JSON.stringify(root.userEvents))
+        updateViewingMonth()
+        root.isAddingEvent = false
+        root.newEventText = ""
+    }
+
+    function deleteEvent(id) {
+        var updated = userEvents.filter(e => e.id !== id)
+        root.userEvents = updated
+        eventsFileView.setText(JSON.stringify(root.userEvents))
+        updateViewingMonth()
+    }
+
+    function getEventsForDate(date) {
+        var key = formatDateKey(date)
+        return userEvents.filter(e => e.date === key)
+    }
+
+    function hasUserEventOnDate(year, month, day) {
+        var mm = month < 10 ? "0" + month : "" + month
+        var dd = day < 10 ? "0" + day : "" + day
+        var key = year + "-" + mm + "-" + dd
+        return userEvents.some(e => e.date === key)
+    }
+
+    function getFirstHoliday(y, m, d) {
+        var events = IndianCalendar.getDayEvents(y, m, d)
+        if (!events || events.length === 0) return ""
+        return events[0].title
+    }
+
+    function getHolidayType(y, m, d) {
+        var events = IndianCalendar.getDayEvents(y, m, d)
+        if (!events || events.length === 0) return ""
+        return events[0].type
+    }
+
+    function getFirstUserEvent(y, m, d) {
+        var mm = m < 10 ? "0" + m : "" + m
+        var dd = d < 10 ? "0" + d : "" + d
+        var key = y + "-" + mm + "-" + dd
+        var found = root.userEvents.find(e => e.date === key)
+        return found ? found.text : ""
+    }
+
+    FileView {
+        id: eventsFileView
+        path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
+        onLoaded: {
+            const fileContents = eventsFileView.text()
+            try {
+                const parsed = JSON.parse(fileContents)
+                root.userEvents = Array.isArray(parsed) ? parsed : []
+                updateViewingMonth()
+            } catch (e) {
+                root.userEvents = []
+                eventsFileView.setText(JSON.stringify([]))
+            }
+        }
+        onLoadFailed: (error) => {
+            if (error == FileViewError.FileNotFound) {
+                root.userEvents = []
+                eventsFileView.setText(JSON.stringify([]))
+            }
+        }
     }
 
     function getMonthMatrix(date) {
@@ -54,21 +178,50 @@ AbstractBackgroundWidget {
         const daysInMonth    = new Date(year, month + 1, 0).getDate()
         const daysInPrevMonth = new Date(year, month, 0).getDate()
 
+        function createCell(d, m, y, isCurMonth, isTodayDate) {
+            var dayEvents = IndianCalendar.getDayEvents(y, m, d)
+            var hasNat = dayEvents.some(e => e.type === "national")
+            var hasFest = dayEvents.some(e => e.type === "festival" || e.type === "restricted" || e.type === "jayanti" || e.type === "observance" || e.type === "financial")
+            var hasUsr = root.hasUserEventOnDate(y, m, d)
+            return {
+                day: d,
+                month: m,
+                year: y,
+                currentMonth: isCurMonth,
+                isToday: isTodayDate,
+                hasNational: hasNat,
+                hasFestival: hasFest,
+                hasUserEvent: hasUsr,
+                hasHoliday: dayEvents.length > 0,
+                firstHoliday: dayEvents.length > 0 ? dayEvents[0].title : "",
+                holidayType: dayEvents.length > 0 ? dayEvents[0].type : "",
+                firstUserEvent: getFirstUserEvent(y, m, d)
+            }
+        }
+
         let cells = []
-        for (let i = 0; i < startOffset; i++)
-            cells.push({ day: daysInPrevMonth - startOffset + i + 1, currentMonth: false, isToday: false })
+        for (let i = 0; i < startOffset; i++) {
+            let pDay = daysInPrevMonth - startOffset + i + 1
+            let prevMonth = month === 0 ? 12 : month
+            let prevYear = month === 0 ? year - 1 : year
+            cells.push(createCell(pDay, prevMonth, prevYear, false, false))
+        }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const isToday = monthShift === 0
                 && d === today.getDate()
                 && month === today.getMonth()
                 && year  === today.getFullYear()
-            cells.push({ day: d, currentMonth: true, isToday: isToday })
+            const curMonthNum = month + 1
+            cells.push(createCell(d, curMonthNum, year, true, isToday))
         }
 
         let nextDay = 1
+        let nextMonthNum = month === 11 ? 1 : month + 2
+        let nextYearNum = month === 11 ? year + 1 : year
         while (cells.length < 42) {
-            cells.push({ day: nextDay++, currentMonth: false, isToday: false })
+            cells.push(createCell(nextDay, nextMonthNum, nextYearNum, false, false))
+            nextDay++
         }
 
         let weeks = []
@@ -94,37 +247,21 @@ AbstractBackgroundWidget {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
-    component DayCell: Rectangle {
-        property int day: 0
-        property bool currentMonth: true
-        property bool isToday: false
-        property bool bold: false
-
-        implicitWidth: 28
-        implicitHeight: 28
-        radius: 14
-        color: isToday ? Appearance.colors.colPrimary : "transparent"
-
-        StyledText {
-            anchors.centerIn: parent
-            text: parent.day
-            font.pixelSize: Appearance.font.pixelSize.smaller
-            font.weight: parent.bold || parent.isToday ? Font.Bold : Font.Normal
-            color: parent.isToday
-                ? Appearance.colors.colOnPrimary
-                : Appearance.colors.colOnLayer0
-            opacity: parent.currentMonth ? 1.0 : 0.3
-        }
-    }
-
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
         implicitHeight: root.sizeMode === "1x1" ? root.cardHeight
                       : root.sizeMode === "1x2" ? root.cardHeight
-                      : root.cardHeight * 2 + root.cardSpacing
+                      : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: Appearance.colors.colPrimaryContainer
+        color: root.sizeMode === "2x2" ? ColorUtils.applyAlpha("#000000", 0.72) : Appearance.colors.colLayer0
+        border.width: 1
+        border.color: root.sizeMode === "2x2" ? ColorUtils.applyAlpha("#ffffff", 0.12) : Appearance.colors.colLayer0Border
+        clip: true
+
+        Behavior on implicitHeight {
+            animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        }
 
         StyledRectangularShadow {
             target: card
@@ -140,16 +277,18 @@ AbstractBackgroundWidget {
             }
         }
 
-        // 1x1
+        // ----------------------------------------------------
+        // 1x1 Compact Mode
+        // ----------------------------------------------------
         Component {
             id: oneByOneContent
             Rectangle {
                 anchors.fill: parent
                 radius: card.radius
-                color: "transparent"
+                color: Appearance.colors.colPrimaryContainer
 
                 ColumnLayout {
-                    anchors { fill: parent; margins: 0 }
+                    anchors.fill: parent
                     spacing: 0
 
                     Rectangle {
@@ -185,7 +324,7 @@ AbstractBackgroundWidget {
                         StyledText {
                             anchors.centerIn: parent
                             text: root.today.getDate()
-                            font.pixelSize: 60
+                            font.pixelSize: 52
                             font.weight: Font.Bold
                             color: Appearance.colors.colOnPrimaryContainer
                         }
@@ -194,7 +333,9 @@ AbstractBackgroundWidget {
             }
         }
 
-        // 1x2
+        // ----------------------------------------------------
+        // 1x2 Week Strip Mode
+        // ----------------------------------------------------
         Component {
             id: oneByTwoContent
             ColumnLayout {
@@ -235,7 +376,7 @@ AbstractBackgroundWidget {
                                 text: modelData
                                 font.pixelSize: Appearance.font.pixelSize.smaller
                                 font.weight: Font.Bold
-                                color: Appearance.colors.colOnPrimaryContainer
+                                color: Appearance.colors.colOnLayer0
                                 opacity: 0.5
                             }
                         }
@@ -261,7 +402,7 @@ AbstractBackgroundWidget {
                                     font.weight: modelData.isToday ? Font.Bold : Font.Normal
                                     color: modelData.isToday
                                         ? Appearance.colors.colOnPrimary
-                                        : Appearance.colors.colOnPrimaryContainer
+                                        : Appearance.colors.colOnLayer0
                                     opacity: modelData.currentMonth ? 1.0 : 0.3
                                 }
                             }
@@ -273,101 +414,605 @@ AbstractBackgroundWidget {
             }
         }
 
-        // 2x2
+        // ----------------------------------------------------
+        // Full Dual-Pane Mode (Aesthetic Frosted Glass Minimal UI)
+        // ----------------------------------------------------
         Component {
             id: twoByTwoContent
-            ColumnLayout {
+            RowLayout {
                 anchors { fill: parent; margins: 16 }
-                spacing: 4
+                spacing: 16
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-
-                    StyledText {
-                        Layout.fillWidth: true
-                        font.pixelSize: Appearance.font.pixelSize.normal
-                        font.weight: Font.Medium
-                        color: Appearance.colors.colOnPrimaryContainer
-                        text: root.viewingDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
-                    }
-
-                    Rectangle {
-                        implicitWidth: 26; implicitHeight: 26; radius: 13
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "chevron_left"
-                            iconSize: Appearance.font.pixelSize.normal
-                            color: Appearance.colors.colOnPrimaryContainer
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.monthShift--
-                        }
-                    }
-
-                    Rectangle {
-                        implicitWidth: 26; implicitHeight: 26; radius: 13
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Appearance.colors.colPrimary
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "chevron_right"
-                            iconSize: Appearance.font.pixelSize.normal
-                            color: Appearance.colors.colOnPrimaryContainer
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.monthShift++
-                        }
-                    }
-                }
-
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 4
-                    Repeater {
-                        model: ["Mo","Tu","We","Th","Fr","Sa","Su"]
-                        delegate: StyledText {
-                            Layout.preferredWidth: 28
-                            horizontalAlignment: Text.AlignHCenter
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.6
-                            text: modelData
-                        }
-                    }
-                }
-
+                // ==========================================
+                // LEFT PANEL: Clean Agenda & Quick Scratchpad
+                // ==========================================
                 Rectangle {
-                    Layout.fillWidth: true
+                    Layout.preferredWidth: 220
                     Layout.fillHeight: true
-                    color: Appearance.colors.colLayer1
-                    radius: (Appearance.rounding?.verylarge ?? 30) - 8
+                    radius: (Appearance.rounding?.verylarge ?? 30) - 10
+                    color: ColorUtils.applyAlpha("#000000", 0.40)
+                    border.width: 1
+                    border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
 
                     ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: -3
+                        anchors { fill: parent; margins: 14 }
+                        spacing: 10
+
+                        // Date & Week Header
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            StyledText {
+                                text: root.selectedDate.getDate()
+                                font.pixelSize: 34
+                                font.weight: Font.Bold
+                                color: "#ffffff"
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: -2
+
+                                StyledText {
+                                    text: root.selectedDate.toLocaleDateString(Qt.locale(), "dddd")
+                                    font.pixelSize: Appearance.font.pixelSize.normal
+                                    font.weight: Font.Bold
+                                    color: "#ffffff"
+                                }
+
+                                RowLayout {
+                                    spacing: 4
+                                    StyledText {
+                                        text: root.selectedDate.toLocaleDateString(Qt.locale(), "MMM yyyy")
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        color: "#888892"
+                                    }
+                                    StyledText {
+                                        text: "•"
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        color: "#55555c"
+                                    }
+                                    StyledText {
+                                        text: "W" + root.getWeekNumber(root.selectedDate)
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        font.weight: Font.Bold
+                                        color: "#e2e8f0"
+                                    }
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                        }
+
+                        // Agenda / Events Scroll Area
+                        ListView {
+                            id: agendaList
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            spacing: 6
+
+                            readonly property var holidays: IndianCalendar.getEventsForDate(root.selectedDate)
+                            readonly property var personal: root.getEventsForDate(root.selectedDate)
+
+                            function getCleanSubtitle(h) {
+                                if (!h.desc) {
+                                    return h.type === "national" ? "National Holiday" : ""
+                                }
+                                var cleaned = h.desc.replace(/\[[A-Z]{2,3}\]/g, "").trim()
+                                // If it starts with a dash or colon, clean it
+                                cleaned = cleaned.replace(/^[-—:]\s*/, "")
+                                return cleaned
+                            }
+
+                            model: [].concat(
+                                holidays.map(h => ({
+                                    id: "h-" + h.title,
+                                    title: h.title,
+                                    subtitle: agendaList.getCleanSubtitle(h),
+                                    icon: h.icon || "event",
+                                    isHoliday: true,
+                                    type: h.type
+                                })),
+                                personal.map(p => ({
+                                    id: p.id,
+                                    title: p.text,
+                                    subtitle: "Personal Note",
+                                    icon: "schedule",
+                                    isHoliday: false,
+                                    type: "user"
+                                }))
+                            )
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                width: ListView.view.width
+                                implicitHeight: eventCol.implicitHeight + 16
+                                radius: 8
+                                color: ColorUtils.applyAlpha("#18181e", 0.7)
+                                border.width: 1
+                                border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
+
+                                RowLayout {
+                                    id: eventRow
+                                    anchors {
+                                        fill: parent
+                                        leftMargin: 8
+                                        rightMargin: 8
+                                        topMargin: 8
+                                        bottomMargin: 8
+                                    }
+                                    spacing: 8
+
+                                    Rectangle {
+                                        implicitWidth: 3
+                                        Layout.fillHeight: true
+                                        radius: 1.5
+                                        color: modelData.type === "national" ? "#f87171"
+                                             : modelData.type === "user" ? "#38bdf8"
+                                             : "#fbbf24"
+                                    }
+
+                                    ColumnLayout {
+                                        id: eventCol
+                                        Layout.fillWidth: true
+                                        spacing: 2
+
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            text: modelData.title
+                                            font.pixelSize: Appearance.font.pixelSize.smaller
+                                            font.weight: Font.Medium
+                                            color: "#ffffff"
+                                            wrapMode: Text.Wrap
+                                        }
+
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            visible: text.length > 0
+                                            text: modelData.subtitle
+                                            font.pixelSize: 10
+                                            color: "#94a3b8"
+                                            wrapMode: Text.Wrap
+                                            lineHeight: 1.2
+                                        }
+                                    }
+
+                                    MaterialSymbol {
+                                        visible: !modelData.isHoliday
+                                        text: "close"
+                                        iconSize: 14
+                                        color: "#888892"
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.deleteEvent(modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Empty State
+                            ColumnLayout {
+                                anchors.centerIn: parent
+                                visible: parent.count === 0 && !root.isAddingEvent
+                                spacing: 4
+
+                                MaterialSymbol {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: "event_available"
+                                    iconSize: 22
+                                    color: "#55555c"
+                                }
+                                StyledText {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: "No events on this day"
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    color: "#666670"
+                                }
+                            }
+                        }
+
+                            // Quick Add Event Box / Button
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: root.isAddingEvent ? 32 : 30
+                                radius: 8
+                                color: root.isAddingEvent ? ColorUtils.applyAlpha("#000000", 0.6) : (addEventMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.12) : ColorUtils.applyAlpha("#ffffff", 0.07))
+                                border.width: 1
+                                border.color: root.isAddingEvent ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.12)
+
+                                Behavior on implicitHeight { NumberAnimation { duration: 150 } }
+
+                                Timer {
+                                    id: focusTimer1
+                                    interval: 40
+                                    repeat: false
+                                    onTriggered: {
+                                        if (root.isAddingEvent) {
+                                            eventTextInput.forceActiveFocus()
+                                        }
+                                    }
+                                }
+
+                                Timer {
+                                    id: focusTimer2
+                                    interval: 120
+                                    repeat: false
+                                    onTriggered: {
+                                        if (root.isAddingEvent) {
+                                            eventTextInput.forceActiveFocus()
+                                        }
+                                    }
+                                }
+
+                                // Normal "+ Add Event" Pill
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    visible: !root.isAddingEvent
+                                    spacing: 6
+
+                                    MaterialSymbol {
+                                        text: "add"
+                                        iconSize: 14
+                                        color: "#e2e8f0"
+                                    }
+                                    StyledText {
+                                        text: "Add Event"
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        font.weight: Font.Bold
+                                        color: "#e2e8f0"
+                                    }
+                                }
+
+                                // Input Mode
+                                RowLayout {
+                                    anchors { fill: parent; leftMargin: 8; rightMargin: 4 }
+                                    visible: root.isAddingEvent
+                                    spacing: 4
+                                    z: 1
+
+                                    TextField {
+                                        id: eventTextInput
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
+                                        color: "#ffffff"
+                                        placeholderText: "Type note..."
+                                        placeholderTextColor: "#71717a"
+                                        background: null
+                                        clip: true
+                                        selectByMouse: true
+                                        focus: true
+                                        verticalAlignment: TextInput.AlignVCenter
+                                        onVisibleChanged: {
+                                            if (visible) {
+                                                forceActiveFocus()
+                                                cursorPosition = text.length
+                                            }
+                                        }
+                                        onAccepted: {
+                                            if (text && text.trim() !== "") {
+                                                root.addEvent(root.formatDateKey(root.selectedDate), text)
+                                                text = ""
+                                            }
+                                        }
+                                    }
+
+                                    MaterialSymbol {
+                                        text: "check"
+                                        iconSize: 16
+                                        color: "#22c55e"
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (eventTextInput.text && eventTextInput.text.trim() !== "") {
+                                                    root.addEvent(root.formatDateKey(root.selectedDate), eventTextInput.text)
+                                                    eventTextInput.text = ""
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    MaterialSymbol {
+                                        text: "close"
+                                        iconSize: 15
+                                        color: "#94a3b8"
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                root.isAddingEvent = false
+                                                eventTextInput.text = ""
+                                            }
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    visible: root.isAddingEvent
+                                    z: 0
+                                    onClicked: {
+                                        eventTextInput.forceActiveFocus()
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: addEventMouse
+                                    anchors.fill: parent
+                                    visible: !root.isAddingEvent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        GlobalStates.desktopWidgetKeyboardFocus = true
+                                        root.isAddingEvent = true
+                                        eventTextInput.forceActiveFocus()
+                                        focusTimer1.restart()
+                                        focusTimer2.restart()
+                                    }
+                                }
+                            }
+                    }
+                }
+
+                // ==========================================
+                // RIGHT PANEL: Symmetrical Aligned Month Grid
+                // ==========================================
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 6
+
+                    // Navigation Bar
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            font.weight: Font.Bold
+                            color: "#ffffff"
+                            text: root.viewingDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
+                        }
+
+                        // Aesthetic Solid Neutral "Today" Button
+                        Rectangle {
+                            implicitWidth: 74
+                            implicitHeight: 28
+                            radius: 14
+                            color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                MaterialSymbol {
+                                    text: "today"
+                                    iconSize: 13
+                                    color: "#e2e8f0"
+                                }
+
+                                StyledText {
+                                    text: "Today"
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.weight: Font.Bold
+                                    color: "#e2e8f0"
+                                }
+                            }
+
+                            MouseArea {
+                                id: todayBtnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    root.monthShift = 0
+                                    root.selectedDate = new Date()
+                                }
+                            }
+                        }
+
+                        // Aesthetic Solid Neutral Previous Month Button
+                        Rectangle {
+                            implicitWidth: 28; implicitHeight: 28; radius: 14
+                            color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "chevron_left"
+                                iconSize: Appearance.font.pixelSize.normal
+                                color: "#e2e8f0"
+                            }
+                            MouseArea {
+                                id: prevBtnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.monthShift--
+                            }
+                        }
+
+                        // Aesthetic Solid Neutral Next Month Button
+                        Rectangle {
+                            implicitWidth: 28; implicitHeight: 28; radius: 14
+                            color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "chevron_right"
+                                iconSize: Appearance.font.pixelSize.normal
+                                color: "#e2e8f0"
+                            }
+                            MouseArea {
+                                id: nextBtnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.monthShift++
+                            }
+                        }
+                    }
+
+                    // Weekdays Header (Symmetrical Columns)
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Repeater {
+                            model: ["Mo","Tu","We","Th","Fr","Sa","Su"]
+                            delegate: Item {
+                                Layout.fillWidth: true
+                                implicitHeight: 18
+
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.weight: Font.Bold
+                                    color: (index >= 5) ? "#e2e8f0" : "#71717a"
+                                }
+                            }
+                        }
+                    }
+
+                    // Calendar Grid with Visible Event Pills (Strictly Aligned & Symmetrical)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        spacing: 2
 
                         Repeater {
                             model: root.weeks
                             delegate: RowLayout {
                                 required property var modelData
-                                spacing: 4
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                spacing: 2
+
                                 Repeater {
                                     model: parent.modelData
-                                    delegate: DayCell {
+                                    delegate: Item {
+                                        id: cellItem
                                         required property var modelData
-                                        day: modelData.day
-                                        currentMonth: modelData.currentMonth
-                                        isToday: modelData.isToday
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+
+                                        readonly property bool isSelected: {
+                                            return modelData.day === root.selectedDate.getDate()
+                                                && modelData.month === (root.selectedDate.getMonth() + 1)
+                                                && modelData.year === root.selectedDate.getFullYear()
+                                        }
+
+                                        Rectangle {
+                                            id: cellBg
+                                            anchors.fill: parent
+                                            anchors.margins: 1
+                                            radius: 8
+                                            color: cellItem.isSelected
+                                                ? ColorUtils.applyAlpha("#ffffff", 0.12)
+                                                : (cellMouseArea.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.05) : "transparent")
+                                            border.width: cellItem.isSelected ? 1 : 0
+                                            border.color: ColorUtils.applyAlpha("#ffffff", 0.25)
+
+                                             ColumnLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 2
+                                                spacing: 2
+
+                                                // Day Number (Centered Target)
+                                                Item {
+                                                    Layout.alignment: Qt.AlignHCenter
+                                                    implicitWidth: 22
+                                                    implicitHeight: 22
+
+                                                    Rectangle {
+                                                        anchors.centerIn: parent
+                                                        width: 22
+                                                        height: 22
+                                                        radius: 11
+                                                        color: modelData.isToday ? "#ffffff" : "transparent"
+                                                    }
+
+                                                    StyledText {
+                                                        anchors.centerIn: parent
+                                                        text: modelData.day
+                                                        font.pixelSize: 11
+                                                        font.weight: modelData.isToday || cellItem.isSelected ? Font.Bold : Font.Normal
+                                                        color: modelData.isToday ? "#000000" : "#ffffff"
+                                                        opacity: modelData.currentMonth ? 1.0 : 0.25
+                                                    }
+                                                }
+
+                                                // Multi-Event Indicators (Red, Yellow, Blue Co-existing Symmetrically)
+                                                RowLayout {
+                                                    Layout.alignment: Qt.AlignHCenter
+                                                    spacing: 2
+                                                    implicitHeight: 3.5
+
+                                                    readonly property int totalActive: (modelData.hasNational ? 1 : 0) + (modelData.hasFestival ? 1 : 0) + (modelData.hasUserEvent ? 1 : 0)
+                                                    readonly property real barWidth: totalActive === 3 ? 5 : totalActive === 2 ? 8 : 16
+
+                                                    // Red Indicator: National Gazetted Holiday
+                                                    Rectangle {
+                                                        visible: modelData.hasNational
+                                                        implicitWidth: parent.barWidth
+                                                        implicitHeight: 3.5
+                                                        radius: 1.75
+                                                        color: "#f87171"
+                                                    }
+
+                                                    // Yellow Indicator: Indian Festival / Restricted Holiday / Observance
+                                                    Rectangle {
+                                                        visible: modelData.hasFestival
+                                                        implicitWidth: parent.barWidth
+                                                        implicitHeight: 3.5
+                                                        radius: 1.75
+                                                        color: "#fbbf24"
+                                                    }
+
+                                                    // Blue Indicator: User Personal Note / Event
+                                                    Rectangle {
+                                                        visible: modelData.hasUserEvent
+                                                        implicitWidth: parent.barWidth
+                                                        implicitHeight: 3.5
+                                                        radius: 1.75
+                                                        color: "#38bdf8"
+                                                    }
+                                                }
+
+                                                Item { Layout.fillHeight: true }
+                                            }
+
+                                            MouseArea {
+                                                id: cellMouseArea
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    var sel = new Date(modelData.year, modelData.month - 1, modelData.day)
+                                                    root.selectedDate = sel
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -377,6 +1022,7 @@ AbstractBackgroundWidget {
             }
         }
 
+        // Toggle Handle
         Rectangle {
             id: toggleHandle
             width: 16; height: 16; radius: 4
@@ -411,9 +1057,7 @@ AbstractBackgroundWidget {
             locked: Config.options.background.widgetsLocked
             currentWidth: root.widgetWidth
             onResized: (newWidth) => {
-                var mid = (root.snapWidth1 + root.snapWidth2) / 2
-                if (newWidth < mid) root.sizeMode = "1x1"
-                else if (root.sizeMode === "1x1") root.sizeMode = "2x2"
+                root.sizeMode = root.modeForWidth(newWidth)
             }
             onResizeFinished: {
                 root.configEntry.sizeMode = root.sizeMode
@@ -421,3 +1065,4 @@ AbstractBackgroundWidget {
         }
     }
 }
+
