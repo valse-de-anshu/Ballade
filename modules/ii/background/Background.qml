@@ -25,6 +25,7 @@ import qs.modules.ii.background.widgets.calendar
 import qs.modules.ii.background.widgets.worldclock
 import qs.modules.ii.background.widgets.usercard
 import qs.modules.ii.background.widgets.notes
+import qs.modules.ii.background.widgets.goals
 
 Variants {
     id: root
@@ -617,6 +618,18 @@ Variants {
                         && (Config.options.background.screenList.length === 0
                             || Config.options.background.screenList.includes(bgRoot.screen.name))
                     sourceComponent: NotesWidget {
+                        screenWidth: bgRoot.screen.width
+                        screenHeight: bgRoot.screen.height
+                        scaledScreenWidth: bgRoot.screen.width
+                        scaledScreenHeight: bgRoot.screen.height
+                        wallpaperScale: 1
+                    }
+                }
+                FadeLoader {
+                    shown: Config.options.background.widgets.goals.enable
+                        && (Config.options.background.screenList.length === 0
+                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                    sourceComponent: GoalsWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
                         scaledScreenWidth: bgRoot.screen.width

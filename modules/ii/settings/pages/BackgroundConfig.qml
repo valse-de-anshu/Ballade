@@ -1091,6 +1091,11 @@ ContentPage {
                             icon: "note_stack_add",
                             name: Translation.tr("Notes"),
                             enabled: Config.options.background.widgets.notes.enable
+                        },
+                        {
+                            icon: "track_changes",
+                            name: Translation.tr("Goals"),
+                            enabled: Config.options.background.widgets.goals.enable
                         }
                     ]
                     delegate: Rectangle {
@@ -1138,6 +1143,8 @@ ContentPage {
                                             Config.options.background.widgets.userCard.enable = checked
                                         else if (modelData.icon === "note_stack_add")
                                             Config.options.background.widgets.notes.enable = checked
+                                        else if (modelData.icon === "track_changes")
+                                            Config.options.background.widgets.goals.enable = checked
                                     }
                                 }
                             }

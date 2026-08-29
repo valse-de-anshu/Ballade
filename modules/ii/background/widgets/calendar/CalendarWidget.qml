@@ -95,6 +95,8 @@ AbstractBackgroundWidget {
     property bool isSelectingTarget: false
     property real satelliteX: 16
     property real satelliteY: -58
+    property bool satelliteVertical: false
+    property real satelliteRotation: 0
 
     FileView {
         id: targetFileView
@@ -102,16 +104,30 @@ AbstractBackgroundWidget {
         onLoaded: {
             try {
                 const parsed = JSON.parse(targetFileView.text())
-                if (parsed && typeof parsed === "object" && parsed.date) {
-                    root.targetData = parsed
+                if (parsed && typeof parsed === "object") {
+                    if (parsed.date !== undefined) root.targetData = parsed
+                    if (typeof parsed.x === "number") root.satelliteX = parsed.x
+                    if (typeof parsed.y === "number") root.satelliteY = parsed.y
+                    if (typeof parsed.vertical === "boolean") root.satelliteVertical = parsed.vertical
+                    if (typeof parsed.rotation === "number") root.satelliteRotation = parsed.rotation
                 }
             } catch (e) {}
         }
     }
 
+    function saveSatelliteState() {
+        let payload = Object.assign({}, root.targetData || { date: "", title: "", type: "festival" }, {
+            x: root.satelliteX,
+            y: root.satelliteY,
+            vertical: root.satelliteVertical,
+            rotation: root.satelliteRotation
+        })
+        targetFileView.setText(JSON.stringify(payload, null, 2))
+    }
+
     function clearTarget() {
         root.targetData = { date: "", title: "", type: "festival" }
-        targetFileView.setText("")
+        saveSatelliteState()
     }
 
     function saveTarget(dateKey, title, type) {
@@ -120,7 +136,7 @@ AbstractBackgroundWidget {
             title: title || "",
             type: type || "festival"
         }
-        targetFileView.setText(JSON.stringify(root.targetData))
+        saveSatelliteState()
     }
 
     function setTargetFromDate(d) {
@@ -240,6 +256,37 @@ AbstractBackgroundWidget {
         return found ? found.text : ""
     }
 
+    // ----------------------------------------------------
+    // Goals Integration via Goals Singleton Service
+    // ----------------------------------------------------
+    readonly property var calendarGoals: Goals.goalsList
+
+    onCalendarGoalsChanged: {
+        updateViewingMonth()
+    }
+
+    function toggleGoalCompletion(goalId) {
+        Goals.toggleGoal(goalId)
+        updateViewingMonth()
+    }
+
+    function removeGoalFromCalendar(goalId) {
+        Goals.removeGoalCalendarDate(goalId)
+        updateViewingMonth()
+    }
+
+    function getGoalsForDate(date) {
+        var key = formatDateKey(date)
+        return Goals.goalsList.filter(g => (g.calendarDate && g.calendarDate === key))
+    }
+
+    function hasGoalOnDate(year, month, day) {
+        var mm = month < 10 ? "0" + month : "" + month
+        var dd = day < 10 ? "0" + day : "" + day
+        var key = year + "-" + mm + "-" + dd
+        return Goals.goalsList.some(g => (g.calendarDate && g.calendarDate === key))
+    }
+
     FileView {
         id: eventsFileView
         path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
@@ -275,6 +322,7 @@ AbstractBackgroundWidget {
             var hasNat = dayEvents.some(e => e.type === "national")
             var hasFest = dayEvents.some(e => e.type === "festival" || e.type === "restricted" || e.type === "jayanti" || e.type === "observance" || e.type === "financial")
             var hasUsr = root.hasUserEventOnDate(y, m, d)
+            var hasGol = root.hasGoalOnDate(y, m, d)
             return {
                 day: d,
                 month: m,
@@ -284,6 +332,7 @@ AbstractBackgroundWidget {
                 hasNational: hasNat,
                 hasFestival: hasFest,
                 hasUserEvent: hasUsr,
+                hasGoal: hasGol,
                 hasHoliday: dayEvents.length > 0,
                 firstHoliday: dayEvents.length > 0 ? dayEvents[0].title : "",
                 holidayType: dayEvents.length > 0 ? dayEvents[0].type : "",
@@ -592,6 +641,7 @@ AbstractBackgroundWidget {
 
                             readonly property var holidays: IndianCalendar.getEventsForDate(root.selectedDate)
                             readonly property var personal: root.getEventsForDate(root.selectedDate)
+                            readonly property var dayGoals: root.calendarGoals.filter(g => (g.calendarDate && g.calendarDate === root.formatDateKey(root.selectedDate)))
 
                             function getCleanSubtitle(h) {
                                 if (!h.desc) {
@@ -610,6 +660,7 @@ AbstractBackgroundWidget {
                                     subtitle: agendaList.getCleanSubtitle(h),
                                     icon: h.icon || "event",
                                     isHoliday: true,
+                                    isGoal: false,
                                     type: h.type
                                 })),
                                 personal.map(p => ({
@@ -618,14 +669,26 @@ AbstractBackgroundWidget {
                                     subtitle: "Personal Note",
                                     icon: "schedule",
                                     isHoliday: false,
+                                    isGoal: false,
                                     type: "user"
+                                })),
+                                dayGoals.map(g => ({
+                                    id: g.id,
+                                    title: g.title,
+                                    subtitle: "GOAL • " + (g.horizon ? g.horizon.toUpperCase() : "GENERAL"),
+                                    icon: g.completed ? "task_alt" : "radio_button_unchecked",
+                                    isHoliday: false,
+                                    isGoal: true,
+                                    completed: g.completed,
+                                    type: "goal"
                                 }))
                             )
 
                             delegate: Rectangle {
                                 required property var modelData
+                                required property int index
                                 width: ListView.view.width
-                                implicitHeight: eventCol.implicitHeight + 16
+                                implicitHeight: eventCol.implicitHeight + 18
                                 radius: 8
                                 color: ColorUtils.applyAlpha("#18181e", 0.7)
                                 border.width: 1
@@ -635,22 +698,53 @@ AbstractBackgroundWidget {
                                     id: eventRow
                                     anchors {
                                         fill: parent
-                                        leftMargin: 8
-                                        rightMargin: 8
-                                        topMargin: 8
-                                        bottomMargin: 8
+                                        leftMargin: 8; rightMargin: 8
+                                        topMargin: 8; bottomMargin: 8
                                     }
                                     spacing: 8
 
+                                    // Left accent bar — theme primary for goals
                                     Rectangle {
                                         implicitWidth: 3
                                         Layout.fillHeight: true
                                         radius: 1.5
                                         color: modelData.type === "national" ? "#f87171"
                                              : modelData.type === "user" ? "#38bdf8"
+                                             : modelData.type === "goal" ? Appearance.colors.colPrimary.toString()
                                              : "#fbbf24"
                                     }
 
+                                    // Goal: circle-in-circle checkbox (same as GoalsWidget, no green)
+                                    Rectangle {
+                                        visible: modelData.isGoal === true
+                                        implicitWidth: 18; implicitHeight: 18
+                                        radius: 9
+                                        color: "transparent"
+                                        border.width: 1.5
+                                        border.color: Boolean(modelData?.completed)
+                                            ? Appearance.colors.colPrimary.toString()
+                                            : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.40)
+
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: 8; height: 8; radius: 4
+                                            visible: Boolean(modelData?.completed)
+                                            color: Appearance.colors.colPrimary
+                                        }
+
+                                        // Isolated click — does not scroll jump
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            propagateComposedEvents: false
+                                            onClicked: mouse => {
+                                                mouse.accepted = true
+                                                root.toggleGoalCompletion(modelData.id)
+                                            }
+                                        }
+                                    }
+
+                                    // Detailed Title & Subtitle/Description column
                                     ColumnLayout {
                                         id: eventCol
                                         Layout.fillWidth: true
@@ -661,7 +755,8 @@ AbstractBackgroundWidget {
                                             text: modelData.title
                                             font.pixelSize: Appearance.font.pixelSize.smaller
                                             font.weight: Font.Medium
-                                            color: "#ffffff"
+                                            font.strikeout: Boolean(modelData?.isGoal && modelData?.completed)
+                                            color: Boolean(modelData?.isGoal && modelData?.completed) ? "#64748b" : "#ffffff"
                                             wrapMode: Text.Wrap
                                         }
 
@@ -669,8 +764,9 @@ AbstractBackgroundWidget {
                                             Layout.fillWidth: true
                                             visible: text.length > 0
                                             text: modelData.subtitle
-                                            font.pixelSize: 10
-                                            color: "#94a3b8"
+                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            font.weight: modelData.isGoal ? Font.Bold : Font.Normal
+                                            color: modelData.isGoal ? Appearance.colors.colPrimary : "#94a3b8"
                                             wrapMode: Text.Wrap
                                             lineHeight: 1.2
                                         }
@@ -681,25 +777,20 @@ AbstractBackgroundWidget {
 
                                         // Pin Specific Event to Satellite Companion
                                         Rectangle {
-                                            implicitWidth: 24
-                                            implicitHeight: 24
-                                            radius: 12
+                                            implicitWidth: 24; implicitHeight: 24; radius: 12
                                             readonly property bool isPinned: root.targetData
                                                 && root.targetData.date === root.formatDateKey(root.selectedDate)
                                                 && root.targetData.title === modelData.title
                                             color: isPinned ? ColorUtils.applyAlpha("#38bdf8", 0.25) : (pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent")
 
                                             MaterialSymbol {
-                                                anchors.centerIn: parent
-                                                text: "push_pin"
-                                                iconSize: 13
+                                                anchors.centerIn: parent; text: "push_pin"; iconSize: 13
                                                 color: parent.isPinned ? "#38bdf8" : (pinMouse.containsMouse ? "#ffffff" : "#64748b")
                                             }
 
                                             MouseArea {
                                                 id: pinMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
+                                                anchors.fill: parent; hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     if (parent.isPinned) {
@@ -711,25 +802,39 @@ AbstractBackgroundWidget {
                                             }
                                         }
 
+                                        // Unlink / Remove Goal from Calendar (link_off icon)
+                                        Rectangle {
+                                            visible: modelData.isGoal === true
+                                            implicitWidth: 24; implicitHeight: 24; radius: 12
+                                            color: unmentionGoalMouse.containsMouse ? ColorUtils.applyAlpha("#ef4444", 0.20) : "transparent"
+
+                                            MaterialSymbol {
+                                                anchors.centerIn: parent; text: "link_off"; iconSize: 13
+                                                color: unmentionGoalMouse.containsMouse ? "#fca5a5" : "#888892"
+                                            }
+
+                                            MouseArea {
+                                                id: unmentionGoalMouse
+                                                anchors.fill: parent; hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.removeGoalFromCalendar(modelData.id)
+                                            }
+                                        }
+
                                         // Delete Personal Note
                                         Rectangle {
-                                            visible: !modelData.isHoliday
-                                            implicitWidth: 24
-                                            implicitHeight: 24
-                                            radius: 12
+                                            visible: !modelData.isHoliday && !modelData.isGoal
+                                            implicitWidth: 24; implicitHeight: 24; radius: 12
                                             color: delMouse.containsMouse ? ColorUtils.applyAlpha("#ef4444", 0.20) : "transparent"
 
                                             MaterialSymbol {
-                                                anchors.centerIn: parent
-                                                text: "close"
-                                                iconSize: 13
+                                                anchors.centerIn: parent; text: "close"; iconSize: 13
                                                 color: delMouse.containsMouse ? "#fca5a5" : "#888892"
                                             }
 
                                             MouseArea {
                                                 id: delMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
+                                                anchors.fill: parent; hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     if (root.targetData && root.targetData.title === modelData.title) {
@@ -1105,14 +1210,14 @@ AbstractBackgroundWidget {
                                                     }
                                                 }
 
-                                                // Multi-Event Indicators (Red, Yellow, Blue Co-existing Symmetrically)
+                                                // Multi-Event Indicators (Red, Yellow, Blue, Green Co-existing Symmetrically)
                                                 RowLayout {
                                                     Layout.alignment: Qt.AlignHCenter
                                                     spacing: 2
                                                     implicitHeight: 3.5
 
-                                                    readonly property int totalActive: (modelData.hasNational ? 1 : 0) + (modelData.hasFestival ? 1 : 0) + (modelData.hasUserEvent ? 1 : 0)
-                                                    readonly property real barWidth: totalActive === 3 ? 5 : totalActive === 2 ? 8 : 16
+                                                    readonly property int totalActive: (modelData.hasNational ? 1 : 0) + (modelData.hasFestival ? 1 : 0) + (modelData.hasUserEvent ? 1 : 0) + (modelData.hasGoal ? 1 : 0)
+                                                    readonly property real barWidth: totalActive >= 4 ? 4 : totalActive === 3 ? 5 : totalActive === 2 ? 8 : 16
 
                                                     // Red Indicator: National Gazetted Holiday
                                                     Rectangle {
@@ -1139,6 +1244,15 @@ AbstractBackgroundWidget {
                                                         implicitHeight: 3.5
                                                         radius: 1.75
                                                         color: "#38bdf8"
+                                                    }
+
+                                                    // Green Indicator: Scheduled Goal
+                                                    Rectangle {
+                                                        visible: modelData.hasGoal
+                                                        implicitWidth: parent.barWidth
+                                                        implicitHeight: 3.5
+                                                        radius: 1.75
+                                                        color: "#34d399"
                                                     }
                                                 }
 
@@ -1226,19 +1340,32 @@ AbstractBackgroundWidget {
 
         readonly property var countdown: root.getTargetCountdown()
 
-        // Minimalist Frosted Glass Capsule
+        // 360-Degree Smooth Rotation Transform
+        transform: Rotation {
+            origin.x: satelliteCard.width / 2
+            origin.y: satelliteCard.height / 2
+            angle: root.satelliteRotation
+
+            Behavior on angle {
+                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+            }
+        }
+
+        // Minimalist Frosted Glass Capsule / Badge
         Rectangle {
             id: satelliteCard
-            implicitWidth: capsuleRow.implicitWidth + 20
-            implicitHeight: 34
-            radius: 17
-            color: ColorUtils.applyAlpha("#121217", 0.76)
+            implicitWidth: root.satelliteVertical ? 175 : (capsuleRow.implicitWidth + 24)
+            implicitHeight: root.satelliteVertical ? (capsuleCol.implicitHeight + 18) : 34
+            radius: root.satelliteVertical ? 14 : 17
+            color: ColorUtils.applyAlpha("#121217", 0.82)
             border.width: 1
             border.color: root.isSelectingTarget ? ColorUtils.applyAlpha("#38bdf8", 0.5) : ColorUtils.applyAlpha("#ffffff", 0.10)
 
+            Behavior on implicitWidth { NumberAnimation { duration: 180 } }
+            Behavior on implicitHeight { NumberAnimation { duration: 180 } }
             Behavior on border.color { ColorAnimation { duration: 150 } }
 
-            // Drag Mouse Area
+            // Drag Mouse Area with 360° Scroll Wheel Rotation
             MouseArea {
                 id: satelliteDragArea
                 anchors.fill: parent
@@ -1246,14 +1373,26 @@ AbstractBackgroundWidget {
                 cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                 drag.target: satelliteWrapper
                 drag.axis: Drag.XAndYAxis
+                onDoubleClicked: {
+                    root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
+                    root.saveSatelliteState()
+                }
+                onWheel: wheel => {
+                    let delta = wheel.angleDelta.y > 0 ? 15 : -15
+                    root.satelliteRotation = (root.satelliteRotation + delta + 360) % 360
+                    root.saveSatelliteState()
+                }
                 onReleased: {
                     root.satelliteX = satelliteWrapper.x
                     root.satelliteY = satelliteWrapper.y
+                    root.saveSatelliteState()
                 }
             }
 
+            // ── HORIZONTAL LAYOUT ──
             RowLayout {
                 id: capsuleRow
+                visible: !root.satelliteVertical
                 anchors.centerIn: parent
                 spacing: 8
 
@@ -1274,7 +1413,7 @@ AbstractBackgroundWidget {
                             : satelliteWrapper.countdown.days === 1 ? "1d left"
                             : satelliteWrapper.countdown.days > 1 ? (satelliteWrapper.countdown.days + "d left")
                             : (Math.abs(satelliteWrapper.countdown.days) + "d ago")
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.weight: Font.Bold
                         color: "#e2e8f0"
                     }
@@ -1283,12 +1422,12 @@ AbstractBackgroundWidget {
                 // Event Title & Subtle Date Tag
                 RowLayout {
                     spacing: 6
-                    Layout.maximumWidth: 260
+                    Layout.maximumWidth: 240
 
                     StyledText {
-                        Layout.maximumWidth: 180
+                        Layout.maximumWidth: 160
                         text: root.isSelectingTarget
-                            ? "Select any calendar date..."
+                            ? "Select any date..."
                             : (satelliteWrapper.countdown.title || "No event message")
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         font.weight: Font.Medium
@@ -1299,12 +1438,64 @@ AbstractBackgroundWidget {
                     StyledText {
                         visible: satelliteWrapper.countdown.dateText !== "" && !root.isSelectingTarget
                         text: "• " + satelliteWrapper.countdown.dateText
-                        font.pixelSize: 10
-                        color: "#71717a"
+                        font.pixelSize: 11
+                        color: "#94a3b8"
                     }
                 }
 
-                // Compact Minimalist Action Button
+                // Size Visualizer / Compact Mode Toggle Button
+                Rectangle {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    radius: 10
+                    color: compactMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.16) : ColorUtils.applyAlpha("#ffffff", 0.06)
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "calendar_view_week"
+                        iconSize: 12
+                        color: compactMouse.containsMouse ? "#38bdf8" : "#94a3b8"
+                    }
+
+                    MouseArea {
+                        id: compactMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.satelliteVertical = !root.satelliteVertical
+                            root.saveSatelliteState()
+                        }
+                    }
+                }
+
+                // 360° Rotate Button
+                Rectangle {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    radius: 10
+                    color: orientMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "rotate_right"
+                        iconSize: 13
+                        color: orientMouse.containsMouse ? "#ffffff" : "#71717a"
+                    }
+
+                    MouseArea {
+                        id: orientMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
+                            root.saveSatelliteState()
+                        }
+                    }
+                }
+
+                // Action Button (Set / Clear)
                 Rectangle {
                     implicitWidth: 20
                     implicitHeight: 20
@@ -1333,6 +1524,135 @@ AbstractBackgroundWidget {
                             }
                         }
                     }
+                }
+            }
+
+            // ── VERTICAL COMPACT LAYOUT ──
+            ColumnLayout {
+                id: capsuleCol
+                visible: root.satelliteVertical
+                anchors.centerIn: parent
+                spacing: 6
+                width: parent.width - 16
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    // Token Pill
+                    Rectangle {
+                        implicitHeight: 22
+                        implicitWidth: tokenTextVert.implicitWidth + 12
+                        radius: 11
+                        color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                        border.width: 1
+                        border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
+
+                        StyledText {
+                            id: tokenTextVert
+                            anchors.centerIn: parent
+                            text: !satelliteWrapper.countdown.valid ? "PIN"
+                                : satelliteWrapper.countdown.days === 0 ? "TODAY"
+                                : satelliteWrapper.countdown.days === 1 ? "1d left"
+                                : satelliteWrapper.countdown.days > 1 ? (satelliteWrapper.countdown.days + "d left")
+                                : (Math.abs(satelliteWrapper.countdown.days) + "d ago")
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: "#e2e8f0"
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    // Size Visualizer / Expand Mode Button
+                    Rectangle {
+                        implicitWidth: 20; implicitHeight: 20; radius: 10
+                        color: compactMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.16) : ColorUtils.applyAlpha("#ffffff", 0.06)
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "calendar_view_month"
+                            iconSize: 12
+                            color: compactMouseVert.containsMouse ? "#38bdf8" : "#94a3b8"
+                        }
+                        MouseArea {
+                            id: compactMouseVert
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.satelliteVertical = !root.satelliteVertical
+                                root.saveSatelliteState()
+                            }
+                        }
+                    }
+
+                    // 360° Rotate Button
+                    Rectangle {
+                        implicitWidth: 20; implicitHeight: 20; radius: 10
+                        color: orientMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "rotate_right"
+                            iconSize: 13
+                            color: orientMouseVert.containsMouse ? "#ffffff" : "#71717a"
+                        }
+                        MouseArea {
+                            id: orientMouseVert
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
+                                root.saveSatelliteState()
+                            }
+                        }
+                    }
+
+                    // Action Button (Set / Clear)
+                    Rectangle {
+                        implicitWidth: 20; implicitHeight: 20; radius: 10
+                        color: actionMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: root.isSelectingTarget ? "check" : (satelliteWrapper.countdown.valid ? "close" : "add")
+                            iconSize: 13
+                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseVert.containsMouse ? "#ffffff" : "#71717a")
+                        }
+                        MouseArea {
+                            id: actionMouseVert
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (root.isSelectingTarget) {
+                                    root.isSelectingTarget = false
+                                } else if (satelliteWrapper.countdown.valid) {
+                                    root.clearTarget()
+                                } else {
+                                    root.isSelectingTarget = true
+                                }
+                            }
+                        }
+                    }
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: root.isSelectingTarget
+                        ? "Select any date..."
+                        : (satelliteWrapper.countdown.title || "No event message")
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.weight: Font.Medium
+                    color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    visible: satelliteWrapper.countdown.dateText !== "" && !root.isSelectingTarget
+                    text: satelliteWrapper.countdown.dateText
+                    font.pixelSize: 11
+                    color: "#94a3b8"
                 }
             }
         }

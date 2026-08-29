@@ -1,8 +1,6 @@
-# 🎨 App Theming & Setup Guide (Discord, Joplin & Obsidian)
+[← Back to Main README](../README.md)
 
-<p align="center">
-  <a href="../README.md"><strong>← Back to Main README</strong></a>
-</p>
+# 🎨 App Theming & Setup Guide (Discord, Joplin & Obsidian)
 
 This guide shows you how to set up, customize, and get the most out of **Discord**, **Joplin**, and **Obsidian** in the Ballade desktop environment from scratch.
 
@@ -50,3 +48,5 @@ Whenever you pick a theme preset in QuickShell (e.g. `purple`, `golden`, `green`
 3. **Enabling the Snippet**: In Obsidian **Settings (⚙️)** $\to$ **Appearance** $\to$ scroll to **CSS Snippets** $\to$ toggle **ON** `ballade-theme`.
 
 ---
+
+[← Back to Main README](../README.md)

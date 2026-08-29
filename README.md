@@ -50,6 +50,8 @@ It brings a refined frosted-glass look, dynamic Material Design 3 theming, full-
 ## 🧭 Table of Contents
 - [⚡ Quick Start](#-quick-start)
 - [✨ Key Features & Modules](#-key-features--modules)
+- [📅 Perpetual Indian Calendar & Event Suite](#-6-perpetual-indian-calendar--event-suite-ballade)
+- [🤖 AI Agent Dataset Generation Guide](AGENT_CALENDAR_DATASET_INSTRUCTIONS.md)
 - [🎨 Dynamic Theming & Multi-App Engine](#-dynamic-theming--multi-app-configuration-engine)
 - [📖 App Theming & Setup Guide (Discord, Joplin, Obsidian)](docs/APP_THEMING_GUIDE.md)
 - [⌨️ IPC & Keybinding Shortcuts](#-ipc--keybinding-shortcuts)
@@ -143,6 +145,14 @@ cd ~/.config/quickshell/ballade
 * **World Telemetry & Clocks**: Live weather telemetry from `wttr.in`, geographic dot-map locator projection, and customizable digital, analog, and pixel clocks.
 * **Persistent Desktop Notes & Tasks**: Auto-saving sticky notes and to-do checklists.
 
+### 📅 6. Perpetual Indian Calendar & Event Suite (`ballade`)
+* **Perpetual Astronomical Calendar Engine (`IndianCalendar.js`)**: Accurate multi-year calculation (2026–3069+) of Indian national holidays, major festivals (Diwali, Holi, Raksha Bandhan, Eid, Good Friday, Onam, Pongal), Jayantis, and financial year markers based on Nirayana Sidereal solar longitude (Lahiri Ayanamsha) and Hindu lunar month/Adhika Masa identification.
+* **Symmetrical Dual-Pane Frosted Glass UI**: Clean side-by-side layout with an interactive date agenda sidebar on the left and a 7-column month grid on the right.
+* **Co-Existing Tri-Color Day Indicators**: Seamless side-by-side color indicators on day cells for **National Holidays** (🔴 Red), **Festivals & Observances** (🟡 Amber), and **Personal Notes** (🔵 Sky Blue).
+* **Floating Satellite Countdown Micro-Capsule**: Sleek, minimal draggable frosted glass chip floating above the calendar with day-countdown tokens (`1d left`, `3d ago`, `Today`), auto-synced personal note display, and a 1-click dismiss button.
+* **Per-Event Fine-Pick Pinning (📌)**: Direct pin button on every personal note and holiday in the agenda list to lock the satellite companion to any specific event.
+* **Country & Religion Agnostic AI Specification**: Comes with [`AGENT_CALENDAR_DATASET_INSTRUCTIONS.md`](AGENT_CALENDAR_DATASET_INSTRUCTIONS.md), a complete universal guide for users to prompt their own AI agents to generate verified calendar datasets for any country, region, religion, or tradition.
+
 ### 🪟 6. Overlays, Hubs & System Screens (`end4-pC`)
 * **App Launcher / Overview (`modules/ii/overview/`)**: Full-screen fuzzy app search, math calculator, command execution, and window switcher.
 * **Session & Power Screen (`modules/ii/sessionScreen/`)**: Fullscreen power menu with Lock, Logout, Suspend, Hibernate, Reboot, and Shutdown triggers.
@@ -172,6 +182,7 @@ Ballade includes full Hyprland override configs inside `hyprland-custom/` that g
 * **Discord+ & Vencord**: Translucent frosted glass UI with live wallpaper background mirroring and clean padded avatars.
 * **Joplin Notes Engine**: Fully stylized 3-tier deep CSS (`userchrome.css` / `userstyle.css`) with smart tray auto-reload daemon.
 * **Obsidian Knowledge Base**: Injectable CSS snippets (`ballade-theme.css`) to match highlights, tags, and frosted UI.
+* 📖 **Setup Guide**: See the complete [**App Theming & Setup Guide (Discord, Joplin, Obsidian)**](docs/APP_THEMING_GUIDE.md) for 1-click install and configuration instructions.
 
 ---
 

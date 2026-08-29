@@ -1,0 +1,62 @@
+{
+  "goals": [
+    {
+      "id": "g1",
+      "title": "Review morning metrics & priorities",
+      "horizon": "daily",
+      "completed": true,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g2",
+      "title": "Complete deep work sprint (4 hrs)",
+      "horizon": "daily",
+      "completed": false,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g3",
+      "title": "Ship Ballade Goals Widget release",
+      "horizon": "weekly",
+      "completed": true,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g4",
+      "title": "Complete 15 GitHub commits this week",
+      "horizon": "weekly",
+      "completed": false,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g5",
+      "title": "Master Wayland QML shell architecture",
+      "horizon": "monthly",
+      "completed": false,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g6",
+      "title": "Publish open-source desktop ecosystem",
+      "horizon": "yearly",
+      "completed": false,
+      "createdAt": 1788015200000
+    },
+    {
+      "id": "g7",
+      "title": "Build next-gen AI agentic OS interface",
+      "horizon": "longterm",
+      "completed": false,
+      "createdAt": 1788015200000
+    }
+  ],
+  "activity": {
+    "2026-08-29": 2,
+    "2026-08-28": 4,
+    "2026-08-27": 1,
+    "2026-08-26": 3,
+    "2026-08-25": 5,
+    "2026-08-24": 2,
+    "2026-08-23": 4
+  }
+}

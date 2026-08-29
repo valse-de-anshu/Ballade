@@ -303,6 +303,14 @@ Singleton {
                         property real y: 100
                     }
 
+                    property JsonObject goals: JsonObject {
+                        property bool enable: true
+                        property string placementStrategy: "free"
+                        property real x: 750
+                        property real y: 120
+                        property string sizeMode: "full"
+                    }
+
                     property JsonObject userCard: JsonObject {
                         property bool enable: true
                         property string placementStrategy: "free"
