@@ -88,6 +88,93 @@ AbstractBackgroundWidget {
     property bool isAddingEvent: false
     property string newEventText: ""
 
+    // ----------------------------------------------------
+    // External Satellite Companion & Target Countdown
+    // ----------------------------------------------------
+    property var targetData: ({ date: "", title: "", type: "festival" })
+    property bool isSelectingTarget: false
+    property real satelliteX: 16
+    property real satelliteY: -58
+
+    FileView {
+        id: targetFileView
+        path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(targetFileView.text())
+                if (parsed && typeof parsed === "object" && parsed.date) {
+                    root.targetData = parsed
+                }
+            } catch (e) {}
+        }
+    }
+
+    function clearTarget() {
+        root.targetData = { date: "", title: "", type: "festival" }
+        targetFileView.setText("")
+    }
+
+    function saveTarget(dateKey, title, type) {
+        root.targetData = {
+            date: dateKey,
+            title: title || "",
+            type: type || "festival"
+        }
+        targetFileView.setText(JSON.stringify(root.targetData))
+    }
+
+    function setTargetFromDate(d) {
+        var key = formatDateKey(d)
+        var userEvs = root.getEventsForDate(d)
+        var holidays = IndianCalendar.getDayEvents(d.getFullYear(), d.getMonth() + 1, d.getDate())
+        var title = ""
+        var type = "festival"
+
+        if (userEvs.length > 0) {
+            title = userEvs[0].text
+            type = "user"
+        } else if (holidays.length > 0) {
+            title = holidays[0].title
+            type = holidays[0].type
+        } else {
+            title = d.toLocaleDateString(Qt.locale(), "MMMM d")
+            type = "festival"
+        }
+        saveTarget(key, title, type)
+    }
+
+    function getTargetCountdown() {
+        if (!root.targetData || !root.targetData.date) {
+            return { days: 0, text: "No Target Set", title: "Tap + or 📌 to pin any note", dateText: "", type: "festival", valid: false }
+        }
+        var parts = root.targetData.date.split("-")
+        if (parts.length < 3) {
+            return { days: 0, text: "No Target Set", title: "Tap + to select target date", dateText: "", type: "festival", valid: false }
+        }
+        var target = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+        var now = new Date()
+        var nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        var targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+        var diffTime = targetMidnight.getTime() - nowMidnight.getTime()
+        var diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+
+        var label = ""
+        if (diffDays === 0) label = "TODAY"
+        else if (diffDays === 1) label = "1 DAY LEFT"
+        else if (diffDays > 1) label = diffDays + " DAYS LEFT"
+        else if (diffDays === -1) label = "YESTERDAY"
+        else label = Math.abs(diffDays) + " DAYS AGO"
+
+        return {
+            days: diffDays,
+            text: label,
+            title: root.targetData.title || target.toLocaleDateString(Qt.locale(), "MMMM d"),
+            dateText: target.toLocaleDateString(Qt.locale(), "d MMM yyyy"),
+            type: root.targetData.type || "festival",
+            valid: true
+        }
+    }
+
     onIsAddingEventChanged: {
         GlobalStates.desktopWidgetKeyboardFocus = root.isAddingEvent
     }
@@ -107,6 +194,11 @@ AbstractBackgroundWidget {
         updateViewingMonth()
         root.isAddingEvent = false
         root.newEventText = ""
+
+        // If target date matches the date where user wrote note, auto-sync message!
+        if (root.targetData && root.targetData.date === dateKey) {
+            root.saveTarget(dateKey, text.trim(), "user")
+        }
     }
 
     function deleteEvent(id) {
@@ -584,17 +676,68 @@ AbstractBackgroundWidget {
                                         }
                                     }
 
-                                    MaterialSymbol {
-                                        visible: !modelData.isHoliday
-                                        text: "close"
-                                        iconSize: 14
-                                        color: "#888892"
+                                    RowLayout {
+                                        spacing: 4
 
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.deleteEvent(modelData.id)
+                                        // Pin Specific Event to Satellite Companion
+                                        Rectangle {
+                                            implicitWidth: 24
+                                            implicitHeight: 24
+                                            radius: 12
+                                            readonly property bool isPinned: root.targetData
+                                                && root.targetData.date === root.formatDateKey(root.selectedDate)
+                                                && root.targetData.title === modelData.title
+                                            color: isPinned ? ColorUtils.applyAlpha("#38bdf8", 0.25) : (pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent")
+
+                                            MaterialSymbol {
+                                                anchors.centerIn: parent
+                                                text: "push_pin"
+                                                iconSize: 13
+                                                color: parent.isPinned ? "#38bdf8" : (pinMouse.containsMouse ? "#ffffff" : "#64748b")
+                                            }
+
+                                            MouseArea {
+                                                id: pinMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    if (parent.isPinned) {
+                                                        root.clearTarget()
+                                                    } else {
+                                                        root.saveTarget(root.formatDateKey(root.selectedDate), modelData.title, modelData.type)
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Delete Personal Note
+                                        Rectangle {
+                                            visible: !modelData.isHoliday
+                                            implicitWidth: 24
+                                            implicitHeight: 24
+                                            radius: 12
+                                            color: delMouse.containsMouse ? ColorUtils.applyAlpha("#ef4444", 0.20) : "transparent"
+
+                                            MaterialSymbol {
+                                                anchors.centerIn: parent
+                                                text: "close"
+                                                iconSize: 13
+                                                color: delMouse.containsMouse ? "#fca5a5" : "#888892"
+                                            }
+
+                                            MouseArea {
+                                                id: delMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    if (root.targetData && root.targetData.title === modelData.title) {
+                                                        root.clearTarget()
+                                                    }
+                                                    root.deleteEvent(modelData.id)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1010,6 +1153,10 @@ AbstractBackgroundWidget {
                                                 onClicked: {
                                                     var sel = new Date(modelData.year, modelData.month - 1, modelData.day)
                                                     root.selectedDate = sel
+                                                    if (root.isSelectingTarget) {
+                                                        root.setTargetFromDate(sel)
+                                                        root.isSelectingTarget = false
+                                                    }
                                                 }
                                             }
                                         }
@@ -1061,6 +1208,132 @@ AbstractBackgroundWidget {
             }
             onResizeFinished: {
                 root.configEntry.sizeMode = root.sizeMode
+            }
+        }
+    }
+
+    // ====================================================
+    // SATELLITE COMPANION COUNTDOWN MICRO-CAPSULE (MINIMAL & AESTHETIC)
+    // ====================================================
+    Item {
+        id: satelliteWrapper
+        z: 100
+        visible: root.sizeMode === "2x2" || root.sizeMode === "1x2"
+        x: root.satelliteX
+        y: root.satelliteY
+        width: satelliteCard.width
+        height: satelliteCard.height
+
+        readonly property var countdown: root.getTargetCountdown()
+
+        // Minimalist Frosted Glass Capsule
+        Rectangle {
+            id: satelliteCard
+            implicitWidth: capsuleRow.implicitWidth + 20
+            implicitHeight: 34
+            radius: 17
+            color: ColorUtils.applyAlpha("#121217", 0.76)
+            border.width: 1
+            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha("#38bdf8", 0.5) : ColorUtils.applyAlpha("#ffffff", 0.10)
+
+            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            // Drag Mouse Area
+            MouseArea {
+                id: satelliteDragArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                drag.target: satelliteWrapper
+                drag.axis: Drag.XAndYAxis
+                onReleased: {
+                    root.satelliteX = satelliteWrapper.x
+                    root.satelliteY = satelliteWrapper.y
+                }
+            }
+
+            RowLayout {
+                id: capsuleRow
+                anchors.centerIn: parent
+                spacing: 8
+
+                // Minimalist Countdown Token Pill
+                Rectangle {
+                    implicitHeight: 22
+                    implicitWidth: tokenText.implicitWidth + 12
+                    radius: 11
+                    color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                    border.width: 1
+                    border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
+
+                    StyledText {
+                        id: tokenText
+                        anchors.centerIn: parent
+                        text: !satelliteWrapper.countdown.valid ? "PIN"
+                            : satelliteWrapper.countdown.days === 0 ? "TODAY"
+                            : satelliteWrapper.countdown.days === 1 ? "1d left"
+                            : satelliteWrapper.countdown.days > 1 ? (satelliteWrapper.countdown.days + "d left")
+                            : (Math.abs(satelliteWrapper.countdown.days) + "d ago")
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        color: "#e2e8f0"
+                    }
+                }
+
+                // Event Title & Subtle Date Tag
+                RowLayout {
+                    spacing: 6
+                    Layout.maximumWidth: 260
+
+                    StyledText {
+                        Layout.maximumWidth: 180
+                        text: root.isSelectingTarget
+                            ? "Select any calendar date..."
+                            : (satelliteWrapper.countdown.title || "No event message")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.Medium
+                        color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
+                        elide: Text.ElideRight
+                    }
+
+                    StyledText {
+                        visible: satelliteWrapper.countdown.dateText !== "" && !root.isSelectingTarget
+                        text: "• " + satelliteWrapper.countdown.dateText
+                        font.pixelSize: 10
+                        color: "#71717a"
+                    }
+                }
+
+                // Compact Minimalist Action Button
+                Rectangle {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    radius: 10
+                    color: actionMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: root.isSelectingTarget ? "check" : (satelliteWrapper.countdown.valid ? "close" : "add")
+                        iconSize: 13
+                        color: root.isSelectingTarget ? "#38bdf8" : (actionMouse.containsMouse ? "#ffffff" : "#71717a")
+                    }
+
+                    MouseArea {
+                        id: actionMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.isSelectingTarget) {
+                                root.isSelectingTarget = false
+                            } else if (satelliteWrapper.countdown.valid) {
+                                root.clearTarget()
+                            } else {
+                                root.isSelectingTarget = true
+                            }
+                        }
+                    }
+                }
             }
         }
     }
