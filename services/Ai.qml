@@ -573,18 +573,56 @@ Singleton {
         root.tokenCount.total = -1;
     }
 
+    readonly property bool generating: requester.running || streamDripTimer.running
+
     FileView {
-        id: requesterScriptFile
+        id: aiPayloadFile
+        path: `${Directories.state}/user/ai/payload.json`
+    }
+
+    Timer {
+        id: streamDripTimer
+        interval: 16 // 60 FPS liquid flow rate
+        repeat: true
+        running: false
+        onTriggered: {
+            if (!requester.message) {
+                running = false;
+                return;
+            }
+            const currentLen = requester.message.content.length;
+            const targetLen = requester.incomingBuffer.length;
+            const diff = targetLen - currentLen;
+
+            if (diff > 0) {
+                // Adaptive waterfall drip: 1-4 chars per 16ms frame (approx 60-200 chars/sec)
+                const step = Math.min(diff, Math.max(1, Math.ceil(diff / 4)));
+                requester.message.content += requester.incomingBuffer.substr(currentLen, step);
+                requester.message.rawContent = requester.message.content;
+            } else if (requester.streamDone) {
+                running = false;
+                requester.markDone();
+            }
+        }
     }
 
     Process {
         id: requester
-        property list<string> baseCommand: ["bash"]
         property AiMessageData message
-        property ApiStrategy currentStrategy
+        property string incomingBuffer: ""
+        property bool streamDone: false
 
         function markDone() {
-            requester.message.done = true;
+            streamDripTimer.running = false;
+            requester.streamDone = false;
+            if (requester.message) {
+                if (requester.incomingBuffer && requester.message.content !== requester.incomingBuffer) {
+                    requester.message.content = requester.incomingBuffer;
+                    requester.message.rawContent = requester.incomingBuffer;
+                }
+                requester.message.thinking = false;
+                requester.message.done = true;
+            }
             if (root.postResponseHook) {
                 root.postResponseHook();
                 root.postResponseHook = null; // Reset hook after use
@@ -595,28 +633,30 @@ Singleton {
 
         function makeRequest() {
             const model = models[currentModelId];
+            requester.incomingBuffer = "";
+            requester.streamDone = false;
 
             // Fetch API keys if needed
             if (model?.requires_key && !KeyringStorage.loaded) KeyringStorage.fetchKeyringData();
-            
-            requester.currentStrategy = root.currentApiStrategy;
-            requester.currentStrategy.reset(); // Reset strategy state
 
-            /* Put API key in environment variable */
-            if (model.requires_key) requester.environment[`${root.apiKeyEnvVarName}`] = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : ""
-
-            /* Build endpoint, request data */
-            const endpoint = root.currentApiStrategy.buildEndpoint(model);
             const messageArray = root.messageIDs.map(id => root.messageByID[id]);
-            const filteredMessageArray = messageArray.filter(message => message.role !== Ai.interfaceRole);
-            const data = root.currentApiStrategy.buildRequestData(model, filteredMessageArray, root.systemPrompt, root.temperature, root.tools[model.api_format][root.currentTool], root.pendingFilePath);
-            // console.log("[Ai] Request data: ", JSON.stringify(data, null, 2));
+            const filteredMessageArray = messageArray
+                .filter(msg => msg && msg.role !== Ai.interfaceRole)
+                .map(msg => ({ role: msg.role, content: msg.rawContent || msg.content }));
 
-            let requestHeaders = {
-                "Content-Type": "application/json",
-            }
-            
-            /* Create local message object */
+            const apiKey = model?.requires_key ? (root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : "") : "";
+
+            const payload = {
+                "api_format": model?.api_format || "gemini",
+                "endpoint": model?.endpoint || "",
+                "api_key": apiKey,
+                "model": model?.model || currentModelId,
+                "system_prompt": root.systemPrompt || Config.options.ai.systemPrompt || "",
+                "temperature": root.temperature,
+                "messages": filteredMessageArray
+            };
+
+            /* Create local assistant message */
             requester.message = root.aiMessageComponent.createObject(root, {
                 "role": "assistant",
                 "model": currentModelId,
@@ -629,90 +669,58 @@ Singleton {
             root.messageIDs = [...root.messageIDs, id];
             root.messageByID[id] = requester.message;
 
-            /* Build header string for curl */ 
-            let headerString = Object.entries(requestHeaders)
-                .filter(([k, v]) => v && v.length > 0)
-                .map(([k, v]) => `-H '${k}: ${v}'`)
-                .join(' ');
+            /* Write payload file and launch python handler */
+            const payloadPath = "/tmp/quickshell_ai_payload.json";
+            aiPayloadFile.path = Qt.resolvedUrl(payloadPath);
+            aiPayloadFile.setText(JSON.stringify(payload, null, 2));
 
-            // console.log("Request headers: ", JSON.stringify(requestHeaders));
-            // console.log("Header string: ", headerString);
-
-            /* Get authorization header from strategy */
-            const authHeader = requester.currentStrategy.buildAuthorizationHeader(root.apiKeyEnvVarName);
-            
-            /* Script shebang */
-            const scriptShebang = "#!/usr/bin/env bash\n";
-
-            /* Create extra setup when there's an attached file */
-            let scriptFileSetupContent = ""
-            if (root.pendingFilePath && root.pendingFilePath.length > 0) {
-                requester.message.localFilePath = root.pendingFilePath;
-                scriptFileSetupContent = requester.currentStrategy.buildScriptFileSetup(root.pendingFilePath);
-                root.pendingFilePath = ""
-            }
-
-            /* Create command string */
-            let scriptRequestContent = ""
-            scriptRequestContent += `curl --no-buffer "${endpoint}"`
-                + ` ${headerString}`
-                + (authHeader ? ` ${authHeader}` : "")
-                + ` --data '${CF.StringUtils.shellSingleQuoteEscape(JSON.stringify(data))}'`
-                + "\n"
-            
-            /* Send the request */
-            const scriptContent = requester.currentStrategy.finalizeScriptContent(scriptShebang + scriptFileSetupContent + scriptRequestContent)
-            const shellScriptPath = CF.FileUtils.trimFileProtocol(root.requestScriptFilePath)
-            requesterScriptFile.path = Qt.resolvedUrl(shellScriptPath)
-            requesterScriptFile.setText(scriptContent)
-            requester.command = baseCommand.concat([shellScriptPath]);
-            requester.running = true
+            const scriptPath = CF.FileUtils.trimFileProtocol(Quickshell.shellPath("scripts/ai/ai_query.py"));
+            requester.command = ["python3", scriptPath, payloadPath];
+            requester.running = true;
         }
 
         stdout: SplitParser {
-            onRead: data => {
-                if (data.length === 0) return;
-                if (requester.message.thinking) requester.message.thinking = false;
-                // console.log("[Ai] Raw response line: ", data);
-
-                // Handle response line
+            onRead: line => {
+                if (!line || line.trim().length === 0) return;
                 try {
-                    const result = requester.currentStrategy.parseResponseLine(data, requester.message);
-                    // console.log("[Ai] Parsed response result: ", JSON.stringify(result, null, 2));
-
-                    if (result.functionCall) {
-                        requester.message.functionCall = result.functionCall;
-                        root.handleFunctionCall(result.functionCall.name, result.functionCall.args, requester.message);
-                    }
-                    if (result.tokenUsage) {
-                        root.tokenCount.input = result.tokenUsage.input;
-                        root.tokenCount.output = result.tokenUsage.output;
-                        root.tokenCount.total = result.tokenUsage.total;
-                    }
-                    if (result.finished) {
+                    const obj = JSON.parse(line.trim());
+                    if (obj.type === "token") {
+                        if (requester.message && requester.message.thinking) {
+                            requester.message.thinking = false;
+                        }
+                        requester.incomingBuffer += obj.text;
+                        if (!streamDripTimer.running) streamDripTimer.running = true;
+                    } else if (obj.type === "done") {
+                        if (obj.tokens) {
+                            root.tokenCount.input = obj.tokens.input ?? -1;
+                            root.tokenCount.output = obj.tokens.output ?? -1;
+                            root.tokenCount.total = obj.tokens.total ?? -1;
+                        }
+                        requester.streamDone = true;
+                        if (!streamDripTimer.running) streamDripTimer.running = true;
+                    } else if (obj.type === "error") {
+                        const errMsg = obj.error || Translation.tr("An unknown error occurred");
+                        requester.incomingBuffer = `**Error**: ${errMsg}`;
+                        requester.streamDone = true;
                         requester.markDone();
+                        if (errMsg.includes("API key not valid") || errMsg.includes("400")) {
+                            root.addApiKeyAdvice(models[requester.message.model]);
+                        }
                     }
-                    
                 } catch (e) {
-                    console.log("[AI] Could not parse response: ", e);
-                    requester.message.rawContent += data;
-                    requester.message.content += data;
+                    console.log("[AI] Stream parse line error: ", e, line);
                 }
             }
         }
 
         onExited: (exitCode, exitStatus) => {
-            const result = requester.currentStrategy.onRequestFinished(requester.message);
-            
-            if (result.finished) {
+            if (requester.incomingBuffer.length === 0 && !requester.message.done) {
                 requester.markDone();
-            } else if (!requester.message.done) {
-                requester.markDone();
-            }
-
-            // Handle error responses
-            if (requester.message.content.includes("API key not valid")) {
-                root.addApiKeyAdvice(models[requester.message.model]);
+            } else {
+                requester.streamDone = true;
+                if (!streamDripTimer.running) {
+                    requester.markDone();
+                }
             }
         }
     }
@@ -912,6 +920,26 @@ Singleton {
             console.log("[AI] Could not load chat: ", e);
         } finally {
             getSavedChats.running = true;
+        }
+    }
+
+    /**
+     * Deletes a saved chat JSON file.
+     * @param chatName name of the chat or file path
+     */
+    function deleteChat(chatName) {
+        try {
+            let cleanName = chatName.trim();
+            if (cleanName.endsWith(".json")) cleanName = cleanName.slice(0, -5);
+            if (cleanName.includes("/")) cleanName = cleanName.split("/").pop().replace(".json", "");
+            if (cleanName.length === 0) return;
+            const targetPath = `${Directories.aiChats}/${cleanName}.json`;
+            Quickshell.execDetached(["rm", "-f", targetPath]);
+            root.savedChats = root.savedChats.filter(f => !f.endsWith(`/${cleanName}.json`) && !f.endsWith(`/${cleanName}`));
+            root.addMessage(Translation.tr("Deleted saved chat session: %1").arg(cleanName), root.interfaceRole);
+            getSavedChats.running = true;
+        } catch (e) {
+            console.log("[AI] Could not delete chat: ", e);
         }
     }
 }

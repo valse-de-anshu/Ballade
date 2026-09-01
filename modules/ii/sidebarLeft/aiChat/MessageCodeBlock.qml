@@ -132,8 +132,8 @@ ColumnLayout {
             bottomRightRadius: Appearance.rounding.unsharpen
             color: Appearance.colors.colLayer2
 
-            ColumnLayout {
-                id: lineNumberColumnLayout
+            Item {
+                id: lineNumberWrapper
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -141,20 +141,20 @@ ColumnLayout {
                     top: parent.top
                     topMargin: 6
                 }
-                spacing: 0
-                
-                Repeater {
-                    model: codeTextArea.text.split("\n").length
-                    Text {
-                        required property int index
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignRight
-                        font.family: Appearance.font.family.monospace
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.colors.colSubtext
-                        horizontalAlignment: Text.AlignRight
-                        text: index + 1
+                implicitHeight: lineNumberText.implicitHeight
+
+                Text {
+                    id: lineNumberText
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: parent.top
                     }
+                    font.family: Appearance.font.family.monospace
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colSubtext
+                    horizontalAlignment: Text.AlignRight
+                    text: Array.from({length: Math.max(1, (codeTextArea.text.match(/\n/g) || []).length + 1)}, (_, i) => i + 1).join("\n")
                 }
             }
         }

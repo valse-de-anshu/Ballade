@@ -20,7 +20,7 @@ Rectangle {
     property bool renderMarkdown: true
     property bool editing: false
 
-    property list<var> messageBlocks: StringUtils.splitMarkdownBlocks(root.messageData?.content)
+    property list<var> messageBlocks: (root.messageData?.done ?? true) ? StringUtils.splitMarkdownBlocks(root.messageData?.content) : [{type: "text", content: root.messageData?.content || ""}]
 
     anchors.left: parent?.left
     anchors.right: parent?.right
@@ -265,9 +265,10 @@ Rectangle {
 
         ColumnLayout { // Message content
             id: messageContentColumnLayout
-            spacing: 0
+            Layout.fillWidth: true
+            spacing: 4
 
-            Item {
+            Item { // Loading pulse indicator
                 Layout.fillWidth: true
                 implicitHeight: loadingIndicatorLoader.shown ? loadingIndicatorLoader.implicitHeight : 0
                 implicitWidth: loadingIndicatorLoader.implicitWidth
@@ -279,15 +280,29 @@ Rectangle {
                 FadeLoader {
                     id: loadingIndicatorLoader
                     anchors.centerIn: parent
-                    shown: (root.messageBlocks.length < 1) && (!(root.messageData?.done ?? true))
+                    shown: !(root.messageData?.done ?? true) && (!root.messageData?.content || root.messageData.content.length === 0)
                     sourceComponent: MaterialLoadingIndicator {
                         loading: true
                     }
                 }
             }
+
+            // Live stream text block (Single permanent instance, ZERO delegate churn)
+            MessageTextBlock {
+                visible: !(root.messageData?.done ?? true) && (root.messageData?.content?.length > 0)
+                Layout.fillWidth: true
+                editing: false
+                renderMarkdown: false
+                enableMouseSelection: root.enableMouseSelection
+                segmentContent: root.messageData?.content ?? ""
+                messageData: root.messageData
+                done: false
+            }
+
+            // Finished markdown blocks (Rendered once when stream completes)
             Repeater {
                 model: ScriptModel {
-                    values: root.messageBlocks
+                    values: (root.messageData?.done ?? true) ? root.messageBlocks : []
                 }
                 delegate: DelegateChooser {
                     id: messageDelegate

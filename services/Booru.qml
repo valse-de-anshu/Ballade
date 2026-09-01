@@ -120,30 +120,35 @@ Singleton {
         },
         "danbooru": {
             "name": "Danbooru",
-            "url": "https://danbooru.donmai.us",
-            "api": "https://danbooru.donmai.us/posts.json",
+            "url": "https://safebooru.donmai.us",
+            "api": "https://safebooru.donmai.us/posts.json",
             "description": Translation.tr("The popular one | Best quantity, but quality can vary wildly"),
             "mapFunc": (response) => {
+                if (!Array.isArray(response)) return [];
                 return response.map(item => {
+                    const w = item.image_width || 1200;
+                    const h = item.image_height || 1200;
+                    const fileUrl = item.large_file_url || item.file_url || item.preview_file_url;
                     return {
                         "id": item.id,
-                        "width": item.image_width,
-                        "height": item.image_height,
-                        "aspect_ratio": item.image_width / item.image_height,
-                        "tags": item.tag_string,
-                        "rating": item.rating,
-                        "is_nsfw": (item.rating != 's'),
-                        "md5": item.md5,
-                        "preview_url": item.preview_file_url,
-                        "sample_url": item.file_url ?? item.large_file_url,
-                        "file_url": item.large_file_url,
-                        "file_ext": item.file_ext,
-                        "source": getWorkingImageSource(item.source) ?? item.file_url,
+                        "width": w,
+                        "height": h,
+                        "aspect_ratio": w / h,
+                        "tags": item.tag_string || "",
+                        "rating": item.rating || "s",
+                        "is_nsfw": (item.rating != 's' && item.rating != 'g'),
+                        "md5": item.md5 || "",
+                        "preview_url": item.preview_file_url || fileUrl,
+                        "sample_url": item.large_file_url || fileUrl,
+                        "file_url": fileUrl,
+                        "file_ext": item.file_ext || "jpg",
+                        "source": getWorkingImageSource(item.source) ?? fileUrl,
                     }
                 })
             },
-            "tagSearchTemplate": "https://danbooru.donmai.us/tags.json?limit=10&search[name_matches]={{query}}*",
+            "tagSearchTemplate": "https://safebooru.donmai.us/tags.json?limit=10&search[name_matches]={{query}}*",
             "tagMapFunc": (response) => {
+                if (!Array.isArray(response)) return [];
                 return response.map(item => {
                     return {
                         "name": item.name,
@@ -153,33 +158,38 @@ Singleton {
             }
         },
         "gelbooru": {
-            "name": "Gelbooru",
-            "url": "https://gelbooru.com",
-            "api": "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1",
-            "description": Translation.tr("The hentai one | Great quantity, a lot of NSFW, quality varies wildly"),
+            "name": "Safebooru / Gelbooru",
+            "url": "https://safebooru.org",
+            "api": "https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1",
+            "description": Translation.tr("Great quantity, safe wallpapers, fast servers"),
             "mapFunc": (response) => {
-                response = response.post
-                return response.map(item => {
+                const list = Array.isArray(response) ? response : (response.post || []);
+                return list.map(item => {
+                    const w = item.width || 1200;
+                    const h = item.height || 1200;
+                    const imgUrl = item.file_url || (item.directory && item.image ? `https://safebooru.org/images/${item.directory}/${item.image}` : (item.sample_url || item.preview_url));
+                    const prevUrl = item.preview_url || (item.directory && item.image ? `https://safebooru.org/thumbnails/${item.directory}/thumbnail_${item.image}` : imgUrl);
                     return {
                         "id": item.id,
-                        "width": item.width,
-                        "height": item.height,
-                        "aspect_ratio": item.width / item.height,
-                        "tags": item.tags,
-                        "rating": item.rating.replace('general', 's').charAt(0),
-                        "is_nsfw": (item.rating != 's'),
-                        "md5": item.md5,
-                        "preview_url": item.preview_url,
-                        "sample_url": item.sample_url ?? item.file_url,
-                        "file_url": item.file_url,
-                        "file_ext": item.file_url.split('.').pop(),
-                        "source": getWorkingImageSource(item.source) ?? item.file_url,
+                        "width": w,
+                        "height": h,
+                        "aspect_ratio": w / h,
+                        "tags": item.tags || "",
+                        "rating": (item.rating || "s").charAt(0),
+                        "is_nsfw": (item.rating !== 's' && item.rating !== 'general'),
+                        "md5": item.hash || item.md5 || "",
+                        "preview_url": prevUrl,
+                        "sample_url": item.sample_url || imgUrl,
+                        "file_url": imgUrl,
+                        "file_ext": (item.image || "").split('.').pop() || "jpg",
+                        "source": getWorkingImageSource(item.source) ?? imgUrl,
                     }
                 })
             },
-            "tagSearchTemplate": "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&orderby=count&limit=10&name_pattern={{query}}%",
+            "tagSearchTemplate": "https://safebooru.org/index.php?page=dapi&s=tag&q=index&json=1&orderby=count&limit=10&name_pattern={{query}}%",
             "tagMapFunc": (response) => {
-                return response.tag.map(item => {
+                const list = Array.isArray(response) ? response : (response.tag || []);
+                return list.map(item => {
                     return {
                         "name": item.name,
                         "count": item.count
@@ -193,28 +203,32 @@ Singleton {
             "api": "https://api.waifu.im/images",
             "description": Translation.tr("Waifus only | Excellent quality, limited quantity"),
             "mapFunc": (response) => {
-                response = response.items
-                return response.map(item => {
+                const items = response.items || [];
+                return items.map(item => {
+                    const w = item.width || 1200;
+                    const h = item.height || 1800;
+                    const tagList = item.tags ? item.tags.map(tag => tag.name || "").join(" ") : "";
                     return {
                         "id": item.id,
-                        "width": item.width,
-                        "height": item.height,
-                        "aspect_ratio": item.width / item.height,
-                        "tags": item.tags.map(tag => {return tag.name}).join(" "),
+                        "width": w,
+                        "height": h,
+                        "aspect_ratio": w / h,
+                        "tags": tagList,
                         "rating": item.isNsfw ? "e" : "s",
-                        "is_nsfw": item.isNsfw,
-                        "md5": item.md5,
-                        "preview_url": item.sample_url ?? item.url, // preview_url just says access denied (maybe i fucked up and sent too many requests idk)
+                        "is_nsfw": item.isNsfw || false,
+                        "md5": item.id ? String(item.id) : "",
+                        "preview_url": item.url,
                         "sample_url": item.url,
                         "file_url": item.url,
-                        "file_ext": item.extension,
+                        "file_ext": item.extension ? item.extension.replace(".", "") : "jpg",
                         "source": getWorkingImageSource(item.source) ?? item.url,
                     }
                 })
             },
-            "tagSearchTemplate": "https://api.waifu.im/tags?Name={{query}}",
+            "tagSearchTemplate": "https://api.waifu.im/tags",
             "tagMapFunc": (response) => {
-                return response.items.map(item => {return {"name": item.name}})
+                const items = response.versatile || response.items || [];
+                return items.map(item => {return {"name": item.name || item}})
             }
         },
         "t.alcy.cc": {
@@ -249,30 +263,72 @@ Singleton {
                 },
             ],
             "manualParseFunc": (responseText) => {
-                // Alcy just returns image links, each on a new line
-                const lines = responseText.trim().split('\n');
-                return lines.map(line => {
+                let urls = [];
+                try {
+                    const parsed = JSON.parse(responseText);
+                    if (Array.isArray(parsed)) urls = parsed;
+                } catch (e) {
+                    urls = responseText.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+                }
+                return urls.map(line => {
+                    const cleanUrl = line.trim();
                     return {
-                        "id": Qt.md5(line),
-                        // Alcy doesn't provide dimensions and images are often of god resolution
-                        "width": 1000,
-                        "height": 1000,
-                        "aspect_ratio": 1,
-                        "tags": "[no tags]",
+                        "id": Qt.md5(cleanUrl),
+                        "width": 1200,
+                        "height": 800,
+                        "aspect_ratio": 1.5,
+                        "tags": "alcy anime",
                         "rating": "s",
                         "is_nsfw": false,
-                        "md5": Qt.md5(line),
-                        "preview_url": line,
-                        "sample_url": line,
-                        "file_url": line,
-                        "file_ext": line.split('.').pop(),
-                        "source": "",
+                        "md5": Qt.md5(cleanUrl),
+                        "preview_url": cleanUrl,
+                        "sample_url": cleanUrl,
+                        "file_url": cleanUrl,
+                        "file_ext": cleanUrl.split('.').pop() || "jpg",
+                        "source": cleanUrl,
                     }
                 });
             },
+        },
+        "wallhaven": {
+            "name": "Wallhaven",
+            "url": "https://wallhaven.cc",
+            "api": "https://wallhaven.cc/api/v1/search",
+            "description": Translation.tr("High-res anime wallpapers & art | 4K/8K"),
+            "mapFunc": (response) => {
+                const data = response.data || [];
+                return data.map(item => {
+                    const w = item.dimension_x || 1920;
+                    const h = item.dimension_y || 1080;
+                    const previewUrl = item.thumbs?.large || item.thumbs?.original || item.thumbs?.small || item.path;
+                    return {
+                        "id": item.id,
+                        "width": w,
+                        "height": h,
+                        "aspect_ratio": w / h,
+                        "tags": item.category || "anime wallpaper",
+                        "rating": item.purity === "sfw" ? "s" : "e",
+                        "is_nsfw": item.purity !== "sfw",
+                        "md5": item.id || "",
+                        "preview_url": previewUrl,
+                        "sample_url": item.path,
+                        "file_url": item.path,
+                        "file_ext": (item.file_type || "image/jpeg").split("/").pop() || "jpg",
+                        "source": getWorkingImageSource(item.source) ?? item.url,
+                    }
+                })
+            },
+            "tagSearchTemplate": "https://wallhaven.cc/api/v1/search?q={{query}}*",
+            "tagMapFunc": (response) => {
+                const data = response.data || [];
+                return data.map(item => ({ "name": item.id, "count": item.resolution }));
+            }
         }
     }
     property var currentProvider: Persistent.states.booru.provider
+    property var currentTags: []
+    property int currentPage: 1
+    property bool hasMore: true
 
     function getWorkingImageSource(url) {
         if (url?.includes('pximg.net')) {
@@ -285,6 +341,7 @@ Singleton {
         provider = provider.toLowerCase()
         if (providerList.indexOf(provider) !== -1) {
             Persistent.states.booru.provider = provider
+            root.clearResponses();
             root.addSystemMessage(Translation.tr("Provider set to ") + providers[provider].name
                 + (provider == "zerochan" ? Translation.tr(". Notes for Zerochan:\n- You must enter a color\n- Set your zerochan username in `sidebar.booru.zerochan.username` config option. You [might be banned for not doing so](https://www.zerochan.net/api#:~:text=The%20request%20may%20still%20be%20completed%20successfully%20without%20this%20custom%20header%2C%20but%20your%20project%20may%20be%20banned%20for%20being%20anonymous.)!") : ""))
         } else {
@@ -293,7 +350,14 @@ Singleton {
     }
 
     function clearResponses() {
-        responses = []
+        responses = [];
+        currentPage = 1;
+        hasMore = true;
+    }
+
+    function loadNextPage(limit=20) {
+        if (root.runningRequests > 0 || !root.hasMore) return;
+        root.makeRequest(root.currentTags, Persistent.states.booru.allowNsfw, limit, root.currentPage + 1);
     }
 
     function addSystemMessage(message) {
@@ -311,7 +375,7 @@ Singleton {
         var baseUrl = provider.api
         var url = baseUrl
         var tagString = tags.join(" ")
-        if (!nsfw && !(["zerochan", "waifu.im", "t.alcy.cc"].includes(currentProvider))) {
+        if (!nsfw && !(["zerochan", "waifu.im", "t.alcy.cc", "wallhaven"].includes(currentProvider))) {
             if (currentProvider == "gelbooru") 
                 tagString += " rating:general";
             else 
@@ -320,33 +384,49 @@ Singleton {
         var params = []
         // Tags & limit
         if (currentProvider === "zerochan") {
-            params.push("c=" + tagString) // zerochan doesn't have search in api, so we use color
+            params.push("c=" + encodeURIComponent(tagString))
             params.push("l=" + limit)
             params.push("s=" + "fav")
             params.push("t=" + 1)
             params.push("p=" + page)
         }
+        else if (currentProvider === "wallhaven") {
+            const apiKey = Config.options.sidebar.booru?.wallhaven?.apiKey || KeyringStorage.keyringData?.apiKeys?.wallhaven || "";
+            if (apiKey.length > 0) {
+                params.push("apikey=" + encodeURIComponent(apiKey));
+            }
+            if (tagString.trim().length > 0) {
+                params.push("q=" + encodeURIComponent(tagString));
+            }
+            params.push("categories=010"); // Anime category
+            params.push("purity=" + (nsfw ? "111" : "100")); // SFW vs Sketchy/NSFW
+            params.push("page=" + page);
+        }
         else if (currentProvider === "waifu.im") {
-            var tagsArray = tagString.split(" ");
-            tagsArray.forEach(tag => {
-                params.push("IncludedTags=" + encodeURIComponent(tag.toLowerCase()));
+            var validTags = tags.filter(t => t && t.trim().length > 0);
+            validTags.forEach(tag => {
+                params.push("included_tags=" + encodeURIComponent(tag.toLowerCase()));
             });
-            params.push("PageSize=" + Math.min(limit, 30)) // Only admin can do > 30
-            params.push("IsNsfw=" + (nsfw ? "All" : "False")) // null is random
+            params.push("limit=" + Math.min(limit, 30));
+            params.push("is_nsfw=" + (nsfw ? "true" : "false"));
+            params.push("order_by=RANDOM");
         }
         else if (currentProvider === "t.alcy.cc") {
-            url += tagString
-            params.push("json")
-            params.push("quantity=" + limit)
+            var cat = (tags.length > 0 && tags[0].trim().length > 0) ? tags[0].trim() : "ycy";
+            url += cat;
+            params.push("json");
+            params.push("quantity=" + limit);
         }
         else {
-            params.push("tags=" + encodeURIComponent(tagString))
-            params.push("limit=" + limit)
-            if (currentProvider == "gelbooru") {
-                params.push("pid=" + page)
+            if (tagString.trim().length > 0) {
+                params.push("tags=" + encodeURIComponent(tagString));
+            }
+            params.push("limit=" + limit);
+            if (currentProvider === "gelbooru") {
+                params.push("pid=" + page);
             }
             else {
-                params.push("page=" + page)
+                params.push("page=" + page);
             }
         }
         if (baseUrl.indexOf("?") === -1) {
@@ -358,6 +438,12 @@ Singleton {
     }
 
     function makeRequest(tags, nsfw=false, limit=20, page=1) {
+        if (page === 1) {
+            root.currentTags = tags;
+            root.currentPage = 1;
+            root.hasMore = true;
+        }
+
         var url = constructRequestUrl(tags, nsfw, limit, page)
         console.log("[Booru] Making request to " + url)
 
@@ -374,7 +460,6 @@ Singleton {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
                 try {
-                    // console.log("[Booru] Raw response: " + xhr.responseText)
                     const provider = providers[currentProvider]
                     let response;
                     if (provider.manualParseFunc) {
@@ -383,13 +468,17 @@ Singleton {
                         response = JSON.parse(xhr.responseText)
                         response = provider.mapFunc(response)
                     }
-                    // console.log("[Booru] Mapped response: " + JSON.stringify(response))
                     newResponse.images = response
                     newResponse.message = response.length > 0 ? "" : root.failMessage
-                    
+                    if (response.length > 0) {
+                        root.currentPage = page;
+                    } else {
+                        root.hasMore = false;
+                    }
                 } catch (e) {
                     console.log("[Booru] Failed to parse response: " + e)
                     newResponse.message = root.failMessage
+                    root.hasMore = false;
                 } finally {
                     root.runningRequests--;
                     root.responses = [...root.responses, newResponse]
@@ -400,6 +489,7 @@ Singleton {
                 newResponse.message = root.failMessage
                 root.runningRequests--;
                 root.responses = [...root.responses, newResponse]
+                root.hasMore = false;
             }
             root.responseFinished()
         }

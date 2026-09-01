@@ -10,8 +10,8 @@ ApiStrategy {
     property string buffer: ""
     
     function buildEndpoint(model: AiModel): string {
-        const result = model.endpoint + `?key=\$\{${root.apiKeyEnvVarName}\}`
-        // console.log("[AI] Endpoint: " + result);
+        const separator = model.endpoint.includes("?") ? "&" : "?";
+        const result = model.endpoint + `${separator}alt=sse&key=\$\{${root.apiKeyEnvVarName}\}`;
         return result;
     }
 
@@ -84,17 +84,20 @@ ApiStrategy {
     }
 
     function parseResponseLine(line, message) {
-        if (line.startsWith("[")) {
-            buffer += line.slice(1).trim();
-        } else if (line === "]") {
-            buffer += line.slice(0, -1).trim();
-            return parseBuffer(message);
-        } else if (line.startsWith(",")) {
-            return parseBuffer(message);
-        } else {
-            buffer += line.trim();
+        let clean = line.trim();
+        if (clean.startsWith("data:")) {
+            clean = clean.slice(5).trim();
         }
-        return {};
+        if (!clean || clean === "[" || clean === "]" || clean === ",") {
+            return {};
+        }
+        if (clean.startsWith(",")) {
+            clean = clean.slice(1).trim();
+        }
+        buffer = clean;
+        const res = parseBuffer(message);
+        buffer = "";
+        return res;
     }
 
     function parseBuffer(message) {
@@ -140,8 +143,10 @@ ApiStrategy {
 
             // Normal text response
             const responseContent = dataJson.candidates[0]?.content?.parts[0]?.text
-            message.rawContent += responseContent;
-            message.content += responseContent;
+            if (responseContent) {
+                message.rawContent += responseContent;
+                message.content += responseContent;
+            }
             
             // Handle annotations and metadata
             const annotationSources = dataJson.candidates[0]?.groundingMetadata?.groundingChunks?.map(chunk => {

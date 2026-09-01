@@ -26,6 +26,8 @@ Button {
     property real imageRadius: Appearance.rounding.small
 
     property bool showActions: false
+    property bool showDescription: false
+
     ImageDownloaderProcess {
         id: imageDownloader
         running: root.manualDownload
@@ -40,10 +42,6 @@ Button {
                 modelData.aspect_ratio = width / height
             }
         }
-    }
-
-    StyledToolTip {
-        text: `${StringUtils.wordWrap(root.imageData.tags, root.maxTagStringLineLength)}`
     }
 
     padding: 0
@@ -66,7 +64,8 @@ Button {
             width: root.rowHeight * modelData.aspect_ratio
             height: root.rowHeight
             fillMode: Image.PreserveAspectFit
-            source: modelData.preview_url
+            source: modelData.preview_url ?? modelData.sample_url ?? modelData.file_url
+            fallbacks: [modelData.sample_url, modelData.file_url].filter(u => u && u !== modelData.preview_url)
 
             layer.enabled: true
             layer.effect: OpacityMask {
@@ -101,6 +100,7 @@ Button {
 
             onClicked: {
                 root.showActions = !root.showActions
+                if (!root.showActions) root.showDescription = false;
             }
         }
 
@@ -142,11 +142,43 @@ Button {
                         spacing: 0
 
                         MenuButton {
+                            id: descriptionButton
+                            Layout.fillWidth: true
+                            buttonText: root.showDescription ? Translation.tr("Hide description") : Translation.tr("Description")
+                            onClicked: {
+                                root.showDescription = !root.showDescription;
+                            }
+                        }
+
+                        Rectangle {
+                            visible: root.showDescription
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: Math.min(260, root.width - 20)
+                            color: Appearance.colors.colLayer2
+                            radius: Appearance.rounding.small
+                            implicitHeight: descriptionText.implicitHeight + 16
+                            Layout.margins: 4
+
+                            StyledText {
+                                id: descriptionText
+                                anchors {
+                                    fill: parent
+                                    margins: 8
+                                }
+                                wrapMode: Text.Wrap
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.m3colors.m3onSurface
+                                text: StringUtils.wordWrap(root.imageData.tags || Translation.tr("No description available"), root.maxTagStringLineLength)
+                            }
+                        }
+
+                        MenuButton {
                             id: openFileLinkButton
                             Layout.fillWidth: true
                             buttonText: Translation.tr("Open file link")
                             onClicked: {
                                 root.showActions = false
+                                root.showDescription = false
                                 Hyprland.dispatch("hl.config({cursor = {no_warps = true}})")
                                 Qt.openUrlExternally(root.imageData.file_url)
                                 Hyprland.dispatch("hl.config({cursor = {no_warps = false}})")
@@ -160,6 +192,7 @@ Button {
                             enabled: root.imageData.source && root.imageData.source.length > 0
                             onClicked: {
                                 root.showActions = false
+                                root.showDescription = false
                                 Hyprland.dispatch("hl.config({cursor = {no_warps = true}})")
                                 Qt.openUrlExternally(root.imageData.source)
                                 Hyprland.dispatch("hl.config({cursor = {no_warps = false}})")
@@ -171,6 +204,7 @@ Button {
                             buttonText: Translation.tr("Download")
                             onClicked: {
                                 root.showActions = false;
+                                root.showDescription = false;
                                 const targetPath = root.imageData.is_nsfw ? root.nsfwPath : root.downloadPath;
                                 const userAgent = Config.options?.networking?.userAgent ?? ""
                                 const userAgentHeader = userAgent ? ` -H 'User-Agent: ${StringUtils.shellSingleQuoteEscape(userAgent)}'` : ""

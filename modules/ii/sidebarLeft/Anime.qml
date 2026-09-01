@@ -111,6 +111,8 @@ Item {
                     break;
                 }
             }
+            Booru.clearResponses();
+            booruResponseListView.contentY = 0;
             Booru.makeRequest(tagList, Persistent.states.booru.allowNsfw, Config.options.sidebar.booru.limit, pageIndex);
         }
     }
@@ -121,18 +123,25 @@ Item {
         }
     }
 
-    property real pageKeyScrollAmount: booruResponseListView.height / 2
+    property real pageKeyScrollAmount: Math.max(200, booruResponseListView.height * 0.7)
+
+    function scrollPageUp() {
+        booruResponseListView.scrollUp(root.pageKeyScrollAmount);
+    }
+
+    function scrollPageDown() {
+        booruResponseListView.scrollDown(root.pageKeyScrollAmount);
+    }
+
     Keys.onPressed: (event) => {
         tagInputField.forceActiveFocus()
         if (event.modifiers === Qt.NoModifier) {
             if (event.key === Qt.Key_PageUp) {
-                if (booruResponseListView.atYBeginning) return;
-                booruResponseListView.contentY = Math.max(0, booruResponseListView.contentY - root.pageKeyScrollAmount)
-                event.accepted = true
+                root.scrollPageUp();
+                event.accepted = true;
             } else if (event.key === Qt.Key_PageDown) {
-                if (booruResponseListView.atYEnd) return;
-                booruResponseListView.contentY = Math.min(booruResponseListView.contentHeight, booruResponseListView.contentY + root.pageKeyScrollAmount)
-                event.accepted = true
+                root.scrollPageDown();
+                event.accepted = true;
             }
         }
         if ((event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier) && event.key === Qt.Key_O) {
@@ -152,15 +161,7 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: swipeView.width
-                    height: swipeView.height
-                    radius: Appearance.rounding.small
-                }
-            }
+            clip: true
 
             ScrollEdgeFade {
                 z: 1
@@ -177,17 +178,28 @@ Item {
                 touchpadScrollFactor: Config.options.interactions.scrolling.touchpadScrollFactor * 1.4
                 mouseScrollFactor: Config.options.interactions.scrolling.mouseScrollFactor * 1.4
 
-                property int lastResponseLength: 0
-                Connections {
-                    target: root
-                    function onResponsesChanged() {
-                        if (root.responses.length > booruResponseListView.lastResponseLength) {
-                            if (booruResponseListView.lastResponseLength > 0 && root.responses[booruResponseListView.lastResponseLength].provider != "system")
-                                booruResponseListView.contentY = booruResponseListView.contentY + root.scrollOnNewResponse
-                            booruResponseListView.lastResponseLength = root.responses.length
-                        }
+                property bool requestCooldown: false
+                Timer {
+                    id: cooldownTimer
+                    interval: 600
+                    repeat: false
+                    onTriggered: {
+                        booruResponseListView.requestCooldown = false;
                     }
                 }
+
+                function checkAndLoadMore() {
+                    if (booruResponseListView.requestCooldown || Booru.runningRequests > 0 || !Booru.hasMore || root.responses.length === 0) return;
+                    const triggerDistance = 600;
+                    const maxScroll = Math.max(0, contentHeight - height);
+                    if (contentY > 10 && contentY >= maxScroll - triggerDistance) {
+                        booruResponseListView.requestCooldown = true;
+                        cooldownTimer.restart();
+                        Booru.loadNextPage();
+                    }
+                }
+
+                onContentYChanged: checkAndLoadMore()
 
                 model: ScriptModel {
                     values: root.responses
@@ -198,14 +210,6 @@ Item {
                     previewDownloadPath: root.previewDownloadPath
                     downloadPath: root.downloadPath
                     nsfwPath: root.nsfwPath
-                }
-
-                onDragEnded: { // Pull to load more
-                    const gap = booruResponseListView.verticalOvershoot
-                    if (gap > root.pullLoadingGap) {
-                        root.pullLoading = true
-                        root.handleInput(`${root.commandPrefix}next`)
-                    }
                 }
             }
 
@@ -219,29 +223,16 @@ Item {
                 shape: MaterialShape.Shape.Bun
             }
 
-            ScrollToBottomButton {
-                z: 3
-                target: booruResponseListView
-            }
-
             MaterialLoadingIndicator {
                 id: loadingIndicator
                 z: 4
                 anchors {
                     horizontalCenter: parent.horizontalCenter
                     bottom: parent.bottom
-                    bottomMargin: 20 + (root.pullLoading ? 0 : Math.max(0, (root.normalizedPullDistance - 0.5) * 50))
-                    Behavior on bottomMargin {
-                        NumberAnimation {
-                            duration: 200
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Appearance.animationCurves.expressiveFastSpatial
-                        }
-                    }
+                    bottomMargin: 24
                 }
-                loading: root.pullLoading || Booru.runningRequests > 0
-                pullProgress: Math.min(1, booruResponseListView.verticalOvershoot / root.pullLoadingGap * booruResponseListView.dragging)
-                scale: root.pullLoading ? 1 : Math.min(1, root.normalizedPullDistance * 2)
+                loading: Booru.runningRequests > 0
+                visible: Booru.runningRequests > 0
             }
         }
 
@@ -415,6 +406,12 @@ Item {
                     Keys.onPressed: (event) => {
                         if (event.key === Qt.Key_Tab) {
                             tagSuggestions.acceptSelectedTag();
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_PageUp) {
+                            root.scrollPageUp();
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_PageDown) {
+                            root.scrollPageDown();
                             event.accepted = true;
                         } else if (event.key === Qt.Key_Up) {
                             tagSuggestions.selectedIndex = Math.max(0, tagSuggestions.selectedIndex - 1);

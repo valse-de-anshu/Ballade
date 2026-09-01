@@ -121,6 +121,30 @@ Item {
             }
         },
         {
+            name: "delete",
+            description: Translation.tr("Delete a saved chat session"),
+            execute: args => {
+                const joinedArgs = args.join(" ");
+                if (joinedArgs.trim().length == 0) {
+                    Ai.addMessage(Translation.tr("Usage: %1delete CHAT_NAME").arg(root.commandPrefix), Ai.interfaceRole);
+                    return;
+                }
+                Ai.deleteChat(joinedArgs);
+            }
+        },
+        {
+            name: "del",
+            description: Translation.tr("Delete a saved chat session (alias)"),
+            execute: args => {
+                const joinedArgs = args.join(" ");
+                if (joinedArgs.trim().length == 0) {
+                    Ai.addMessage(Translation.tr("Usage: %1del CHAT_NAME").arg(root.commandPrefix), Ai.interfaceRole);
+                    return;
+                }
+                Ai.deleteChat(joinedArgs);
+            }
+        },
+        {
             name: "clear",
             description: Translation.tr("Clear chat history"),
             execute: () => {
@@ -286,14 +310,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
             // Messages
             Layout.fillWidth: true
             Layout.fillHeight: true
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: swipeView.width
-                    height: swipeView.height
-                    radius: Appearance.rounding.small
-                }
-            }
+            clip: true
 
             StyledRectangularShadow {
                 z: 1
@@ -358,21 +375,29 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 z: 0
                 anchors.fill: parent
                 spacing: 10
-                popin: false
+                enableScrollAnimation: !Ai.generating
                 topMargin: statusBg.implicitHeight + statusBg.anchors.topMargin * 2
 
                 touchpadScrollFactor: Config.options.interactions.scrolling.touchpadScrollFactor * 1.4
                 mouseScrollFactor: Config.options.interactions.scrolling.mouseScrollFactor * 1.4
 
-                property int lastResponseLength: 0
+                property bool autoTracking: true
+
+                onMovementStarted: {
+                    autoTracking = atYEnd;
+                }
+                onMovementEnded: {
+                    autoTracking = atYEnd;
+                }
+
                 onContentHeightChanged: {
-                    if (atYEnd)
-                        Qt.callLater(positionViewAtEnd);
+                    if (autoTracking && !moving && !dragging) {
+                        Qt.callLater(messageListView.positionViewAtEnd);
+                    }
                 }
                 onCountChanged: {
-                    // Auto-scroll when new messages are added
-                    if (atYEnd)
-                        Qt.callLater(positionViewAtEnd);
+                    autoTracking = true;
+                    Qt.callLater(messageListView.positionViewAtEnd);
                 }
 
                 add: null // Prevent function calls from being janky
@@ -600,6 +625,27 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                                         name: `${messageInputField.text.trim().split(" ").length == 1 ? (root.commandPrefix + "load ") : ""}${chatName}`,
                                         displayName: `${chatName}`,
                                         description: Translation.tr(`Load chat from %1`).arg(file.target)
+                                    };
+                                });
+                            } else if (messageInputField.text.startsWith(`${root.commandPrefix}delete`) || messageInputField.text.startsWith(`${root.commandPrefix}del`)) {
+                                const isDel = messageInputField.text.startsWith(`${root.commandPrefix}del `) || messageInputField.text === `${root.commandPrefix}del`;
+                                const prefixCmd = isDel ? "del" : "delete";
+                                root.suggestionQuery = messageInputField.text.split(" ")[1] ?? "";
+                                const promptFileResults = Fuzzy.go(root.suggestionQuery, Ai.savedChats.map(file => {
+                                    return {
+                                        name: Fuzzy.prepare(file),
+                                        obj: file
+                                    };
+                                }), {
+                                    all: true,
+                                    key: "name"
+                                });
+                                root.suggestionList = promptFileResults.map(file => {
+                                    const chatName = FileUtils.trimFileExt(FileUtils.fileNameForPath(file.target)).trim();
+                                    return {
+                                        name: `${messageInputField.text.trim().split(" ").length == 1 ? (root.commandPrefix + prefixCmd + " ") : ""}${chatName}`,
+                                        displayName: `${chatName}`,
+                                        description: Translation.tr(`Delete saved chat session %1`).arg(chatName)
                                     };
                                 });
                             } else if (messageInputField.text.startsWith(`${root.commandPrefix}tool`)) {

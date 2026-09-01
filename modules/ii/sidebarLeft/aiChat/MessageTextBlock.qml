@@ -23,7 +23,7 @@ ColumnLayout {
 
     property list<string> trackedLatexHashes: []
     property string shownText: ""
-    property bool fadeChunkSplitting: !forceDisableChunkSplitting && !editing && !/\n\|/.test(shownText) && Config.options.sidebar.ai.textFadeIn
+    property bool fadeChunkSplitting: root.done && !forceDisableChunkSplitting && !editing && !/\n\|/.test(shownText) && Config.options.sidebar.ai.textFadeIn
 
     Layout.fillWidth: true
 
@@ -33,7 +33,7 @@ ColumnLayout {
             return
         }
 
-        if (root.editing || !root.renderMarkdown) {
+        if (root.editing || !root.renderMarkdown || !root.done) {
             root.shownText = root.segmentContent
             return
         }
@@ -77,6 +77,7 @@ ColumnLayout {
     onSegmentContentChanged: updateShownText()
     onEditingChanged: updateShownText()
     onRenderMarkdownChanged: updateShownText()
+    onDoneChanged: updateShownText()
 
     Connections {
         target: LatexRenderer
@@ -87,77 +88,30 @@ ColumnLayout {
         }
     }
 
-    spacing: 0
-    Repeater {
-        id: textLinesRepeater
-        property list<real> textLineOpacities: []
-        model: ScriptModel {
-            // Split by either double newlines or single newlines in a list
-            values: root.fadeChunkSplitting ? root.shownText.split(/\n\n(?= {0,2})|\n(?= {0,2}[-\*])/g).filter(line => line.trim() !== "") : [root.shownText]
-            onValuesChanged: {
-                while (textLinesRepeater.textLineOpacities.length < values.length) {
-                    textLinesRepeater.textLineOpacities.push(root.done ? 1 : 0);
-                }
-            }
+    TextArea {
+        id: mainTextArea
+        Layout.fillWidth: true
+        readOnly: !root.editing
+        selectByMouse: root.enableMouseSelection || root.editing
+        renderType: Text.NativeRendering
+        font.family: Appearance.font.family.reading
+        font.hintingPreference: Font.PreferNoHinting
+        font.pixelSize: Appearance.font.pixelSize.small
+        selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
+        selectionColor: Appearance.colors.colSecondaryContainer
+        wrapMode: TextEdit.Wrap
+        color: root.messageData?.thinking ? Appearance.colors.colSubtext : Appearance.colors.colOnLayer1
+        textFormat: (root.done && root.renderMarkdown) ? TextEdit.MarkdownText : TextEdit.PlainText
+        text: root.shownText
+
+        onTextChanged: {
+            if (!root.editing) return
+            segmentContent = text
         }
-        delegate: TextArea {
-            id: textArea
-            required property int index
-            required property string modelData
 
-            // Fade in animation
-            visible: opacity > 0
-            opacity: fadeChunkSplitting ? (textLinesRepeater.textLineOpacities[index] ?? (root.done ? 1 : 0)) : 1
-            Connections {
-                target: textLinesRepeater.model
-                function onValuesChanged() {
-                    if (textLinesRepeater.model.values.length > textArea.index + 1) {
-                        textLinesRepeater.textLineOpacities[textArea.index] = 1
-                    }
-                }
-            }
-            Behavior on opacity {
-                animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-            }
-
-            Layout.fillWidth: true
-            readOnly: !editing
-            selectByMouse: enableMouseSelection || editing
-            renderType: Text.NativeRendering
-            font.family: Appearance.font.family.reading
-            font.hintingPreference: Font.PreferNoHinting // Prevent weird bold text
-            font.pixelSize: Appearance.font.pixelSize.small
-            selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-            selectionColor: Appearance.colors.colSecondaryContainer
-            wrapMode: TextEdit.Wrap
-            color: root.messageData?.thinking ? Appearance.colors.colSubtext : Appearance.colors.colOnLayer1
-            textFormat: renderMarkdown ? TextEdit.MarkdownText : TextEdit.PlainText
-            text: modelData
-
-            onTextChanged: {
-                if (!root.editing) return
-                segmentContent = text
-            }
-
-            onLinkActivated: (link) => {
-                Qt.openUrlExternally(link)
-                GlobalStates.sidebarLeftOpen = false
-            }
-
-            MouseArea { // Pointing hand for links
-                anchors.fill: parent
-                acceptedButtons: Qt.NoButton // Only for hover
-                hoverEnabled: true
-                cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : 
-                    (enableMouseSelection || editing) ? Qt.IBeamCursor : Qt.ArrowCursor
-            }
-
-            // Rectangle {
-            //     anchors.fill: parent
-            //     color: "#22786378"
-            //     border.width: 1
-            //     border.color: "#7E7E7E"
-            // }
+        onLinkActivated: (link) => {
+            Qt.openUrlExternally(link)
+            GlobalStates.sidebarLeftOpen = false
         }
     }
 }

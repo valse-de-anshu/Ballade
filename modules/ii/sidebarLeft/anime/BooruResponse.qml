@@ -19,34 +19,14 @@ Rectangle {
     property string downloadPath
     property string nsfwPath
 
-    property real availableWidth: parent.width
+    width: ListView.view?.width ?? parent?.width ?? 0
+    height: implicitHeight
+    implicitHeight: columnLayout.implicitHeight + root.responsePadding * 2
+
+    property real availableWidth: Math.max(100, (ListView.view ? ListView.view.width : (parent ? parent.width : 400)))
     property real rowTooShortThreshold: 190
     property real imageSpacing: 5
     property real responsePadding: 5
-
-    anchors.left: parent?.left
-    anchors.right: parent?.right
-    implicitHeight: columnLayout.implicitHeight + root.responsePadding * 2
-
-    Component.onCompleted: {
-        // Break property bind to prevent aggressive updates
-        availableWidth = parent.width
-    }
-
-    Connections {
-        target: parent
-        function onWidthChanged() {
-            updateWidthTimer.restart()
-        }
-    }
-
-    Timer {
-        id: updateWidthTimer
-        interval: 100
-        onTriggered: {
-            availableWidth = parent.width
-        }
-    }
 
     radius: Appearance.rounding.normal
     color: Appearance.colors.colLayer1
@@ -233,51 +213,6 @@ Rectangle {
                         previewDownloadPath: root.previewDownloadPath
                         downloadPath: root.downloadPath
                         nsfwPath: root.nsfwPath
-                    }
-                }
-            }
-        }
-
-        RippleButton { // Next page button
-            id: button
-            property string buttonText
-            visible: root.responseData.page != "" && root.responseData.page > 0
-
-            Layout.alignment: Qt.AlignRight
-            implicitHeight: 30
-            leftPadding: 10
-            rightPadding: 5
-
-            onClicked: {
-                tagInputField.text = `${responseData.tags.join(" ")} ${parseInt(root.responseData.page) + 1}`
-                tagInputField.accept()
-            }
-
-            buttonRadius: Appearance.rounding.small
-            colBackground: Appearance.colors.colSurfaceContainerHighest
-            colBackgroundHover: Appearance.colors.colSurfaceContainerHighestHover
-            colRipple: Appearance.colors.colSurfaceContainerHighestActive            
-
-            contentItem: Item {
-                anchors.fill: parent
-                implicitHeight: nextPageRow.implicitHeight
-                implicitWidth: nextPageRow.implicitWidth
-
-                RowLayout {
-                    id: nextPageRow
-                    anchors.centerIn: parent
-                    spacing: 0
-                    StyledText {
-                        Layout.alignment: Qt.AlignVCenter
-                        verticalAlignment: Text.AlignVCenter
-                        text: "Next page"
-                        color: Appearance.m3colors.m3onSurface
-                    }
-                    MaterialSymbol {
-                        Layout.alignment: Qt.AlignVCenter
-                        iconSize: Appearance.font.pixelSize.larger
-                        color: Appearance.m3colors.m3onSurface
-                        text: "chevron_right"
                     }
                 }
             }

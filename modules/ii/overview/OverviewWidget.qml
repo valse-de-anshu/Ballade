@@ -77,63 +77,62 @@ Item {
         anchors.fill: parent
         anchors.margins: Appearance.sizes.elevationMargin
 
-        implicitWidth: workspaceColumnLayout.implicitWidth + padding * 2
-        implicitHeight: workspaceColumnLayout.implicitHeight + padding * 2
+        implicitWidth: workspaceGrid.implicitWidth + padding * 2
+        implicitHeight: workspaceGrid.implicitHeight + padding * 2
         radius: root.largeWorkspaceRadius + padding
         color: Appearance.colors.colBackgroundSurfaceContainer
 
-        Column { // Workspaces
-            id: workspaceColumnLayout
+        Grid { // Workspaces
+            id: workspaceGrid
 
             z: root.workspaceZ
             anchors.centerIn: parent
-            spacing: workspaceSpacing
+            rows: Config.options.overview.rows
+            columns: Config.options.overview.columns
+            rowSpacing: workspaceSpacing
+            columnSpacing: workspaceSpacing
             
             Repeater {
-                model: Config.options.overview.rows
-                delegate: Row {
-                    id: row
+                model: Config.options.overview.rows * Config.options.overview.columns
+                Rectangle { // Workspace
+                    id: workspace
                     required property int index
-                    spacing: workspaceSpacing
+                    property int rowIndex: Math.floor(index / Config.options.overview.columns)
+                    property int colIndex: index % Config.options.overview.columns
+                    property int workspaceValue: root.workspaceGroup * root.workspacesShown + getWsInCell(rowIndex, colIndex)
+                    property color defaultWorkspaceColor: Appearance.colors.colSurfaceContainerLow
+                    property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
+                    property color hoveredBorderColor: Appearance.colors.colLayer2Hover
+                    property bool hoveredWhileDragging: false
 
-                    Repeater { // Workspace repeater
-                        model: Config.options.overview.columns
-                        Rectangle { // Workspace
-                            id: workspace
-                            required property int index
-                            property int colIndex: index
-                            property int workspaceValue: root.workspaceGroup * root.workspacesShown + getWsInCell(row.index, colIndex)
-                            property color defaultWorkspaceColor: Appearance.colors.colSurfaceContainerLow
-                            property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
-                            property color hoveredBorderColor: Appearance.colors.colLayer2Hover
-                            property bool hoveredWhileDragging: false
+                    width: root.workspaceImplicitWidth
+                    height: root.workspaceImplicitHeight
+                    implicitWidth: root.workspaceImplicitWidth
+                    implicitHeight: root.workspaceImplicitHeight
+                    color: hoveredWhileDragging ? hoveredWorkspaceColor : defaultWorkspaceColor
+                    property bool workspaceAtLeft: colIndex === 0
+                    property bool workspaceAtRight: colIndex === Config.options.overview.columns - 1
+                    property bool workspaceAtTop: rowIndex === 0
+                    property bool workspaceAtBottom: rowIndex === Config.options.overview.rows - 1
+                    topLeftRadius: (workspaceAtLeft && workspaceAtTop) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
+                    topRightRadius: (workspaceAtRight && workspaceAtTop) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
+                    bottomLeftRadius: (workspaceAtLeft && workspaceAtBottom) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
+                    bottomRightRadius: (workspaceAtRight && workspaceAtBottom) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
+                    border.width: 2
+                    border.color: hoveredWhileDragging ? hoveredBorderColor : "transparent"
 
-                            implicitWidth: root.workspaceImplicitWidth
-                            implicitHeight: root.workspaceImplicitHeight
-                            color: hoveredWhileDragging ? hoveredWorkspaceColor : defaultWorkspaceColor
-                            property bool workspaceAtLeft: colIndex === 0
-                            property bool workspaceAtRight: colIndex === Config.options.overview.columns - 1
-                            property bool workspaceAtTop: row.index === 0
-                            property bool workspaceAtBottom: row.index === Config.options.overview.rows - 1
-                            topLeftRadius: (workspaceAtLeft && workspaceAtTop) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
-                            topRightRadius: (workspaceAtRight && workspaceAtTop) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
-                            bottomLeftRadius: (workspaceAtLeft && workspaceAtBottom) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
-                            bottomRightRadius: (workspaceAtRight && workspaceAtBottom) ? root.largeWorkspaceRadius : root.smallWorkspaceRadius
-                            border.width: 2
-                            border.color: hoveredWhileDragging ? hoveredBorderColor : "transparent"
-
-                            StyledText {
-                                anchors.centerIn: parent
-                                text: workspace.workspaceValue
-                                font {
-                                    pixelSize: root.workspaceNumberSize * root.scale
-                                    weight: Font.DemiBold
-                                    family: Appearance.font.family.expressive
-                                }
-                                color: ColorUtils.transparentize(Appearance.colors.colOnLayer1, 0.8)
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: workspace.workspaceValue
+                        font {
+                            pixelSize: root.workspaceNumberSize * root.scale
+                            weight: Font.DemiBold
+                            family: Appearance.font.family.expressive
+                        }
+                        color: ColorUtils.transparentize(Appearance.colors.colOnLayer1, 0.8)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
 
                             MouseArea {
                                 id: workspaceArea
@@ -159,18 +158,15 @@ Item {
                                     if (root.draggingTargetWorkspace == workspace.workspaceValue) root.draggingTargetWorkspace = -1
                                 }
                             }
-
                         }
                     }
                 }
-            }
-        }
 
         Item { // Windows & focused workspace indicator
             id: windowSpace
             anchors.centerIn: parent
-            implicitWidth: workspaceColumnLayout.implicitWidth
-            implicitHeight: workspaceColumnLayout.implicitHeight
+            implicitWidth: workspaceGrid.implicitWidth
+            implicitHeight: workspaceGrid.implicitHeight
 
             Repeater { // Window repeater
                 model: ScriptModel {

@@ -27,8 +27,38 @@ ListView {
         root.dragDistance = 0
     }
 
+    NumberAnimation {
+        id: scrollAnim
+        target: root
+        property: "contentY"
+        duration: Appearance.animation.scroll.duration
+        easing.type: Appearance.animation.scroll.type
+        easing.bezierCurve: Appearance.animation.scroll.bezierCurve
+    }
+
+    function scrollDown(amount) {
+        const maxY = Math.max(0, root.contentHeight - root.height);
+        const current = scrollAnim.running ? root.scrollTargetY : root.contentY;
+        const nextY = Math.min(maxY, current + amount);
+        root.scrollTargetY = nextY;
+        scrollAnim.stop();
+        scrollAnim.from = root.contentY;
+        scrollAnim.to = nextY;
+        scrollAnim.start();
+    }
+
+    function scrollUp(amount) {
+        const current = scrollAnim.running ? root.scrollTargetY : root.contentY;
+        const nextY = Math.max(0, current - amount);
+        root.scrollTargetY = nextY;
+        scrollAnim.stop();
+        scrollAnim.from = root.contentY;
+        scrollAnim.to = nextY;
+        scrollAnim.start();
+    }
+
     maximumFlickVelocity: 3500
-    boundsBehavior: Flickable.DragOverBounds
+    boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: StyledScrollBar {}
 
     MouseArea {
@@ -37,8 +67,6 @@ ListView {
         acceptedButtons: Qt.NoButton
         onWheel: function(wheelEvent) {
             const delta = wheelEvent.angleDelta.y / root.mouseScrollDeltaThreshold;
-            // The angleDelta.y of a touchpad is usually small and continuous,
-            // while that of a mouse wheel is typically in multiples of ±120.
             var scrollFactor = Math.abs(wheelEvent.angleDelta.y) >= root.mouseScrollDeltaThreshold ? root.mouseScrollFactor : root.touchpadScrollFactor;
 
             const maxY = Math.max(0, root.contentHeight - root.height);
@@ -46,22 +74,16 @@ ListView {
             var targetY = Math.max(0, Math.min(base - delta * scrollFactor, maxY));
 
             root.scrollTargetY = targetY;
-            root.contentY = targetY;
+            scrollAnim.stop();
+            scrollAnim.from = root.contentY;
+            scrollAnim.to = targetY;
+            scrollAnim.start();
             wheelEvent.accepted = true;
         }
     }
 
-    Behavior on contentY {
-        NumberAnimation {
-            id: scrollAnim
-            alwaysRunToEnd: true
-            duration: Appearance.animation.scroll.duration
-            easing.type: Appearance.animation.scroll.type
-            easing.bezierCurve: Appearance.animation.scroll.bezierCurve
-        }
-    }
+    property bool enableScrollAnimation: true
 
-    // Keep target synced when not animating (e.g., drag/flick or programmatic changes)
     onContentYChanged: {
         if (!scrollAnim.running) {
             root.scrollTargetY = root.contentY;
