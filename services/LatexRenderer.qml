@@ -27,56 +27,61 @@ Singleton {
 
     signal renderFinished(string hash, string imagePath)
 
+    function getRenderedPath(hash) {
+        return renderedImagePaths[hash] || ""
+    }
+
+    function isReady(hash) {
+        return !!(renderedImagePaths && renderedImagePaths[hash])
+    }
+
     /**
     * Requests rendering of a LaTeX expression.
     * Returns the [hash, isNew]
     */
     function requestRender(expression) {
-        // 1. Hash it and initialize necessary variables
-        const hash = Qt.md5(expression)
+        if (!expression || typeof expression !== "string" || !expression.trim()) return ["", false]
+        const cleanExpr = expression.trim()
+        const hash = Qt.md5(cleanExpr)
         const imagePath = `${latexOutputPath}/${hash}.svg`
         
-        // 2. Check if the hash is already processed
-        if (processedHashes.includes(hash)) {
-            // console.log("Already processed: " + hash)
+        // 1. If already rendered and ready, notify and return
+        if (root.isReady(hash)) {
             renderFinished(hash, imagePath)
             return [hash, false]
-        } else {
-            root.processedHashes.push(hash)
-            root.processedExpressions[hash] = expression
-            // console.log("Rendering expression: " + expression)
+        }
+        
+        // 2. If already in flight, don't spawn duplicate processes
+        if (processedHashes.includes(hash)) {
+            return [hash, false]
         }
 
-        // 3. If not, render it with MicroTeX and mark as processed
-        // console.log(`[LatexRenderer] Rendering expression: ${expression} with hash: ${hash}`)
-        // console.log(`                to file: ${imagePath}`)
-        // console.log(`                with command: cd ${microtexBinaryDir} && ./${microtexBinaryName} -headless -input=${StringUtils.shellSingleQuoteEscape(expression)} -output=${imagePath} -textsize=${Appearance.font.pixelSize.normal} -padding=${renderPadding} -background=${Appearance.m3colors.m3tertiary} -foreground=${Appearance.m3colors.m3onTertiary} -maxwidth=0.85`)
+        root.processedHashes.push(hash)
+        root.processedExpressions[hash] = cleanExpr
+
+        // 3. Render with MicroTeX
         const processQml = `
             import Quickshell.Io
             Process {
                 id: microtexProcess${hash}
                 running: true
                 command: [ "bash", "-c", 
-                    "cd ${root.microtexBinaryDir} && ./${root.microtexBinaryName} -headless '-input=${StringUtils.shellSingleQuoteEscape(StringUtils.escapeBackslashes(expression))}' "
+                    "cd ${root.microtexBinaryDir} && ./${root.microtexBinaryName} -headless '-input=${StringUtils.shellSingleQuoteEscape(StringUtils.escapeBackslashes(cleanExpr))}' "
                     + "'-output=${imagePath}' " 
                     + "'-textsize=${Appearance.font.pixelSize.normal}' "
                     + "'-padding=${renderPadding}' "
-                    // + "'-background=${Appearance.m3colors.m3tertiary}' "
                     + "'-foreground=${Appearance.colors.colOnLayer1}' "
                     + "-maxwidth=0.85 "
                 ]
-                // stdout: SplitParser {
-                //     onRead: data => { console.log("MicroTeX: " + data) }
-                // }
                 onExited: (exitCode, exitStatus) => {
-                    // console.log("[LatexRenderer] MicroTeX process exited with code: " + exitCode + ", status: " + exitStatus)
-                    renderedImagePaths["${hash}"] = "${imagePath}"
+                    let updated = Object.assign({}, root.renderedImagePaths)
+                    updated["${hash}"] = "${imagePath}"
+                    root.renderedImagePaths = updated
                     root.renderFinished("${hash}", "${imagePath}")
                     microtexProcess${hash}.destroy()
                 }
             }
         `
-        // console.log("MicroTeX: " + processQml)
         Qt.createQmlObject(processQml, root, `MicroTeXProcess_${hash}`)
         return [hash, true]
     }

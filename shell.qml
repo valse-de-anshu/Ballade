@@ -30,6 +30,7 @@ ShellRoot {
         Cliphist.refresh()
         Wallpapers.load()
         Updates.load()
+        ScreenTime.load()
 
         if (Config.options.sounds.enableStartupSound ?? true) {
             let startPath = Config.options.sounds.startupSoundPath || "";

@@ -21,89 +21,69 @@ ColumnLayout {
     property bool done: true
     property bool forceDisableChunkSplitting: false
 
-    property list<string> renderedLatexHashes: []
-    property string renderedSegmentContent: ""
+    property list<string> trackedLatexHashes: []
     property string shownText: ""
     property bool fadeChunkSplitting: !forceDisableChunkSplitting && !editing && !/\n\|/.test(shownText) && Config.options.sidebar.ai.textFadeIn
 
     Layout.fillWidth: true
 
-    Timer {
-        id: renderTimer
-        interval: 1000
-        repeat: false
-        onTriggered: {
-            renderLatex()
-            for (const hash of renderedLatexHashes) {
-                handleRenderedLatex(hash, true);
-            }
+    function updateShownText() {
+        if (!root.segmentContent || typeof root.segmentContent !== "string") {
+            root.shownText = ""
+            return
         }
-    }
 
-    function renderLatex() {
-        // Regex for $...$, $$...$$, \[...\]
-        // Note: This is a simple approach and may need refinement for edge cases
-        let regex = /(\$\$([\s\S]+?)\$\$)|(\$([^\$]+?)\$)|(\\\[((?:.|\n)+?)\\\])|(\\\(([\s\S]+?)\\\))/g;
+        if (root.editing || !root.renderMarkdown) {
+            root.shownText = root.segmentContent
+            return
+        }
+
+        // Parse math delimiters: $$...$$, $...$, \[...\], \(...\)
+        let regex = /(\$\$([\s\S]+?)\$\$)|(\$([^\$\n\r]+?)\$)|(\\\[([\s\S]+?)\\\])|(\\\(([\s\S]+?)\\\))/g;
+        let src = root.segmentContent
+        let outText = ""
+        let lastIdx = 0
         let match;
-        while ((match = regex.exec(segmentContent)) !== null) {
-            let expression = match[1] || match[2] || match[3] || match[4] || match[5] || match[6] || match[7] || match[8];
-            if (expression) {
-                Qt.callLater(() => {
-                    const [renderHash, isNew] = LatexRenderer.requestRender(expression.trim());
-                    if (!renderedLatexHashes.includes(renderHash)) {
-                        renderedLatexHashes.push(renderHash);
+
+        while ((match = regex.exec(src)) !== null) {
+            let fullToken = match[0]
+            let innerFormula = match[2] || match[4] || match[6] || match[8] || ""
+            let trimmedInner = innerFormula.trim()
+
+            outText += src.slice(lastIdx, match.index)
+            lastIdx = regex.lastIndex
+
+            if (trimmedInner.length > 0) {
+                let hash = Qt.md5(trimmedInner)
+                if (LatexRenderer.isReady(hash)) {
+                    let imgPath = LatexRenderer.getRenderedPath(hash)
+                    outText += `![latex](${imgPath})`
+                } else {
+                    outText += fullToken
+                    if (!root.trackedLatexHashes.includes(hash)) {
+                        root.trackedLatexHashes.push(hash)
                     }
-                });
+                    LatexRenderer.requestRender(trimmedInner)
+                }
+            } else {
+                outText += fullToken
             }
         }
+
+        outText += src.slice(lastIdx)
+        root.shownText = outText
     }
 
-    function handleRenderedLatex(hash, force = false) {
-        if (renderedLatexHashes.includes(hash) || force) {
-            const imagePath = LatexRenderer.renderedImagePaths[hash];
-            const markdownImage = `![latex](${imagePath})`;
+    onSegmentContentChanged: updateShownText()
+    onEditingChanged: updateShownText()
+    onRenderMarkdownChanged: updateShownText()
 
-            const expression = LatexRenderer.processedExpressions[hash];
-            renderedSegmentContent = renderedSegmentContent.replace(expression, markdownImage);
-        }
-    }
-
-    onDoneChanged: {
-        renderTimer.restart();
-    }
-    onEditingChanged: {
-        if (!editing) {
-            renderLatex()
-        } else {
-            // console.log("Editing mode enabled", segmentContent)
-            root.shownText = segmentContent
-        }
-    }
-
-    onSegmentContentChanged: {
-        // console.log("Segment content changed: " + segmentContent);
-        renderedSegmentContent = segmentContent;
-        if (!root.editing && segmentContent) {
-            root.renderLatex();
-        }
-    }
-
-    onRenderedSegmentContentChanged: {
-        // console.log("Rendered segment content changed: " + renderedSegmentContent);
-        if (renderedSegmentContent) {
-            root.shownText = renderedSegmentContent;
-        }
-    }
-
-    // When something finishes rendering
-    // 1. Check if the hash is in the list
-    // 2. If it is, replace the expression with the image path
     Connections {
         target: LatexRenderer
         function onRenderFinished(hash, imagePath) {
-            const expression = LatexRenderer.processedExpressions[hash];
-            // console.log("Render finished: " + hash + " " + expression);
-            handleRenderedLatex(hash);
+            if (root.trackedLatexHashes.includes(hash) || LatexRenderer.isReady(hash)) {
+                root.updateShownText()
+            }
         }
     }
 
@@ -116,7 +96,7 @@ ColumnLayout {
             values: root.fadeChunkSplitting ? root.shownText.split(/\n\n(?= {0,2})|\n(?= {0,2}[-\*])/g).filter(line => line.trim() !== "") : [root.shownText]
             onValuesChanged: {
                 while (textLinesRepeater.textLineOpacities.length < values.length) {
-                    textLinesRepeater.textLineOpacities.push(root.messageData.done ? 1 : 0);
+                    textLinesRepeater.textLineOpacities.push(root.done ? 1 : 0);
                 }
             }
         }
@@ -127,15 +107,7 @@ ColumnLayout {
 
             // Fade in animation
             visible: opacity > 0
-            opacity: fadeChunkSplitting ? (textLinesRepeater.textLineOpacities[index] ?? (root.messageData.done ? 1 : 0)) : 1
-            Connections {
-                target: root.messageData
-                function onDoneChanged() {
-                    if (root.messageData.done) {
-                        textLinesRepeater.textLineOpacities[textArea.index] = 1
-                    }
-                }
-            }
+            opacity: fadeChunkSplitting ? (textLinesRepeater.textLineOpacities[index] ?? (root.done ? 1 : 0)) : 1
             Connections {
                 target: textLinesRepeater.model
                 function onValuesChanged() {

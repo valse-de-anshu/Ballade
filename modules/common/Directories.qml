@@ -21,9 +21,9 @@ Singleton {
     readonly property string videos: StandardPaths.standardLocations(StandardPaths.MoviesLocation)[0]
 
     // Other dirs used by the shell, without "file://"
-    property string assetsPath: Quickshell.shellPath("assets")
-    property string scriptPath: Quickshell.shellPath("scripts")
-    property string soundsPath: Quickshell.shellPath("assets/sounds")
+    property string assetsPath: FileUtils.trimFileProtocol(Quickshell.shellPath("assets"))
+    property string scriptPath: FileUtils.trimFileProtocol(Quickshell.shellPath("scripts"))
+    property string soundsPath: FileUtils.trimFileProtocol(Quickshell.shellPath("sounds"))
     property string favicons: FileUtils.trimFileProtocol(`${Directories.cache}/media/favicons`)
     property string coverArt: FileUtils.trimFileProtocol(`${Directories.cache}/media/coverart`)
     property string tempImages: "/tmp/quickshell/media/images"
@@ -35,6 +35,7 @@ Singleton {
     property string shellConfigName: "config.json"
     property string shellConfigPath: `${Directories.shellConfig}/${Directories.shellConfigName}`
 	property string todoPath: FileUtils.trimFileProtocol(`${Directories.state}/user/todo.json`)
+	property string screentimePath: FileUtils.trimFileProtocol(`${Directories.state}/user/screentime.json`)
 	property string notesPath: FileUtils.trimFileProtocol(`${Directories.state}/user/notes.txt`)
     property string desktopNotesPath: FileUtils.trimFileProtocol(`${Directories.state}/user/desktopnotes.txt`)
 	property string conflictCachePath: FileUtils.trimFileProtocol(`${Directories.cache}/conflict-killer`)

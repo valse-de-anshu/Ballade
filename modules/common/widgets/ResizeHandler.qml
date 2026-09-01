@@ -8,6 +8,7 @@ Canvas {
     property bool hoverActive: false
     property bool locked: false
     required property real currentWidth
+    property real currentHeight: currentWidth
     property string resizeMode: "horizontal" 
 
     signal resized(real newValue)
@@ -49,7 +50,7 @@ Canvas {
         anchors.fill: parent
         anchors.margins: -6
         hoverEnabled: true
-        cursorShape: root.resizeMode === "diagonal" ? Qt.SizeFDiagCursor : Qt.SizeHorCursor
+        cursorShape: root.resizeMode === "diagonal" ? Qt.SizeFDiagCursor : (root.resizeMode === "vertical" ? Qt.SizeVerCursor : Qt.SizeHorCursor)
         preventStealing: true
 
         property real startValue: 0
@@ -57,7 +58,7 @@ Canvas {
         property real startY: 0
 
         onPressed: (mouse) => {
-            startValue = root.currentWidth
+            startValue = root.resizeMode === "vertical" ? root.currentHeight : root.currentWidth
             var globalPos = mapToItem(null, mouse.x, mouse.y)
             startX = globalPos.x
             startY = globalPos.y
@@ -69,7 +70,7 @@ Canvas {
             var dy = globalPos.y - startY
             var delta = root.resizeMode === "diagonal"
                 ? Math.max(dx, dy)
-                : dx
+                : (root.resizeMode === "vertical" ? dy : dx)
             root.resized(startValue + delta)
             root.resizedXY(dx, dy, startValue)
         }

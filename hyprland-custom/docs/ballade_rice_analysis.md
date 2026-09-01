@@ -51,7 +51,7 @@ This document presents a complete comparative analysis of **`ii` (illogical-impu
 ## ⚠️ Part 2: Installer Script Inspection (`./setup`)
 
 ### 1. How the Script Overwrites Files
-When running `./setup install` or `./setup install-files` in `dots-hyprland`, the installation process executes [3.files-legacy.sh](file:///home/valse-de-anshu/Desktop/git%20hyprland%20dots/dots-hyprland/sdata/subcmd-install/3.files-legacy.sh):
+When running `./setup install` or `./setup install-files` in `dots-hyprland`, the installation process executes `sdata/subcmd-install/3.files-legacy.sh`:
 
 ```bash
 # sdata/subcmd-install/3.files-legacy.sh (Lines 22-28)
@@ -97,7 +97,7 @@ To create your own custom rice named **`ballade`** combining `ii` and `end4-pC` 
 ```mermaid
 graph TD
     subgraph Protected Storage
-        SafeDir["/home/valse-de-anshu/.config/hypr/custom/ballade/"]
+        SafeDir["~/.config/hypr/custom/ballade/"]
         GitRepo["Git Repository / Local Fork"]
     end
 

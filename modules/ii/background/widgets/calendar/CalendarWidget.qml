@@ -44,13 +44,21 @@ AbstractBackgroundWidget {
     }
 
     property int monthShift: 0
-    readonly property var today: new Date()
-    property var selectedDate: new Date()
+    readonly property var today: (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date : new Date()
+    readonly property string todayKey: formatDateKey(root.today)
+    property var selectedDate: root.today
     property var viewingDate: new Date()
 
+    onTodayKeyChanged: {
+        if (root.monthShift === 0) {
+            root.selectedDate = root.today
+            updateViewingMonth()
+        }
+    }
+
     function updateViewingMonth() {
-        let d = new Date()
-        d.setDate(1)
+        let now = (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date : new Date()
+        let d = new Date(now.getFullYear(), now.getMonth(), 1)
         d.setMonth(d.getMonth() + root.monthShift)
         root.viewingDate = d
         root.weeks = root.getMonthMatrix(d)
@@ -388,6 +396,11 @@ AbstractBackgroundWidget {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
+    StyledRectangularShadow {
+        target: card
+        z: -2
+    }
+
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
@@ -402,11 +415,6 @@ AbstractBackgroundWidget {
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-        }
-
-        StyledRectangularShadow {
-            target: card
-            z: -2
         }
 
         Loader {

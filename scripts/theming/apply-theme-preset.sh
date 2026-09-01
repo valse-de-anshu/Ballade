@@ -218,9 +218,18 @@ if [ -f "$KITTY_THEME_FILE" ]; then
 fi
 
 # 6. Apply rmpc Music Player Theme
-RMPC_CONFIG="$HOME/.config/rmpc/config.ron"
-if [ -f "$RMPC_CONFIG" ]; then
-    sed -i "s/theme: Some(\"[^\"]*\")/theme: Some(\"$RMPC_THEME\")/" "$RMPC_CONFIG"
+if [ -f "$SCRIPT_DIR/apply-rmpc-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-rmpc-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
+else
+    RMPC_CONFIG="$HOME/.config/rmpc/config.ron"
+    if [ -f "$RMPC_CONFIG" ]; then
+        sed -i "s/theme: Some(\"[^\"]*\")/theme: Some(\"$RMPC_THEME\")/" "$RMPC_CONFIG"
+    fi
+fi
+
+# 6b. Apply CAVA Dynamic Visualizer Theme & Live Reload
+if [ -f "$SCRIPT_DIR/apply-cava-theme.sh" ]; then
+    bash "$SCRIPT_DIR/apply-cava-theme.sh" "$PRESET_NAME" >/dev/null 2>&1
 fi
 
 # 7. Apply Starship Prompt Theme

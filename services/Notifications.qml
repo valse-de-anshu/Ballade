@@ -154,11 +154,15 @@ Singleton {
         command: {
             let p = soundPath.trim();
             if (p.startsWith("file://")) p = p.substring(7);
-            if (p.length === 0) p = FileUtils.trimFileProtocol(`${Directories.music}/notification/1. Nakime Biwa sound effect.flac`);
             let vol = Math.max(0, Math.min(100, volume));
-            let volNorm = (vol / 100).toFixed(2);
-            let paVol = Math.round(65536 * (vol / 100));
-            return ["bash", "-c", `pw-play --volume ${volNorm} --media-role=event "${p}" 2>/dev/null || paplay --volume=${paVol} --media-role=event "${p}" 2>/dev/null || mpv --no-video --volume=${vol} "${p}" 2>/dev/null || canberra-gtk-play --file="${p}" 2>/dev/null`];
+            return [
+                "bash",
+                Directories.scriptPath + "/play-audio.sh",
+                "--file", p,
+                "--volume", vol.toString(),
+                "--fallback", "/usr/share/sounds/freedesktop/stereo/message.oga",
+                "--category", "notification"
+            ];
         }
     }
 

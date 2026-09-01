@@ -151,6 +151,7 @@ Singleton {
         name = name.replace(/\s/g, "_")
         if (name.length === 0) return
 
+        Config.save()
         saveProc.command = ["bash", Directories.presetsScriptPath, "--save", name, description]
         saveProc.running = true
     }

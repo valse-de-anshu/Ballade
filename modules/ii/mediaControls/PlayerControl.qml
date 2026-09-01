@@ -107,7 +107,7 @@ Item { // Player instance
         WaveVisualizer {
             id: visualizerCanvas
             anchors.fill: parent
-            live: root.player?.isPlaying
+            live: root.player?.isPlaying ?? false
             points: root.visualizerPoints
             maxVisualizerValue: root.maxVisualizerValue
             smoothing: root.visualizerSmoothing
@@ -171,7 +171,7 @@ Item { // Player instance
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: blendedColors.colSubtext
                     elide: Text.ElideRight
-                    text: root.player?.trackArtist
+                    text: root.player?.trackArtist ?? ""
                     animateChange: true
                     animationDistanceX: 6
                     animationDistanceY: 0
@@ -232,7 +232,7 @@ Item { // Player instance
                                 }
                                 active: !(root.player?.canSeek ?? false)
                                 sourceComponent: StyledProgressBar { 
-                                    wavy: root.player?.isPlaying
+                                    wavy: root.player?.isPlaying ?? false
                                     highlightColor: blendedColors.colPrimary
                                     trackColor: blendedColors.colSecondaryContainer
                                     value: root.player?.position / root.player?.length

@@ -1,3 +1,4 @@
+import qs
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import Qt.labs.folderlistmodel
@@ -78,7 +79,14 @@ Item {
 
         function activateCurrent() {
             const path = folderModel.get(selectedIndex, "filePath")
-            if (path) Wallpapers.apply(FileUtils.trimFileProtocol(path))
+            if (path) {
+                const trimmed = FileUtils.trimFileProtocol(path)
+                if (GlobalStates.wallpaperSelectorTarget === "lockWall") {
+                    Config.options.background.lockWall = trimmed
+                } else {
+                    Wallpapers.apply(trimmed)
+                }
+            }
             root.dismissed()
         }
 

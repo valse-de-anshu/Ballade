@@ -613,18 +613,7 @@ Variants {
                         wallpaperSafetyTriggered: bgRoot.wallpaperSafetyTriggered
                     }
                 }
-                FadeLoader {
-                    shown: Config.options.background.widgets.notes.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: NotesWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
+                // Notes moved into GoalsWidget → goals section 2 → notes tool
                 FadeLoader {
                     shown: Config.options.background.widgets.goals.enable
                         && (Config.options.background.screenList.length === 0

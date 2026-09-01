@@ -19,6 +19,12 @@ MaterialShape { // App icon
     property real materialIconSize: implicitSize * materialIconScale
     property real appIconSize: implicitSize * appIconScale
     property real smallAppIconSize: implicitSize * smallAppIconScale
+    readonly property bool isActualImage: typeof root.image === "string" && root.image !== "" && (root.image.startsWith("/") || root.image.startsWith("file://") || root.image.startsWith("data:") || root.image.startsWith("image://") || root.image.startsWith("http://") || root.image.startsWith("https://"))
+    readonly property string resolvedIconPath: {
+        if (!root.appIcon || root.appIcon === "") return "";
+        let path = Quickshell.iconPath(root.appIcon);
+        return (path && path !== "image-missing") ? path : "";
+    }
 
     implicitSize: 38 * scale
     property list<var> urgentShapes: [
@@ -30,14 +36,16 @@ MaterialShape { // App icon
     color: isUrgent ? Appearance.colors.colPrimaryContainer : Appearance.colors.colSecondaryContainer
     Loader {
         id: materialSymbolLoader
-        active: root.appIcon == ""
+        active: !root.isActualImage && root.resolvedIconPath === ""
         anchors.fill: parent
         sourceComponent: MaterialSymbol {
             text: {
                 const defaultIcon = NotificationUtils.findSuitableMaterialSymbol("")
                 const guessedIcon = NotificationUtils.findSuitableMaterialSymbol(root.summary)
-                return (root.urgency == NotificationUrgency.Critical && guessedIcon === defaultIcon) ?
-                    "priority_high" : guessedIcon
+                if (guessedIcon !== defaultIcon) return guessedIcon;
+                const appIconGuessed = NotificationUtils.findSuitableMaterialSymbol(root.appIcon || "")
+                if (appIconGuessed !== defaultIcon) return appIconGuessed;
+                return (root.urgency == NotificationUrgency.Critical) ? "priority_high" : defaultIcon
             }
             anchors.fill: parent
             color: isUrgent ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSecondaryContainer
@@ -48,18 +56,18 @@ MaterialShape { // App icon
     }
     Loader {
         id: appIconLoader
-        active: root.image == "" && root.appIcon != ""
+        active: !root.isActualImage && root.resolvedIconPath !== ""
         anchors.centerIn: parent
         sourceComponent: IconImage {
             id: appIconImage
             implicitSize: root.appIconSize
             asynchronous: true
-            source: Quickshell.iconPath(root.appIcon, "image-missing")
+            source: root.resolvedIconPath
         }
     }
     Loader {
         id: notifImageLoader
-        active: root.image != ""
+        active: root.isActualImage
         anchors.fill: parent
         sourceComponent: Item {
             anchors.fill: parent

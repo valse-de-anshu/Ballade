@@ -164,6 +164,14 @@ if [ -f "$SCRIPT_DIR/../theming/apply-discord-theme.sh" ]; then
   bash "$SCRIPT_DIR/../theming/apply-discord-theme.sh" "$active_preset" >/dev/null 2>&1 &
 fi
 
+# rmpc & cava: sync theme and reload visualizer gradient
+if [ -f "$SCRIPT_DIR/../theming/apply-rmpc-theme.sh" ]; then
+  bash "$SCRIPT_DIR/../theming/apply-rmpc-theme.sh" "$active_preset" >/dev/null 2>&1 &
+fi
+if [ -f "$SCRIPT_DIR/../theming/apply-cava-theme.sh" ]; then
+  bash "$SCRIPT_DIR/../theming/apply-cava-theme.sh" "$active_preset" >/dev/null 2>&1 &
+fi
+
 # Dolphin: close when switching themes so it opens with fresh colors
 if pidof dolphin > /dev/null 2>&1; then
   pkill -x dolphin 2>/dev/null || true

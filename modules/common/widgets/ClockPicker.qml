@@ -79,10 +79,12 @@ Item {
         }
     }
 
+    readonly property bool isSessionActive: root.running || (TimerService.pomodoroSecondsLeft < TimerService.pomodoroLapDuration && TimerService.pomodoroSecondsLeft > 0)
+
     Canvas {
         id: handCanvas
         anchors.fill: parent
-        visible: !root.running
+        visible: !root.isSessionActive
         onPaint: {
             const ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
@@ -123,7 +125,7 @@ Item {
         color: Appearance.colors.colPrimary
         anchors.centerIn: parent
         z: 2
-        visible: !root.running
+        visible: !root.isSessionActive
     }
 
     Rectangle {
@@ -133,7 +135,7 @@ Item {
         radius: 14
         color: Appearance.colors.colPrimary
         z: 2
-        visible: !root.running
+        visible: !root.isSessionActive
         x: root.centerX + (root.radius - 30) * Math.cos(root.angle) - width / 2
         y: root.centerY + (root.radius - 30) * Math.sin(root.angle) - height / 2
 
@@ -148,7 +150,7 @@ Item {
 
     ColumnLayout {
         anchors.centerIn: parent
-        visible: root.running
+        visible: root.isSessionActive
         spacing: 2
 
         StyledText {
@@ -166,9 +168,12 @@ Item {
 
         StyledText {
             Layout.alignment: Qt.AlignHCenter
-            text: TimerService.pomodoroLongBreak ? Translation.tr("Long break") : TimerService.pomodoroBreak ? Translation.tr("Break") : Translation.tr("Focus")
+            text: {
+                let phase = TimerService.pomodoroLongBreak ? Translation.tr("Long break") : TimerService.pomodoroBreak ? Translation.tr("Break") : Translation.tr("Focus")
+                return root.running ? phase : `${phase} (${Translation.tr("Paused")})`
+            }
             font.pixelSize: Appearance.font.pixelSize.normal
-            color: Appearance.colors.colSubtext
+            color: root.running ? Appearance.colors.colSubtext : Appearance.colors.colPrimary
         }
     }
 

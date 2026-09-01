@@ -35,6 +35,16 @@ Singleton {
     Component.onCompleted: {
         if (!stopwatchRunning)
             stopwatchReset();
+        if (!Persistent.states.timer.pomodoro.running || !Persistent.states.timer.pomodoro.start || Persistent.states.timer.pomodoro.start <= 0) {
+            Persistent.states.timer.pomodoro.running = false;
+        } else {
+            let elapsed = getCurrentTimeInSeconds() - Persistent.states.timer.pomodoro.start;
+            if (elapsed >= pomodoroLapDuration) {
+                resetPomodoro();
+            } else {
+                refreshPomodoro();
+            }
+        }
     }
 
     function getCurrentTimeInSeconds() {  // Pomodoro uses Seconds
@@ -47,33 +57,61 @@ Singleton {
 
     // Pomodoro
     function refreshPomodoro() {
+        if (!Persistent.states.timer.pomodoro.running) return;
+
+        let nowSec = getCurrentTimeInSeconds();
+        let elapsed = nowSec - Persistent.states.timer.pomodoro.start;
+
         // Work <-> break ?
-        if (getCurrentTimeInSeconds() >= Persistent.states.timer.pomodoro.start + pomodoroLapDuration) {
+        if (elapsed >= pomodoroLapDuration) {
             // Reset counts
             Persistent.states.timer.pomodoro.isBreak = !Persistent.states.timer.pomodoro.isBreak;
-            Persistent.states.timer.pomodoro.start = getCurrentTimeInSeconds();
+            Persistent.states.timer.pomodoro.start = nowSec;
 
             // Send notification
             let notificationMessage;
+            let summaryTitle = "Pomodoro";
             if (Persistent.states.timer.pomodoro.isBreak && (pomodoroCycle + 1 == cyclesBeforeLongBreak)) {
-                notificationMessage = Translation.tr(`🌿 Long break: %1 minutes`).arg(Math.floor(longBreakTime / 60));
+                notificationMessage = Translation.tr(`Long break: %1 minutes`).arg(Math.floor(longBreakTime / 60));
+                summaryTitle = "Pomodoro Long Break";
             } else if (Persistent.states.timer.pomodoro.isBreak) {
-                notificationMessage = Translation.tr(`☕ Break: %1 minutes`).arg(Math.floor(breakTime / 60));
+                notificationMessage = Translation.tr(`Break: %1 minutes`).arg(Math.floor(breakTime / 60));
+                summaryTitle = "Pomodoro Break Time";
             } else {
-                notificationMessage = Translation.tr(`🔴 Focus: %1 minutes`).arg(Math.floor(focusTime / 60));
+                notificationMessage = Translation.tr(`Focus: %1 minutes`).arg(Math.floor(focusTime / 60));
+                summaryTitle = "Pomodoro Focus Time";
             }
 
-            Quickshell.execDetached(["notify-send", "Pomodoro", notificationMessage, "-a", "Shell"]);
-            if (Config.options.sounds.pomodoro) {
-                Audio.playSystemSound("alarm-clock-elapsed")
+            Quickshell.execDetached(["notify-send", summaryTitle, notificationMessage, "-a", "Pomodoro"]);
+            if (Config.options.sounds.pomodoro ?? true) {
+                let isBreakStart = Persistent.states.timer.pomodoro.isBreak;
+                root.playPomodoroAudio(isBreakStart ? "break" : "focus");
             }
 
             if (!pomodoroBreak) {
                 Persistent.states.timer.pomodoro.cycle = (Persistent.states.timer.pomodoro.cycle + 1) % root.cyclesBeforeLongBreak;
             }
+            elapsed = 0;
         }
 
-        pomodoroSecondsLeft = pomodoroLapDuration - (getCurrentTimeInSeconds() - Persistent.states.timer.pomodoro.start);
+        pomodoroSecondsLeft = Math.max(0, pomodoroLapDuration - elapsed);
+    }
+
+    function playPomodoroAudio(soundType = "break") {
+        let customPath = Config.options.sounds.pomodoroSoundPath || Config.options.sounds.alarmSoundPath || ""
+        let vol = Math.max(0, Math.min(100, Config.options.sounds.pomodoroVolume ?? Config.options.sounds.alarmVolume ?? 80))
+        let fallback = soundType === "focus" 
+            ? "/usr/share/sounds/freedesktop/stereo/bell.oga" 
+            : "/usr/share/sounds/freedesktop/stereo/complete.oga"
+
+        Quickshell.execDetached([
+            "bash",
+            Directories.scriptPath + "/play-audio.sh",
+            "--file", customPath,
+            "--volume", vol.toString(),
+            "--fallback", fallback,
+            "--category", "pomodoro"
+        ]);
     }
 
     Timer {
@@ -85,19 +123,25 @@ Singleton {
     }
 
     function togglePomodoro() {
-        Persistent.states.timer.pomodoro.running = !pomodoroRunning;
-        if (Persistent.states.timer.pomodoro.running) {
+        let willRun = !Persistent.states.timer.pomodoro.running;
+        Persistent.states.timer.pomodoro.running = willRun;
+        if (willRun) {
             // Start/Resume
-            Persistent.states.timer.pomodoro.start = getCurrentTimeInSeconds() + pomodoroSecondsLeft - pomodoroLapDuration;
+            let remaining = (pomodoroSecondsLeft > 0 && pomodoroSecondsLeft <= pomodoroLapDuration) ? pomodoroSecondsLeft : pomodoroLapDuration;
+            Persistent.states.timer.pomodoro.start = getCurrentTimeInSeconds() - (pomodoroLapDuration - remaining);
+            refreshPomodoro();
+        } else {
+            let elapsed = getCurrentTimeInSeconds() - Persistent.states.timer.pomodoro.start;
+            pomodoroSecondsLeft = Math.max(0, pomodoroLapDuration - elapsed);
         }
     }
 
     function resetPomodoro() {
         Persistent.states.timer.pomodoro.running = false;
         Persistent.states.timer.pomodoro.isBreak = false;
-        Persistent.states.timer.pomodoro.start = getCurrentTimeInSeconds();
+        Persistent.states.timer.pomodoro.start = 0;
         Persistent.states.timer.pomodoro.cycle = 0;
-        refreshPomodoro();
+        pomodoroSecondsLeft = root.focusTime;
     }
 
     // Stopwatch

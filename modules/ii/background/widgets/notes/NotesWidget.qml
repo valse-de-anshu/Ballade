@@ -237,6 +237,20 @@ AbstractBackgroundWidget {
                     }
                     Item { Layout.fillWidth: true }
 
+                    // Markdown Preview / Edit Mode Switcher
+                    ToolbarPairedFab {
+                        Layout.rightMargin: 4
+                        Layout.alignment: Qt.AlignVCenter
+                        baseSize: 38
+                        iconText: root.isMarkdownPreview ? "edit" : "visibility"
+                        onClicked: {
+                            root.isMarkdownPreview = !root.isMarkdownPreview
+                            if (!root.isMarkdownPreview) {
+                                Qt.callLater(() => editTextArea.forceActiveFocus())
+                            }
+                        }
+                    }
+
                     ToolbarPairedFab {
                         visible: root.pendingNoteId !== null
                         Layout.rightMargin: 4
@@ -271,28 +285,45 @@ AbstractBackgroundWidget {
                     Flickable {
                         id: editFlickable
                         anchors.fill: parent
-                        anchors.margins: 8
+                        anchors.margins: 10
                         contentWidth: width
-                        contentHeight: Math.max(height, editTextArea.implicitHeight + 40)
+                        contentHeight: Math.max(height, root.isMarkdownPreview ? previewMarkdownText.implicitHeight + 40 : editTextArea.implicitHeight + 40)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
 
                         MouseArea {
                             anchors.fill: parent
+                            visible: !root.isMarkdownPreview
                             onClicked: {
                                 editTextArea.forceActiveFocus()
                                 editTextArea.cursorPosition = editTextArea.text.length
                             }
                         }
 
+                        // Raw Markdown Editor
                         TextArea {
                             id: editTextArea
+                            visible: !root.isMarkdownPreview
                             width: editFlickable.width
                             wrapMode: TextArea.Wrap
-                            placeholderText: "Type your note..."
+                            placeholderText: "Type note with markdown formatting (# heading, - list, **bold**, `code`)..."
                             color: Appearance.colors.colOnLayer0
                             background: null
                             selectByMouse: true
+                            font.pixelSize: Appearance.font.pixelSize.small
+                        }
+
+                        // Rich Markdown Rendered Preview
+                        StyledText {
+                            id: previewMarkdownText
+                            visible: root.isMarkdownPreview
+                            width: editFlickable.width
+                            textFormat: Text.MarkdownText
+                            text: editTextArea.text.trim() ? editTextArea.text : "*No markdown content*"
+                            wrapMode: Text.Wrap
+                            color: Appearance.colors.colOnLayer0
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            onLinkActivated: (link) => Qt.openUrlExternally(link)
                         }
                     }
                 }

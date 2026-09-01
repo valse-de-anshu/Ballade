@@ -57,6 +57,9 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
             if [ "$app_name" = "icons" ]; then
                 mkdir -p "$HOME/.icons"
                 cp -rn "$app/"* "$HOME/.icons/" 2>/dev/null || true
+                if [ -d "$HOME/.icons/Gloomi-x-Cursor-Custom" ] && [ ! -e "$HOME/.icons/Gloomi_x" ]; then
+                    ln -sf "Gloomi-x-Cursor-Custom" "$HOME/.icons/Gloomi_x"
+                fi
                 echo "   ↳ Custom cursor theme (Gloomi_x) installed to ~/.icons/"
             elif [ "$app_name" = "color-schemes" ]; then
                 mkdir -p "$HOME/.local/share/color-schemes"
@@ -105,6 +108,13 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
         echo "   ↳ rmpc custom scripts installed to ~/.local/bin/"
     fi
     echo "   ↳ Application dotfiles installed to ~/.config/ and ~/.local/share/"
+fi
+
+# 6. Initialize Theme & Build Dynamic Ecosystem Colors
+if [ -f "$SCRIPTS_DIR/theming/apply-theme-preset.sh" ]; then
+    echo "🎨 Initializing default theme preset (green)..."
+    bash "$SCRIPTS_DIR/theming/apply-theme-preset.sh" green >/dev/null 2>&1 || true
+    echo "   ↳ Synchronized 16 subsystems (Kitty, Starship, Micro, CAVA, rmpc, Fastfetch, Kvantum, KDE)"
 fi
 
 echo ""

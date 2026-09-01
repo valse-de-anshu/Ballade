@@ -256,7 +256,7 @@ Rectangle {
 
         Loader {
             Layout.fillWidth: true
-            active: root.messageData?.localFilePath && root.messageData?.localFilePath.length > 0
+            active: !!(root.messageData?.localFilePath && root.messageData.localFilePath.length > 0)
             sourceComponent: AttachedFileIndicator {
                 filePath: root.messageData?.localFilePath
                 canRemove: false
@@ -279,7 +279,7 @@ Rectangle {
                 FadeLoader {
                     id: loadingIndicatorLoader
                     anchors.centerIn: parent
-                    shown: (root.messageBlocks.length < 1) && (!root.messageData.done)
+                    shown: (root.messageBlocks.length < 1) && (!(root.messageData?.done ?? true))
                     sourceComponent: MaterialLoadingIndicator {
                         loading: true
                     }

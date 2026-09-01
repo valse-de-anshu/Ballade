@@ -93,9 +93,11 @@ Item { // Notification item area
         }
     }
 
+    readonly property bool isActualImage: typeof notificationObject?.image === "string" && notificationObject.image !== "" && (notificationObject.image.startsWith("/") || notificationObject.image.startsWith("file://") || notificationObject.image.startsWith("data:") || notificationObject.image.startsWith("image://") || notificationObject.image.startsWith("http://") || notificationObject.image.startsWith("https://"))
+
     NotificationAppIcon { // App icon
         id: notificationIcon
-        opacity: (!onlyNotification && notificationObject.image != "" && expanded) ? 1 : 0
+        opacity: (!onlyNotification && root.isActualImage && expanded) ? 1 : 0
         visible: opacity > 0
 
         Behavior on opacity {

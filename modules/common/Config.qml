@@ -43,6 +43,10 @@ Singleton {
         obj[keys[keys.length - 1]] = convertedValue;
     }
 
+    function save() {
+        configFileView.writeAdapter();
+    }
+
     Timer {
         id: fileReloadTimer
         interval: root.readWriteDelay
@@ -309,6 +313,13 @@ Singleton {
                         property real x: 750
                         property real y: 120
                         property string sizeMode: "full"
+                    }
+
+                    property JsonObject quickAccessSatellite: JsonObject {
+                        property bool enable: true
+                        property string placementStrategy: "free"
+                        property real x: 900
+                        property real y: 650
                     }
 
                     property JsonObject userCard: JsonObject {
@@ -766,8 +777,13 @@ Singleton {
             }
 
             property JsonObject sounds: JsonObject {
+                property bool alarm: true
+                property int alarmVolume: 80
+                property string alarmSoundPath: ""
                 property bool battery: true
-                property bool pomodoro: false
+                property bool pomodoro: true
+                property int pomodoroVolume: 80
+                property string pomodoroSoundPath: ""
                 property bool notifications: true
                 property int notificationVolume: 70
                 property string notificationSoundPath: ""
