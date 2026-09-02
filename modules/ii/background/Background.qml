@@ -99,8 +99,19 @@ Variants {
         property int centeredWallpaperShape: getShapeFromName(Config.options.background.centeredWallpaperShape)
         property int centeredWallpaperSize: Config.options.background.centeredWallpaperSize
         property color centeredWallpaperColor: root.getColorFromName(Config.options.background.centeredWallpaperColor)
+        property real splitFraction: {
+            switch (Config.options.background.splitRatio) {
+                case "0":  return 0.0
+                case "25": return 0.28
+                case "50": return 0.54
+                default:   return 1.0
+            }
+        }
+        readonly property bool overviewBlurActive: Config.options.overview.style === "niri" && GlobalStates.overviewOpen && Config.options.overview.enable
+        readonly property bool userBlurActive: Config.options.background.showBlur && !bgRoot.wallpaperIsVideo
+        readonly property bool blurFullScreen: bgRoot.overviewBlurActive || bgRoot.splitFraction >= 1.0
 
-        property var shaderList: ["magic", "Doom", "crt", "glitch", "ripple"]
+        property var shaderList: ["circlePit", "circleSelect", "magic", "Doom", "Peel", "transition", "pixelate", "stripes", "crt", "dissolve", "glitch", "ripple", "shatter"]
         property string currentShader: "magic"
         property string wallpaperAnimation: Config.options.background.wallpaperAnimation ?? "random"
 
@@ -301,8 +312,8 @@ Variants {
                 cache: true
                 smooth: true
                 asynchronous: true
-                layer.enabled: true
-                visible: !blurLoader.active && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
+                layer.enabled: blurLoader.active || fastBlurLoader.active
+                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
                     && (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0)
                 onStatusChanged: {
                     if (status === Image.Ready && bgRoot.transitionProgress === 0.0) {
@@ -318,7 +329,8 @@ Variants {
                 y: bgRoot.parallaxY
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
-                visible: !blurLoader.active && bgRoot.wallpaperAnimation !== "" && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
+                layer.enabled: blurLoader.active || fastBlurLoader.active
+                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && bgRoot.wallpaperAnimation !== "" && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
                     && bgRoot.transitionProgress < 1.0
                 property var fromImage: previousWallpaper
                 property var toImage: wallpaper
@@ -346,7 +358,9 @@ Variants {
 
             Loader {
                 id: blurLoader
+                z: 6
                 active: Config.options.lock.blur.enable && (GlobalStates.screenLocked || scaleAnim.running)
+                    && !(bgRoot.userBlurActive || bgRoot.overviewBlurActive)
                 x: bgRoot.parallaxX
                 y: bgRoot.parallaxY
                 width: bgRoot.scaledW
@@ -368,6 +382,57 @@ Variants {
                         opacity: GlobalStates.screenLocked ? 1 : 0
                         anchors.fill: parent
                         color: CF.ColorUtils.transparentize(Appearance.colors.colLayer0, 0.7)
+                    }
+                }
+            }
+
+            Loader {
+                id: fastBlurLoader
+                z: 7
+                active: (bgRoot.userBlurActive || bgRoot.overviewBlurActive)
+                    && (!bgRoot.centeredWallpaperEnabled || bgRoot.blurFullScreen)
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
+                Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+                sourceComponent: Item {
+                    id: blurRoot
+                    anchors.fill: parent
+
+                    readonly property real fadeWidth: 140
+                    readonly property real blurRadius: Config.options.background.blurRadius ?? 32
+                    readonly property bool alignRight: Config.options.background.splitSide === "right"
+                    property real coreWidth: bgRoot.blurFullScreen ? blurRoot.width : blurRoot.width * bgRoot.splitFraction
+
+                    Behavior on coreWidth {
+                        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+                    }
+
+                    FastBlur {
+                        id: blurLayer
+                        anchors.fill: parent
+                        // Source from composite (wallpaper + viz bars) so bars get baked
+                        // into the blur — they appear as glowing smears through frosted glass
+                        source: blurCompositeSource
+                        radius: blurRoot.blurRadius
+
+                        Behavior on radius {
+                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                        }
+
+                        layer.enabled: !bgRoot.blurFullScreen
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: blurLayer.width
+                                height: blurLayer.height
+                                gradient: Gradient {
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: blurRoot.alignRight ? 1 - (blurRoot.coreWidth / blurRoot.width) : Math.max(0, (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width); color: blurRoot.alignRight ? "transparent" : "white" }
+                                    GradientStop { position: blurRoot.alignRight ? Math.min(1, 1 - (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width) : Math.min(1, blurRoot.coreWidth / blurRoot.width); color: blurRoot.alignRight ? "white" : "transparent" }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -516,6 +581,130 @@ Variants {
                 }
             }
 
+            // Composite source for FastBlur: wallpaper image + visualizer bars
+            // rendered together as one layer-enabled texture.
+            // FastBlur will source from this instead of raw wallpaper,
+            // so the bars get baked into the blur — glowing smears through frosted glass.
+            Item {
+                id: blurCompositeSource
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
+                // Only needs to exist (and be usable as a source) when blur is active
+                visible: bgRoot.userBlurActive || bgRoot.overviewBlurActive
+                // layer.enabled makes Qt render this subtree to an offscreen texture
+                // that FastBlur can sample from — this is the key to compositing
+                layer.enabled: bgRoot.userBlurActive || bgRoot.overviewBlurActive
+
+                // Wallpaper captured via ShaderEffectSource into the composite
+                ShaderEffectSource {
+                    anchors.fill: parent
+                    sourceItem: bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0
+                        ? wallpaper : transitionEffect
+                    hideSource: false   // keep original wallpaper visible for non-blur code paths
+                    live: true
+                }
+
+                // Visualizer bars drawn directly on top of the wallpaper in the composite.
+                // Position is absolute within the composite, compensating for parallax offset
+                // so bars end up exactly at the true screen bottom, centered on screen width.
+                Item {
+                    id: bgVisualizerLayer
+                    // Match original: full screen width, 240px tall, pinned to screen bottom
+                    x: -bgRoot.parallaxX                               // undo parallax so x=0 on screen
+                    y: bgRoot.screen.height - (220 + 20) - bgRoot.parallaxY  // screen bottom, undo parallax
+                    width: bgRoot.screen.width
+                    height: 220 + 20
+                    visible: Config.options.background.widgets.visualizer.enable
+                        && (Config.options.background.screenList.length === 0
+                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+
+                    readonly property list<real> vizPoints: GlobalStates.visualizerPoints
+                    readonly property bool vizPlaying: MprisController.activePlayer?.isPlaying ?? false
+                    readonly property real barW: 8
+                    readonly property real barSp: 12
+                    readonly property real maxH: 220
+                    readonly property real maxVal: 1000
+                    readonly property int barCount: Math.max(1, Math.floor(bgRoot.screen.width / (barW + barSp)))
+
+                    readonly property var smoothedPts: {
+                        if (!vizPlaying || vizActivityOpacity <= 0.01) return Array(barCount).fill(0)
+                        let raw = vizPoints
+                        if (!raw || raw.length === 0) return Array(barCount).fill(0)
+                        let count = barCount
+                        let mapped = new Array(count)
+                        let rawLenM1 = raw.length - 1
+                        for (let i = 0; i < count; i++) {
+                            let progress = i / (count - 1 || 1)
+                            let relPos = progress * rawLenM1
+                            let low = Math.floor(relPos)
+                            let high = Math.ceil(relPos)
+                            let mix = relPos - low
+                            mapped[i] = (raw[low] * (1 - mix)) + (raw[high] * (high < raw.length ? mix : 0))
+                        }
+                        let smoothed = new Array(count)
+                        let sW = 0.2
+                        for (let j = 0; j < count; j++) {
+                            let p = mapped[Math.max(0, j - 1)]
+                            let n = mapped[Math.min(count - 1, j + 1)]
+                            smoothed[j] = (p * sW) + (mapped[j] * (1.0 - 2 * sW)) + (n * sW)
+                        }
+                        return smoothed
+                    }
+
+                    property real vizActivityOpacity: 0
+                    Behavior on vizActivityOpacity {
+                        NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
+                    }
+
+                    Timer {
+                        id: bgVizSilenceTimer
+                        interval: 1000
+                        onTriggered: bgVisualizerLayer.vizActivityOpacity = 0
+                    }
+
+                    onVizPointsChanged: {
+                        if (vizPlaying && vizPoints.some(p => p > 0)) {
+                            vizActivityOpacity = 1.0
+                            bgVizSilenceTimer.restart()
+                        }
+                    }
+
+                    Row {
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: bgVisualizerLayer.barSp
+                        opacity: bgVisualizerLayer.vizActivityOpacity
+                        Behavior on opacity {
+                            NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
+                        }
+                        Repeater {
+                            model: bgVisualizerLayer.barCount
+                            Rectangle {
+                                required property int index
+                                width: bgVisualizerLayer.barW
+                                property real pointValue: {
+                                    const v = bgVisualizerLayer.smoothedPts[index] ?? 0
+                                    return Math.max(bgVisualizerLayer.barW, (v / bgVisualizerLayer.maxVal) * bgVisualizerLayer.maxH)
+                                }
+                                height: pointValue
+                                topLeftRadius: bgVisualizerLayer.barW / 2
+                                topRightRadius: bgVisualizerLayer.barW / 2
+                                anchors.bottom: parent.bottom
+                                property real intensity: pointValue / bgVisualizerLayer.maxH
+                                color: Qt.rgba(
+                                    Appearance.colors.colPrimary.r * intensity + Appearance.colors.colPrimaryContainer.r * (1 - intensity),
+                                    Appearance.colors.colPrimary.g * intensity + Appearance.colors.colPrimaryContainer.g * (1 - intensity),
+                                    Appearance.colors.colPrimary.b * intensity + Appearance.colors.colPrimaryContainer.b * (1 - intensity),
+                                    1
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             WidgetCanvas {
                 id: widgetCanvas
                 z: 10
@@ -535,7 +724,10 @@ Variants {
                     }
                 }
                 FadeLoader {
+                    // Shown when blur is OFF — the normal above-wallpaper position
+                    // When blur is ON, bgVisualizerLayer (z:5) renders it behind the blur instead
                     shown: Config.options.background.widgets.visualizer.enable
+                        && !bgRoot.userBlurActive
                         && (Config.options.background.screenList.length === 0
                             || Config.options.background.screenList.includes(bgRoot.screen.name))
                     sourceComponent: VisualizerWidget {

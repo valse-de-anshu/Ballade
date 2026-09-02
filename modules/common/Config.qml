@@ -221,6 +221,10 @@ Singleton {
                 property string lockWall: ""
                 property bool widgetsLocked: false
                 property bool showGrid: true
+                property bool showBlur: false
+                property int blurRadius: 32 // 1 to 128
+                property string splitRatio: "100" // 25, 50, 100
+                property string splitSide: "left" // left, right
                 property bool showSnapLines: true
                 property JsonObject widgets: JsonObject {
                     property JsonObject clock: JsonObject {

@@ -44,6 +44,10 @@ It combines frosted-glass aesthetics with automatic **Material Design 3** color 
 | :---: | :---: |
 | <img src="assets/screenshots/theme-red-panorama-kitty.png" width="460" alt="Red Theme Panorama" /> | <img src="assets/screenshots/productivity-hub-journal.png" width="460" alt="Focus Journal and CAVA Visualizer" /> |
 
+| 🌫️ Blur Effect on Desktop |
+| :---: |
+| <img src="assets/screenshots/blur-effect-desktop.png" width="940" alt="Blur Effect on Desktop with CAVA Visualizer" /> |
+
 ---
 
 </div>
@@ -242,7 +246,7 @@ Verify that `matugen` is installed (`which matugen`) and ensure `include current
 ## 💖 Credits & Upstream
 
 - **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)**: The original **Illogical Impulse (`ii`)** base framework.
-- **[pctrade/end4-pC](https://github.com/pctrade/end4-pC)**: Sidebar modules, AI assistant, and settings framework.
+- **[pctrade/end4-pC](https://github.com/pctrade/end4-pC)**: extra personal rice (end4-pC) on top of (ii).
 - **[outfoxxed/quickshell](https://github.com/outfoxxed/quickshell)**: Wayland QML desktop shell engine.
 - **[Hyprland](https://hyprland.org/)**: Dynamic tiling Wayland compositor.
 
