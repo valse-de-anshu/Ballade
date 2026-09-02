@@ -31,3 +31,5 @@ env/
 *.opus
 sounds/*.flac
 sounds/login_greetings/*.flac
+sounds/login_greetings/subtitles.txt
+sounds/login_greetings/
