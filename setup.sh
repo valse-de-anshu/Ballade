@@ -146,6 +146,17 @@ if [ -f "$BALLADE_DIR/scripts/system/loginctl-wrapper" ]; then
     chmod +x "$HOME/.local/bin/loginctl"
 fi
 
+# Screen Time 24-hour Watchdog Daemon
+if [ -f "$BALLADE_DIR/scripts/system/ballade-screentime.service" ]; then
+    mkdir -p "$HOME/.config/systemd/user"
+    cp -f "$BALLADE_DIR/scripts/system/ballade-screentime.service" "$HOME/.config/systemd/user/ballade-screentime.service"
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user daemon-reload >/dev/null 2>&1 || true
+        systemctl --user enable --now ballade-screentime.service >/dev/null 2>&1 || true
+    fi
+    echo "   ↳ 24-hour Screen Time daemon installed & enabled (ballade-screentime.service)"
+fi
+
 # Power audio executor & symlinks
 if [ -f "$SCRIPTS_DIR/power-audio-executor.sh" ]; then
     cp -f "$SCRIPTS_DIR/power-audio-executor.sh" "$HOME/.local/bin/power-audio-executor.sh"

@@ -1,0 +1,14 @@
+[Unit]
+Description=Ballade Screen Time Tracker
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.config/quickshell/ballade/scripts/system/screentime-daemon.py
+Restart=on-failure
+RestartSec=3s
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=graphical-session.target

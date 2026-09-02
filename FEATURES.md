@@ -138,8 +138,13 @@ Located in `scripts/colors/` & `scripts/theming/`:
   * **rmpc (MPD)**: Themes music player controls and album view.
   * **Kvantum & GTK**: Synchronizes Qt SVG widgets and GTK theme colors.
   * **Discord & Joplin**: Injects matching translucent frosted themes.
-* **Wallpaper Engines Supported**:
+* **In-QML Home Screen Wallpaper Blur**:
+  * **Independent Hardware FastBlur**: Blurs the desktop wallpaper in pure QML shaders without compositor dependencies (`showBlur`).
+  * **Split Blur & Gradient Mask**: Configurable split amount (`25%`, `50%`, `100%`) with horizontal directional opacity gradient masks (`Left` vs `Right`).
+  * **Centered Shape Staging**: Displays wallpapers within interactive `MaterialShape` geometries (`cookie`, `slanted`, `superellipse`, `round`) with dynamic background backdrops.
+* **Wallpaper Engines & Shaders Supported**:
   * Static images (PNG, JPG, WebP) with auto-blur caching.
+  * Real-time GPU transition shaders (`magic`, `Doom`, `crt`, `glitch`, `ripple`, `dissolve`, `shatter`, `stripes`, `pixelate`, `Peel`, `circlePit`, `circleSelect`).
   * Real-time animated GLSL shader wallpapers (ripples, starry sky, matrix).
   * Smooth looping video wallpapers (MP4/WebM) via MPV.
 
@@ -230,9 +235,10 @@ Located in `modules/ii/overlay/`:
 
 Located in `modules/ii/overlay/resources/`:
 
-* **1-Second Telemetry**: Active window tracking via Hyprland IPC (`hyprctl activewindow -j`), recording precise application usage, window titles, and active browser URLs.
+* **24-Hour Watchdog Daemon (`screentime-daemon.py`)**: Persistent systemd user background service (`ballade-screentime.service`) operating independently of QuickShell. Monitors Hyprland socket2 real-time events (`activewindow`, `windowtitle`) with polling fallbacks, logging exact app focus, multi-window events, and window titles without resetting on shell reloads, crashes, or reboots.
+* **Continuous 24h Aggregation**: Tracks non-stop for the current calendar day until midnight rollover; state is preserved atomically (`screentime.json`) and instantly rehydrated.
 * **Multi-Horizon Analytics**: Switch between Day, Week, Month, and Year statistics with uptime meters and usage graphs.
-* **Per-App Activity Drilldown**: Inspect detailed timelines of visited websites, files, and documents per application.
+* **Per-App Activity Drilldown**: Inspect detailed timelines of visited websites, files, documents, and unique window titles per application.
 * **Historical Calendar Jump**: Interactive calendar matrix allowing users to review journaling and screen time data for any historical date.
 * **5-Horizon Goal Setting**: Custom goal tracking with progress rings.
 

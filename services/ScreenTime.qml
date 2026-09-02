@@ -17,15 +17,15 @@ import QtQuick
 Singleton {
     id: root
 
+    // ── The daemon (screentime-daemon.py) owns all data writing.
+    // QML is read-only: it reloads the JSON every 5 seconds.
     property string filePath: Directories.screentimePath
     property var screenTimeData: ({})
     property string todayDateStr: Qt.formatDate(new Date(), "yyyy-MM-dd")
-    property string currentActiveApp: ""
-    property string currentActiveTitle: ""
     property bool isLoaded: false
 
     function load() {
-        console.log("[ScreenTime] Background service active")
+        console.log("[ScreenTime] Read-only mode — daemon handles tracking")
     }
 
     // Reactive midnight / date watcher
@@ -40,6 +40,15 @@ Singleton {
                 root.todayDateStr = actualToday
             }
         }
+    }
+
+    // Reload data from daemon-written JSON every 5 seconds
+    Timer {
+        id: reloadTimer
+        interval: 5000
+        repeat: true
+        running: root.isLoaded
+        onTriggered: screenTimeFileView.reload()
     }
 
     // ── Prettified Name Mapping ──
@@ -113,147 +122,6 @@ Singleton {
         if (m > 0 && s > 0) return `${m}m ${s}s`
         if (m > 0) return `${m}m`
         return `${s}s`
-    }
-
-    // ── Live Active Window Fetcher via Hyprland IPC ──
-    function fetchActiveWindow() {
-        if (!getActiveWindowProcess.running) {
-            getActiveWindowProcess.running = true
-        }
-    }
-
-    Process {
-        id: getActiveWindowProcess
-        command: ["hyprctl", "activewindow", "-j"]
-        stdout: StdioCollector {
-            id: activeWindowCollector
-            onStreamFinished: {
-                try {
-                    let text = activeWindowCollector.text
-                    if (text && text.trim().length > 0 && text.trim() !== "{}") {
-                        let win = JSON.parse(text)
-                        if (win && (win.class || win.initialClass)) {
-                            root.currentActiveApp = (win.class || win.initialClass).trim()
-                            root.currentActiveTitle = (win.title || "").trim()
-                            return
-                        }
-                    }
-                } catch (e) {}
-
-                // Fallback to ToplevelManager if hyprctl is empty
-                let activeTop = ToplevelManager.activeToplevel
-                if (activeTop && activeTop.activated && activeTop.appId) {
-                    root.currentActiveApp = activeTop.appId.trim()
-                    root.currentActiveTitle = (activeTop.title || "").trim()
-                } else if (HyprlandData && HyprlandData.activeWorkspace) {
-                    let bigWin = HyprlandData.biggestWindowForWorkspace(HyprlandData.activeWorkspace.id)
-                    if (bigWin && bigWin.class) {
-                        root.currentActiveApp = bigWin.class.trim()
-                        root.currentActiveTitle = (bigWin.title || "").trim()
-                    }
-                }
-            }
-        }
-    }
-
-    // React immediately to any Hyprland focus or title change
-    Connections {
-        target: Hyprland
-
-        function onRawEvent(event) {
-            if (["activewindow", "activewindowv2", "windowtitle", "windowtitlev2", "workspace", "focusedmon"].includes(event.name)) {
-                root.fetchActiveWindow()
-            }
-        }
-    }
-
-    // ── Tracking Engine (1-second high-precision recording) ──
-    Timer {
-        id: trackTimer
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: {
-            root.fetchActiveWindow()
-            root.recordActiveSample(1)
-        }
-    }
-
-    function recordActiveSample(secondsSample) {
-        if (!root.isLoaded) return
-
-        let appId = root.currentActiveApp
-        let title = root.currentActiveTitle
-
-        // If no app is focused or on empty desktop, do not record
-        if (!appId || appId.length === 0 || appId.toLowerCase() === "desktop") return
-
-        let now = new Date()
-        let today = Qt.formatDate(now, "yyyy-MM-dd")
-        root.todayDateStr = today
-        let hour = now.getHours() // 0..23
-
-        let data = Object.assign({}, root.screenTimeData)
-        if (!data[today]) {
-            data[today] = {
-                totalSeconds: 0,
-                hourly: new Array(24).fill(0),
-                apps: {}
-            }
-        } else {
-            // Ensure hourly array exists
-            if (!Array.isArray(data[today].hourly) || data[today].hourly.length !== 24) {
-                data[today].hourly = new Array(24).fill(0)
-            }
-            if (!data[today].apps) {
-                data[today].apps = {}
-            }
-        }
-
-        data[today].totalSeconds = (data[today].totalSeconds || 0) + secondsSample
-        data[today].hourly[hour] = (data[today].hourly[hour] || 0) + secondsSample
-
-        let cleanAppId = appId.trim()
-        if (!data[today].apps[cleanAppId]) {
-            data[today].apps[cleanAppId] = {
-                name: root.formatAppName(cleanAppId),
-                icon: root.formatAppIcon(cleanAppId),
-                seconds: secondsSample,
-                titles: {}
-            }
-        } else {
-            data[today].apps[cleanAppId].seconds = (data[today].apps[cleanAppId].seconds || 0) + secondsSample
-        }
-
-        // Track window titles (keep counts per title, max 50 unique titles per app per day)
-        if (title && title.length > 0) {
-            let cleanTitle = title.trim()
-            if (!data[today].apps[cleanAppId].titles) data[today].apps[cleanAppId].titles = {}
-            let titleKey = cleanTitle.substring(0, 160) // cap key length
-            data[today].apps[cleanAppId].titles[titleKey] = (data[today].apps[cleanAppId].titles[titleKey] || 0) + secondsSample
-            // Prune to 50 most-seen titles
-            let titleKeys = Object.keys(data[today].apps[cleanAppId].titles)
-            if (titleKeys.length > 50) {
-                titleKeys.sort((a, b) => data[today].apps[cleanAppId].titles[a] - data[today].apps[cleanAppId].titles[b])
-                delete data[today].apps[cleanAppId].titles[titleKeys[0]]
-            }
-        }
-
-        root.screenTimeData = data
-        saveDebounceTimer.restart()
-    }
-
-    // Debounced file writing (every 5 seconds max)
-    Timer {
-        id: saveDebounceTimer
-        interval: 5000
-        repeat: false
-        onTriggered: root.save()
-    }
-
-    function save() {
-        if (!root.isLoaded) return
-        screenTimeFileView.setText(JSON.stringify(root.screenTimeData, null, 2))
     }
 
     // ── Helper functions for multi-day aggregation ──
@@ -608,10 +476,8 @@ Singleton {
             root.isLoaded = true
         }
         onLoadFailed: error => {
+            // Daemon will create the file; just mark as loaded and let reloadTimer retry
             root.isLoaded = true
-            if (error == FileViewError.FileNotFound) {
-                screenTimeFileView.setText(JSON.stringify(root.screenTimeData, null, 2))
-            }
         }
     }
 }
