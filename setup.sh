@@ -1,20 +1,21 @@
 #!/bin/bash
 # 🎼 QuickShell Ballade - Automated 1-Click Environment Initializer
-# Sets up directories, wallpaper presets, sound events, and permissions.
+# Sets up directories, wallpaper presets, sound events, helper scripts, and permissions.
 
 set -euo pipefail
 
 BALLADE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$BALLADE_DIR/scripts"
 
-echo "🎼 Initializing QuickShell Ballade..."
+echo "🎼 Initializing QuickShell Ballade on target system ($USER @ $HOME)..."
 
-# 1. Ensure all shell scripts are executable
+# 1. Ensure all shell and Python scripts are executable
 echo "🔑 Making scripts executable..."
-find "$SCRIPTS_DIR" -type f -name "*.sh" -exec chmod +x {} +
+find "$SCRIPTS_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} +
+[ -d "$BALLADE_DIR/hyprland-custom/scripts" ] && find "$BALLADE_DIR/hyprland-custom/scripts" -type f -name "*.sh" -exec chmod +x {} +
 chmod +x "$BALLADE_DIR/setup.sh" 2>/dev/null || true
 
-# 2. Create standard directories
+# 2. Create standard user directories
 echo "📁 Creating standard user directories..."
 mkdir -p "$HOME/Pictures/Wallpapers"
 for preset in green purple pink red blue golden orange grayscale; do
@@ -32,10 +33,16 @@ mkdir -p "$HOME/.config/illogical-impulse/presets"
 mkdir -p "$HOME/.config/kitty"
 mkdir -p "$HOME/.config/micro/colorschemes"
 mkdir -p "$HOME/.local/share/konsole"
+mkdir -p "$HOME/.local/share/login_greetings"
 mkdir -p "$HOME/.local/bin"
 mkdir -p "$HOME/.cache/illogical-impulse"
 
 # 3. Setup System Sounds & Audio Daemons
+if [ -d "$BALLADE_DIR/sounds/login_greetings" ]; then
+    mkdir -p "$HOME/.local/share/login_greetings"
+    cp -rn "$BALLADE_DIR/sounds/login_greetings/"* "$HOME/.local/share/login_greetings/" 2>/dev/null || true
+fi
+
 if [ -f "$SCRIPTS_DIR/setup-system-sounds.sh" ]; then
     echo "🔊 Initializing system sound hooks and user services..."
     bash "$SCRIPTS_DIR/setup-system-sounds.sh" || true
@@ -94,23 +101,61 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
         mkdir -p "$HOME/.config/micro/colorschemes"
         cp -rn "$BALLADE_DIR/scripts/theming/micro-themes/"* "$HOME/.config/micro/colorschemes/" 2>/dev/null || true
     fi
-    if [ -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" ]; then
-        mkdir -p "$HOME/.local/bin"
-        cp -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" "$HOME/.local/bin/fastfetch"
-        chmod +x "$HOME/.local/bin/fastfetch"
-    fi
-    if [ -d "$BALLADE_DIR/scripts/rmpc" ]; then
-        mkdir -p "$HOME/.local/bin"
-        cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-run" "$HOME/.local/bin/rmpc-run"
-        cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-fetch-lyrics" "$HOME/.local/bin/rmpc-fetch-lyrics"
-        chmod +x "$HOME/.local/bin/rmpc-run"
-        chmod +x "$HOME/.local/bin/rmpc-fetch-lyrics"
-        echo "   ↳ rmpc custom scripts installed to ~/.local/bin/"
-    fi
     echo "   ↳ Application dotfiles installed to ~/.config/ and ~/.local/share/"
 fi
 
-# 6. Initialize Theme & Build Dynamic Ecosystem Colors
+# 6. Install Helper Binaries & User Scripts to ~/.local/bin
+echo "⚙️ Installing helper scripts and CLI utilities to ~/.local/bin..."
+mkdir -p "$HOME/.local/bin"
+
+# Fastfetch launcher
+if [ -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" ]; then
+    cp -f "$BALLADE_DIR/scripts/theming/fastfetch-wrapper.sh" "$HOME/.local/bin/fastfetch"
+    chmod +x "$HOME/.local/bin/fastfetch"
+fi
+
+# rmpc launcher and lyric fetcher
+if [ -d "$BALLADE_DIR/scripts/rmpc" ]; then
+    cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-run" "$HOME/.local/bin/rmpc-run"
+    cp -f "$BALLADE_DIR/scripts/rmpc/rmpc-fetch-lyrics" "$HOME/.local/bin/rmpc-fetch-lyrics"
+    chmod +x "$HOME/.local/bin/rmpc-run" "$HOME/.local/bin/rmpc-fetch-lyrics"
+    ln -sf "$HOME/.local/bin/rmpc-run" "$HOME/.local/bin/rmpc-launch" 2>/dev/null || true
+    echo "   ↳ rmpc custom scripts installed to ~/.local/bin/"
+fi
+
+# Wayland clipboard utilities
+if [ -d "$BALLADE_DIR/scripts/clipboard" ]; then
+    cp -f "$BALLADE_DIR/scripts/clipboard/"* "$HOME/.local/bin/" 2>/dev/null || true
+    chmod +x "$HOME/.local/bin/clipboard-image-transformer.py" "$HOME/.local/bin/copy-image-with-path.py" 2>/dev/null || true
+    echo "   ↳ Clipboard image utilities installed to ~/.local/bin/"
+fi
+
+# System utilities & greetings
+if [ -f "$BALLADE_DIR/scripts/system/random-greeting.sh" ]; then
+    cp -f "$BALLADE_DIR/scripts/system/random-greeting.sh" "$HOME/.local/bin/random-greeting.sh"
+    chmod +x "$HOME/.local/bin/random-greeting.sh"
+fi
+
+if [ -f "$BALLADE_DIR/scripts/system/systemctl-wrapper" ]; then
+    cp -f "$BALLADE_DIR/scripts/system/systemctl-wrapper" "$HOME/.local/bin/systemctl"
+    chmod +x "$HOME/.local/bin/systemctl"
+fi
+
+if [ -f "$BALLADE_DIR/scripts/system/loginctl-wrapper" ]; then
+    cp -f "$BALLADE_DIR/scripts/system/loginctl-wrapper" "$HOME/.local/bin/loginctl"
+    chmod +x "$HOME/.local/bin/loginctl"
+fi
+
+# Power audio executor & symlinks
+if [ -f "$SCRIPTS_DIR/power-audio-executor.sh" ]; then
+    cp -f "$SCRIPTS_DIR/power-audio-executor.sh" "$HOME/.local/bin/power-audio-executor.sh"
+    chmod +x "$HOME/.local/bin/power-audio-executor.sh"
+    for cmd in poweroff reboot shutdown; do
+        ln -sf "$HOME/.local/bin/power-audio-executor.sh" "$HOME/.local/bin/$cmd" 2>/dev/null || true
+    done
+fi
+
+# 7. Initialize Theme & Build Dynamic Ecosystem Colors
 if [ -f "$SCRIPTS_DIR/theming/apply-theme-preset.sh" ]; then
     echo "🎨 Initializing default theme preset (green)..."
     bash "$SCRIPTS_DIR/theming/apply-theme-preset.sh" green >/dev/null 2>&1 || true
@@ -120,4 +165,3 @@ fi
 echo ""
 echo "✨ QuickShell Ballade setup is complete!"
 echo "🚀 You can now launch Ballade anytime with: qs -c ballade"
-

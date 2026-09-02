@@ -1,0 +1,3 @@
+#!/usr/bin/env fish
+# systemctl wrapper - intercepts power commands to play audio
+exec ~/.local/bin/power-audio-executor.sh systemctl $argv

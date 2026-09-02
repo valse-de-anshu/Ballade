@@ -21,3 +21,13 @@ env/
 
 # Temporary sandbox test directories
 /tmp/ballade_sandbox_*
+
+# Audio & Media files (ignored)
+*.flac
+*.mp3
+*.wav
+*.ogg
+*.m4a
+*.opus
+sounds/*.flac
+sounds/login_greetings/*.flac

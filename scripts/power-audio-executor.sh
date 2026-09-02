@@ -101,25 +101,69 @@ play_audio_once() {
 }
 
 main() {
-    local binary="$1"
-    local command="$2"
-    shift 2
-    
-    log_msg "CMD: $binary $command $*"
-    
+    local caller_name
+    caller_name="$(basename "$0")"
+
+    local binary=""
+    local command=""
+    local -a extra_args=()
+
+    if [[ "$caller_name" == "power-audio-executor.sh" ]]; then
+        binary="${1:-}"
+        command="${2:-}"
+        if [[ $# -ge 2 ]]; then
+            shift 2
+            extra_args=("$@")
+        elif [[ $# -eq 1 ]]; then
+            shift 1
+        fi
+    else
+        binary="$caller_name"
+        command="${1:-$caller_name}"
+        if [[ $# -ge 1 && "$1" != "$caller_name" ]]; then
+            extra_args=("$@")
+        elif [[ $# -ge 1 ]]; then
+            shift 1
+            extra_args=("$@")
+        fi
+    fi
+
+    if [[ -z "$binary" ]]; then
+        echo "Usage: power-audio-executor.sh <binary> <command> [args...]" >&2
+        exit 1
+    fi
+
+    local real_bin
+    real_bin=$(get_real_binary "$binary")
+    if [[ -z "$real_bin" ]]; then
+        if [[ -x "/usr/bin/$binary" ]]; then
+            real_bin="/usr/bin/$binary"
+        elif [[ -x "/usr/bin/systemctl" ]]; then
+            real_bin="/usr/bin/systemctl"
+        fi
+    fi
+
+    log_msg "INVOKED: binary=$binary, cmd=$command, real_bin=$real_bin, args=${extra_args[*]:-}"
+
     case "$command" in
         poweroff|reboot|suspend|hibernate|lock-session)
             play_audio_once "$command"
-            local real_bin
-            real_bin=$(get_real_binary "$binary")
-            log_msg "EXEC: $real_bin $command $*"
-            exec "$real_bin" "$command" "$@"
+            if [[ "$binary" == "systemctl" || "$binary" == "loginctl" ]]; then
+                exec "$real_bin" "$command" "${extra_args[@]}"
+            else
+                exec "$real_bin" "${extra_args[@]}"
+            fi
             ;;
         *)
-            local real_bin
-            real_bin=$(get_real_binary "$binary")
-            log_msg "PASS: $real_bin $command $*"
-            exec "$real_bin" "$command" "$@"
+            if [[ "$binary" == "systemctl" || "$binary" == "loginctl" ]]; then
+                if [[ -n "$command" ]]; then
+                    exec "$real_bin" "$command" "${extra_args[@]}"
+                else
+                    exec "$real_bin"
+                fi
+            else
+                exec "$real_bin" "${extra_args[@]}"
+            fi
             ;;
     esac
 }
