@@ -294,9 +294,22 @@ Singleton {
             "key_get_description": Translation.tr("**Instructions**: Log into Mistral account, go to Keys on the sidebar, click Create new key"),
             "api_format": "mistral",
         }),
+        "openrouter-free": aiModelComponent.createObject(this, {
+            "name": "OpenRouter Free (Auto)",
+            "icon": "openrouter-symbolic",
+            "description": Translation.tr("Online | OpenRouter Free Router\nAutomatically routes to the best available free model with zero cost."),
+            "homepage": "https://openrouter.ai/models?q=free",
+            "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+            "model": "openrouter/free",
+            "requires_key": true,
+            "key_id": "openrouter",
+            "key_get_link": "https://openrouter.ai/settings/keys",
+            "key_get_description": Translation.tr("**Pricing**: free. OpenRouter free model routing.\n\n**Instructions**: Log into OpenRouter account, go to Keys on the topright menu, click Create API Key"),
+            "api_format": "openai",
+        }),
     }
     property var modelList: Object.keys(root.models)
-    property var currentModelId: Persistent.states?.ai?.model || modelList[0]
+    property var currentModelId: Persistent.states?.ai?.model || "openrouter-free"
 
     property var apiStrategies: {
         "openai": openaiApiStrategy.createObject(this),
@@ -310,6 +323,7 @@ Singleton {
             const safeModelName = root.safeModelName(model["model"]);
             root.addModel(safeModelName, model)
         });
+        root.modelList = Object.keys(root.models);
     }
 
     Connections {
@@ -353,6 +367,7 @@ Singleton {
         root.models = Object.assign({}, root.models, {
             [modelName]: aiModelComponent.createObject(this, data)
         });
+        root.modelList = Object.keys(root.models);
     }
 
     Process {
