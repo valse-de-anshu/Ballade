@@ -358,9 +358,8 @@ Variants {
 
             Loader {
                 id: blurLoader
-                z: 6
+                z: 8
                 active: Config.options.lock.blur.enable && (GlobalStates.screenLocked || scaleAnim.running)
-                    && !(bgRoot.userBlurActive || bgRoot.overviewBlurActive)
                 x: bgRoot.parallaxX
                 y: bgRoot.parallaxY
                 width: bgRoot.scaledW
@@ -376,7 +375,7 @@ Variants {
                 }
                 sourceComponent: GaussianBlur {
                     source: bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect
-                    radius: GlobalStates.screenLocked ? Config.options.lock.blur.radius : 0
+                    radius: GlobalStates.screenLocked ? (Config.options.lock.blur.radius ?? 64) : 0
                     samples: Config.options.lock.blur.size 
                     Rectangle {
                         opacity: GlobalStates.screenLocked ? 1 : 0
@@ -389,7 +388,7 @@ Variants {
             Loader {
                 id: fastBlurLoader
                 z: 7
-                active: (bgRoot.userBlurActive || bgRoot.overviewBlurActive)
+                active: !GlobalStates.screenLocked && (bgRoot.userBlurActive || bgRoot.overviewBlurActive)
                     && (!bgRoot.centeredWallpaperEnabled || bgRoot.blurFullScreen)
                 x: bgRoot.parallaxX
                 y: bgRoot.parallaxY

@@ -676,6 +676,13 @@ ContentPage {
                         onCheckedChanged: { Config.options.lock.blur.enable = checked }
                     }
                     ConfigSpinBox {
+                        icon: "blur_linear"
+                        text: Translation.tr("Blur intensity")
+                        value: Config.options.lock.blur.radius
+                        from: 10; to: 200; stepSize: 5
+                        onValueChanged: { Config.options.lock.blur.radius = value }
+                    }
+                    ConfigSpinBox {
                         icon: "deblur"
                         text: Translation.tr("Samples")
                         value: Config.options.lock.blur.size
