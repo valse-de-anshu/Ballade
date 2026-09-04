@@ -18,14 +18,18 @@ Singleton {
     id: root
 
     // ── The daemon (screentime-daemon.py) owns all data writing.
-    // QML is read-only: it reloads the JSON every 5 seconds.
+    // QML is read-only: it reloads the JSON every 3 seconds.
     property string filePath: Directories.screentimePath
     property var screenTimeData: ({})
     property string todayDateStr: Qt.formatDate(new Date(), "yyyy-MM-dd")
     property bool isLoaded: false
 
+    readonly property int todayTotalSeconds: (screenTimeData && screenTimeData[todayDateStr]) ? (screenTimeData[todayDateStr].totalSeconds || 0) : 0
+    readonly property string todayUptimeStr: formatHoursMinutes(todayTotalSeconds)
+
     function load() {
         console.log("[ScreenTime] Read-only mode — daemon handles tracking")
+        Quickshell.execDetached(["systemctl", "--user", "start", "ballade-screentime.service"])
     }
 
     // Reactive midnight / date watcher
@@ -42,10 +46,10 @@ Singleton {
         }
     }
 
-    // Reload data from daemon-written JSON every 5 seconds
+    // Reload data from daemon-written JSON every 3 seconds
     Timer {
         id: reloadTimer
-        interval: 5000
+        interval: 3000
         repeat: true
         running: root.isLoaded
         onTriggered: screenTimeFileView.reload()

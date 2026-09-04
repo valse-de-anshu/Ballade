@@ -99,7 +99,10 @@ AbstractBackgroundWidget {
     // ----------------------------------------------------
     // External Satellite Companion & Target Countdown
     // ----------------------------------------------------
-    property var targetData: ({ date: "", title: "", type: "festival" })
+    property var pinnedTargets: []
+    readonly property var targetData: (pinnedTargets && pinnedTargets.length > 0)
+        ? pinnedTargets[0]
+        : ({ date: "", title: "", type: "festival" })
     property bool isSelectingTarget: false
     property real satelliteX: 16
     property real satelliteY: -58
@@ -113,7 +116,15 @@ AbstractBackgroundWidget {
             try {
                 const parsed = JSON.parse(targetFileView.text())
                 if (parsed && typeof parsed === "object") {
-                    if (parsed.date !== undefined) root.targetData = parsed
+                    if (Array.isArray(parsed.targets)) {
+                        root.pinnedTargets = parsed.targets
+                    } else if (parsed.date) {
+                        root.pinnedTargets = [{
+                            date: parsed.date,
+                            title: parsed.title || "",
+                            type: parsed.type || "festival"
+                        }]
+                    }
                     if (typeof parsed.x === "number") root.satelliteX = parsed.x
                     if (typeof parsed.y === "number") root.satelliteY = parsed.y
                     if (typeof parsed.vertical === "boolean") root.satelliteVertical = parsed.vertical
@@ -124,27 +135,52 @@ AbstractBackgroundWidget {
     }
 
     function saveSatelliteState() {
-        let payload = Object.assign({}, root.targetData || { date: "", title: "", type: "festival" }, {
+        let payload = {
+            targets: root.pinnedTargets || [],
             x: root.satelliteX,
             y: root.satelliteY,
             vertical: root.satelliteVertical,
             rotation: root.satelliteRotation
-        })
+        }
         targetFileView.setText(JSON.stringify(payload, null, 2))
     }
 
-    function clearTarget() {
-        root.targetData = { date: "", title: "", type: "festival" }
-        saveSatelliteState()
+    function isEventPinned(dateKey, title) {
+        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return false
+        return root.pinnedTargets.some(t => t.date === dateKey && t.title === title)
     }
 
-    function saveTarget(dateKey, title, type) {
-        root.targetData = {
+    function pinTarget(dateKey, title, type) {
+        if (isEventPinned(dateKey, title)) return
+        var item = {
             date: dateKey,
             title: title || "",
             type: type || "festival"
         }
+        var list = (root.pinnedTargets || []).slice(0)
+        list.push(item)
+        root.pinnedTargets = list
         saveSatelliteState()
+    }
+
+    function unpinTarget(dateKey, title) {
+        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return
+        var list = root.pinnedTargets.filter(t => !(t.date === dateKey && t.title === title))
+        root.pinnedTargets = list
+        saveSatelliteState()
+    }
+
+    function clearTarget() {
+        if (root.pinnedTargets && root.pinnedTargets.length > 0) {
+            var list = root.pinnedTargets.slice(0)
+            list.pop()
+            root.pinnedTargets = list
+            saveSatelliteState()
+        }
+    }
+
+    function saveTarget(dateKey, title, type) {
+        pinTarget(dateKey, title, type)
     }
 
     function setTargetFromDate(d) {
@@ -164,14 +200,18 @@ AbstractBackgroundWidget {
             title = d.toLocaleDateString(Qt.locale(), "MMMM d")
             type = "festival"
         }
-        saveTarget(key, title, type)
+        if (isEventPinned(key, title)) {
+            unpinTarget(key, title)
+        } else {
+            pinTarget(key, title, type)
+        }
     }
 
-    function getTargetCountdown() {
-        if (!root.targetData || !root.targetData.date) {
+    function getCountdownFor(item) {
+        if (!item || !item.date) {
             return { days: 0, text: "No Target Set", title: "Tap + or 📌 to pin any note", dateText: "", type: "festival", valid: false }
         }
-        var parts = root.targetData.date.split("-")
+        var parts = item.date.split("-")
         if (parts.length < 3) {
             return { days: 0, text: "No Target Set", title: "Tap + to select target date", dateText: "", type: "festival", valid: false }
         }
@@ -192,11 +232,15 @@ AbstractBackgroundWidget {
         return {
             days: diffDays,
             text: label,
-            title: root.targetData.title || target.toLocaleDateString(Qt.locale(), "MMMM d"),
+            title: item.title || target.toLocaleDateString(Qt.locale(), "MMMM d"),
             dateText: target.toLocaleDateString(Qt.locale(), "d MMM yyyy"),
-            type: root.targetData.type || "festival",
+            type: item.type || "festival",
             valid: true
         }
+    }
+
+    function getTargetCountdown() {
+        return getCountdownFor(root.targetData)
     }
 
     onIsAddingEventChanged: {
@@ -786,9 +830,7 @@ AbstractBackgroundWidget {
                                         // Pin Specific Event to Satellite Companion
                                         Rectangle {
                                             implicitWidth: 24; implicitHeight: 24; radius: 12
-                                            readonly property bool isPinned: root.targetData
-                                                && root.targetData.date === root.formatDateKey(root.selectedDate)
-                                                && root.targetData.title === modelData.title
+                                            readonly property bool isPinned: root.isEventPinned(root.formatDateKey(root.selectedDate), modelData.title)
                                             color: isPinned ? ColorUtils.applyAlpha("#38bdf8", 0.25) : (pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent")
 
                                             MaterialSymbol {
@@ -801,10 +843,11 @@ AbstractBackgroundWidget {
                                                 anchors.fill: parent; hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
+                                                    let dKey = root.formatDateKey(root.selectedDate)
                                                     if (parent.isPinned) {
-                                                        root.clearTarget()
+                                                        root.unpinTarget(dKey, modelData.title)
                                                     } else {
-                                                        root.saveTarget(root.formatDateKey(root.selectedDate), modelData.title, modelData.type)
+                                                        root.pinTarget(dKey, modelData.title, modelData.type)
                                                     }
                                                 }
                                             }
@@ -845,8 +888,9 @@ AbstractBackgroundWidget {
                                                 anchors.fill: parent; hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
-                                                    if (root.targetData && root.targetData.title === modelData.title) {
-                                                        root.clearTarget()
+                                                    let dKey = root.formatDateKey(root.selectedDate)
+                                                    if (root.isEventPinned(dKey, modelData.title)) {
+                                                        root.unpinTarget(dKey, modelData.title)
                                                     }
                                                     root.deleteEvent(modelData.id)
                                                 }
@@ -1362,9 +1406,9 @@ AbstractBackgroundWidget {
         // Minimalist Frosted Glass Capsule / Badge
         Rectangle {
             id: satelliteCard
-            implicitWidth: root.satelliteVertical ? 175 : (capsuleRow.implicitWidth + 24)
-            implicitHeight: root.satelliteVertical ? (capsuleCol.implicitHeight + 18) : 34
-            radius: root.satelliteVertical ? 14 : 17
+            implicitWidth: capsuleCol.implicitWidth + 24
+            implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
+            radius: 17
             color: ColorUtils.applyAlpha("#121217", 0.82)
             border.width: 1
             border.color: root.isSelectingTarget ? ColorUtils.applyAlpha("#38bdf8", 0.5) : ColorUtils.applyAlpha("#ffffff", 0.10)
@@ -1397,214 +1441,68 @@ AbstractBackgroundWidget {
                 }
             }
 
-            // ── HORIZONTAL LAYOUT ──
-            RowLayout {
-                id: capsuleRow
-                visible: !root.satelliteVertical
-                anchors.centerIn: parent
-                spacing: 8
-
-                // Minimalist Countdown Token Pill
-                Rectangle {
-                    implicitHeight: 22
-                    implicitWidth: tokenText.implicitWidth + 12
-                    radius: 11
-                    color: ColorUtils.applyAlpha("#ffffff", 0.08)
-                    border.width: 1
-                    border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
-
-                    StyledText {
-                        id: tokenText
-                        anchors.centerIn: parent
-                        text: !satelliteWrapper.countdown.valid ? "PIN"
-                            : satelliteWrapper.countdown.days === 0 ? "TODAY"
-                            : satelliteWrapper.countdown.days === 1 ? "1d left"
-                            : satelliteWrapper.countdown.days > 1 ? (satelliteWrapper.countdown.days + "d left")
-                            : (Math.abs(satelliteWrapper.countdown.days) + "d ago")
-                        font.pixelSize: 11
-                        font.weight: Font.Bold
-                        color: "#e2e8f0"
-                    }
-                }
-
-                // Event Title & Subtle Date Tag
-                RowLayout {
-                    spacing: 6
-                    Layout.maximumWidth: 240
-
-                    StyledText {
-                        Layout.maximumWidth: 160
-                        text: root.isSelectingTarget
-                            ? "Select any date..."
-                            : (satelliteWrapper.countdown.title || "No event message")
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        font.weight: Font.Medium
-                        color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
-                        elide: Text.ElideRight
-                    }
-
-                    StyledText {
-                        visible: satelliteWrapper.countdown.dateText !== "" && !root.isSelectingTarget
-                        text: "• " + satelliteWrapper.countdown.dateText
-                        font.pixelSize: 11
-                        color: "#94a3b8"
-                    }
-                }
-
-                // Size Visualizer / Compact Mode Toggle Button
-                Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    radius: 10
-                    color: compactMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.16) : ColorUtils.applyAlpha("#ffffff", 0.06)
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "calendar_view_week"
-                        iconSize: 12
-                        color: compactMouse.containsMouse ? "#38bdf8" : "#94a3b8"
-                    }
-
-                    MouseArea {
-                        id: compactMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.satelliteVertical = !root.satelliteVertical
-                            root.saveSatelliteState()
-                        }
-                    }
-                }
-
-                // 360° Rotate Button
-                Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    radius: 10
-                    color: orientMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "rotate_right"
-                        iconSize: 13
-                        color: orientMouse.containsMouse ? "#ffffff" : "#71717a"
-                    }
-
-                    MouseArea {
-                        id: orientMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
-                            root.saveSatelliteState()
-                        }
-                    }
-                }
-
-                // Action Button (Set / Clear)
-                Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    radius: 10
-                    color: actionMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: root.isSelectingTarget ? "check" : (satelliteWrapper.countdown.valid ? "close" : "add")
-                        iconSize: 13
-                        color: root.isSelectingTarget ? "#38bdf8" : (actionMouse.containsMouse ? "#ffffff" : "#71717a")
-                    }
-
-                    MouseArea {
-                        id: actionMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.isSelectingTarget) {
-                                root.isSelectingTarget = false
-                            } else if (satelliteWrapper.countdown.valid) {
-                                root.clearTarget()
-                            } else {
-                                root.isSelectingTarget = true
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ── VERTICAL COMPACT LAYOUT ──
             ColumnLayout {
                 id: capsuleCol
-                visible: root.satelliteVertical
                 anchors.centerIn: parent
                 spacing: 6
-                width: parent.width - 16
 
+                // Empty / Placeholder state when no targets pinned
                 RowLayout {
-                    Layout.fillWidth: true
+                    visible: root.pinnedTargets.length === 0
+                    spacing: 8
 
-                    // Token Pill
+                    // Minimalist Countdown Token Pill
                     Rectangle {
                         implicitHeight: 22
-                        implicitWidth: tokenTextVert.implicitWidth + 12
+                        implicitWidth: tokenTextEmpty.implicitWidth + 12
                         radius: 11
                         color: ColorUtils.applyAlpha("#ffffff", 0.08)
                         border.width: 1
                         border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
 
                         StyledText {
-                            id: tokenTextVert
+                            id: tokenTextEmpty
                             anchors.centerIn: parent
-                            text: !satelliteWrapper.countdown.valid ? "PIN"
-                                : satelliteWrapper.countdown.days === 0 ? "TODAY"
-                                : satelliteWrapper.countdown.days === 1 ? "1d left"
-                                : satelliteWrapper.countdown.days > 1 ? (satelliteWrapper.countdown.days + "d left")
-                                : (Math.abs(satelliteWrapper.countdown.days) + "d ago")
+                            text: "PIN"
                             font.pixelSize: 11
                             font.weight: Font.Bold
                             color: "#e2e8f0"
                         }
                     }
 
-                    Item { Layout.fillWidth: true }
+                    // Event Title & Subtle Date Tag
+                    RowLayout {
+                        spacing: 6
+                        Layout.maximumWidth: 240
 
-                    // Size Visualizer / Expand Mode Button
-                    Rectangle {
-                        implicitWidth: 20; implicitHeight: 20; radius: 10
-                        color: compactMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.16) : ColorUtils.applyAlpha("#ffffff", 0.06)
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "calendar_view_month"
-                            iconSize: 12
-                            color: compactMouseVert.containsMouse ? "#38bdf8" : "#94a3b8"
-                        }
-                        MouseArea {
-                            id: compactMouseVert
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.satelliteVertical = !root.satelliteVertical
-                                root.saveSatelliteState()
-                            }
+                        StyledText {
+                            Layout.maximumWidth: 160
+                            text: root.isSelectingTarget
+                                ? "Select any date..."
+                                : "Tap + or 📌 to pin any note"
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            font.weight: Font.Medium
+                            color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
+                            elide: Text.ElideRight
                         }
                     }
 
                     // 360° Rotate Button
                     Rectangle {
-                        implicitWidth: 20; implicitHeight: 20; radius: 10
-                        color: orientMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+                        implicitWidth: 20
+                        implicitHeight: 20
+                        radius: 10
+                        color: orientMouseEmpty.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "rotate_right"
                             iconSize: 13
-                            color: orientMouseVert.containsMouse ? "#ffffff" : "#71717a"
+                            color: orientMouseEmpty.containsMouse ? "#ffffff" : "#71717a"
                         }
+
                         MouseArea {
-                            id: orientMouseVert
+                            id: orientMouseEmpty
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
@@ -1617,50 +1515,155 @@ AbstractBackgroundWidget {
 
                     // Action Button (Set / Clear)
                     Rectangle {
-                        implicitWidth: 20; implicitHeight: 20; radius: 10
-                        color: actionMouseVert.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+                        implicitWidth: 20
+                        implicitHeight: 20
+                        radius: 10
+                        color: actionMouseEmpty.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
                         MaterialSymbol {
                             anchors.centerIn: parent
-                            text: root.isSelectingTarget ? "check" : (satelliteWrapper.countdown.valid ? "close" : "add")
+                            text: root.isSelectingTarget ? "check" : "add"
                             iconSize: 13
-                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseVert.containsMouse ? "#ffffff" : "#71717a")
+                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseEmpty.containsMouse ? "#ffffff" : "#71717a")
                         }
+
                         MouseArea {
-                            id: actionMouseVert
+                            id: actionMouseEmpty
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.isSelectingTarget) {
-                                    root.isSelectingTarget = false
-                                } else if (satelliteWrapper.countdown.valid) {
-                                    root.clearTarget()
-                                } else {
-                                    root.isSelectingTarget = true
-                                }
-                            }
+                            onClicked: root.isSelectingTarget = !root.isSelectingTarget
                         }
                     }
                 }
 
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.isSelectingTarget
-                        ? "Select any date..."
-                        : (satelliteWrapper.countdown.title || "No event message")
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    font.weight: Font.Medium
-                    color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                }
+                // Pinned Events: a new event goes below
+                Repeater {
+                    model: root.pinnedTargets
+                    delegate: RowLayout {
+                        id: evRow
+                        spacing: 8
+                        readonly property var cd: root.getCountdownFor(modelData)
 
-                StyledText {
-                    visible: satelliteWrapper.countdown.dateText !== "" && !root.isSelectingTarget
-                    text: satelliteWrapper.countdown.dateText
-                    font.pixelSize: 11
-                    color: "#94a3b8"
+                        // Minimalist Countdown Token Pill
+                        Rectangle {
+                            implicitHeight: 22
+                            implicitWidth: tokenText.implicitWidth + 12
+                            radius: 11
+                            color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
+
+                            StyledText {
+                                id: tokenText
+                                anchors.centerIn: parent
+                                text: !evRow.cd.valid ? "PIN"
+                                    : evRow.cd.days === 0 ? "TODAY"
+                                    : evRow.cd.days === 1 ? "1d left"
+                                    : evRow.cd.days > 1 ? (evRow.cd.days + "d left")
+                                    : (Math.abs(evRow.cd.days) + "d ago")
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: "#e2e8f0"
+                            }
+                        }
+
+                        // Event Title & Subtle Date Tag
+                        RowLayout {
+                            spacing: 6
+                            Layout.maximumWidth: 240
+
+                            StyledText {
+                                Layout.maximumWidth: 160
+                                text: evRow.cd.title || "No event message"
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: Font.Medium
+                                color: "#ffffff"
+                                elide: Text.ElideRight
+                            }
+
+                            StyledText {
+                                visible: evRow.cd.dateText !== ""
+                                text: "• " + evRow.cd.dateText
+                                font.pixelSize: 11
+                                color: "#94a3b8"
+                            }
+                        }
+
+                        // Unpin Button (close icon)
+                        Rectangle {
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 10
+                            color: delEvMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "close"
+                                iconSize: 13
+                                color: delEvMouse.containsMouse ? "#ffffff" : "#71717a"
+                            }
+
+                            MouseArea {
+                                id: delEvMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.unpinTarget(modelData.date, modelData.title)
+                            }
+                        }
+
+                        // 360° Rotate Button (shown on first event row)
+                        Rectangle {
+                            visible: index === 0
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 10
+                            color: orientMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "rotate_right"
+                                iconSize: 13
+                                color: orientMouse.containsMouse ? "#ffffff" : "#71717a"
+                            }
+
+                            MouseArea {
+                                id: orientMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
+                                    root.saveSatelliteState()
+                                }
+                            }
+                        }
+
+                        // Add Button (shown on first event row)
+                        Rectangle {
+                            visible: index === 0
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 10
+                            color: addEvMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: root.isSelectingTarget ? "check" : "add"
+                                iconSize: 13
+                                color: root.isSelectingTarget ? "#38bdf8" : (addEvMouse.containsMouse ? "#ffffff" : "#71717a")
+                            }
+
+                            MouseArea {
+                                id: addEvMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.isSelectingTarget = !root.isSelectingTarget
+                            }
+                        }
+                    }
                 }
             }
         }

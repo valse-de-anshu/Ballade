@@ -20,10 +20,14 @@ Button {
     property string previewDownloadPath
     property string downloadPath
     property string nsfwPath
-    property string fileName: decodeURIComponent((imageData.file_url).substring((imageData.file_url).lastIndexOf('/') + 1))
+    property string fileName: {
+        const raw = ((imageData.file_url || "").split('?')[0]).trim();
+        return decodeURIComponent(raw.substring(raw.lastIndexOf('/') + 1));
+    }
     property string filePath: `${root.previewDownloadPath}/${root.fileName}`
     property int maxTagStringLineLength: 50
     property real imageRadius: Appearance.rounding.small
+    property bool isGif: (modelData?.file_ext === "gif") || ((modelData?.file_url || "").toLowerCase().endsWith(".gif")) || ((modelData?.preview_url || "").toLowerCase().endsWith(".gif"))
 
     property bool showActions: false
     property bool showDescription: false
@@ -34,12 +38,15 @@ Button {
         filePath: root.filePath
         sourceUrl: root.imageData.preview_url ?? root.imageData.sample_url
         onDone: (path, width, height) => {
-            imageObject.source = ""
-            imageObject.source = path
-            if (!modelData.width || !modelData.height) {
-                modelData.width = width
-                modelData.height = height
-                modelData.aspect_ratio = width / height
+            const resolvedPath = path.startsWith("file://") ? path : ("file://" + path);
+            imageObject.source = resolvedPath;
+            if (root.isGif) {
+                animatedImageObject.source = resolvedPath;
+            }
+            if ((!modelData.width || !modelData.height) && height > 0) {
+                modelData.width = width;
+                modelData.height = height;
+                modelData.aspect_ratio = width / height;
             }
         }
     }
@@ -52,7 +59,9 @@ Button {
         implicitWidth: root.rowHeight * modelData.aspect_ratio
         implicitHeight: root.rowHeight
         radius: imageRadius
-        color: Appearance.colors.colLayer2
+        color: (modelData.dominant_color && modelData.dominant_color.length > 0) ?
+            ColorUtils.transparentize(modelData.dominant_color, 0.4) :
+            Appearance.colors.colLayer2
     }
 
     contentItem: Item {
@@ -60,20 +69,64 @@ Button {
 
         StyledImage {
             id: imageObject
+            visible: !root.isGif
             anchors.fill: parent
             width: root.rowHeight * modelData.aspect_ratio
             height: root.rowHeight
             fillMode: Image.PreserveAspectFit
-            source: modelData.preview_url ?? modelData.sample_url ?? modelData.file_url
-            fallbacks: [modelData.sample_url, modelData.file_url].filter(u => u && u !== modelData.preview_url)
+            sourceSize.height: Math.round(root.rowHeight * 1.5)
+            sourceSize.width: Math.round(root.rowHeight * modelData.aspect_ratio * 1.5)
+            source: root.manualDownload ? "" : (modelData.preview_url ?? modelData.sample_url ?? modelData.file_url)
+            fallbacks: root.manualDownload ? [] : [modelData.sample_url, modelData.file_url].filter(u => u && u !== modelData.preview_url)
 
-            layer.enabled: true
+            layer.enabled: (imageRadius > 0 && status === Image.Ready)
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: root.rowHeight * modelData.aspect_ratio
                     height: root.rowHeight
                     radius: imageRadius
                 }
+            }
+        }
+
+        AnimatedImage {
+            id: animatedImageObject
+            visible: root.isGif
+            anchors.fill: parent
+            width: root.rowHeight * modelData.aspect_ratio
+            height: root.rowHeight
+            fillMode: Image.PreserveAspectFit
+            playing: true
+            asynchronous: true
+            cache: true
+            source: root.isGif ? (root.manualDownload ? "" : (modelData.preview_url ?? modelData.sample_url ?? modelData.file_url)) : ""
+
+            layer.enabled: (imageRadius > 0 && status === AnimatedImage.Ready)
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: root.rowHeight * modelData.aspect_ratio
+                    height: root.rowHeight
+                    radius: imageRadius
+                }
+            }
+        }
+
+        Rectangle {
+            visible: root.isGif
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.margins: 8
+            implicitWidth: gifLabel.implicitWidth + 8
+            implicitHeight: gifLabel.implicitHeight + 4
+            radius: Appearance.rounding.small
+            color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.3)
+            Text {
+                id: gifLabel
+                anchors.centerIn: parent
+                text: "GIF"
+                font.bold: true
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.colors.colOnLayer0
             }
         }
 

@@ -52,10 +52,14 @@ Singleton {
             const textUptime = fileUptime.text();
             const uptimeSeconds = Number(textUptime.split(" ")[0] ?? 0);
 
+            let activeSec = (typeof ScreenTime !== "undefined" && ScreenTime && ScreenTime.todayTotalSeconds > 0)
+                ? ScreenTime.todayTotalSeconds
+                : uptimeSeconds;
+
             // Convert seconds to days, hours, and minutes
-            const days = Math.floor(uptimeSeconds / 86400);
-            const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+            const days = Math.floor(activeSec / 86400);
+            const hours = Math.floor((activeSec % 86400) / 3600);
+            const minutes = Math.floor((activeSec % 3600) / 60);
 
             // Build the formatted uptime string
             let formatted = "";

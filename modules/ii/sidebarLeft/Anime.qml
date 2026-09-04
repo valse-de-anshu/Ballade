@@ -74,6 +74,7 @@ Item {
             description: Translation.tr("Disable NSFW content"),
             execute: () => {
                 Persistent.states.booru.allowNsfw = false;
+                root.handleInput(tagInputField.text);
             }
         },
         {
@@ -81,6 +82,7 @@ Item {
             description: Translation.tr("Allow NSFW content"),
             execute: () => {
                 Persistent.states.booru.allowNsfw = true;
+                root.handleInput(tagInputField.text);
             }
         },
     ]
@@ -533,7 +535,10 @@ Item {
                             checked: (Persistent.states.booru.allowNsfw && Booru.currentProvider !== "zerochan")
                             onCheckedChanged: {
                                 if (!nsfwSwitch.enabled) return;
-                                Persistent.states.booru.allowNsfw = checked;
+                                if (Persistent.states.booru.allowNsfw !== checked) {
+                                    Persistent.states.booru.allowNsfw = checked;
+                                    root.handleInput(tagInputField.text);
+                                }
                             }
                         }
                     }

@@ -4,7 +4,7 @@
 (
     address: "127.0.0.1:6600",
     password: None,
-    theme: Some("orange"),
+    theme: Some("green"),
     cache_dir: None,
     lyrics_dir: Some("~/Music/lyrics"),
     enable_lyrics_index: true,

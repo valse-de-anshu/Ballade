@@ -23,10 +23,33 @@ Rectangle {
     height: implicitHeight
     implicitHeight: columnLayout.implicitHeight + root.responsePadding * 2
 
-    property real availableWidth: Math.max(100, (ListView.view ? ListView.view.width : (parent ? parent.width : 400)))
+    property real availableWidth: parent ? parent.width : 400
     property real rowTooShortThreshold: 190
     property real imageSpacing: 5
     property real responsePadding: 5
+
+    Component.onCompleted: {
+        // Break property bind to prevent aggressive updates during animations
+        availableWidth = ListView.view ? ListView.view.width : (parent ? parent.width : 400)
+    }
+
+    Connections {
+        target: ListView.view ?? parent
+        function onWidthChanged() {
+            updateWidthTimer.restart()
+        }
+    }
+
+    Timer {
+        id: updateWidthTimer
+        interval: 150
+        onTriggered: {
+            const w = ListView.view ? ListView.view.width : (parent ? parent.width : 400);
+            if (w > 100 && Math.abs(root.availableWidth - w) > 5) {
+                root.availableWidth = w;
+            }
+        }
+    }
 
     radius: Appearance.rounding.normal
     color: Appearance.colors.colLayer1
@@ -209,7 +232,7 @@ Rectangle {
                         rowHeight: imageRow.rowHeight
                         imageRadius: imageRow.modelData.images.length == 1 ? 50 : Appearance.rounding.normal
                         // Download manually to reduce redundant requests or make sure downloading works
-                        manualDownload: ["danbooru", "waifu.im", "t.alcy.cc", "konachan"].includes(root.responseData.provider)
+                        manualDownload: ["waifu.im", "t.alcy.cc", "konachan"].includes(root.responseData.provider)
                         previewDownloadPath: root.previewDownloadPath
                         downloadPath: root.downloadPath
                         nsfwPath: root.nsfwPath

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Ballade Screen Time Tracking Daemon
-====================================
-Runs as a systemd user service. Tracks the active Hyprland window in real-time
-via socket2 events + 2s polling fallback. Accumulates per-second data across
-reboots and restarts. Saves atomically every 5 seconds. Resets at midnight.
+Ballade Screen Time & Daily Uptime Tracking Daemon
+===================================================
+Runs as a user service. Tracks the active Hyprland window in real-time
+via socket2 events + 1s active tick. Accumulates per-second active used time
+across reboots, restarts, and logouts.
+Saves atomically every 3 seconds. Resets at midnight (24-hour cycle).
 """
 
 import json
@@ -24,8 +25,8 @@ DATA_PATH = Path("/home/valse-de-anshu/.local/state/quickshell/user/screentime.j
 
 # ── App Name / Icon Mapping ───────────────────────────────────────────────────
 def format_app_name(app_id: str) -> str:
-    if not app_id or not app_id.strip():
-        return "Desktop"
+    if not app_id or not app_id.strip() or app_id.lower() in ("desktop", "system"):
+        return "Desktop & Shell"
     lower = app_id.lower().strip()
     if "zen" in lower:        return "Zen Browser"
     if "chrome" in lower:     return "Google Chrome"
@@ -56,7 +57,7 @@ def format_app_name(app_id: str) -> str:
 
 
 def format_app_icon(app_id: str) -> str:
-    if not app_id or not app_id.strip():
+    if not app_id or not app_id.strip() or app_id.lower() in ("desktop", "system"):
         return "desktop_windows"
     lower = app_id.lower().strip()
     if any(k in lower for k in ("zen", "chrome", "firefox", "brave", "browser")):
@@ -99,98 +100,114 @@ def atomic_save(path: Path, data: dict) -> None:
 def load_data() -> dict:
     try:
         with open(DATA_PATH) as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-# ── Idle / lock detection ─────────────────────────────────────────────────────
-def is_screen_locked() -> bool:
-    """
-    Check if the session is locked via loginctl.
-    Returns True if locked so tracking should pause.
-    """
-    try:
-        result = subprocess.run(
-            ["loginctl", "show-session", "self", "--property=LockedHint"],
-            capture_output=True, text=True, timeout=2
-        )
-        return "LockedHint=yes" in result.stdout
+            d = json.load(f)
+            if isinstance(d, dict):
+                return d
     except Exception:
         pass
-    # Fallback: check hyprctl monitors for locked state
-    try:
-        result = subprocess.run(
-            ["hyprctl", "monitors", "-j"],
-            capture_output=True, text=True, timeout=2
-        )
-        monitors = json.loads(result.stdout)
-        for m in monitors:
-            if m.get("dpmsStatus") is False:
-                return True
-    except Exception:
-        pass
-    return False
+    return {}
 
 
-# ── Get active window via hyprctl ─────────────────────────────────────────────
-def get_active_window() -> tuple[str, str]:
-    """Returns (class, title) or ('', '') if nothing focused."""
-    try:
-        result = subprocess.run(
-            ["hyprctl", "activewindow", "-j"],
-            capture_output=True, text=True, timeout=3
-        )
-        text = result.stdout.strip()
-        if not text or text == "{}":
-            return "", ""
-        win = json.loads(text)
-        cls = (win.get("class") or win.get("initialClass") or "").strip()
-        title = (win.get("title") or "").strip()
-        return cls, title
-    except Exception:
-        return "", ""
-
-
-# ── Hyprland socket2 event listener ──────────────────────────────────────────
-def get_socket2_path() -> str | None:
-    """Find the Hyprland socket2 path."""
-    xdg_runtime = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+# ── Hyprland discovery & active window ────────────────────────────────────────
+def get_hyprland_signature() -> str | None:
     sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
-    if not sig:
-        # Try to discover it
-        hypr_dir = Path(xdg_runtime) / "hypr"
-        if hypr_dir.exists():
-            dirs = sorted(hypr_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-            if dirs:
-                sig = dirs[0].name
     if sig:
+        return sig
+    xdg_runtime = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    hypr_dir = Path(xdg_runtime) / "hypr"
+    if hypr_dir.exists():
+        dirs = sorted(hypr_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+        if dirs:
+            return dirs[0].name
+    return None
+
+
+def get_socket2_path() -> str | None:
+    sig = get_hyprland_signature()
+    if sig:
+        os.environ["HYPRLAND_INSTANCE_SIGNATURE"] = sig
+        xdg_runtime = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
         return str(Path(xdg_runtime) / "hypr" / sig / ".socket2.sock")
     return None
 
 
-FOCUS_EVENTS = {"activewindow", "activewindowv2", "windowtitle", "windowtitlev2",
-                "workspace", "focusedmon"}
+def is_screen_locked() -> bool:
+    """Check if lockscreen is active or all monitors are DPMS off."""
+    # 1. Lockscreen binary check
+    try:
+        res = subprocess.run(
+            ["pidof", "hyprlock", "swaylock", "gtklock", "waylock"],
+            capture_output=True, timeout=1
+        )
+        if res.returncode == 0:
+            return True
+    except Exception:
+        pass
+
+    # 2. Monitors DPMS off check
+    try:
+        res = subprocess.run(
+            ["hyprctl", "monitors", "-j"],
+            capture_output=True, text=True, timeout=2
+        )
+        if res.stdout:
+            monitors = json.loads(res.stdout)
+            if monitors and all(m.get("dpmsStatus") is False for m in monitors):
+                return True
+    except Exception:
+        pass
+
+    return False
 
 
+def get_active_window() -> tuple[str, str]:
+    """Returns (class, title) or ('desktop', 'Desktop') if nothing focused."""
+    sig = get_hyprland_signature()
+    if sig:
+        os.environ["HYPRLAND_INSTANCE_SIGNATURE"] = sig
+
+    try:
+        result = subprocess.run(
+            ["hyprctl", "activewindow", "-j"],
+            capture_output=True, text=True, timeout=2
+        )
+        text = result.stdout.strip()
+        if not text or text == "{}":
+            return "desktop", "Desktop"
+        win = json.loads(text)
+        cls = (win.get("class") or win.get("initialClass") or "").strip()
+        title = (win.get("title") or win.get("initialTitle") or "").strip()
+        if not cls:
+            return "desktop", "Desktop"
+        return cls, title if title else cls
+    except Exception:
+        return "desktop", "Desktop"
+
+
+FOCUS_EVENTS = {
+    "activewindow", "activewindowv2", "windowtitle", "windowtitlev2",
+    "workspace", "focusedmon", "openwindow", "closewindow"
+}
+
+
+# ── ScreenTime Daemon ─────────────────────────────────────────────────────────
 class ScreenTimeDaemon:
     def __init__(self):
         self.data: dict = {}
         self.today_str: str = ""
-        self.current_app: str = ""
-        self.current_title: str = ""
+        self.current_app: str = "desktop"
+        self.current_title: str = "Desktop"
         self._lock = threading.Lock()
         self._running = True
-        self._dirty = False  # data changed since last save
+        self._dirty = False
         self._last_save = 0.0
 
-    # ── Data helpers ──────────────────────────────────────────────────────────
     def _today(self) -> str:
         return date.today().isoformat()
 
     def _ensure_today(self, today: str) -> None:
-        """Make sure today's key exists with correct structure."""
-        if today not in self.data:
+        """Make sure today's record exists without wiping existing accumulated data."""
+        if today not in self.data or not isinstance(self.data[today], dict):
             self.data[today] = {
                 "totalSeconds": 0,
                 "hourly": [0] * 24,
@@ -202,90 +219,90 @@ class ScreenTimeDaemon:
                 day["hourly"] = [0] * 24
             if not isinstance(day.get("apps"), dict):
                 day["apps"] = {}
-            if "totalSeconds" not in day:
-                day["totalSeconds"] = 0
+            if "totalSeconds" not in day or not isinstance(day["totalSeconds"], (int, float)):
+                day["totalSeconds"] = sum(day["hourly"])
 
     def record_second(self) -> None:
-        """Add 1 second to the currently focused app."""
-        app_id = self.current_app
-        title = self.current_title
-
-        # Ignore empty / desktop
-        if not app_id or app_id.lower() == "desktop":
-            return
-
+        """Add 1 second to the day's active used time and to the currently focused app & title."""
         today = self._today()
         hour = datetime.now().hour
 
         with self._lock:
-            # Detect midnight rollover — load fresh if date changed
+            # Detect midnight rollover
             if self.today_str and today != self.today_str:
                 print(f"[screentime] Midnight rollover: {self.today_str} → {today}", flush=True)
-                # Re-load from disk (it may have prior days already)
-                self.data = load_data()
+                # Cap previous day at 86400 (24h)
+                if self.today_str in self.data:
+                    self.data[self.today_str]["totalSeconds"] = min(86400, self.data[self.today_str].get("totalSeconds", 0))
+                # Re-load from disk to merge any external day records
+                disk_data = load_data()
+                disk_data.update(self.data)
+                self.data = disk_data
 
             self.today_str = today
             self._ensure_today(today)
 
-            day = self.data[today]
-            day["totalSeconds"] = (day["totalSeconds"] or 0) + 1
-            day["hourly"][hour] = (day["hourly"][hour] or 0) + 1
+            app_id = (self.current_app or "desktop").strip().lower()
+            title = (self.current_title or "").strip()
 
-            # App entry
-            if app_id not in day["apps"]:
-                day["apps"][app_id] = {
+            day = self.data[today]
+            # Max 24 hours (86400s) per day
+            day["totalSeconds"] = min(86400, (day.get("totalSeconds") or 0) + 1)
+            day["hourly"][hour] = min(3600, (day["hourly"][hour] or 0) + 1)
+
+            # App tracking
+            apps = day["apps"]
+            if app_id not in apps:
+                apps[app_id] = {
                     "name": format_app_name(app_id),
                     "icon": format_app_icon(app_id),
                     "seconds": 1,
                     "titles": {}
                 }
             else:
-                day["apps"][app_id]["seconds"] = (day["apps"][app_id].get("seconds") or 0) + 1
+                apps[app_id]["seconds"] = (apps[app_id].get("seconds") or 0) + 1
 
-            # Title tracking
+            # Window / Tab Title tracking
             if title:
-                titles = day["apps"][app_id].setdefault("titles", {})
-                key = title[:160]  # cap key length
-                titles[key] = (titles.get(key) or 0) + 1
-                # Prune to 50 most-seen titles
-                if len(titles) > 50:
-                    min_key = min(titles, key=lambda k: titles[k])
-                    del titles[min_key]
+                titles = apps[app_id].setdefault("titles", {})
+                key = title[:140].strip()
+                if key:
+                    titles[key] = (titles.get(key) or 0) + 1
+                    # Prune to top 60 most active titles
+                    if len(titles) > 60:
+                        min_key = min(titles, key=lambda k: titles[k])
+                        del titles[min_key]
 
             self._dirty = True
 
-    def save_if_needed(self) -> None:
+    def save_if_needed(self, force: bool = False) -> None:
         now = time.monotonic()
-        if self._dirty and (now - self._last_save) >= 5.0:
+        if (self._dirty and (now - self._last_save) >= 3.0) or (force and self._dirty):
             with self._lock:
                 if not self._dirty:
                     return
-                snapshot = json.loads(json.dumps(self.data))  # deep copy under lock
+                snapshot = json.loads(json.dumps(self.data))
                 self._dirty = False
             try:
                 atomic_save(DATA_PATH, snapshot)
                 self._last_save = now
-                print(f"[screentime] Saved → {DATA_PATH}", flush=True)
             except Exception as e:
                 print(f"[screentime] Save error: {e}", flush=True)
-                self._dirty = True  # retry
+                self._dirty = True
 
-    # ── Active window update ──────────────────────────────────────────────────
     def update_active_window(self) -> None:
         cls, title = get_active_window()
         self.current_app = cls
         self.current_title = title
 
-    # ── Hyprland socket2 listener thread ─────────────────────────────────────
     def socket_listener(self) -> None:
+        """Hyprland socket2 real-time event listener."""
         while self._running:
             sock_path = get_socket2_path()
             if not sock_path or not Path(sock_path).exists():
-                print("[screentime] Waiting for Hyprland socket2...", flush=True)
-                time.sleep(3)
+                time.sleep(2)
                 continue
 
-            print(f"[screentime] Connecting to socket2: {sock_path}", flush=True)
             try:
                 with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
                     sock.connect(sock_path)
@@ -306,33 +323,25 @@ class ScreenTimeDaemon:
                                         self.update_active_window()
                         except socket.timeout:
                             continue
-                        except Exception as e:
-                            print(f"[screentime] Socket read error: {e}", flush=True)
+                        except Exception:
                             break
-            except Exception as e:
-                print(f"[screentime] Socket connect error: {e}", flush=True)
+            except Exception:
+                pass
             if self._running:
-                print("[screentime] Socket disconnected, reconnecting in 3s...", flush=True)
-                time.sleep(3)
+                time.sleep(2)
 
-    # ── Poll fallback thread (every 2s) ───────────────────────────────────────
-    def poll_thread(self) -> None:
-        while self._running:
-            self.update_active_window()
-            time.sleep(2)
-
-    # ── 1-second tracking + 5s save ticker ────────────────────────────────────
     def tick_thread(self) -> None:
+        """Main 1-second active tracking ticker."""
         while self._running:
-            # Check lock state every 10 ticks (every ~10s) to reduce overhead
             start = time.monotonic()
 
             if is_screen_locked():
-                # Pause tracking, still save pending data
                 self.save_if_needed()
                 time.sleep(1)
                 continue
 
+            # Periodic active window refresh
+            self.update_active_window()
             self.record_second()
             self.save_if_needed()
 
@@ -340,46 +349,34 @@ class ScreenTimeDaemon:
             sleep_for = max(0, 1.0 - elapsed)
             time.sleep(sleep_for)
 
-    # ── Startup ───────────────────────────────────────────────────────────────
     def start(self) -> None:
-        # Load existing data first (merge)
+        # Load existing data on startup (persists across reboots/logouts)
         self.data = load_data()
         self.today_str = self._today()
-        print(f"[screentime] Loaded {len(self.data)} day(s) of data from {DATA_PATH}", flush=True)
+        self._ensure_today(self.today_str)
+        today_secs = self.data[self.today_str].get("totalSeconds", 0)
+        print(f"[screentime] Initialized. Today ({self.today_str}): {today_secs}s active already recorded.", flush=True)
 
-        # Do an immediate window fetch
         self.update_active_window()
-        print(f"[screentime] Starting — current app: {self.current_app!r}", flush=True)
 
-        # Start socket listener thread
+        # Start socket listener
         t_sock = threading.Thread(target=self.socket_listener, daemon=True, name="socket")
         t_sock.start()
 
-        # Start poll fallback thread
-        t_poll = threading.Thread(target=self.poll_thread, daemon=True, name="poll")
-        t_poll.start()
-
-        # Signals for graceful shutdown
+        # Signal handlers for clean shutdown
         def handle_signal(signum, frame):
-            print(f"\n[screentime] Received signal {signum}, shutting down...", flush=True)
+            print(f"\n[screentime] Received signal {signum}, saving and exiting...", flush=True)
             self._running = False
 
         signal.signal(signal.SIGTERM, handle_signal)
         signal.signal(signal.SIGINT, handle_signal)
 
-        # Run tick in main thread
         try:
             self.tick_thread()
         finally:
-            # Final save on exit
-            print("[screentime] Final save on shutdown...", flush=True)
-            try:
-                with self._lock:
-                    snapshot = json.loads(json.dumps(self.data))
-                atomic_save(DATA_PATH, snapshot)
-                print("[screentime] Final save complete.", flush=True)
-            except Exception as e:
-                print(f"[screentime] Final save error: {e}", flush=True)
+            print("[screentime] Saving final snapshot...", flush=True)
+            self.save_if_needed(force=True)
+            print("[screentime] Shutdown complete.", flush=True)
 
 
 if __name__ == "__main__":
