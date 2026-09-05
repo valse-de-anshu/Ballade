@@ -475,7 +475,7 @@ ContentPage {
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                const currentWall = (Config.options.background?.wallpaperPath || Wallpapers.confirmedPath || "");
+                                                const currentWall = ((Config.options.background && Config.options.background.wallpaperPath) || Wallpapers.confirmedPath || "");
                                                 if (currentWall && currentWall.length > 0) {
                                                     themeCard.savedWallpaper = currentWall;
                                                 }

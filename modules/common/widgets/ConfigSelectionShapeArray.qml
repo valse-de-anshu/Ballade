@@ -10,7 +10,7 @@ Flow {
     Layout.fillWidth: true
     spacing: 6
 
-    property list<string> options: []
+    property var options: []
     property var currentValue: null
     property color shapeColor: Appearance.colors.colPrimary
     property color backgroundColor: Appearance.colors.colLayer1
@@ -91,15 +91,36 @@ Flow {
                 text: shapeButton.modelData
             }
 
-            contentItem: MaterialShape {
+            contentItem: Item {
                 anchors.centerIn: parent
-                implicitSize: 20
-                shape: root.getShape(shapeButton.modelData)
-                color: shapeButton.isSelected
-                    ? Appearance.colors.colPrimary
-                    : Appearance.colors.colOnSurfaceVariant
-                Behavior on color {
-                    ColorAnimation { duration: 180 }
+                implicitWidth: 20
+                implicitHeight: 20
+
+                MaterialSymbol {
+                    visible: shapeButton.modelData === "Free"
+                    anchors.centerIn: parent
+                    text: "crop_free"
+                    iconSize: 20
+                    color: shapeButton.isSelected
+                        ? Appearance.colors.colPrimary
+                        : Appearance.colors.colOnSurfaceVariant
+                    Behavior on color {
+                        ColorAnimation { duration: 180 }
+                    }
+                }
+
+                MaterialShape {
+                    visible: shapeButton.modelData !== "Free"
+                    anchors.centerIn: parent
+                    implicitWidth: shapeButton.modelData === "VerticalRectangle" ? 14 : 20
+                    implicitHeight: 20
+                    shape: root.getShape(shapeButton.modelData)
+                    color: shapeButton.isSelected
+                        ? Appearance.colors.colPrimary
+                        : Appearance.colors.colOnSurfaceVariant
+                    Behavior on color {
+                        ColorAnimation { duration: 180 }
+                    }
                 }
             }
 

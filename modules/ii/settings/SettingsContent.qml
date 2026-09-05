@@ -23,10 +23,17 @@ Item {
             if (GlobalStates.settingsPage === "") return
             
             let parts = GlobalStates.settingsPage.split(":");
-            let pageName = parts[0];
+            let pageName = parts[0].toLowerCase();
             let searchTerm = parts.length > 1 ? parts[1] : "";
 
-            const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName.toLowerCase());
+            // Aliases for backward compatibility
+            if (pageName === "desktop" || pageName === "wallpaper" || pageName === "background") pageName = "appearance";
+            if (pageName === "lock" || pageName === "lockscreen") pageName = "lock screen";
+            if (pageName === "sound" || pageName === "audio") pageName = "sounds";
+            if (pageName === "overlay" || pageName === "crosshair" || pageName === "snip") pageName = "utilities";
+            if (pageName === "custom widgets") pageName = "widgets";
+
+            const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName);
             
             if (idx >= 0) {
                 root.currentPage = idx;
@@ -50,7 +57,8 @@ Item {
     }
 
     onCurrentPageChanged: {
-        const pageName = root.pages[currentPage]?.name ?? ""
+        const page = (root.pages && root.pages[currentPage]) ? root.pages[currentPage] : null;
+        const pageName = (page && page.name) ? page.name : "";
         if (pageName === Translation.tr("About")) {
             if (SystemInfo.cpu === "") SystemInfo.refresh()
             Updates.refresh()
@@ -59,12 +67,16 @@ Item {
     
     property var pages: {
         let list = [
-            { name: Translation.tr("Quick"),      icon: "instant_mix",    component: Qt.resolvedUrl("pages/QuickConfig.qml") },
-            { name: Translation.tr("General"),    icon: "browse",         component: Qt.resolvedUrl("pages/GeneralConfig.qml") },
-            { name: Translation.tr("Bar"),        icon: "toast",          iconRotation: 180, component: Qt.resolvedUrl("pages/BarConfig.qml") },
-            { name: Translation.tr("Desktop"),    icon: "texture",        component: Qt.resolvedUrl("pages/BackgroundConfig.qml") },
-            { name: Translation.tr("Interface"),  icon: "bottom_app_bar", component: Qt.resolvedUrl("pages/InterfaceConfig.qml") },
-            { name: Translation.tr("Services"),   icon: "settings",       component: Qt.resolvedUrl("pages/ServicesConfig.qml") },
+            { name: Translation.tr("Quick"),        icon: "instant_mix",        component: Qt.resolvedUrl("pages/QuickConfig.qml") },
+            { name: Translation.tr("Appearance"),   icon: "palette",            component: Qt.resolvedUrl("pages/AppearanceConfig.qml") },
+            { name: Translation.tr("Bar"),          icon: "toast",              iconRotation: 180, component: Qt.resolvedUrl("pages/BarConfig.qml") },
+            { name: Translation.tr("Interface"),    icon: "bottom_app_bar",     component: Qt.resolvedUrl("pages/InterfaceConfig.qml") },
+            { name: Translation.tr("Lock Screen"),  icon: "lock",               component: Qt.resolvedUrl("pages/LockConfig.qml") },
+            { name: Translation.tr("Widgets"),      icon: "widgets",            component: Qt.resolvedUrl("pages/WidgetsConfig.qml") },
+            { name: Translation.tr("Utilities"),    icon: "screenshot_frame_2", component: Qt.resolvedUrl("pages/UtilitiesConfig.qml") },
+            { name: Translation.tr("Sounds"),       icon: "volume_up",          component: Qt.resolvedUrl("pages/SoundsConfig.qml") },
+            { name: Translation.tr("Services"),     icon: "hub",                component: Qt.resolvedUrl("pages/ServicesConfig.qml") },
+            { name: Translation.tr("General"),      icon: "tune",               component: Qt.resolvedUrl("pages/GeneralConfig.qml") },
         ]
         if (WM.compositor === "hyprland") {
             list.push({ name: Translation.tr("Hyprland"), icon: "select_window_2", component: Qt.resolvedUrl("pages/HyprlandConfig.qml") })
@@ -72,7 +84,6 @@ Item {
         if (WM.compositor === "niri") {
             list.push({ name: Translation.tr("Niri"), icon: "select_window_2", component: Qt.resolvedUrl("pages/NiriConfig.qml") })
         }
-        list.push({ name: Translation.tr("Custom Widgets"), icon: "extension", component: Qt.resolvedUrl("pages/CustomWidgetsConfig.qml") })
         list.push({ name: Translation.tr("About"), icon: "info", component: Qt.resolvedUrl("pages/About.qml") })
         return list
     }
@@ -221,13 +232,15 @@ Item {
 
                     FloatingActionButton {
                         id: fab
-                        Layout.bottomMargin: -25
+                        Layout.topMargin: 2
+                        Layout.bottomMargin: 6
                         property bool justCopied: false
                         iconText: justCopied ? "check" : "edit"
                         buttonText: justCopied ? Translation.tr("Path copied") : Translation.tr("Config file")
                         expanded: navRail.expanded
                         downAction: () => {
-                            Qt.openUrlExternally(`${Directories.config}/illogical-impulse/config.json`);
+                            const p = CF.FileUtils.trimFileProtocol(`${Directories.config}/illogical-impulse/config.json`);
+                            Quickshell.execDetached(["bash", "-c", `if command -v code >/dev/null 2>&1; then code "${p}"; elif command -v kitty >/dev/null 2>&1 && command -v micro >/dev/null 2>&1; then kitty -e micro "${p}"; else xdg-open "${p}"; fi`]);
                         }
                         altAction: () => {
                             Quickshell.clipboardText = CF.FileUtils.trimFileProtocol(`${Directories.config}/illogical-impulse/config.json`);
@@ -244,25 +257,41 @@ Item {
                         }
                     }
 
-                    NavigationRailTabArray {
-                        currentIndex: root.currentPage
-                        expanded: navRail.expanded
-                        colToggled: root.showingProfile ? "transparent" : Appearance.colors.colSecondaryContainer
-                        Repeater {
-                            model: root.pages
-                            NavigationRailButton {
-                                required property var index
-                                required property var modelData
-                                toggled: root.currentPage === index && !root.showingProfile
-                                onPressed: {
-                                    root.currentPage = index
-                                    root.showingProfile = false
+                    StyledFlickable {
+                        id: navRailFlickable
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        contentHeight: navRailTabs.implicitHeight + 20
+                        contentWidth: width
+                        clip: true
+
+                        NavigationRailTabArray {
+                            id: navRailTabs
+                            anchors.top: parent.top
+                            anchors.topMargin: 4
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: implicitHeight
+                            currentIndex: root.currentPage
+                            expanded: navRail.expanded
+                            colToggled: root.showingProfile ? "transparent" : Appearance.colors.colSecondaryContainer
+                            Repeater {
+                                model: root.pages
+                                NavigationRailButton {
+                                    required property var index
+                                    required property var modelData
+                                    baseSize: 46
+                                    toggled: root.currentPage === index && !root.showingProfile
+                                    onPressed: {
+                                        root.currentPage = index
+                                        root.showingProfile = false
+                                    }
+                                    expanded: navRail.expanded
+                                    buttonIcon: modelData.icon
+                                    buttonIconRotation: modelData.iconRotation || 0
+                                    buttonText: modelData.name
+                                    showToggledHighlight: false
                                 }
-                                expanded: navRail.expanded
-                                buttonIcon: modelData.icon
-                                buttonIconRotation: modelData.iconRotation || 0
-                                buttonText: modelData.name
-                                showToggledHighlight: false
                             }
                         }
                     }
