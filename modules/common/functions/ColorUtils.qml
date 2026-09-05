@@ -171,4 +171,48 @@ Singleton {
 
         return Qt.rgba(clamp01(r), clamp01(g), clamp01(b), overlayOpacity);
     }
+
+    /**
+     * Detects if a text string contains or represents a valid CSS/hex/rgb/hsl color.
+     * Returns the color string if valid, or "" if not a color.
+     *
+     * @param {string} text - The input text to check.
+     * @returns {string} The detected color string or empty string.
+     */
+    function detectColor(text) {
+        if (!text || typeof text !== "string") return "";
+        const str = text.trim();
+        if (str.length === 0 || str.length > 60) return "";
+
+        // 1. Hex with hash: #RGB, #RGBA, #RRGGBB, #RRGGBBAA
+        if (/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(str)) {
+            return str;
+        }
+
+        // 2. rgb / rgba: e.g. rgb(255, 128, 0), rgba(255, 128, 0, 0.8)
+        if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+%?\s*)?\)$/i.test(str)) {
+            return str;
+        }
+
+        // 3. hsl / hsla: e.g. hsl(210, 50%, 40%), hsla(210, 50%, 40%, 0.8)
+        if (/^hsla?\(\s*\d+(\.\d+)?(deg)?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(\s*,\s*[\d.]+%?\s*)?\)$/i.test(str)) {
+            return str;
+        }
+
+        // 4. Raw 6-char hex without hash (e.g. "ff0055", "1e1e2e")
+        if (/^[0-9a-fA-F]{6}$/.test(str)) {
+            return "#" + str;
+        }
+
+        // 5. Short embedded CSS snippet like "color: #89b4fa;" or "#89b4fa;"
+        if (str.length < 40) {
+            const hexEmbedded = str.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{8}|[0-9a-fA-F]{3,4})\b/);
+            if (hexEmbedded) return hexEmbedded[0];
+            const rgbEmbedded = str.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+\s*)?\)/i);
+            if (rgbEmbedded) return rgbEmbedded[0];
+        }
+
+        return "";
+    }
 }
+

@@ -63,7 +63,7 @@ Singleton {
                 return ["bash", "-c", `${cropInPlace} && xdg-open "${root.imageSearchEngineBaseUrl}$(${uploadAndGetUrl(screenshotPath)})" && ${cleanup}`]
                 break;
             case ScreenshotAction.Action.CharRecognition:
-                return ["bash", "-c", `${cropInPlace} && tesseract '${StringUtils.shellSingleQuoteEscape(screenshotPath)}' stdout -l $(tesseract --list-langs | awk 'NR>1{print $1}' | tr '\\n' '+' | sed 's/\\+$/\\n/') | wl-copy && ${cleanup}`]
+                return ["bash", "-c", `${cropInPlace} && text=$(tesseract '${StringUtils.shellSingleQuoteEscape(screenshotPath)}' stdout -l eng+hin 2>/dev/null) && if [ -n "$text" ]; then printf '%s' "$text" | wl-copy && notify-send -a "OCR" -i "edit-paste" "Text Copied to Clipboard" "$text"; else notify-send -a "OCR" -i "dialog-warning" "OCR" "No text recognized"; fi; ${cleanup}`]
                 break;
             case ScreenshotAction.Action.Record:
                 return ["bash", "-c", `${Directories.recordScriptPath} --region '${slurpRegion}'`]

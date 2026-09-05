@@ -3357,6 +3357,59 @@ AbstractBackgroundWidget {
                             color: ColorUtils.applyAlpha("#ffffff", 0.35)
                         }
 
+                        // Scroll Up button
+                        Rectangle {
+                            implicitWidth: 26; implicitHeight: 24
+                            radius: Appearance.rounding.full
+                            color: scrollUpMa.containsMouse
+                                ? ColorUtils.applyAlpha("#ffffff", 0.16)
+                                : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: ColorUtils.applyAlpha("#ffffff", 0.12)
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "keyboard_arrow_up"
+                                iconSize: 16
+                                color: ColorUtils.applyAlpha("#ffffff", 0.75)
+                            }
+                            MouseArea {
+                                id: scrollUpMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    noteEditorFlick.contentY = Math.max(0, noteEditorFlick.contentY - 80)
+                                }
+                            }
+                        }
+
+                        // Scroll Down button
+                        Rectangle {
+                            implicitWidth: 26; implicitHeight: 24
+                            radius: Appearance.rounding.full
+                            color: scrollDownMa.containsMouse
+                                ? ColorUtils.applyAlpha("#ffffff", 0.16)
+                                : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            border.width: 1
+                            border.color: ColorUtils.applyAlpha("#ffffff", 0.12)
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "keyboard_arrow_down"
+                                iconSize: 16
+                                color: ColorUtils.applyAlpha("#ffffff", 0.75)
+                            }
+                            MouseArea {
+                                id: scrollDownMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    const maxY = Math.max(0, noteEditorFlick.contentHeight - noteEditorFlick.height)
+                                    noteEditorFlick.contentY = Math.min(maxY, noteEditorFlick.contentY + 80)
+                                }
+                            }
+                        }
+
                         // Edit / Preview toggle
                         Rectangle {
                             implicitWidth: 70; implicitHeight: 24
@@ -3456,12 +3509,64 @@ AbstractBackgroundWidget {
                                 onActiveFocusChanged: {
                                     root.isUserTyping = activeFocus
                                 }
+                                onCursorRectangleChanged: {
+                                    if (!activeFocus) return;
+                                    const margin = 28;
+                                    const curTop = cursorRectangle.y;
+                                    const curBottom = cursorRectangle.y + cursorRectangle.height;
+                                    if (curTop < noteEditorFlick.contentY + margin) {
+                                        noteEditorFlick.contentY = Math.max(0, curTop - margin);
+                                    } else if (curBottom > noteEditorFlick.contentY + noteEditorFlick.height - margin) {
+                                        const maxY = Math.max(0, noteEditorFlick.contentHeight - noteEditorFlick.height);
+                                        noteEditorFlick.contentY = Math.min(maxY, curBottom - noteEditorFlick.height + margin);
+                                    }
+                                }
                                 onTextChanged: {
                                     noteAutoSaveTimer.restart()
                                 }
                                 Keys.onTabPressed: {
                                     noteEditor.insert(noteEditor.cursorPosition, "  ")
                                     event.accepted = true
+                                }
+                                Keys.onPressed: (event) => {
+                                    const maxY = Math.max(0, noteEditorFlick.contentHeight - noteEditorFlick.height);
+                                    const scrollStep = 60;
+                                    if (event.key === Qt.Key_PageUp) {
+                                        noteEditorFlick.contentY = Math.max(0, noteEditorFlick.contentY - noteEditorFlick.height * 0.7);
+                                        event.accepted = true;
+                                        return;
+                                    }
+                                    if (event.key === Qt.Key_PageDown) {
+                                        noteEditorFlick.contentY = Math.min(maxY, noteEditorFlick.contentY + noteEditorFlick.height * 0.7);
+                                        event.accepted = true;
+                                        return;
+                                    }
+                                    if ((event.modifiers & Qt.ControlModifier) || (event.modifiers & Qt.AltModifier)) {
+                                        if (event.key === Qt.Key_Up) {
+                                            noteEditorFlick.contentY = Math.max(0, noteEditorFlick.contentY - scrollStep);
+                                            event.accepted = true;
+                                            return;
+                                        }
+                                        if (event.key === Qt.Key_Down) {
+                                            noteEditorFlick.contentY = Math.min(maxY, noteEditorFlick.contentY + scrollStep);
+                                            event.accepted = true;
+                                            return;
+                                        }
+                                    }
+                                    if (event.key === Qt.Key_Down && cursorPosition >= text.length - 1) {
+                                        if (noteEditorFlick.contentY < maxY) {
+                                            noteEditorFlick.contentY = Math.min(maxY, noteEditorFlick.contentY + scrollStep);
+                                            event.accepted = true;
+                                            return;
+                                        }
+                                    }
+                                    if (event.key === Qt.Key_Up && cursorPosition === 0) {
+                                        if (noteEditorFlick.contentY > 0) {
+                                            noteEditorFlick.contentY = Math.max(0, noteEditorFlick.contentY - scrollStep);
+                                            event.accepted = true;
+                                            return;
+                                        }
+                                    }
                                 }
                             }
 

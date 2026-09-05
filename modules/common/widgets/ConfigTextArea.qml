@@ -16,7 +16,7 @@ RowLayout {
     property bool filled: true
     property bool showBorder: !filled
     property bool rounded: false
-    property real fieldWidth: 220
+    property real fieldWidth: 280
     property real fieldHeight: 40
     property color colBackground: filled ? Appearance.colors.colLayer1 : "transparent"
     property color colBackgroundFocused: filled ? Appearance.colors.colLayer2 : "transparent"
@@ -92,14 +92,13 @@ RowLayout {
             id: hoverHandler
         }
 
-        TextArea {
+        TextField {
             id: textArea
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 12
             enabled: root.enabled
-            wrapMode: TextArea.NoWrap
-            verticalAlignment: TextEdit.AlignVCenter
+            verticalAlignment: TextInput.AlignVCenter
             selectByMouse: true
             placeholderTextColor: Appearance.colors.colSubtext
             color: root.colOnBackground

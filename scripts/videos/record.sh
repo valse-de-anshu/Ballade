@@ -62,7 +62,7 @@ else
         if [[ -n "$MANUAL_REGION" ]]; then
             region="$MANUAL_REGION"
         else
-            if ! region="$(slurp 2>&1)"; then
+            if ! region="$(slurp -d -b 00000099 -c 89b4faee -s 00000000 -w 2 2>&1)"; then
                 notify-send "Recording cancelled" "Selection was cancelled" -a 'Recorder' & disown
                 exit 1
             fi

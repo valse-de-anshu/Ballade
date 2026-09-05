@@ -34,6 +34,8 @@ RippleButton {
     property string materialSymbol: entry.iconType === LauncherSearchResult.IconType.Material ? entry?.iconName ?? "" : ""
     property string cliphistRawString: entry?.rawValue ?? ""
     property bool blurImage: entry?.blurImage ?? false
+    readonly property string detectedColor: (root.cliphistRawString !== "") ? ColorUtils.detectColor(root.itemName) : ""
+    readonly property bool hasDetectedColor: root.detectedColor !== ""
     
     visible: root.entryShown
     property int horizontalMargin: 10
@@ -130,10 +132,34 @@ RippleButton {
 
     RowLayout {
         id: rowLayout
-        spacing: iconLoader.sourceComponent === null ? 0 : 10
+        spacing: (iconLoader.sourceComponent !== null || root.hasDetectedColor) ? 10 : 0
         anchors.fill: parent
         anchors.leftMargin: root.horizontalMargin + root.buttonHorizontalPadding
         anchors.rightMargin: root.horizontalMargin + root.buttonHorizontalPadding
+
+        // Color preview swatch for copied colors in clipboard
+        Rectangle {
+            id: colorSwatch
+            visible: root.hasDetectedColor
+            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: 26
+            implicitHeight: 26
+            radius: Appearance.rounding.small
+            color: root.hasDetectedColor ? root.detectedColor : "transparent"
+            border.width: 1.5
+            border.color: ColorUtils.applyAlpha(Appearance.m3colors.m3outline, 0.5)
+
+            // Inner contrast ring
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: "transparent"
+                border.width: 1
+                border.color: ColorUtils.isDark(colorSwatch.color)
+                    ? ColorUtils.applyAlpha("#ffffff", 0.3)
+                    : ColorUtils.applyAlpha("#000000", 0.3)
+            }
+        }
 
         // Icon
         Loader {

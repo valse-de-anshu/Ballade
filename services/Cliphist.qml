@@ -20,21 +20,45 @@ Singleton {
         name: Fuzzy.prepare(`${a.replace(/^\s*\S+\s+/, "")}`),
         entry: a
     }))
+    function getEntryId(entry) {
+        if (!entry) return "";
+        const m = String(entry).match(/^(\d+)\t/);
+        return m ? m[1] : "";
+    }
+
     function isPinned(entry) {
         if (!entry || !Persistent.ready) return false;
-        const clean = StringUtils.cleanCliphistEntry(entry);
-        return (Persistent.states.pinnedClipboard || []).indexOf(clean) >= 0;
+        const entryId = getEntryId(entry);
+        const list = Persistent.states.pinnedClipboard || [];
+        for (let i = 0; i < list.length; i++) {
+            const item = list[i];
+            const storedId = getEntryId(item);
+            if (storedId !== "" && entryId !== "") {
+                if (storedId === entryId) return true;
+            } else if (item === entry) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function togglePin(entry) {
         if (!entry || !Persistent.ready) return;
-        const clean = StringUtils.cleanCliphistEntry(entry);
+        const entryId = getEntryId(entry);
         let list = [...(Persistent.states.pinnedClipboard || [])];
-        const idx = list.indexOf(clean);
-        if (idx >= 0) {
-            list.splice(idx, 1);
+        let foundIdx = -1;
+        for (let i = 0; i < list.length; i++) {
+            const item = list[i];
+            const storedId = getEntryId(item);
+            if ((storedId !== "" && entryId !== "" && storedId === entryId) || item === entry) {
+                foundIdx = i;
+                break;
+            }
+        }
+        if (foundIdx >= 0) {
+            list.splice(foundIdx, 1);
         } else {
-            list.push(clean); // Store DISPLAY TEXT only (not raw entry with ID) for reboot persistence
+            list.push(entry);
         }
         Persistent.states.pinnedClipboard = list;
         root.refresh();
