@@ -17,35 +17,53 @@ Singleton {
 
     function reapplyTheme() {
         themeFileView.reload()
+        const txt = themeFileView.text()
+        if (txt && txt.length > 0) {
+            root.applyColors(txt)
+        }
+        delayedFileRead.restart()
     }
 
     function applyColors(fileContent) {
-        const json = JSON.parse(fileContent)
-        for (const key in json) {
-            if (json.hasOwnProperty(key)) {
-                // Convert snake_case to CamelCase
-                const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
-                const m3Key = `m3${camelCaseKey}`
-                Appearance.m3colors[m3Key] = json[key]
+        if (!fileContent || fileContent.trim().length === 0) return;
+        try {
+            const json = JSON.parse(fileContent)
+            for (const key in json) {
+                if (json.hasOwnProperty(key)) {
+                    // Convert snake_case to CamelCase
+                    const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+                    const m3Key = `m3${camelCaseKey}`
+                    Appearance.m3colors[m3Key] = json[key]
+                }
             }
+            Appearance.m3colors.darkmode = (Appearance.m3colors.m3background.hslLightness < 0.5)
+        } catch (e) {
+            console.warn("[MaterialThemeLoader] Failed to parse colors.json:", e)
         }
-        
-        Appearance.m3colors.darkmode = (Appearance.m3colors.m3background.hslLightness < 0.5)
-    }
-
-    function resetFilePathNextTime() {
-        resetFilePathNextWallpaperChange.enabled = true
     }
 
     Connections {
-        id: resetFilePathNextWallpaperChange
-        enabled: false
-        target: Config.options.background
-        function onWallpaperPathChanged() {
-            root.filePath = ""
-            root.filePath = Directories.generatedMaterialThemePath
-            resetFilePathNextWallpaperChange.enabled = false
+        target: Config.options?.appearance?.palette ?? null
+        function onAccentColorChanged() {
+            reloadDelayTimer.restart()
         }
+        function onTypeChanged() {
+            reloadDelayTimer.restart()
+        }
+    }
+
+    Connections {
+        target: Config.options?.background ?? null
+        function onWallpaperPathChanged() {
+            reloadDelayTimer.restart()
+        }
+    }
+
+    Timer {
+        id: reloadDelayTimer
+        interval: 150
+        repeat: false
+        onTriggered: root.reapplyTheme()
     }
 
     Timer {
@@ -58,19 +76,22 @@ Singleton {
         }
     }
 
-	FileView { 
+    FileView { 
         id: themeFileView
-        path: Qt.resolvedUrl(root.filePath)
+        path: root.filePath
         watchChanges: true
         onFileChanged: {
             this.reload()
-            delayedFileRead.start()
+            delayedFileRead.restart()
         }
         onLoadedChanged: {
-            const fileContent = themeFileView.text()
-            root.applyColors(fileContent)
+            if (loaded) {
+                root.applyColors(themeFileView.text())
+            }
         }
-        onLoadFailed: root.resetFilePathNextTime();
+        onLoadFailed: {
+            reloadDelayTimer.restart()
+        }
     }
 
     function toggleLightDark() {
@@ -92,6 +113,12 @@ Singleton {
 
         function toggleLightDark(): void {
             root.toggleLightDark();
+        }
+        function reapplyTheme(): void {
+            root.reapplyTheme();
+        }
+        function reload(): void {
+            root.reapplyTheme();
         }
     }
 }

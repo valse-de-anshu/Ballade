@@ -9,6 +9,20 @@ JOPLIN_DIR="$HOME/.config/joplin-desktop"
 [ ! -d "$JOPLIN_DIR" ] && mkdir -p "$JOPLIN_DIR"
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato)
+        ACCENT_HEX="#CBA6F7"
+        ACCENT_HOVER="#B4BEFE"
+        ACCENT_MUTED="#89B4FA"
+        BG_BASE="#1E1E2E"
+        BG_MANTLE="#181825"
+        BG_CRUST="#11111B"
+        SURFACE0="#313244"
+        SURFACE1="#45475A"
+        SURFACE2="#585B70"
+        FG_TEXT="#CDD6F4"
+        FG_SUBTEXT="#A6ADC8"
+        FG_OVERLAY="#7F849C"
+        ;;
     green|atelier|everforest)
         ACCENT_HEX="#7D9726"
         ACCENT_HOVER="#93AE38"

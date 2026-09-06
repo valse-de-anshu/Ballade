@@ -1,3 +1,9 @@
-#!/usr/bin/env fish
-# loginctl wrapper - intercepts lock commands to play audio  
-exec ~/.local/bin/power-audio-executor.sh loginctl $argv
+#!/usr/bin/env bash
+# loginctl wrapper - intercepts lock commands to play audio
+if [ -x "$HOME/.local/bin/power-audio-executor.sh" ]; then
+    exec "$HOME/.local/bin/power-audio-executor.sh" loginctl "$@"
+elif [ -x /usr/bin/loginctl ]; then
+    exec /usr/bin/loginctl "$@"
+else
+    exec loginctl "$@"
+fi

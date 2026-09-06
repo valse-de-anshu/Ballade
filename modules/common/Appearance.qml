@@ -19,11 +19,12 @@ Singleton {
     ColorQuantizer {
         id: wallColorQuant
         property string wallpaperPath: Config.options.background.wallpaperPath
-        property bool wallpaperIsVideo: wallpaperPath.endsWith(".mp4") || wallpaperPath.endsWith(".webm") || wallpaperPath.endsWith(".mkv") || wallpaperPath.endsWith(".avi") || wallpaperPath.endsWith(".mov")
-        source: Qt.resolvedUrl(wallpaperIsVideo ? Config.options.background.thumbnailPath : Config.options.background.wallpaperPath)
+        property bool wallpaperIsVideo: Boolean(wallpaperPath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(wallpaperPath)
+        source: Qt.resolvedUrl(Images.getStaticWallpaperImage(wallpaperPath, Config.options.background.thumbnailPath))
         depth: 0 // 2^0 = 1 color
         rescaleSize: 10
     }
+    readonly property string effectiveWallpaperImagePath: Images.getStaticWallpaperImage(Config.options.background.wallpaperPath, Config.options.background.thumbnailPath)
     property real wallpaperVibrancy: (wallColorQuant.colors[0]?.hslSaturation + wallColorQuant.colors[0]?.hslLightness) / 2
     property real autoBackgroundTransparency: { // y = 0.5768x^2 - 0.759x + 0.2896
         let x = wallpaperVibrancy

@@ -21,7 +21,12 @@ ContentPage {
 
     FolderListModel {
         id: avatarFolderModel
-        folder: Config.options.profile.avatarPath !== "" ? Qt.resolvedUrl(Config.options.profile.avatarPath) : ""
+        folder: {
+            const p = Config.options.profile.avatarPath
+            if (!p || p.trim() === "") return ""
+            const trimmed = p.trim()
+            return trimmed.startsWith("file://") ? trimmed : ("file://" + trimmed)
+        }
         showDirs: false
         nameFilters: ["*.png", "*.svg", "*.jpg", "*.jpeg", "*.webp"]
     }
@@ -68,10 +73,12 @@ ContentPage {
 
                     Timer {
                         id: avatarDebounceTimer
-                        interval: 1000
+                        interval: 300
                         repeat: false
                         onTriggered: {
-                            Config.options.profile.avatarPath = avatarField.value
+                            const trimmed = avatarField.value.trim()
+                            Config.options.profile.avatarPath = trimmed
+                            Config.save()
                         }
                     }
 
@@ -87,7 +94,7 @@ ContentPage {
 
                 Item {
                     Layout.fillWidth: true
-                    implicitHeight: Config.options.profile.avatarPath === "" ? placeholderCol.implicitHeight : avatarFlow.implicitHeight
+                    implicitHeight: Math.max(72, (Config.options.profile.avatarPath === "" || avatarFolderModel.count === 0) ? placeholderCol.implicitHeight + 20 : avatarFlow.implicitHeight)
 
                     Flow {
                         id: avatarFlow
@@ -107,7 +114,7 @@ ContentPage {
                                 radius: width / 2
                                 color: Appearance.colors.colLayer2
 
-                                property bool isSelected: FileUtils.trimFileProtocol(filePath.toString()) === Config.options.profile.avatarPicture
+                                property bool isSelected: FileUtils.trimFileProtocol(filePath.toString()) === FileUtils.trimFileProtocol(Config.options.profile.avatarPicture)
 
                                 Image {
                                     id: avatarImage
@@ -146,7 +153,10 @@ ContentPage {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: Config.options.profile.avatarPicture = FileUtils.trimFileProtocol(filePath.toString())
+                                    onClicked: {
+                                        Config.options.profile.avatarPicture = FileUtils.trimFileProtocol(filePath.toString())
+                                        Config.save()
+                                    }
                                 }
                             }
                         }
@@ -154,20 +164,20 @@ ContentPage {
 
                     ColumnLayout {
                         id: placeholderCol
-                        visible: Config.options.profile.avatarPath === ""
+                        visible: Config.options.profile.avatarPath === "" || avatarFolderModel.count === 0
                         anchors.centerIn: parent
                         z: 1
                         spacing: 4
 
                         MaterialSymbol {
                             Layout.alignment: Qt.AlignHCenter
-                            text: "image"
+                            text: Config.options.profile.avatarPath === "" ? "image" : "folder_off"
                             iconSize: 32
                             color: Appearance.colors.colSubtext
                         }
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
-                            text: Translation.tr("Pick a folder above to see avatars here")
+                            text: Config.options.profile.avatarPath === "" ? Translation.tr("Pick a folder above to see avatars here") : Translation.tr("No images found in this folder")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colSubtext
                         }
@@ -250,7 +260,8 @@ ContentPage {
                         { key: "blue",      name: "Tokyo Night",  folder: "blue",      color: "#7aa2f7", icon: "location_city"  },
                         { key: "golden",    name: "Golden Amber", folder: "golden",    color: "#f0b849", icon: "wb_sunny"       },
                         { key: "orange",    name: "Sunset Orange",folder: "orange",    color: "#ff9248", icon: "flare"          },
-                        { key: "grayscale", name: "Grayscale",    folder: "grayscale", color: "#888899", icon: "invert_colors"  }
+                        { key: "grayscale", name: "Grayscale",    folder: "grayscale", color: "#888899", icon: "invert_colors"  },
+                        { key: "catppuccin",name: "Catppuccin",   folder: "Catppuccin",color: "#cba6f7", icon: "palette"        }
                     ]
 
                     delegate: Item {

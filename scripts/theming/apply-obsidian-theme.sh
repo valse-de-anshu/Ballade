@@ -15,6 +15,16 @@ APPEARANCE_FILE="$OBSIDIAN_CONFIG/appearance.json"
 mkdir -p "$SNIPPETS_DIR"
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato)
+        ACCENT_HEX="#CBA6F7"
+        ACCENT_HOVER="#B4BEFE"
+        ACCENT_MUTED="#89B4FA"
+        BG_PRIMARY="rgba(30, 30, 46, 0.72)"
+        BG_SECONDARY="rgba(24, 24, 37, 0.82)"
+        BG_ALT="rgba(49, 50, 68, 0.65)"
+        TEXT_NORMAL="#CDD6F4"
+        TEXT_MUTED="#A6ADC8"
+        ;;
     green|atelier|everforest)
         ACCENT_HEX="#7D9726"
         ACCENT_HOVER="#93AE38"

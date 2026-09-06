@@ -36,6 +36,7 @@ apply_kitty() {
 
   local preset_file=""
   case "$active_preset" in
+    catppuccin|catpuchin|mocha|macchiato) preset_file="catppuccin.conf" ;;
     blue|tokyo_night|tokyonight) preset_file="blue.conf" ;;
     grayscale|nord|monochrome|bw) preset_file="grayscale.conf" ;;
     green|atelier|everforest) preset_file="green.conf" ;;
@@ -180,3 +181,6 @@ fi
 # Joplin: restart with new theme if running, otherwise do nothing
 python3 "$SCRIPT_DIR/../theming/restart-joplin.py" &
 disown
+
+# Notify Quickshell to reload material colors immediately
+qs -c "$QUICKSHELL_CONFIG_NAME" ipc call theme reapplyTheme >/dev/null 2>&1 || true

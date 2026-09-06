@@ -12,6 +12,21 @@ KITTY_THEMES_DIR="$SCRIPT_DIR/kitty-themes"
 WALLPAPERS_BASE="$HOME/Pictures/Wallpapers"
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato)
+        PRESET_NAME="catppuccin"
+        PRIMARY_HEX="#CBA6F7"
+        if [ -d "/usr/share/icons/Tela-circle-catppuccin-dark" ] || [ -d "$HOME/.icons/Tela-circle-catppuccin-dark" ]; then
+            ICON_THEME="Tela-circle-catppuccin-dark"
+        elif [ -d "/usr/share/icons/Tela-circle-dracula-dark" ]; then
+            ICON_THEME="Tela-circle-dracula-dark"
+        else
+            ICON_THEME="Tela-circle-purple-dark"
+        fi
+        KDE_SCHEME="CatppuccinMacchiato"
+        KITTY_THEME_FILE="$KITTY_THEMES_DIR/catppuccin.conf"
+        RMPC_THEME="catppuccin"
+        WALLPAPER_DIR="$WALLPAPERS_BASE/Catppuccin"
+        ;;
     green|atelier|everforest)
         PRESET_NAME="green"
         PRIMARY_HEX="#7D9726"
@@ -273,9 +288,13 @@ fi
 
 # 14. Update QuickShell configuration (active theme + wallpaper directory)
 if [ -f "$CONFIG_FILE" ]; then
+    LIVE_WALLPAPER_DIR="$WALLPAPERS_BASE/live Wallpapers/$PRESET_NAME"
+    if [ "$PRESET_NAME" = "catppuccin" ]; then
+        LIVE_WALLPAPER_DIR="$WALLPAPERS_BASE/live Wallpapers/Catppuccin"
+    fi
     tmp_config=$(mktemp)
-    jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" \
-        '.theme = (.theme // {}) | .theme.activePreset = $theme | .wallpaperSelector.userPath = $dir' \
+    jq --arg theme "$PRESET_NAME" --arg dir "$WALLPAPER_DIR" --arg livedir "$LIVE_WALLPAPER_DIR" \
+        '.theme = (.theme // {}) | .theme.activePreset = $theme | .wallpaperSelector.userPath = $dir | .wallpaperSelector.liveWallpapersPath = $livedir' \
         "$CONFIG_FILE" > "$tmp_config" && cat "$tmp_config" > "$CONFIG_FILE" && rm "$tmp_config"
 fi
 

@@ -193,6 +193,7 @@ Ballade includes **8 handcrafted color presets**. Switching presets or wallpaper
 | 🌟 **`golden`** | `#F0B849` | Warm espresso amber | `Tela-circle-yellow-dark` |
 | 🍊 **`orange`** | `#FF9248` | Autumn dusk citrus | `Tela-circle-ubuntu-dark` |
 | ❄️ **`grayscale`** | `#8892B0` | Distraction-free Nord slate | `Tela-circle-grey-dark` |
+| 🍨 **`catppuccin`** | `#CBA6F7` | Soothing Pastel & Mocha | `Tela-circle-purple-dark` |
 
 ### Command to Switch Preset:
 ```bash
@@ -211,8 +212,16 @@ Ballade includes **8 handcrafted color presets**. Switching presets or wallpaper
   - Toggle individual desktop widgets (Calendar, Weather, Clock, Screen Time, Music Player).
   - Adjust bar styling, corner shapes (`round`, `slanted`, `superellipse`, `cookie`), and font sizes.
   - Switch between panel layouts: **Illogical Impulse** (Modern Rice) or **Waffle** (Taskbar / Start Menu).
+* **Wallpaper & Live Video Wallpapers**:
+  - **Wallpaper Folders Section**: In Settings Hub (`SUPER + I` -> **Appearance** -> **Wallpaper Selector & Folders**), you can view and customize the storage paths for both:
+    - **Image wallpapers folder**: Directory where static image wallpapers are stored (e.g. `~/Pictures/Wallpapers/Catppuccin`).
+    - **Live wallpapers folder**: Directory where animated video wallpapers (`.mp4`, `.webm`, `.mkv`, etc.) are stored (e.g. `~/Pictures/Wallpapers/live Wallpapers/Catppuccin`).
+  - **Independent Desktop Blur**:
+    - Enable **Blur wall** and fine-tune **Blur intensity** (from 2 to 128) or choose split blur (25%, 50%, 100%).
+    - Live wallpaper desktop blur is rendered via high-performance Qt Quick GPU shaders and operates completely independently of Hyprland's window blur rules.
 * **Adding Custom Wallpapers**:
-  - Drop your wallpapers into `~/Pictures/Wallpapers/<preset_name>/` (e.g. `~/Pictures/Wallpapers/pink/`).
+  - Drop your static wallpapers into `~/Pictures/Wallpapers/<preset_name>/` (e.g. `~/Pictures/Wallpapers/Catppuccin/`).
+  - Drop your animated wallpapers into `~/Pictures/Wallpapers/live Wallpapers/` (or into subdirectories like `~/Pictures/Wallpapers/live Wallpapers/Catppuccin/`).
 
 ---
 

@@ -16,5 +16,13 @@ local qsIsAlive = "qs -c " .. qsConfig .. " ipc call TEST_ALIVE"
 hl.bind("ALT + S", hl.dsp.global("quickshell:regionAnnotate"), { description = "Utilities: Snip and annotate with Gwenview >> clipboard" })
 hl.bind("ALT + S", hl.dsp.exec_cmd(qsIsAlive .. " || pidof slurp || snip-annotate.py"))
 
+-- Fast OCR with English + Hindi and immediate clipboard notification
+hl.unbind("SUPER + SHIFT + X")
+hl.bind("SUPER + SHIFT + X", hl.dsp.global("quickshell:regionOcr"), { description = "Utilities: Character recognition >> clipboard" })
+hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(
+    qsIsAlive ..
+    " || pidof slurp || (grim -g \"$(slurp $SLURP_ARGS)\" \"/tmp/ocr_image.png\" && text=$(tesseract \"/tmp/ocr_image.png\" stdout -l eng+hin 2>/dev/null) && if [ -n \"$text\" ]; then printf '%s' \"$text\" | wl-copy && notify-send -a 'OCR' -i 'edit-paste' 'Text Copied to Clipboard' \"$text\"; else notify-send -a 'OCR' -i 'dialog-warning' 'OCR' 'No text recognized'; fi; rm -f \"/tmp/ocr_image.png\")"
+))
+
 
 

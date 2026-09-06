@@ -93,9 +93,16 @@ Scope {
             return
         }
         if (!GlobalStates.wallpaperSelectorOpen) {
+            const curWall = Config.options.background?.wallpaperPath || ""
+            const isLive = curWall.indexOf("live Wallpapers") !== -1 || /\.(mp4|webm|mkv|avi|mov)$/i.test(curWall)
             const activePreset = Config.options.theme?.activePreset ?? "green"
-            const themeDir = `${Directories.pictures}/Wallpapers/${activePreset}`
-            Wallpapers.setDirectory(themeDir)
+            if (isLive) {
+                const liveDir = `${Directories.pictures}/Wallpapers/live Wallpapers/${activePreset}`
+                Wallpapers.setDirectory(liveDir)
+            } else {
+                const themeDir = `${Directories.pictures}/Wallpapers/${activePreset}`
+                Wallpapers.setDirectory(themeDir)
+            }
         }
         GlobalStates.wallpaperSelectorOpen = !GlobalStates.wallpaperSelectorOpen
     }

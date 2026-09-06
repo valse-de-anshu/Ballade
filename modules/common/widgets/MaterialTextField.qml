@@ -1,4 +1,5 @@
 import qs.modules.common
+import qs.modules.common.widgets
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Controls
@@ -32,9 +33,23 @@ TextField {
     wrapMode: TextEdit.Wrap
 
     MouseArea {
+        id: rightClickArea
         anchors.fill: parent
-        acceptedButtons: Qt.NoButton
+        acceptedButtons: Qt.RightButton
         hoverEnabled: true
         cursorShape: Qt.IBeamCursor
+        onPressed: mouse => {
+            mouse.accepted = true
+            if (root.selectedText.length === 0) {
+                root.cursorPosition = root.positionAt(mouse.x, mouse.y)
+            }
+            root.forceActiveFocus()
+            contextMenu.openAt(mouse.x, mouse.y)
+        }
+    }
+
+    TextContextMenu {
+        id: contextMenu
+        target: root
     }
 }

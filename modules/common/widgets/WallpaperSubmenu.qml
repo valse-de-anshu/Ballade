@@ -130,6 +130,21 @@ Item {
 
                 ConfigSwitch {
                     Layout.fillWidth: true
+                    buttonIcon: "blur_on"
+                    text: Translation.tr("Desktop blur")
+                    checked: Config.options.background.showBlur
+                    onCheckedChanged: Config.options.background.showBlur = checked
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Appearance.colors.colOutlineVariant
+                    opacity: 0.3
+                }
+
+                ConfigSwitch {
+                    Layout.fillWidth: true
                     buttonIcon: "check"
                     text: Translation.tr("Centered wallpaper")
                     checked: Config.options.background.centeredWallpaper
@@ -193,22 +208,29 @@ Item {
             ColumnLayout {
                 id: transCol
                 anchors { fill: parent; margins: 8 }
+                spacing: 2
 
                 Repeater {
                     model: [
-                        { displayName: Translation.tr("Disable"),    icon: "block",        value: "" },
-                        { displayName: Translation.tr("Magic"),   icon: "auto_awesome", value: "magic" },
-                        { displayName: Translation.tr("Stripes"), icon: "texture_minus", value: "stripes" },
-                        { displayName: Translation.tr("Random"),  icon: "shuffle",      value: "random" },
+                        { displayName: Translation.tr("None"),     icon: "block",         value: "" },
+                        { displayName: Translation.tr("Magic"),    icon: "auto_awesome",  value: "magic" },
+                        { displayName: Translation.tr("Dissolve"), icon: "blur_on",       value: "dissolve" },
+                        { displayName: Translation.tr("Shatter"),  icon: "broken_image",  value: "shatter" },
+                        { displayName: Translation.tr("Ripple"),   icon: "water",         value: "ripple" },
+                        { displayName: Translation.tr("Glitch"),   icon: "bug_report",    value: "glitch" },
+                        { displayName: Translation.tr("CRT"),      icon: "tv",            value: "crt" },
+                        { displayName: Translation.tr("Doom"),     icon: "whatshot",      value: "Doom" },
+                        { displayName: Translation.tr("Stripes"),  icon: "texture_minus", value: "stripes" },
+                        { displayName: Translation.tr("Random"),   icon: "shuffle",       value: "random" },
                     ]
                     delegate: RippleButton {
                         id: transRow
                         required property var modelData
                         Layout.fillWidth: true
-                        implicitHeight: 40
+                        implicitHeight: 36
                         toggled: Config.options.background.wallpaperAnimation === transRow.modelData.value
                         colBackground: "transparent"
-                        buttonRadius: Appearance.rounding.verylarge
+                        buttonRadius: Appearance.rounding.normal
                         colBackgroundHover: Appearance.colors.colLayer2
                         colBackgroundToggled: Appearance.colors.colSecondaryContainer
                         colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover

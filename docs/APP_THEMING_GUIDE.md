@@ -6,17 +6,20 @@ This guide shows you how to set up, customize, and get the most out of **Discord
 
 ---
 
-## 💬 1. Discord & Discord+ Customization
+## 💬 1. Discord & Vesktop Customization
 
-### Step 1: Install Discord & Vencord
-1. **Install official Discord**:
-   ```bash
-   sudo pacman -S discord
-   ```
-2. **Install Vencord** (enables custom themes and plugins):
-   ```bash
-   VencordInstaller -install -branch stable
-   ```
+### Step 1: Install Discord or Vesktop
+You can use either official **Discord** (with Vencord) or **Vesktop** (standalone client with Vencord pre-bundled):
+* **Option A: Vesktop (Recommended)**:
+  ```bash
+  sudo pacman -S vesktop   # or via yay/paru
+  ```
+  Vesktop comes with built-in Vencord, screensharing with audio on Wayland, and automatically picks up Ballade's synced themes and QuickCSS.
+* **Option B: Official Discord with Vencord**:
+  ```bash
+  sudo pacman -S discord
+  VencordInstaller -install -branch stable
+  ```
 
 ### Step 2: Fix Video Playback in Group Chats
 On Linux, Discord's default media player doesn't decode some MP4/H.264 formats out of the box.

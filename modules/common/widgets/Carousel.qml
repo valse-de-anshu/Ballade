@@ -36,12 +36,16 @@ Item {
     }
 
     function handleItemClick(index, modelData) {
+        let actual = modelData;
+        if (typeof modelData === "object" && modelData !== null) {
+            actual = modelData.actualPath || modelData.path || modelData.displayPath;
+        }
         if (root.clickAction) {
-            root.clickAction(index, modelData);
+            root.clickAction(index, actual);
             return;
         }
         listView.currentIndex = index;
-        root.wallpaperSelected(modelData);
+        root.wallpaperSelected(actual);
     }
 
     ListView {
@@ -152,16 +156,41 @@ Item {
 
     Component {
         id: defaultImageDelegate
-        StyledImage {
-            id: img
+        Item {
+            anchors.fill: parent
+            readonly property string rawPath: (typeof modelData === "object" && modelData !== null) ? (modelData.displayPath || modelData.path || "") : (modelData || "")
+            readonly property bool isVideo: Boolean(rawPath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(rawPath)
             property real fixedWidth: parent?.fixedWidth ?? width
             property real fixedHeight: parent?.fixedHeight ?? height
-            source: modelData ? "file://" + FileUtils.trimFileProtocol(modelData) : ""
-            fillMode: Image.PreserveAspectCrop
-            cache: true
-            asynchronous: true
-            sourceSize.width: fixedWidth * 1.5
-            sourceSize.height: fixedHeight * 1.5
+
+            Loader {
+                anchors.fill: parent
+                sourceComponent: isVideo ? videoComponent : imageComponent
+            }
+
+            Component {
+                id: imageComponent
+                StyledImage {
+                    anchors.fill: parent
+                    source: rawPath ? "file://" + FileUtils.trimFileProtocol(rawPath) : ""
+                    fillMode: Image.PreserveAspectCrop
+                    cache: true
+                    asynchronous: true
+                    sourceSize.width: fixedWidth * 1.5
+                    sourceSize.height: fixedHeight * 1.5
+                }
+            }
+
+            Component {
+                id: videoComponent
+                ThumbnailImage {
+                    anchors.fill: parent
+                    sourcePath: rawPath
+                    fillMode: Image.PreserveAspectCrop
+                    sourceSize.width: fixedWidth * 1.5
+                    sourceSize.height: fixedHeight * 1.5
+                }
+            }
         }
     }
 }

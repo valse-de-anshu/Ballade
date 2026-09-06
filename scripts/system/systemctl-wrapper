@@ -1,3 +1,9 @@
-#!/usr/bin/env fish
+#!/usr/bin/env bash
 # systemctl wrapper - intercepts power commands to play audio
-exec ~/.local/bin/power-audio-executor.sh systemctl $argv
+if [ -x "$HOME/.local/bin/power-audio-executor.sh" ]; then
+    exec "$HOME/.local/bin/power-audio-executor.sh" systemctl "$@"
+elif [ -x /usr/bin/systemctl ]; then
+    exec /usr/bin/systemctl "$@"
+else
+    exec systemctl "$@"
+fi

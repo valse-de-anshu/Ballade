@@ -12,6 +12,7 @@ if [ -z "$1" ] && [ -f "$CONFIG_FILE" ]; then
 fi
 
 case "$PRESET_NAME" in
+    catppuccin|catpuchin|mocha|macchiato) RMPC_THEME="catppuccin" ;;
     green|atelier|everforest) RMPC_THEME="green" ;;
     pink|sakura)              RMPC_THEME="pink" ;;
     red|crimson)              RMPC_THEME="red" ;;

@@ -15,7 +15,11 @@ RESIZED_IMG_PATH="/tmp/quickshell/ai/wallpaper.jpg"
 
 # Resize image for speed
 mkdir -p "$(dirname "$RESIZED_IMG_PATH")"
-magick "$SOURCE_IMG_PATH" -resize 200x -quality 50 "$RESIZED_IMG_PATH"
+if [[ "$SOURCE_IMG_PATH" =~ \.(mp4|webm|mkv|avi|mov)$ ]]; then
+    ffmpeg -y -nostdin -loglevel error -ss 00:00:01 -i "$SOURCE_IMG_PATH" -vframes 1 -vf "scale=200:-1" -q:v 5 "$RESIZED_IMG_PATH" >/dev/null 2>&1 || ffmpeg -y -nostdin -loglevel error -i "$SOURCE_IMG_PATH" -vframes 1 -vf "scale=200:-1" -q:v 5 "$RESIZED_IMG_PATH" >/dev/null 2>&1
+else
+    magick "$SOURCE_IMG_PATH" -resize 200x -quality 50 "$RESIZED_IMG_PATH"
+fi
 
 # Get API key
 API_KEY=$(secret-tool lookup 'application' 'illogical-impulse' | jq -r '.apiKeys.gemini')

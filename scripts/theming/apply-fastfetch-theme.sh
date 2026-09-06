@@ -17,6 +17,11 @@ if [ ! -f "$FASTFETCH_DIR/current_logo.png" ] && [ -f "$BALLADE_DIR/dotfiles/fas
 fi
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato)
+        PRESET="catppuccin"
+        KEY_COLOR="38;2;203;166;247"       # Mauve (#cba6f7)
+        ACCENT_COLOR="38;2;137;180;250"    # Catppuccin Blue (#89b4fa)
+        ;;
     green|atelier|everforest)
         PRESET="green"
         KEY_COLOR="38;2;125;151;38"       # Forest Sage (#7d9726)
@@ -201,5 +206,4 @@ cat << EOF_JSON > "$FASTFETCH_CONFIG"
 }
 EOF_JSON
 
-cp -f "$FASTFETCH_CONFIG" "$BALLADE_DIR/dotfiles/fastfetch/config.jsonc" 2>/dev/null || true
 echo "[Fastfetch Themer] Generated aspect-ratio preserved fastfetch config for $PRESET preset."

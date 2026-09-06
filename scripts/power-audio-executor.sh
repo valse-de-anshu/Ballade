@@ -16,7 +16,13 @@ log_msg() {
 
 get_real_binary() {
     local cmd="$1"
-    which -a "$cmd" | grep -v "$HOME/.local/bin" | head -n1
+    if [[ -x "/usr/bin/$cmd" ]]; then
+        echo "/usr/bin/$cmd"
+    elif [[ -x "/bin/$cmd" ]]; then
+        echo "/bin/$cmd"
+    else
+        which -a "$cmd" 2>/dev/null | grep -E -v "(\.local/bin|power-audio-executor)" | head -n1
+    fi
 }
 
 play_audio_once() {

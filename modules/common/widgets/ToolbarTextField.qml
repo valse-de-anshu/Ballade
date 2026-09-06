@@ -30,4 +30,24 @@ TextField {
         color: Appearance.colors.colLayer1
         radius: Appearance.rounding.full
     }
+
+    MouseArea {
+        id: rightClickArea
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        cursorShape: Qt.IBeamCursor
+        onPressed: mouse => {
+            mouse.accepted = true
+            if (filterField.selectedText.length === 0) {
+                filterField.cursorPosition = filterField.positionAt(mouse.x, mouse.y)
+            }
+            filterField.forceActiveFocus()
+            contextMenu.openAt(mouse.x, mouse.y)
+        }
+    }
+
+    TextContextMenu {
+        id: contextMenu
+        target: filterField
+    }
 }

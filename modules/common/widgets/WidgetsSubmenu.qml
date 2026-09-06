@@ -12,17 +12,17 @@ Item {
     implicitHeight: col.implicitHeight + 16
 
     readonly property var widgetList: [
-        { key: "visualizer",  icon: "graphic_eq",         name: Translation.tr("Visualizer") },
-        { key: "customImage", icon: "image",              name: Translation.tr("Custom Image") },
-        { key: "weather",     icon: "partly_cloudy_day",  name: Translation.tr("Weather") },
         { key: "clock",       icon: "schedule",           name: Translation.tr("Clock") },
-        { key: "media",       icon: "music_note",         name: Translation.tr("Media") },
-        { key: "images",      icon: "photo_library",      name: Translation.tr("Image Converter") },
-        { key: "resources",   icon: "monitor_heart",      name: Translation.tr("Resources") },
         { key: "calendar",    icon: "calendar_month",     name: Translation.tr("Calendar") },
+        { key: "weather",     icon: "partly_cloudy_day",  name: Translation.tr("Weather") },
+        { key: "goals",       icon: "flag",               name: Translation.tr("Goals & Notes") },
+        { key: "media",       icon: "music_note",         name: Translation.tr("Media") },
+        { key: "visualizer",  icon: "graphic_eq",         name: Translation.tr("Visualizer") },
+        { key: "resources",   icon: "monitor_heart",      name: Translation.tr("Resources") },
         { key: "worldClock",  icon: "public",             name: Translation.tr("World Clock") },
         { key: "userCard",    icon: "person",             name: Translation.tr("User Card") },
-        { key: "notes",       icon: "note_stack_add",     name: Translation.tr("Notes") },
+        { key: "customImage", icon: "image",              name: Translation.tr("Custom Image") },
+        { key: "images",      icon: "photo_library",      name: Translation.tr("Image Converter") },
     ]
 
     Rectangle {

@@ -160,7 +160,7 @@ Item {
                                     fillMode: Image.PreserveAspectCrop
                                     source: Config.options.sidebar.bannerImage !== "" 
                                         ? Config.options.sidebar.bannerImage 
-                                        : Config.options.background.wallpaperPath
+                                        : Appearance.effectiveWallpaperImagePath
                                     cache: false
                                     antialiasing: true
                                     sourceSize.width: wallpaperRect.width * 2
@@ -206,12 +206,17 @@ Item {
                                     Image {
                                         id: avatarImage
                                         anchors.fill: parent
-                                        source: Config.options.profile.avatarPath !== "" 
-                                            ? "file://" + Config.options.profile.avatarPicture 
-                                            : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                                        source: {
+                                            const pic = Config.options.profile.avatarPicture
+                                            if (pic && pic.length > 0) return pic.startsWith("file://") ? pic : ("file://" + pic)
+                                            const p = Config.options.profile.avatarPath
+                                            if (p && p.length > 0 && /\.(png|jpg|jpeg|webp|svg)$/i.test(p)) return p.startsWith("file://") ? p : ("file://" + p)
+                                            return "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                                        }
                                         sourceSize.width: avatarImage.width * 2
                                         sourceSize.height: avatarImage.height * 2
                                         fillMode: Image.PreserveAspectCrop
+                                        visible: avatarImage.status === Image.Ready
                                         layer.enabled: true
                                         layer.effect: OpacityMask {
                                             maskSource: Rectangle {
@@ -220,9 +225,6 @@ Item {
                                                 radius: avatarRect.radius
                                             }
                                         }
-                                        onStatusChanged: {
-                                            if (status === Image.Error) visible = false
-                                        }
                                     }
 
                                     MaterialSymbol {
@@ -230,7 +232,7 @@ Item {
                                         text: "account_circle"
                                         iconSize: 32
                                         color: Appearance.colors.colOnPrimaryContainer
-                                        visible: avatarImage.status === Image.Error
+                                        visible: avatarImage.status !== Image.Ready
                                     }
                                 }
 

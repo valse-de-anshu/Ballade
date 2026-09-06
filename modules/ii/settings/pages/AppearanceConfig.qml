@@ -333,11 +333,11 @@ ContentPage {
             }
         }
 
-        // ── 2. Wallpaper Selector Popup ─────────────────────────────────────
+        // ── 2. Wallpaper Selector & Folders ─────────────────────────────────
         ContentSection {
             icon: "wallpaper"
             shape: MaterialShape.Shape.Slanted
-            title: Translation.tr("Wallpaper Selector Dialog")
+            title: Translation.tr("Wallpaper Selector & Folders")
 
             GroupedList {
                 ConfigSelectionArray {
@@ -422,27 +422,13 @@ ContentPage {
                 }
 
                 ConfigTextArea {
-                    id: liveWallpapersPathField
-                    Layout.fillWidth: true
-                    buttonIcon: "folder"
-                    text: Translation.tr("Live wallpapers folder")
-                    placeholderText: Translation.tr("Path to animated/video wallpapers")
-                    value: Config.options.wallpaperSelector.liveWallpapersPath
-                    onValueChanged: liveWallpapersPathDebounce.restart()
-                    Timer {
-                        id: liveWallpapersPathDebounce
-                        interval: 600
-                        running: false
-                        onTriggered: Config.options.wallpaperSelector.liveWallpapersPath = liveWallpapersPathField.value
-                    }
-                }
-
-                ConfigTextArea {
                     id: userWallpapersPathField
                     Layout.fillWidth: true
-                    buttonIcon: "folder"
-                    text: Translation.tr("Custom wallpapers folder")
-                    placeholderText: Translation.tr("Path to custom image wallpapers")
+                    fieldWidth: 340
+                    buttonIcon: "image"
+                    text: Translation.tr("Image wallpapers folder")
+                    description: Translation.tr("Folder for static image wallpapers")
+                    placeholderText: Translation.tr("Path to image wallpapers folder")
                     value: Config.options.wallpaperSelector.userPath
                     onValueChanged: userWallpapersPathDebounce.restart()
                     Timer {
@@ -450,6 +436,24 @@ ContentPage {
                         interval: 600
                         running: false
                         onTriggered: Config.options.wallpaperSelector.userPath = userWallpapersPathField.value
+                    }
+                }
+
+                ConfigTextArea {
+                    id: liveWallpapersPathField
+                    Layout.fillWidth: true
+                    fieldWidth: 340
+                    buttonIcon: "video_library"
+                    text: Translation.tr("Live wallpapers folder")
+                    description: Translation.tr("Folder for animated video wallpapers")
+                    placeholderText: Translation.tr("Path to animated/video wallpapers folder")
+                    value: Config.options.wallpaperSelector.liveWallpapersPath
+                    onValueChanged: liveWallpapersPathDebounce.restart()
+                    Timer {
+                        id: liveWallpapersPathDebounce
+                        interval: 600
+                        running: false
+                        onTriggered: Config.options.wallpaperSelector.liveWallpapersPath = liveWallpapersPathField.value
                     }
                 }
             }

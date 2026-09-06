@@ -11,6 +11,7 @@ MICRO_SCHEMES_DIR="$MICRO_CONFIG_DIR/colorschemes"
 MICRO_SETTINGS="$MICRO_CONFIG_DIR/settings.json"
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato) THEME_NAME="catppuccin" ;;
     green|atelier|everforest) THEME_NAME="green" ;;
     pink|sakura) THEME_NAME="pink" ;;
     purple|amethyst) THEME_NAME="purple" ;;

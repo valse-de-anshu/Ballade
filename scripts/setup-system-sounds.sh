@@ -13,13 +13,7 @@ echo "🎵 Setting up QuickShell Ballade Sound Events..."
 # 1. Ensure scripts are executable
 chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true
 
-# 2. Setup Systemd User Service for USB
-mkdir -p "$HOME/.config/systemd/user"
-cp -f "$SYSTEM_DIR/usb-audio@.service" "$HOME/.config/systemd/user/"
-systemctl --user daemon-reload
-echo "✅ Installed systemd user service: usb-audio@.service"
-
-# 3. Setup Power Audio Executor in ~/.local/bin
+# 2. Setup Power Audio Executor in ~/.local/bin
 mkdir -p "$HOME/.local/bin"
 cp -f "$SCRIPTS_DIR/power-audio-executor.sh" "$HOME/.local/bin/"
 chmod +x "$HOME/.local/bin/power-audio-executor.sh"
@@ -29,6 +23,14 @@ for cmd in poweroff reboot shutdown; do
     ln -sf "$HOME/.local/bin/power-audio-executor.sh" "$HOME/.local/bin/$cmd" 2>/dev/null || true
 done
 echo "✅ Installed power-audio-executor.sh and power command links in ~/.local/bin"
+
+# 3. Setup Systemd User Service for USB
+mkdir -p "$HOME/.config/systemd/user"
+cp -f "$SYSTEM_DIR/usb-audio@.service" "$HOME/.config/systemd/user/"
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user daemon-reload 2>/dev/null || true
+fi
+echo "✅ Installed systemd user service: usb-audio@.service"
 
 # 4. Install udev rules for USB hardware detection (if root permissions are available)
 if [ -d "/etc/udev/rules.d" ]; then

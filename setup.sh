@@ -18,18 +18,26 @@ chmod +x "$BALLADE_DIR/setup.sh" 2>/dev/null || true
 # 2. Create standard user directories
 echo "📁 Creating standard user directories..."
 mkdir -p "$HOME/Pictures/Wallpapers"
-for preset in green purple pink red blue golden orange grayscale; do
+for preset in green purple pink red blue golden orange grayscale Catppuccin; do
     mkdir -p "$HOME/Pictures/Wallpapers/$preset"
     # Provide starter wallpaper if folder is completely empty
     if [ -z "$(ls -A "$HOME/Pictures/Wallpapers/$preset" 2>/dev/null)" ]; then
-        if [ -f "$BALLADE_DIR/assets/images/default_wallpaper.png" ]; then
+        if [ "$preset" = "Catppuccin" ] && [ -f "$BALLADE_DIR/assets/images/catppuccin_default.png" ]; then
+            cp "$BALLADE_DIR/assets/images/catppuccin_default.png" "$HOME/Pictures/Wallpapers/$preset/default.png"
+            echo "   ↳ Added Catppuccin starter wallpaper to $HOME/Pictures/Wallpapers/$preset/"
+        elif [ -f "$BALLADE_DIR/assets/images/default_wallpaper.png" ]; then
             cp "$BALLADE_DIR/assets/images/default_wallpaper.png" "$HOME/Pictures/Wallpapers/$preset/default.png"
             echo "   ↳ Added starter wallpaper to $HOME/Pictures/Wallpapers/$preset/"
         fi
     fi
 done
 
+mkdir -p "$HOME/Pictures/Wallpapers/live Wallpapers/Catppuccin"
+
 mkdir -p "$HOME/.config/illogical-impulse/presets"
+if [ -d "$BALLADE_DIR/dotfiles/illogical-impulse/presets" ]; then
+    cp -rn "$BALLADE_DIR/dotfiles/illogical-impulse/presets/"* "$HOME/.config/illogical-impulse/presets/" 2>/dev/null || true
+fi
 mkdir -p "$HOME/.config/kitty"
 mkdir -p "$HOME/.config/micro/colorschemes"
 mkdir -p "$HOME/.local/share/konsole"
@@ -48,10 +56,34 @@ if [ -f "$SCRIPTS_DIR/setup-system-sounds.sh" ]; then
     bash "$SCRIPTS_DIR/setup-system-sounds.sh" || true
 fi
 
+# Ensure Quickshell locates Ballade
+QUICKSHELL_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
+if [ "$BALLADE_DIR" != "$QUICKSHELL_DIR/ballade" ]; then
+    mkdir -p "$QUICKSHELL_DIR"
+    if [ ! -e "$QUICKSHELL_DIR/ballade" ]; then
+        ln -sfn "$BALLADE_DIR" "$QUICKSHELL_DIR/ballade"
+        echo "🔗 Linked Ballade configuration: $QUICKSHELL_DIR/ballade -> $BALLADE_DIR"
+    fi
+fi
+
 # 4. Setup Custom Hyprland Overrides (Blur, Opacity & Keybindings)
-if [ -d "$BALLADE_DIR/hyprland-custom" ] && [ -d "$HOME/.config/hypr" ]; then
+if [ -d "$BALLADE_DIR/hyprland-custom" ]; then
     mkdir -p "$HOME/.config/hypr/custom"
-    cp -rn "$BALLADE_DIR/hyprland-custom/"* "$HOME/.config/hypr/custom/" 2>/dev/null || true
+    for item in "$BALLADE_DIR/hyprland-custom"/*; do
+        base="$(basename "$item")"
+        if [ "$base" != "docs" ] && [ "$base" != "README.md" ]; then
+            if [ -d "$item" ]; then
+                mkdir -p "$HOME/.config/hypr/custom/$base"
+                cp -rf "$item/"* "$HOME/.config/hypr/custom/$base/" 2>/dev/null || true
+            else
+                if [ -f "$HOME/.config/hypr/custom/$base" ] && ! cmp -s "$item" "$HOME/.config/hypr/custom/$base"; then
+                    cp "$HOME/.config/hypr/custom/$base" "$HOME/.config/hypr/custom/$base.bak" 2>/dev/null || true
+                fi
+                cp -f "$item" "$HOME/.config/hypr/custom/$base" 2>/dev/null || true
+            fi
+        fi
+    done
+    [ -d "$HOME/.config/hypr/custom/scripts" ] && find "$HOME/.config/hypr/custom/scripts" -type f -name "*.sh" -exec chmod +x {} +
     echo "🪟 Installed Hyprland custom blur, rules, and keybinding overrides to ~/.config/hypr/custom/"
 fi
 
@@ -86,8 +118,10 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                 echo "   ↳ Joplin theme styles installed to ~/.config/joplin-desktop/"
             elif [ "$app_name" = "vencord" ]; then
                 mkdir -p "$HOME/.config/Vencord/themes"
+                mkdir -p "$HOME/.config/vesktop/themes"
                 cp -rn "$app/"* "$HOME/.config/Vencord/themes/" 2>/dev/null || true
-                echo "   ↳ Vencord DiscordPlus theme installed to ~/.config/Vencord/themes/"
+                cp -rn "$app/"* "$HOME/.config/vesktop/themes/" 2>/dev/null || true
+                echo "   ↳ Vencord & Vesktop DiscordPlus theme installed"
             elif [ "$app_name" = "fastfetch" ]; then
                 mkdir -p "$HOME/.config/fastfetch"
                 cp -rn "$app/"* "$HOME/.config/fastfetch/" 2>/dev/null || true

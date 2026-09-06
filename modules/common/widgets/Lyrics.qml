@@ -19,6 +19,10 @@ Item {
     implicitWidth: 200
     implicitHeight: 200
 
+    function restartLyrics() {
+        LyricsService.restartLyrics();
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 4

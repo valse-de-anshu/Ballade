@@ -86,6 +86,15 @@ Singleton {
             icon: "contrast",
             telaIcon: "Tela-circle-nord-dark",
             folder: "grayscale"
+        },
+        {
+            key: "catppuccin",
+            name: Translation.tr("Catppuccin"),
+            subtitle: Translation.tr("Soothing Pastel & Mocha"),
+            color: "#CBA6F7",
+            icon: "palette",
+            telaIcon: "Tela-circle-purple-dark",
+            folder: "Catppuccin"
         }
     ]
 
@@ -96,9 +105,13 @@ Singleton {
         } else {
             Config.setNestedValue("theme.activePreset", key)
         }
-        const themeDir = `${Directories.pictures}/Wallpapers/${key}`
+        const presetObj = themePresets.find(p => p.key === key)
+        const folderName = (presetObj && presetObj.folder) ? presetObj.folder : key
+        const themeDir = `${Directories.pictures}/Wallpapers/${folderName}`
+        const liveThemeDir = `${Directories.pictures}/Wallpapers/live Wallpapers/${folderName}`
         if (Config.options.wallpaperSelector) {
             Config.options.wallpaperSelector.userPath = themeDir
+            Config.options.wallpaperSelector.liveWallpapersPath = liveThemeDir
         }
         Wallpapers.setDirectory(themeDir)
         

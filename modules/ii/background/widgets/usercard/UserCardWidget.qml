@@ -56,8 +56,10 @@ AbstractBackgroundWidget {
             property string effectiveSource: {
                 var path = (GlobalStates.screenLocked && Config.options.background.lockWall !== "")
                     ? Config.options.background.lockWall
-                    : Config.options.background.wallpaperPath;
-                return path ? "file://" + path : "";
+                    : (root.wallpaperPath || Config.options.background.wallpaperPath);
+                if (!path) return "";
+                var img = Images.getStaticWallpaperImage(path, Config.options.background.thumbnailPath);
+                return img ? (img.startsWith("file://") ? img : "file://" + img) : "";
             }
 
             Image {
@@ -267,12 +269,17 @@ AbstractBackgroundWidget {
                 id: avatarImage
                 anchors.fill: parent
                 anchors.margins: 3
-                source: Config.options.profile.avatarPath !== ""
-                    ? "file://" + Config.options.profile.avatarPicture
-                    : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                source: {
+                    const pic = Config.options.profile.avatarPicture
+                    if (pic && pic.length > 0) return pic.startsWith("file://") ? pic : ("file://" + pic)
+                    const p = Config.options.profile.avatarPath
+                    if (p && p.length > 0 && /\.(png|jpg|jpeg|webp|svg)$/i.test(p)) return p.startsWith("file://") ? p : ("file://" + p)
+                    return "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                }
                 sourceSize.width: avatarImage.width * 2
                 sourceSize.height: avatarImage.height * 2
                 fillMode: Image.PreserveAspectCrop
+                visible: avatarImage.status === Image.Ready
                 layer.enabled: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
@@ -281,10 +288,6 @@ AbstractBackgroundWidget {
                         radius: (avatarRect.width - 6) / 2
                     }
                 }
-                onStatusChanged: {
-                    if (status === Image.Error)
-                        visible = false
-                }
             }
 
             MaterialSymbol {
@@ -292,7 +295,7 @@ AbstractBackgroundWidget {
                 text: "account_circle"
                 iconSize: 32
                 color: Appearance.colors.colOnPrimaryContainer
-                visible: avatarImage.status === Image.Error
+                visible: avatarImage.status !== Image.Ready
             }
         }
 

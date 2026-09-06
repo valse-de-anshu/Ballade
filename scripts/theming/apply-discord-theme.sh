@@ -13,6 +13,7 @@ config_dir = '$CONFIG_DIR'
 theme_key = '$THEME_KEY'
 
 presets_hsl = {
+    'catppuccin': {'hue': 267, 'sat': '84%', 'light': '81%', 'hex': '#CBA6F7', 'hover': '#B4BEFE'},
     'purple':    {'hue': 270, 'sat': '60%', 'light': '40%', 'hex': '#9C5ADB', 'hover': '#BA68C8'},
     'green':     {'hue': 85,  'sat': '50%', 'light': '35%', 'hex': '#7D9726', 'hover': '#93AE38'},
     'golden':    {'hue': 40,  'sat': '75%', 'light': '45%', 'hex': '#F0B849', 'hover': '#FED268'},
@@ -36,11 +37,17 @@ if os.path.exists(config_path):
         wall_path = cfg.get('appearance', {}).get('wallpaperPath', '')
         if not wall_path:
             wall_path = cfg.get('background', {}).get('wallpaperPath', '')
+        thumb_path = cfg.get('background', {}).get('thumbnailPath', '')
+        if wall_path and re.search(r'\.(mp4|webm|mkv|avi|mov)$', wall_path, re.I):
+            if thumb_path and os.path.exists(thumb_path):
+                wall_path = thumb_path
     except Exception as e:
         print(f'Error reading config.json: {e}', file=sys.stderr)
 
 if not wall_path or not os.path.exists(wall_path):
     wall_dir = os.path.expanduser(f'~/Pictures/Wallpapers/{theme_key}')
+    if not os.path.isdir(wall_dir) and os.path.isdir(os.path.expanduser(f'~/Pictures/Wallpapers/{theme_key.capitalize()}')):
+        wall_dir = os.path.expanduser(f'~/Pictures/Wallpapers/{theme_key.capitalize()}')
     if os.path.isdir(wall_dir):
         files = [os.path.join(wall_dir, f) for f in os.listdir(wall_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
         if files:
@@ -60,6 +67,8 @@ if wall_path and os.path.exists(wall_path):
         print(f'Error encoding image: {e}', file=sys.stderr)
 
 template_path = os.path.expanduser('~/Downloads/DiscordPlus.theme.css')
+if not os.path.exists(template_path):
+    template_path = os.path.expanduser('~/.config/vesktop/themes/DiscordPlus.theme.css')
 if not os.path.exists(template_path):
     template_path = os.path.expanduser('~/.config/Vencord/themes/DiscordPlus.theme.css')
 if not os.path.exists(template_path):
@@ -109,7 +118,7 @@ updated = re.sub(r'--dplus-spacing-app:\s*[^;]+;', '--dplus-spacing-app: 4px;', 
 # Performance & Layout Overrides
 aesthetic_overrides = f'''
 /* ==========================================================================
- * Clean Stock Discord Message & Avatar Layout
+ * Clean Stock Discord & Vesktop Message & Avatar Layout
  * ========================================================================== */
 
 /* 1. Fix Top-Left Server Bar Glitch (Direct Messages Icon) */
@@ -125,13 +134,11 @@ nav[class*=\"guilds\"] [class*=\"tutorialContainer\"] div[class*=\"wrapper\"] {{
 }}
 
 /* 2. Normal Stock Discord Message Layout & Crisp Avatars */
-/* Reset message container to standard inline flow (not clamped box) */
 li[class*=\"messageListItem\"],
 div[class*=\"message__\"] {{
   min-height: 44px !important;
 }}
 
-/* Standard Discord 40px avatar positioning */
 div[class*=\"avatar__\"],
 img[class*=\"avatar__\"],
 div[class*=\"avatarDecoration__\"] {{
@@ -146,13 +153,11 @@ div[class*=\"avatarDecoration__\"] {{
   border-radius: 50% !important;
 }}
 
-/* Restore proper left margin for message text next to avatar */
 div[class*=\"contents__\"] {{
   margin-left: 0px !important;
   padding-left: 0px !important;
 }}
 
-/* Clean message content readability */
 div[class*=\"messageContent__\"] {{
   margin-left: 0px !important;
   padding-top: 2px !important;
@@ -191,11 +196,13 @@ div[class*=\"channelTextArea_\"], div[class*=\"scrollableContainer_\"], form[cla
 
 full_css = updated + '\n' + aesthetic_overrides
 
-# Target directories
+# Target theme directories (Vencord, Vesktop, BetterDiscord, Flatpak)
 target_dirs = [
     os.path.expanduser('~/.config/Vencord/themes'),
     os.path.expanduser('~/.config/vesktop/themes'),
-    os.path.expanduser('~/.config/BetterDiscord/themes')
+    os.path.expanduser('~/.config/BetterDiscord/themes'),
+    os.path.expanduser('~/.var/app/dev.vencord.Vesktop/config/vesktop/themes'),
+    os.path.expanduser('~/.var/app/dev.vencord.Vesktop/config/Vencord/themes'),
 ]
 
 for d in target_dirs:
@@ -203,22 +210,60 @@ for d in target_dirs:
     with open(os.path.join(d, 'DiscordPlus.theme.css'), 'w') as f:
         f.write(full_css)
 
-quick_css_path = os.path.expanduser('~/.config/Vencord/settings/quickCss.css')
-os.makedirs(os.path.dirname(quick_css_path), exist_ok=True)
-with open(quick_css_path, 'w') as f:
-    f.write(full_css)
+# Target QuickCSS paths
+quick_css_paths = [
+    os.path.expanduser('~/.config/Vencord/settings/quickCss.css'),
+    os.path.expanduser('~/.config/vesktop/settings/quickCss.css'),
+    os.path.expanduser('~/.var/app/dev.vencord.Vesktop/config/vesktop/settings/quickCss.css'),
+]
 
-v_path = os.path.expanduser('~/.config/Vencord/settings/settings.json')
-if os.path.exists(v_path):
+for qp in quick_css_paths:
     try:
-        with open(v_path, 'r') as f:
-            v_data = json.load(f)
-        v_data['useQuickCss'] = True
-        v_data['enabledThemes'] = ['DiscordPlus.theme.css']
-        with open(v_path, 'w') as f:
-            json.dump(v_data, f, indent=4)
+        os.makedirs(os.path.dirname(qp), exist_ok=True)
+        with open(qp, 'w') as f:
+            f.write(full_css)
     except Exception as e:
-        print(e, file=sys.stderr)
+        print(f'Error writing quickCss to {qp}: {e}', file=sys.stderr)
 
-print(f'[Discord+] Clean DiscordPlus theme applied with {wall_path}')
+# Target Vencord/Vesktop settings.json configs
+v_settings_paths = [
+    os.path.expanduser('~/.config/Vencord/settings/settings.json'),
+    os.path.expanduser('~/.config/vesktop/settings/settings.json'),
+    os.path.expanduser('~/.var/app/dev.vencord.Vesktop/config/vesktop/settings/settings.json'),
+]
+
+for v_path in v_settings_paths:
+    if os.path.exists(v_path):
+        try:
+            with open(v_path, 'r') as f:
+                v_data = json.load(f)
+            v_data['useQuickCss'] = True
+            enabled = v_data.get('enabledThemes', [])
+            if 'DiscordPlus.theme.css' not in enabled:
+                enabled.append('DiscordPlus.theme.css')
+            v_data['enabledThemes'] = enabled
+            with open(v_path, 'w') as f:
+                json.dump(v_data, f, indent=4)
+        except Exception as e:
+            print(f'Error updating {v_path}: {e}', file=sys.stderr)
+
+# Vesktop app-level splash/window settings
+app_settings_paths = [
+    os.path.expanduser('~/.config/vesktop/settings.json'),
+    os.path.expanduser('~/.var/app/dev.vencord.Vesktop/config/vesktop/settings.json'),
+]
+
+for asp in app_settings_paths:
+    if os.path.exists(asp):
+        try:
+            with open(asp, 'r') as f:
+                app_cfg = json.load(f)
+            app_cfg['splashColor'] = p['hex']
+            app_cfg['splashBackground'] = f\"rgba({int(p['hex'][1:3], 16)}, {int(p['hex'][3:5], 16)}, {int(p['hex'][5:7], 16)}, 0.25)\"
+            with open(asp, 'w') as f:
+                json.dump(app_cfg, f, indent=4)
+        except Exception as e:
+            print(f'Error updating {asp}: {e}', file=sys.stderr)
+
+print(f'[Discord+/Vesktop] Clean DiscordPlus theme applied with {wall_path}')
 "

@@ -175,8 +175,8 @@ Item {
                                 handleColor: root.blendedColors.colPrimary
                                 value: root.player?.position / root.player?.length
                                 onMoved: {
-                                    root.player.position = value * root.player.length
-                                    lyricsComp.restartLyrics()
+                                    if (root.player) root.player.position = value * root.player.length
+                                    LyricsService.restartLyrics()
                                 }
                             }
                         }

@@ -7,6 +7,14 @@
 THEME_KEY="${1:-green}"
 
 case "$THEME_KEY" in
+    catppuccin|catpuchin|mocha|macchiato)
+        PRESET="catppuccin"
+        BG="#1e1e2e"; BG_DARK="#181825"; BG_LIGHT="#313244"; BG_HOVER="#45475a"
+        FG="#cdd6f4"; FG_MUTED="#a6adc8"; ACCENT="#cba6f7"; ACCENT_BRIGHT="#b4befe"
+        SEL="#585b70"; BORDER="#313244"; STRINGS="#a6e3a1"; NUMS="#fab387"; KEYWORDS="#cba6f7"
+        FUNCS="#89b4fa"; TYPES="#f9e2af"; COMMENTS="#6c7086"
+        BRACKET1="#cba6f7"; BRACKET2="#fab387"; BRACKET3="#89b4fa"; BRACKET4="#a6e3a1"; BRACKET5="#f5c2e7"
+        ;;
     green|atelier|everforest)
         PRESET="green"
         BG="#18211e"; BG_DARK="#121917"; BG_LIGHT="#202c28"; BG_HOVER="#25352f"

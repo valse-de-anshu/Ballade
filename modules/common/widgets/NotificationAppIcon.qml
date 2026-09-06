@@ -19,7 +19,9 @@ MaterialShape { // App icon
     property real materialIconSize: implicitSize * materialIconScale
     property real appIconSize: implicitSize * appIconScale
     property real smallAppIconSize: implicitSize * smallAppIconScale
-    readonly property bool isActualImage: typeof root.image === "string" && root.image !== "" && (root.image.startsWith("/") || root.image.startsWith("file://") || root.image.startsWith("data:") || root.image.startsWith("image://") || root.image.startsWith("http://") || root.image.startsWith("https://"))
+    property bool imageFailed: false
+    onImageChanged: imageFailed = false
+    readonly property bool isActualImage: !imageFailed && typeof root.image === "string" && root.image !== "" && !root.image.startsWith("image://qsimage/") && !root.image.startsWith("image://qspixmap/") && (root.image.startsWith("/") || root.image.startsWith("file://") || root.image.startsWith("data:") || root.image.startsWith("image://") || root.image.startsWith("http://") || root.image.startsWith("https://"))
     readonly property string resolvedIconPath: {
         if (!root.appIcon || root.appIcon === "") return "";
         let path = Quickshell.iconPath(root.appIcon);
@@ -81,6 +83,11 @@ MaterialShape { // App icon
                 cache: true
                 antialiasing: true
                 asynchronous: true
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        root.imageFailed = true
+                    }
+                }
 
                 width: size
                 height: size

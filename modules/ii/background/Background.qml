@@ -8,6 +8,7 @@ import qs.modules.common.widgets.widgetCanvas
 import qs.modules.common.functions as CF
 import QtQuick
 import QtQuick.Layouts
+import QtMultimedia
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
@@ -90,8 +91,8 @@ Variants {
         id: bgRoot
 
         required property var modelData
-        property string currentWallpaperSource: Config.options.background.wallpaperPath
-        property string previousWallpaperSource: Config.options.background.wallpaperPath
+        property string currentWallpaperSource: Images.getStaticWallpaperImage(Config.options.background.wallpaperPath, Config.options.background.thumbnailPath)
+        property string previousWallpaperSource: currentWallpaperSource
         property bool videoRevealed: false
 
         //centered Wallpaper
@@ -108,7 +109,7 @@ Variants {
             }
         }
         readonly property bool overviewBlurActive: Config.options.overview.style === "niri" && GlobalStates.overviewOpen && Config.options.overview.enable
-        readonly property bool userBlurActive: Config.options.background.showBlur && !bgRoot.wallpaperIsVideo
+        readonly property bool userBlurActive: Config.options.background.showBlur
         readonly property bool blurFullScreen: bgRoot.overviewBlurActive || bgRoot.splitFraction >= 1.0
 
         property var shaderList: ["circlePit", "circleSelect", "magic", "Doom", "Peel", "transition", "pixelate", "stripes", "crt", "dissolve", "glitch", "ripple", "shatter"]
@@ -155,8 +156,8 @@ Variants {
             return Wallpapers.previewPath || Wallpapers.confirmedPath || Config.options.background.wallpaperPath;
         }
 
-        property bool wallpaperIsVideo: bgRoot.effectiveWallpaperPath.endsWith(".mp4") || bgRoot.effectiveWallpaperPath.endsWith(".webm") || bgRoot.effectiveWallpaperPath.endsWith(".mkv") || bgRoot.effectiveWallpaperPath.endsWith(".avi") || bgRoot.effectiveWallpaperPath.endsWith(".mov")
-        property string wallpaperPath: wallpaperIsVideo ? Config.options.background.thumbnailPath : bgRoot.effectiveWallpaperPath
+        property bool wallpaperIsVideo: Boolean(bgRoot.effectiveWallpaperPath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(bgRoot.effectiveWallpaperPath)
+        property string wallpaperPath: wallpaperIsVideo ? Images.getStaticWallpaperImage(bgRoot.effectiveWallpaperPath, Config.options.background.thumbnailPath) : bgRoot.effectiveWallpaperPath
         property bool wallpaperSafetyTriggered: {
             const enabled = Config.options.workSafety.enable.wallpaper;
             const sensitiveWallpaper = (CF.StringUtils.stringListContainsSubstring(wallpaperPath.toLowerCase(), Config.options.workSafety.triggerCondition.fileKeywords));
@@ -217,6 +218,29 @@ Variants {
             bgRoot.videoRevealed = bgRoot.wallpaperIsVideo
         }
 
+        onWallpaperIsVideoChanged: {
+            if (bgRoot.wallpaperIsVideo) {
+                if (!GlobalStates.screenLocked) {
+                    videoRevealSafetyTimer.restart()
+                }
+            } else {
+                bgRoot.videoRevealed = false
+            }
+        }
+
+        Timer {
+            id: videoRevealSafetyTimer
+            interval: 1400
+            running: bgRoot.wallpaperIsVideo && !bgRoot.videoRevealed
+            repeat: false
+            onTriggered: {
+                if (bgRoot.wallpaperIsVideo && !bgRoot.videoRevealed) {
+                    bgRoot.videoRevealed = true
+                    bgRoot.transitionProgress = 1.0
+                }
+            }
+        }
+
         onWallpaperPathChanged: {
             bgRoot.videoRevealed = false
             if (wallpaperSafetyTriggered) {
@@ -244,6 +268,15 @@ Variants {
             bgRoot.transitionProgress = 0.0
             if (wallpaper.status === Image.Ready) {
                 transitionAnim.restart()
+            } else {
+                Qt.callLater(() => {
+                    if (bgRoot.transitionProgress === 0.0 && !transitionAnim.running) {
+                        transitionAnim.restart()
+                    }
+                })
+            }
+            if (bgRoot.wallpaperIsVideo) {
+                videoRevealSafetyTimer.restart()
             }
         }
 
@@ -280,6 +313,8 @@ Variants {
             function onScreenLockedChanged() {
                 if (!GlobalStates.screenLocked) {
                     bgRoot.videoRevealed = bgRoot.wallpaperIsVideo
+                } else {
+                    bgRoot.videoRevealed = false
                 }
             }
         }
@@ -313,13 +348,74 @@ Variants {
                 smooth: true
                 asynchronous: true
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
+                visible: !bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled
                     && (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0)
                 onStatusChanged: {
                     if (status === Image.Ready && bgRoot.transitionProgress === 0.0) {
                         transitionAnim.restart()
                     }
                 }
+                Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+            }
+
+            MediaPlayer {
+                id: liveWallpaperPlayer
+                source: bgRoot.wallpaperIsVideo ? (bgRoot.effectiveWallpaperPath.startsWith("file://") ? bgRoot.effectiveWallpaperPath : "file://" + bgRoot.effectiveWallpaperPath) : ""
+                videoOutput: liveVideoOutput
+                loops: MediaPlayer.Infinite
+                audioOutput: null
+
+                readonly property bool shouldPlay: bgRoot.wallpaperIsVideo && !GlobalStates.screenLocked && !(ToplevelManager?.activeToplevel?.fullscreen ?? false)
+
+                function updatePlayback() {
+                    if (shouldPlay) {
+                        play();
+                    } else {
+                        pause();
+                    }
+                }
+
+                Component.onCompleted: updatePlayback()
+                onMediaStatusChanged: {
+                    if (mediaStatus === MediaPlayer.LoadedMedia && shouldPlay) {
+                        play();
+                    }
+                }
+            }
+
+            Connections {
+                target: GlobalStates
+                function onScreenLockedChanged() {
+                    liveWallpaperPlayer.updatePlayback();
+                }
+            }
+
+            Connections {
+                target: ToplevelManager
+                function onActiveToplevelChanged() {
+                    liveWallpaperPlayer.updatePlayback();
+                }
+            }
+
+            Connections {
+                target: bgRoot
+                function onWallpaperIsVideoChanged() {
+                    liveWallpaperPlayer.updatePlayback();
+                }
+                function onEffectiveWallpaperPathChanged() {
+                    liveWallpaperPlayer.updatePlayback();
+                }
+            }
+
+            VideoOutput {
+                id: liveVideoOutput
+                x: bgRoot.parallaxX
+                y: bgRoot.parallaxY
+                width: bgRoot.scaledW
+                height: bgRoot.scaledH
+                fillMode: VideoOutput.PreserveAspectCrop
+                layer.enabled: (blurLoader.active || fastBlurLoader.active) && bgRoot.blurFullScreen
+                visible: bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
@@ -499,7 +595,7 @@ Variants {
 
                 StyledImage {
                     anchors.fill: parent
-                    source: bgRoot.wallpaperPath
+                    source: Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath)
                     fillMode: Image.PreserveAspectCrop
                     cache: false
                     antialiasing: true
@@ -596,11 +692,12 @@ Variants {
                 // that FastBlur can sample from — this is the key to compositing
                 layer.enabled: bgRoot.userBlurActive || bgRoot.overviewBlurActive
 
-                // Wallpaper captured via ShaderEffectSource into the composite
+                // Wallpaper / video captured via ShaderEffectSource into the composite
                 ShaderEffectSource {
                     anchors.fill: parent
-                    sourceItem: bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0
-                        ? wallpaper : transitionEffect
+                    sourceItem: bgRoot.wallpaperIsVideo
+                        ? liveVideoOutput
+                        : (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect)
                     hideSource: false   // keep original wallpaper visible for non-blur code paths
                     live: true
                 }

@@ -20,6 +20,18 @@ mkdir -p "$CAVA_CONFIG_DIR" "$CAVA_THEMES_DIR"
 declare -a GRADIENT_COLORS
 
 case "$PRESET_NAME" in
+    catppuccin|catpuchin|mocha|macchiato)
+        GRADIENT_COLORS=(
+            "'#181825'"
+            "'#1e1e2e'"
+            "'#313244'"
+            "'#74c7ec'"
+            "'#89dceb'"
+            "'#89b4fa'"
+            "'#b4befe'"
+            "'#cba6f7'"
+        )
+        ;;
     green|atelier|everforest)
         GRADIENT_COLORS=(
             "'#18211e'"

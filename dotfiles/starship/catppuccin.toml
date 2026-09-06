@@ -1,0 +1,64 @@
+# Don't print a new line at the start of the prompt
+add_newline = true
+
+# The r/unixporn "Pill" layout with Live Time added
+format = """
+$username$directory$time$git_branch$git_status$cmd_duration
+$character"""
+
+[character]
+success_symbol = "[╰─](bold fg:#b4befe) "
+error_symbol = "[╰─](bold fg:#f38ba8) "
+
+[username]
+show_always = true
+style_user = "bg:#313244 fg:#b4befe bold"
+style_root = "bg:#313244 fg:#f38ba8 bold"
+format = "[╭─](bold fg:#313244)[󰭹 $user]($style)[](bold fg:#313244) "
+
+[hostname]
+disabled = true
+
+[directory]
+home_symbol = " "
+read_only = " "
+style = "bg:#181825 fg:#cdd6f4 bold"
+truncation_length = 3
+truncation_symbol = "••/"
+format = "[](bold fg:#181825)[$path]($style)[](bold fg:#181825) "
+
+[directory.substitutions]
+"Desktop" = " "
+"Documents" = " "
+"Downloads" = " "
+"Music" = "󰎈 "
+"Pictures" = " "
+"Videos" = " "
+"GitHub" = "󰊤 "
+
+[git_branch]
+symbol = "󰘬 "
+style = "bg:#b4befe fg:#11111b bold"
+format = "[](bold fg:#b4befe)[$symbol$branch]($style)[](bold fg:#b4befe) "
+
+[git_status]
+style = "bg:#f38ba8 fg:#11111b bold"
+format = "[](bold fg:#f38ba8)[$all_status$ahead_behind]($style)[](bold fg:#f38ba8) "
+conflicted = "!! "
+ahead = "↑ "
+behind = "↓ "
+diverged = "↕ "
+untracked = "? "
+stashed = "S "
+modified = "! "
+staged = "+ "
+renamed = "» "
+deleted = "x "
+
+[cmd_duration]
+min_time = 500
+style = "bg:#89b4fa fg:#11111b bold"
+format = "[](bold fg:#89b4fa)[󰪢 $duration]($style)[](bold fg:#89b4fa)"
+
+[package]
+disabled = true
