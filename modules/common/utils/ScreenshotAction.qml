@@ -52,12 +52,23 @@ Singleton {
                     saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
                     savePath="$targetDir/$saveFileName" && \
                     ${cropBase} "$savePath" && \
-                    python3 ~/.local/bin/copy-image-with-path.py "$savePath" && \
+                    python3 '${Directories.scriptPath}/clipboard/copy-image-with-path.py' "$savePath" && \
                     ${cleanup}`
                 ]
                 break;
             case ScreenshotAction.Action.Edit:
-                return ["bash", "-c", `${cropToStdout} | ${annotationCommand} && ${cleanup}`]
+                const editTargetDir = saveDir !== "" ? saveDir : `${Directories.pictures}/Screenshots`
+                return [
+                    "bash", "-c",
+                    `mkdir -p '${StringUtils.shellSingleQuoteEscape(editTargetDir)}' && \
+                    editTargetDir='${StringUtils.shellSingleQuoteEscape(editTargetDir)}' && \
+                    editTargetDir="\${editTargetDir%/}" && \
+                    saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
+                    savePath="$editTargetDir/$saveFileName" && \
+                    ${cropBase} "$savePath" && \
+                    python3 '${Directories.snipAnnotateScriptPath}' --file "$savePath" && \
+                    ${cleanup}`
+                ]
                 break;
             case ScreenshotAction.Action.Search:
                 return ["bash", "-c", `${cropInPlace} && xdg-open "${root.imageSearchEngineBaseUrl}$(${uploadAndGetUrl(screenshotPath)})" && ${cleanup}`]

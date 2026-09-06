@@ -18,3 +18,11 @@ hl.window_rule({
 -- NOTE: Kitty and Dolphin no longer auto-open in compact float mode.
 -- Use Super+Alt+Space to manually toggle any window into a centered compact float.
 -- The auto-tile daemon (auto_tile_multiwindow.py) will tile them when a 2nd window opens.
+
+-- Compact floating popup for Gwenview screenshot annotation
+hl.window_rule({
+    match = { class = "org.kde.gwenview" },
+    float = true,
+    size = { 1000, 650 },
+    center = true,
+})

@@ -88,6 +88,13 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                 mkdir -p "$HOME/.config/Vencord/themes"
                 cp -rn "$app/"* "$HOME/.config/Vencord/themes/" 2>/dev/null || true
                 echo "   ↳ Vencord DiscordPlus theme installed to ~/.config/Vencord/themes/"
+            elif [ "$app_name" = "fastfetch" ]; then
+                mkdir -p "$HOME/.config/fastfetch"
+                cp -rn "$app/"* "$HOME/.config/fastfetch/" 2>/dev/null || true
+                if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
+                    sed -i "s|/home/[^/]*|${HOME}|g" "$HOME/.config/fastfetch/config.jsonc"
+                fi
+                echo "   ↳ Fastfetch config installed & paths dynamically adapted to $HOME"
             else
                 mkdir -p "$HOME/.config/$app_name"
                 cp -rn "$app/"* "$HOME/.config/$app_name/" 2>/dev/null || true
@@ -128,6 +135,13 @@ if [ -d "$BALLADE_DIR/scripts/clipboard" ]; then
     cp -f "$BALLADE_DIR/scripts/clipboard/"* "$HOME/.local/bin/" 2>/dev/null || true
     chmod +x "$HOME/.local/bin/clipboard-image-transformer.py" "$HOME/.local/bin/copy-image-with-path.py" 2>/dev/null || true
     echo "   ↳ Clipboard image utilities installed to ~/.local/bin/"
+fi
+
+# Screenshot and annotation utilities
+if [ -f "$BALLADE_DIR/scripts/images/snip-annotate.py" ]; then
+    cp -f "$BALLADE_DIR/scripts/images/snip-annotate.py" "$HOME/.local/bin/snip-annotate.py"
+    chmod +x "$HOME/.local/bin/snip-annotate.py"
+    echo "   ↳ Screenshot & annotation tool (snip-annotate.py) installed to ~/.local/bin/"
 fi
 
 # System utilities & greetings

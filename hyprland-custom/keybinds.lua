@@ -10,4 +10,11 @@ hl.unbind("CTRL + SUPER + P")
 hl.unbind("SUPER + I")
 hl.bind("SUPER + I", hl.dsp.exec_cmd("qs -c ballade ipc call settings toggle"), {description = "Shell: Toggle Settings"} )
 
+-- Bind ALT+S to Snip and Annotate with Gwenview
+local qsConfig = os.getenv("qsConfig") or "ballade"
+local qsIsAlive = "qs -c " .. qsConfig .. " ipc call TEST_ALIVE"
+hl.bind("ALT + S", hl.dsp.global("quickshell:regionAnnotate"), { description = "Utilities: Snip and annotate with Gwenview >> clipboard" })
+hl.bind("ALT + S", hl.dsp.exec_cmd(qsIsAlive .. " || pidof slurp || snip-annotate.py"))
+
+
 

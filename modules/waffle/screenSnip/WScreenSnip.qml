@@ -34,6 +34,12 @@ Scope {
         GlobalStates.regionSelectorOpen = true;
     }
 
+    function annotate() {
+        GlobalStates.regionSelectorOpen = true;
+        regionSelectorLoader.item.mediaType = WRegionSelectionPanel.MediaType.Image;
+        regionSelectorLoader.item.imageAction = WRegionSelectionPanel.ImageAction.Edit;
+    }
+
     function ocr() {
         GlobalStates.regionSelectorOpen = true;
         regionSelectorLoader.item.mediaType = WRegionSelectionPanel.MediaType.Image;
@@ -64,6 +70,9 @@ Scope {
         function screenshot() {
             root.screenshot();
         }
+        function annotate() {
+            root.annotate();
+        }
         function ocr() {
             root.ocr();
         }
@@ -82,6 +91,11 @@ Scope {
         name: "regionScreenshot"
         description: "Takes a screenshot of the selected region"
         onPressed: root.screenshot()
+    }
+    GlobalShortcut {
+        name: "regionAnnotate"
+        description: "Snips and annotates the selected region with Gwenview"
+        onPressed: root.annotate()
     }
     GlobalShortcut {
         name: "regionSearch"

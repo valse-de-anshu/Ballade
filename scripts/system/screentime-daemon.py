@@ -21,7 +21,8 @@ from datetime import datetime, date
 from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-DATA_PATH = Path("/home/valse-de-anshu/.local/state/quickshell/user/screentime.json")
+STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+DATA_PATH = STATE_DIR / "quickshell" / "user" / "screentime.json"
 
 # ── App Name / Icon Mapping ───────────────────────────────────────────────────
 def format_app_name(app_id: str) -> str:

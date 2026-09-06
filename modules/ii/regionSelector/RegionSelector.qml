@@ -38,6 +38,12 @@ Scope {
         GlobalStates.regionSelectorOpen = true
     }
 
+    function annotate() {
+        root.action = RegionSelection.SnipAction.Edit
+        root.selectionMode = RegionSelection.SelectionMode.RectCorners
+        GlobalStates.regionSelectorOpen = true
+    }
+
     function search() {
         root.action = RegionSelection.SnipAction.Search
         if (Config.options.search.imageSearch.useCircleSelection) {
@@ -76,6 +82,9 @@ Scope {
         function screenshot() {
             root.screenshot()
         }
+        function annotate() {
+            root.annotate()
+        }
         function search() {
             root.search()
         }
@@ -94,6 +103,11 @@ Scope {
         name: "regionScreenshot"
         description: "Takes a screenshot of the selected region"
         onPressed: root.screenshot()
+    }
+    GlobalShortcut {
+        name: "regionAnnotate"
+        description: "Snips and annotates the selected region with Gwenview"
+        onPressed: root.annotate()
     }
     GlobalShortcut {
         name: "regionSearch"
