@@ -91,7 +91,7 @@
         "showSnapLines": true,
         "thumbnailPath": "",
         "wallpaperAnimation": "random",
-        "wallpaperPath": "/home/valse-de-anshu/Pictures/Wallpapers/pink/7.jpg",
+        "wallpaperPath": "__HOME__/Pictures/Wallpapers/pink/7.jpg",
         "widgets": {
             "calendar": {
                 "enable": true,
@@ -148,7 +148,7 @@
             "customImage": {
                 "enable": false,
                 "infiniteLoop": false,
-                "path": "/home/valse-de-anshu/Pictures/overlay/miku-channelcastation.gif",
+                "path": "__HOME__/Pictures/overlay/miku-channelcastation.gif",
                 "placementStrategy": "free",
                 "shape": "Free",
                 "size": 106.70703125,
@@ -505,7 +505,7 @@
         "clickthroughOpacity": 0.9,
         "darkenScreen": true,
         "floatingImage": {
-            "imageSource": "file:///home/valse-de-anshu/Pictures/overlay/hatsune-miku-rabbit-hole.gif",
+            "imageSource": "file://__HOME__/Pictures/overlay/hatsune-miku-rabbit-hole.gif",
             "scale": 1
         },
         "openingZoomAnimation": true
@@ -526,8 +526,8 @@
         "weeb": 1
     },
     "profile": {
-        "avatarPath": "/home/valse-de-anshu/Pictures/avtar",
-        "avatarPicture": "/home/valse-de-anshu/Pictures/avtar/pfp.png",
+        "avatarPath": "__HOME__/Pictures/avtar",
+        "avatarPicture": "__HOME__/Pictures/avtar/pfp.png",
         "descriptionText": "::uptime::",
         "displayName": ""
     },
@@ -557,10 +557,10 @@
         "updateInterval": 3000
     },
     "screenRecord": {
-        "savePath": "/home/valse-de-anshu/Videos"
+        "savePath": "__HOME__/Videos"
     },
     "screenSnip": {
-        "savePath": "/home/valse-de-anshu/Pictures/Screenshots"
+        "savePath": "__HOME__/Pictures/Screenshots"
     },
     "search": {
         "engineBaseUrl": "https://www.google.com/search?q=",
@@ -676,17 +676,17 @@
         "enableUsbSounds": false,
         "lockSoundPath": "",
         "logoutSoundPath": "",
-        "notificationSoundPath": "/home/valse-de-anshu/\u2044Music/notification/1. Nakime Biwa sound effect.flac",
+        "notificationSoundPath": "__HOME__/\u2044Music/notification/1. Nakime Biwa sound effect.flac",
         "notificationVolume": 10,
         "notifications": false,
         "pomodoro": true,
-        "shutdownSoundPath": "/home/valse-de-anshu/.local/share/shutdown_sound.flac",
+        "shutdownSoundPath": "__HOME__/.local/share/shutdown_sound.flac",
         "sleepSoundPath": "",
-        "startupSoundPath": "/home/valse-de-anshu/.config/quickshell/ballade/assets/sounds/login_greetings",
+        "startupSoundPath": "__HOME__/.config/quickshell/ballade/assets/sounds/login_greetings",
         "systemSoundVolume": 60,
         "theme": "freedesktop",
-        "usbPlugInSoundPath": "/home/valse-de-anshu/.config/quickshell/ballade/assets/sounds/usb-in.flac",
-        "usbPlugOutSoundPath": "/home/valse-de-anshu/.config/quickshell/ballade/assets/sounds/usb-out.flac",
+        "usbPlugInSoundPath": "__HOME__/.config/quickshell/ballade/assets/sounds/usb-in.flac",
+        "usbPlugOutSoundPath": "__HOME__/.config/quickshell/ballade/assets/sounds/usb-out.flac",
         "usbSoundVolume": 70
     },
     "theme": {
@@ -726,13 +726,13 @@
         "changeInterval": 0,
         "closeAfterSelection": true,
         "columns": 4,
-        "liveWallpapersPath": "/home/valse-de-anshu/Pictures/Wallpapers/live Wallpapers/pink",
+        "liveWallpapersPath": "__HOME__/Pictures/Wallpapers/live Wallpapers/pink",
         "shape": "card",
         "showBlurBackground": true,
         "showHomePath": true,
         "showSearchbar": true,
         "useSystemFileDialog": false,
-        "userPath": "/home/valse-de-anshu/Pictures/Wallpapers/pink"
+        "userPath": "__HOME__/Pictures/Wallpapers/pink"
     },
     "windows": {
         "centerTitle": true,

@@ -26,3 +26,4 @@ hl.window_rule({
     size = { 1000, 650 },
     center = true,
 })
+

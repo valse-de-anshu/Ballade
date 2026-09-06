@@ -32,11 +32,21 @@ for preset in green purple pink red blue golden orange grayscale Catppuccin; do
     fi
 done
 
-mkdir -p "$HOME/Pictures/Wallpapers/live Wallpapers/Catppuccin"
+for preset in green purple pink red blue golden orange grayscale Catppuccin; do
+    mkdir -p "$HOME/Pictures/Wallpapers/live Wallpapers/$preset"
+done
+echo "   ↳ Live wallpaper folders created (add .mp4/.webm files to each)"
 
 mkdir -p "$HOME/.config/illogical-impulse/presets"
 if [ -d "$BALLADE_DIR/dotfiles/illogical-impulse/presets" ]; then
-    cp -rn "$BALLADE_DIR/dotfiles/illogical-impulse/presets/"* "$HOME/.config/illogical-impulse/presets/" 2>/dev/null || true
+    for preset_src in "$BALLADE_DIR/dotfiles/illogical-impulse/presets/"*.json; do
+        preset_dst="$HOME/.config/illogical-impulse/presets/$(basename "$preset_src")"
+        if [ ! -f "$preset_dst" ]; then
+            # Expand __HOME__ placeholder → actual $HOME, and fix file://__HOME__ → file://$HOME
+            sed "s|__HOME__|${HOME}|g; s|file://${HOME}|file://${HOME}|g" "$preset_src" > "$preset_dst"
+            echo "   ↳ Installed preset: $(basename "$preset_src") (paths adapted to $HOME)"
+        fi
+    done
 fi
 mkdir -p "$HOME/.config/kitty"
 mkdir -p "$HOME/.config/micro/colorschemes"
@@ -87,12 +97,28 @@ if [ -d "$BALLADE_DIR/hyprland-custom" ]; then
     echo "🪟 Installed Hyprland custom blur, rules, and keybinding overrides to ~/.config/hypr/custom/"
 fi
 
+# 4b. Install Hyprland base configs (hypridle, hyprlock) if available
+if [ -d "$BALLADE_DIR/dotfiles/hypr" ]; then
+    mkdir -p "$HOME/.config/hypr/hyprlock"
+    for hconf in "$BALLADE_DIR/dotfiles/hypr"/*.conf; do
+        base="$(basename "$hconf")"
+        if [ ! -f "$HOME/.config/hypr/$base" ]; then
+            cp "$hconf" "$HOME/.config/hypr/$base"
+            echo "   ↳ Installed: ~/.config/hypr/$base"
+        fi
+    done
+fi
+
 # 5. Install Bundled Application Dotfiles & Cursor Themes
 if [ -d "$BALLADE_DIR/dotfiles" ]; then
     echo "📦 Installing application configurations (rmpc, mpv, starship, fastfetch, cava, btop, wlogout, fuzzel, micro, kitty, Kvantum, matugen, Joplin, Vencord, KDE)..."
     for app in "$BALLADE_DIR/dotfiles"/*; do
         if [ -d "$app" ]; then
             app_name="$(basename "$app")"
+            # Skip dirs handled by dedicated blocks above
+            if [ "$app_name" = "hypr" ] || [ "$app_name" = "illogical-impulse" ]; then
+                continue
+            fi
             if [ "$app_name" = "icons" ]; then
                 mkdir -p "$HOME/.icons"
                 cp -rn "$app/"* "$HOME/.icons/" 2>/dev/null || true
