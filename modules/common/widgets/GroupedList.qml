@@ -1,48 +1,68 @@
 import qs.modules.common
+import qs.modules.common.functions
 import QtQuick
 import QtQuick.Layouts
 
-Item {
+Rectangle {
     id: root
     default property list<Item> items
     property real bigRadius: Appearance.rounding.normal
-    property real smallRadius: Appearance.rounding.unsharpenmore
-    property color bgcolor: Appearance.colors.colLayer1
-    property real itemVerticalPadding: 24
+    property real smallRadius: Appearance.rounding.normal
+    property color bgcolor: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.70)
+    property color borderColor: Appearance.colors.colLayer0Border
+    property real itemVerticalPadding: 8
+
     Layout.fillWidth: true
-    implicitHeight: col.implicitHeight
+    implicitHeight: col.implicitHeight + 12
+
+    radius: root.bigRadius
+    color: root.bgcolor
+    border.width: 1
+    border.color: root.borderColor
 
     ColumnLayout {
         id: col
-        anchors.fill: parent
-        spacing: 2
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+            margins: 4
+        }
+        spacing: 0
 
         Repeater {
             model: root.items.length
-            delegate: Rectangle {
+            delegate: ColumnLayout {
                 required property int index
-                readonly property bool isFirst: index === 0
-                readonly property bool isLast: index === root.items.length - 1
                 Layout.fillWidth: true
-                implicitHeight: (root.items[index]?.implicitHeight ?? 0) + root.itemVerticalPadding
-                color: root.bgcolor
-                topLeftRadius:     isFirst ? root.bigRadius : root.smallRadius
-                topRightRadius:    isFirst ? root.bigRadius : root.smallRadius
-                bottomLeftRadius:  isLast  ? root.bigRadius : root.smallRadius
-                bottomRightRadius: isLast  ? root.bigRadius : root.smallRadius
+                spacing: 0
 
-                Component.onCompleted: {
-                    const child = root.items[index]
-                    if (child) {
-                        child.parent = contentArea
-                        child.Layout.fillWidth = true
+                Item {
+                    Layout.fillWidth: true
+                    implicitHeight: (root.items[index]?.implicitHeight ?? 0) + root.itemVerticalPadding
+
+                    ColumnLayout {
+                        id: contentArea
+                        anchors { fill: parent; margins: 6 }
+                        spacing: 0
+
+                        Component.onCompleted: {
+                            const child = root.items[index]
+                            if (child) {
+                                child.parent = contentArea
+                                child.Layout.fillWidth = true
+                            }
+                        }
                     }
                 }
 
-                ColumnLayout {
-                    id: contentArea
-                    anchors { fill: parent; margins: 8 }
-                    spacing: 0
+                Rectangle {
+                    visible: index < root.items.length - 1
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 12
+                    Layout.rightMargin: 12
+                    height: 1
+                    color: ColorUtils.applyAlpha(Appearance.colors.colOutlineVariant, 0.16)
                 }
             }
         }

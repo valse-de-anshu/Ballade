@@ -1,0 +1,75 @@
+# Atelier Estuary Dark — micro colorscheme
+# Derived from the Kitty theme at ~/.config/kitty/Atelier_Estuary_Dark.conf
+# Colors:
+#   bg        #18211e   fg        #929181
+#   dark_bg   #302f27   selection #302f27
+#   dimmed    #6c6b5a   bright_fg #e7e6df
+#   red/rust  #ba6236   orange    #ae7313
+#   green     #7d9726   bright_grn #5b9d48
+#   yellow    #a5980d   teal      #36a166
+#   cyan-teal #5f9182   rose      #9d6c7c
+#   white     #f4f3ec   mid_grey  #878573
+
+# ── Base UI ──────────────────────────────────────────────────────────────────
+color-link default             "#929181,#18211e"
+color-link colorcolumn         "#929181,#302f27"
+color-link line-number         "#5f5e4e,#18211e"
+color-link current-line-number "#878573,#18211e"
+color-link cursor-line         "#929181,#252f2a"
+color-link statusline          "#e7e6df,#302f27"
+color-link statusline.error    "#ba6236,#302f27"
+color-link tabbar              "#6c6b5a,#302f27"
+color-link tab-active          "#e7e6df,#18211e"
+color-link tab-inactive        "#6c6b5a,#302f27"
+color-link error               "#ba6236"
+color-link warning             "#ae7313"
+color-link todo                "#a5980d"
+color-link selection           "#e7e6df,#302f27"
+color-link search-result       "#18211e,#a5980d"
+color-link diff-added          "#7d9726"
+color-link diff-removed        "#ba6236"
+color-link diff-modified       "#a5980d"
+
+# ── Syntax ─── (token → color) ───────────────────────────────────────────────
+# Comments
+color-link comment             "#6c6b5a"
+color-link comment.hashbang    "#6c6b5a"
+
+# Literals / constants
+color-link constant            "#a5980d"
+color-link constant.number     "#ae7313"
+color-link constant.bool       "#ae7313"
+color-link constant.string     "#7d9726"
+color-link constant.string.url "#36a166"
+color-link constant.specialChar "#5b9d48"
+
+# Identifiers
+color-link identifier          "#929181"
+color-link identifier.var      "#929181"
+color-link identifier.macro    "#5f9182"
+color-link identifier.class    "#5f9182"
+
+# Statements / keywords
+color-link statement           "#ba6236"
+color-link statement.dead      "#6c6b5a"
+
+# Pre-processor / include
+color-link preproc             "#9d6c7c"
+color-link preproc.shebang     "#6c6b5a"
+
+# Types
+color-link type                "#5f9182"
+color-link type.keyword        "#ba6236"
+
+# Special symbols
+color-link special             "#ae7313"
+color-link special.key         "#a5980d"
+
+# Operators / punctuation
+color-link operator            "#878573"
+
+# Functions
+color-link function            "#36a166"
+
+# Errors/warnings inline
+color-link underline           "#ba6236"

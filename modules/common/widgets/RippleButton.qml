@@ -77,7 +77,9 @@ Button {
             if (root.downAction) root.downAction();
             if (!root.rippleEnabled) return;
             const {x,y} = event
-            startRipple(x, y)
+            if (typeof root.startRipple === "function") {
+                root.startRipple(x, y);
+            }
         }
         onReleased: (event) => {
             root.down = false

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.UPower
+import Quickshell.Services.Mpris
 import qs
 import qs.services
 import qs.modules.common
@@ -22,7 +23,7 @@ Item { // Bar content region
         Layout.bottomMargin: Appearance.sizes.baseBarHeight / 3
         Layout.fillHeight: true
         implicitWidth: 1
-        color: Appearance.colors.colOutlineVariant
+        color: ColorUtils.applyAlpha("#ffffff", 0.12)
     }
 
     // Background shadow
@@ -34,17 +35,167 @@ Item { // Bar content region
             target: barBackground
         }
     }
+    readonly property int bgStyle: Config.options.bar.backgroundStyle ?? 1
+
     // Background
     Rectangle {
         id: barBackground
         anchors {
             fill: parent
-            margins: Config.options.bar.cornerStyle === 1 ? (Appearance.sizes.hyprlandGapsOut) : 0 // idk why but +1 is needed
+            margins: Config.options.bar.cornerStyle === 1 ? (Appearance.sizes.hyprlandGapsOut) : 0
         }
-        color: Config.options.bar.showBackground ? Appearance.colors.colLayer0 : "transparent"
+        color: "transparent"
         radius: Config.options.bar.cornerStyle === 1 ? Appearance.rounding.windowRounding : 0
-        border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
-        border.color: Appearance.colors.colLayer0Border
+        clip: true
+
+        // =========================================================================
+        // STYLE 0: CLASSIC (Original Ballade Bar)
+        // Solid colLayer0 with original border, 100% faithful to the default setup
+        // =========================================================================
+        Rectangle {
+            anchors.fill: parent
+            radius: barBackground.radius
+            visible: Config.options.bar.showBackground && root.bgStyle === 0
+            color: Appearance.colors.colLayer0
+            border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
+            border.color: Appearance.colors.colLayer0Border
+        }
+
+        // =========================================================================
+        // STYLE 1: FROSTED (Natural Wallpaper Blur)
+        // True wallpaper base with soft FastBlur and gentle non-sharp glass rim
+        // =========================================================================
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            visible: Config.options.bar.showBackground && root.bgStyle === 1
+            radius: barBackground.radius
+            blurRadius: 36
+            tintOpacity: 0.28
+            showSurfaceSheen: false
+            imageVerticalAlignment: Config.options.bar.bottom ? Image.AlignBottom : Image.AlignTop
+            sourceWidth: root.screen?.width ?? (Screen.width > 0 ? Screen.width : 1920)
+            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.10) : "transparent"
+            showBorder: Config.options.bar.cornerStyle === 1
+        }
+
+        // =========================================================================
+        // STYLE 2: WALLPAPER (Crystal Wallpaper Glass)
+        // Pure wallpaper base with light blur and minimal tint so wallpaper shines brightly
+        // =========================================================================
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            visible: Config.options.bar.showBackground && root.bgStyle === 2
+            radius: barBackground.radius
+            blurRadius: 24
+            tintOpacity: 0.12
+            showSurfaceSheen: true
+            imageVerticalAlignment: Config.options.bar.bottom ? Image.AlignBottom : Image.AlignTop
+            sourceWidth: root.screen?.width ?? (Screen.width > 0 ? Screen.width : 1920)
+            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.12) : "transparent"
+            showBorder: Config.options.bar.cornerStyle === 1
+        }
+
+        // =========================================================================
+        // STYLE 3: ATMOSPHERE (Atmospheric Wallpaper Vignette)
+        // Wallpaper base with soft blur, feathered gradient fading seamlessly to 0%
+        // Completely borderless, no box cutoffs, icons float weightlessly
+        // =========================================================================
+        Item {
+            anchors.fill: parent
+            visible: Config.options.bar.showBackground && root.bgStyle === 3
+
+            FrostedWidgetBackground {
+                anchors.fill: parent
+                radius: barBackground.radius
+                blurRadius: 44
+                tintOpacity: 0.0
+                showTint: false
+                showBorder: false
+                imageVerticalAlignment: Config.options.bar.bottom ? Image.AlignBottom : Image.AlignTop
+                sourceWidth: root.screen?.width ?? (Screen.width > 0 ? Screen.width : 1920)
+            }
+
+            // Soft atmospheric dusk gradient that melts into the desktop
+            Rectangle {
+                anchors.fill: parent
+                radius: barBackground.radius
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop {
+                        position: !Config.options.bar.bottom ? 0.0 : 1.0
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.40)
+                    }
+                    GradientStop {
+                        position: !Config.options.bar.bottom ? 0.65 : 0.35
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.15)
+                    }
+                    GradientStop {
+                        position: !Config.options.bar.bottom ? 1.0 : 0.0
+                        color: "transparent"
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // STYLE 4: SMOKED (Velvety Translucent Wallpaper)
+        // Deeper blur with soft velvety tint and subtle theme warmth
+        // Softens busy wallpaper imagery without losing wallpaper depth
+        // =========================================================================
+        Item {
+            anchors.fill: parent
+            visible: Config.options.bar.showBackground && root.bgStyle === 4
+
+            FrostedWidgetBackground {
+                anchors.fill: parent
+                radius: barBackground.radius
+                blurRadius: 50
+                tintOpacity: 0.40
+                showSurfaceSheen: false
+                imageVerticalAlignment: Config.options.bar.bottom ? Image.AlignBottom : Image.AlignTop
+                sourceWidth: root.screen?.width ?? (Screen.width > 0 ? Screen.width : 1920)
+                borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.07) : "transparent"
+                showBorder: Config.options.bar.cornerStyle === 1
+            }
+
+            // Subtle theme warmth
+            Rectangle {
+                anchors.fill: parent
+                radius: barBackground.radius
+                color: Appearance.colors.colPrimary
+                opacity: 0.04
+            }
+        }
+
+        // =========================================================================
+        // STYLE 5: LUMINOUS (Prismatic Glass)
+        // Wallpaper base with medium blur and gentle diffuse surface lighting sheen
+        // =========================================================================
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            visible: Config.options.bar.showBackground && root.bgStyle === 5
+            radius: barBackground.radius
+            blurRadius: 34
+            tintOpacity: 0.22
+            showSurfaceSheen: true
+            imageVerticalAlignment: Config.options.bar.bottom ? Image.AlignBottom : Image.AlignTop
+            sourceWidth: root.screen?.width ?? (Screen.width > 0 ? Screen.width : 1920)
+            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.20) : "transparent"
+            showBorder: Config.options.bar.cornerStyle === 1
+        }
+
+        // Clean subtle edge glass border when cornerStyle === 0 (Hug style) across frosted styles
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: !Config.options.bar.bottom ? parent.bottom : undefined
+                top: Config.options.bar.bottom ? parent.top : undefined
+            }
+            height: 1
+            color: ColorUtils.applyAlpha("#ffffff", 0.08)
+            visible: Config.options.bar.showBackground && Config.options.bar.cornerStyle === 0 && (root.bgStyle !== 0 && root.bgStyle !== 3)
+        }
     }
 
     FocusedScrollMouseArea { // Left side | scroll to change brightness

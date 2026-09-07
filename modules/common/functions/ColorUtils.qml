@@ -120,9 +120,14 @@ Singleton {
      * @returns {Qt.rgba} The resulting color with applied alpha.
      */
     function applyAlpha(color, alpha) {
-        var c = Qt.color(color);
-        var a = Math.max(0, Math.min(1, alpha));
-        return Qt.rgba(c.r, c.g, c.b, a);
+        if (!color || color === "") return Qt.rgba(0, 0, 0, 0);
+        try {
+            var c = Qt.color(color);
+            var a = Math.max(0, Math.min(1, alpha));
+            return Qt.rgba(c.r, c.g, c.b, a);
+        } catch (e) {
+            return Qt.rgba(0, 0, 0, 0);
+        }
     }
 
     /**

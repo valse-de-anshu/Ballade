@@ -49,14 +49,20 @@ Scope {
             }
         }
 
+        StyledRectangularShadow {
+            target: settingsWindow
+            radius: settingsWindow.radius
+            visible: settingsWindow.opacity > 0
+        }
+
         Rectangle {
             id: settingsWindow
             width: Math.min(parent.width - 80, 1080)
             height: Math.min(parent.height - 80, 780)
-            color: Appearance.colors.colLayer0
+            color: CF.ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.94)
             border.width: 1
             border.color: Appearance.colors.colLayer0Border
-            radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 5
+            radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 8
             z: 1
             focus: true
 

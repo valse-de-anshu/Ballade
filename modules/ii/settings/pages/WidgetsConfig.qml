@@ -987,6 +987,7 @@ ContentPage {
                                 text: Translation.tr("Add transparency")
                                 checked: modelData.transparent ?? false
                                 onCheckedChanged: {
+                                    if (checked === Boolean(modelData.transparent)) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
                                     if (arr[index]) {
                                         arr[index] = Object.assign({}, arr[index], { transparent: checked })
@@ -1001,6 +1002,7 @@ ContentPage {
                                 text: Translation.tr("Infinite Loop (Play continuously)")
                                 checked: modelData.infiniteLoop ?? false
                                 onCheckedChanged: {
+                                    if (checked === Boolean(modelData.infiniteLoop)) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
                                     if (arr[index]) {
                                         arr[index] = Object.assign({}, arr[index], { infiniteLoop: checked })
@@ -1016,6 +1018,7 @@ ContentPage {
                                 placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
                                 value: modelData.path ?? ""
                                 onValueChanged: {
+                                    if (value === (modelData.path ?? "")) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
                                     if (arr[index]) {
                                         arr[index] = Object.assign({}, arr[index], { path: value })

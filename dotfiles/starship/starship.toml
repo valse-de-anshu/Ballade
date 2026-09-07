@@ -14,9 +14,11 @@ error_symbol = "[╰─](bold fg:#f38ba8) "
 show_always = true
 style_user = "bg:#313244 fg:#b4befe bold"
 style_root = "bg:#313244 fg:#f38ba8 bold"
+# Added the closing curve [] and a space to the end of this format string
 format = "[╭─](bold fg:#313244)[󰭹 $user]($style)[](bold fg:#313244) "
 
 [hostname]
+# Disabled the hostname so "anshu" stops printing a second time
 disabled = true
 
 [directory]
@@ -44,6 +46,7 @@ format = "[](bold fg:#b4befe)[$symbol$branch]($style)[](bold fg:#b4befe) "
 [git_status]
 style = "bg:#f38ba8 fg:#11111b bold"
 format = "[](bold fg:#f38ba8)[$all_status$ahead_behind]($style)[](bold fg:#f38ba8) "
+# Simplified, universally understood status icons:
 conflicted = "!! "
 ahead = "↑ "
 behind = "↓ "

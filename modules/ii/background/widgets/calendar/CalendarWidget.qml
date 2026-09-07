@@ -452,13 +452,17 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: root.sizeMode === "2x2" ? ColorUtils.applyAlpha("#000000", 0.72) : Appearance.colors.colLayer0
-        border.width: 1
-        border.color: root.sizeMode === "2x2" ? ColorUtils.applyAlpha("#ffffff", 0.12) : Appearance.colors.colLayer0Border
+        color: "transparent"
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        }
+
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            radius: card.radius
+            wallpaperPathOverride: root.wallpaperPath
         }
 
         Loader {
@@ -623,7 +627,7 @@ AbstractBackgroundWidget {
                     Layout.preferredWidth: 220
                     Layout.fillHeight: true
                     radius: (Appearance.rounding?.verylarge ?? 30) - 10
-                    color: ColorUtils.applyAlpha("#000000", 0.40)
+                    color: ColorUtils.applyAlpha("#ffffff", 0.04)
                     border.width: 1
                     border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
 
@@ -742,9 +746,9 @@ AbstractBackgroundWidget {
                                 width: ListView.view.width
                                 implicitHeight: eventCol.implicitHeight + 18
                                 radius: 8
-                                color: ColorUtils.applyAlpha("#18181e", 0.7)
+                                color: ColorUtils.applyAlpha("#ffffff", 0.06)
                                 border.width: 1
-                                border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                                border.color: ColorUtils.applyAlpha("#ffffff", 0.09)
 
                                 RowLayout {
                                     id: eventRow
@@ -926,9 +930,9 @@ AbstractBackgroundWidget {
                                 Layout.fillWidth: true
                                 implicitHeight: root.isAddingEvent ? 32 : 30
                                 radius: 8
-                                color: root.isAddingEvent ? ColorUtils.applyAlpha("#000000", 0.6) : (addEventMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.12) : ColorUtils.applyAlpha("#ffffff", 0.07))
+                                color: root.isAddingEvent ? ColorUtils.applyAlpha(Appearance.colors.colLayer2, 0.45) : (addEventMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.10) : ColorUtils.applyAlpha("#ffffff", 0.05))
                                 border.width: 1
-                                border.color: root.isAddingEvent ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.12)
+                                border.color: root.isAddingEvent ? Appearance.colors.colPrimary : ColorUtils.applyAlpha("#ffffff", 0.10)
 
                                 Behavior on implicitHeight { NumberAnimation { duration: 150 } }
 
@@ -1403,19 +1407,29 @@ AbstractBackgroundWidget {
             }
         }
 
+        StyledRectangularShadow {
+            target: satelliteCard
+            z: -1
+        }
+
         // Minimalist Frosted Glass Capsule / Badge
         Rectangle {
             id: satelliteCard
             implicitWidth: capsuleCol.implicitWidth + 24
             implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
             radius: 17
-            color: ColorUtils.applyAlpha("#121217", 0.82)
-            border.width: 1
-            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha("#38bdf8", 0.5) : ColorUtils.applyAlpha("#ffffff", 0.10)
+            color: "transparent"
+            clip: true
 
             Behavior on implicitWidth { NumberAnimation { duration: 180 } }
             Behavior on implicitHeight { NumberAnimation { duration: 180 } }
-            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            FrostedWidgetBackground {
+                anchors.fill: parent
+                radius: satelliteCard.radius
+                wallpaperPathOverride: root.wallpaperPath
+                borderColor: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.16)
+            }
 
             // Drag Mouse Area with 360° Scroll Wheel Rotation
             MouseArea {
@@ -1456,9 +1470,9 @@ AbstractBackgroundWidget {
                         implicitHeight: 22
                         implicitWidth: tokenTextEmpty.implicitWidth + 12
                         radius: 11
-                        color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                        color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.18)
                         border.width: 1
-                        border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
+                        border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.35)
 
                         StyledText {
                             id: tokenTextEmpty
@@ -1466,7 +1480,7 @@ AbstractBackgroundWidget {
                             text: "PIN"
                             font.pixelSize: 11
                             font.weight: Font.Bold
-                            color: "#e2e8f0"
+                            color: Appearance.colors.colPrimary
                         }
                     }
 
@@ -1498,7 +1512,7 @@ AbstractBackgroundWidget {
                             anchors.centerIn: parent
                             text: "rotate_right"
                             iconSize: 13
-                            color: orientMouseEmpty.containsMouse ? "#ffffff" : "#71717a"
+                            color: orientMouseEmpty.containsMouse ? "#ffffff" : "#94a3b8"
                         }
 
                         MouseArea {
@@ -1524,7 +1538,7 @@ AbstractBackgroundWidget {
                             anchors.centerIn: parent
                             text: root.isSelectingTarget ? "check" : "add"
                             iconSize: 13
-                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseEmpty.containsMouse ? "#ffffff" : "#71717a")
+                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseEmpty.containsMouse ? Appearance.colors.colPrimary : "#94a3b8")
                         }
 
                         MouseArea {
@@ -1550,9 +1564,13 @@ AbstractBackgroundWidget {
                             implicitHeight: 22
                             implicitWidth: tokenText.implicitWidth + 12
                             radius: 11
-                            color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                            color: evRow.cd.days === 0
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.22)
+                                : ColorUtils.applyAlpha("#38bdf8", 0.18)
                             border.width: 1
-                            border.color: ColorUtils.applyAlpha("#ffffff", 0.06)
+                            border.color: evRow.cd.days === 0
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.50)
+                                : ColorUtils.applyAlpha("#38bdf8", 0.40)
 
                             StyledText {
                                 id: tokenText
@@ -1564,7 +1582,9 @@ AbstractBackgroundWidget {
                                     : (Math.abs(evRow.cd.days) + "d ago")
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
-                                color: "#e2e8f0"
+                                color: evRow.cd.days === 0
+                                    ? Appearance.colors.colPrimary
+                                    : "#38bdf8"
                             }
                         }
 
@@ -1586,7 +1606,7 @@ AbstractBackgroundWidget {
                                 visible: evRow.cd.dateText !== ""
                                 text: "• " + evRow.cd.dateText
                                 font.pixelSize: 11
-                                color: "#94a3b8"
+                                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.85)
                             }
                         }
 
@@ -1601,7 +1621,7 @@ AbstractBackgroundWidget {
                                 anchors.centerIn: parent
                                 text: "close"
                                 iconSize: 13
-                                color: delEvMouse.containsMouse ? "#ffffff" : "#71717a"
+                                color: delEvMouse.containsMouse ? "#f87171" : "#94a3b8"
                             }
 
                             MouseArea {
@@ -1625,7 +1645,7 @@ AbstractBackgroundWidget {
                                 anchors.centerIn: parent
                                 text: "rotate_right"
                                 iconSize: 13
-                                color: orientMouse.containsMouse ? "#ffffff" : "#71717a"
+                                color: orientMouse.containsMouse ? "#ffffff" : "#94a3b8"
                             }
 
                             MouseArea {
@@ -1652,7 +1672,7 @@ AbstractBackgroundWidget {
                                 anchors.centerIn: parent
                                 text: root.isSelectingTarget ? "check" : "add"
                                 iconSize: 13
-                                color: root.isSelectingTarget ? "#38bdf8" : (addEvMouse.containsMouse ? "#ffffff" : "#71717a")
+                                color: root.isSelectingTarget ? "#38bdf8" : (addEvMouse.containsMouse ? Appearance.colors.colPrimary : "#94a3b8")
                             }
 
                             MouseArea {

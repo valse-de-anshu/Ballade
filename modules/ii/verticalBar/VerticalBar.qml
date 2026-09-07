@@ -172,7 +172,9 @@ Scope {
                                 }
 
                                 implicitSize: Appearance.rounding.screenRounding
-                                color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                                color: !showBarBackground ? "transparent" :
+                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
+                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
 
                                 corner: RoundCorner.CornerEnum.TopLeft
                                 states: State {
@@ -191,7 +193,9 @@ Scope {
                                     right: Config.options.bar.bottom ? parent.right : undefined
                                 }
                                 implicitSize: Appearance.rounding.screenRounding
-                                color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                                color: !showBarBackground ? "transparent" :
+                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
+                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
 
                                 corner: RoundCorner.CornerEnum.BottomLeft
                                 states: State {
@@ -211,6 +215,7 @@ Scope {
 
     IpcHandler {
         target: "bar"
+        enabled: Config.options.bar.vertical
 
         function toggle(): void {
             GlobalStates.barOpen = !GlobalStates.barOpen

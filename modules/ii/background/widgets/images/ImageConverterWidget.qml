@@ -200,13 +200,24 @@ AbstractBackgroundWidget {
         converter.running = true
     }
 
+    StyledRectangularShadow {
+        target: contentItem
+        z: -2
+    }
+
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        color: Appearance.colors.colLayer1
+        color: "transparent"
         radius: Appearance.rounding?.large ?? 22
-        border.width: 1
-        border.color: Qt.rgba(Appearance.colors.colOutline.r, Appearance.colors.colOutline.g, Appearance.colors.colOutline.b, 0.12)
+        clip: true
+
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            radius: contentItem.radius
+            borderColor: Appearance.colors.colLayer0Border
+            wallpaperPathOverride: root.wallpaperPath
+        }
 
         ColumnLayout {
             anchors {
@@ -270,11 +281,11 @@ AbstractBackgroundWidget {
                 radius: Appearance.rounding?.normal ?? 16
                 color: {
                     switch (root.dropStatus) {
-                        case "hover":      return Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.12)
-                        case "converting": return Qt.rgba(Appearance.colors.colSecondary.r, Appearance.colors.colSecondary.g, Appearance.colors.colSecondary.b, 0.12)
-                        case "done":       return Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.15)
-                        case "error":      return Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.15)
-                        default:           return Appearance.colors.colSurfaceContainerLow
+                        case "hover":      return Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.16)
+                        case "converting": return Qt.rgba(Appearance.colors.colSecondary.r, Appearance.colors.colSecondary.g, Appearance.colors.colSecondary.b, 0.16)
+                        case "done":       return Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.20)
+                        case "error":      return Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.20)
+                        default:           return ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.45)
                     }
                 }
                 border.color: {
@@ -283,7 +294,7 @@ AbstractBackgroundWidget {
                         case "converting": return Appearance.colors.colSecondary
                         case "done":       return Appearance.colors.colTertiary
                         case "error":      return Appearance.colors.colError
-                        default:           return Qt.rgba(Appearance.colors.colOutline.r, Appearance.colors.colOutline.g, Appearance.colors.colOutline.b, 0.15)
+                        default:           return Appearance.colors.colLayer0Border
                     }
                 }
                 border.width: root.dropStatus === "hover" ? 2 : 1
@@ -340,10 +351,10 @@ AbstractBackgroundWidget {
                                 case "hover":  return Appearance.colors.colPrimary
                                 case "done":   return Appearance.colors.colTertiary
                                 case "error":  return Appearance.colors.colError
-                                default:       return Appearance.colors.colOnLayer1
+                                default:       return Appearance.colors.colOnLayer0
                             }
                         }
-                        opacity: root.dropStatus === "idle" ? 0.75 : 1.0
+                        opacity: root.dropStatus === "idle" ? 0.90 : 1.0
                         text: {
                             switch (root.dropStatus) {
                                 case "idle":       return "Drop images to convert"
@@ -391,9 +402,9 @@ AbstractBackgroundWidget {
                     implicitHeight: 36
                     buttonIcon: "photo"
                     buttonRadius: 10
-                    colBackground: Appearance.colors.colSurfaceContainerLow
-                    colBackgroundHover: Appearance.colors.colSurfaceContainer
-                    colBackgroundActive: Appearance.colors.colSurfaceContainerHigh
+                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
+                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
+                    colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.formatOptions
                     textRole: "displayName"
                     valueRole: "value"
@@ -415,9 +426,9 @@ AbstractBackgroundWidget {
                     implicitHeight: 36
                     buttonIcon: "compress"
                     buttonRadius: 10
-                    colBackground: Appearance.colors.colSurfaceContainerLow
-                    colBackgroundHover: Appearance.colors.colSurfaceContainer
-                    colBackgroundActive: Appearance.colors.colSurfaceContainerHigh
+                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
+                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
+                    colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.sizeOptions
                     textRole: "displayName"
                     valueRole: "value"
@@ -451,9 +462,9 @@ AbstractBackgroundWidget {
                         Layout.fillWidth: true
                         implicitHeight: 36
                         radius: 10
-                        color: Appearance.colors.colSurfaceContainerLow
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                         border.width: 1
-                        border.color: numInput.activeFocus ? Appearance.colors.colPrimary : Qt.rgba(Appearance.colors.colOutline.r, Appearance.colors.colOutline.g, Appearance.colors.colOutline.b, 0.2)
+                        border.color: numInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
 
                         TextInput {
                             id: numInput
@@ -506,7 +517,7 @@ AbstractBackgroundWidget {
                         implicitHeight: 36
                         implicitWidth: 32
                         radius: 10
-                        color: Appearance.colors.colSurfaceContainerLow
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
 
                         MaterialSymbol {
                             anchors.centerIn: parent

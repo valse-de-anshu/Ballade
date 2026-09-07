@@ -75,11 +75,18 @@ AbstractBackgroundWidget {
             return root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
         }
         radius: Appearance.rounding?.verylarge ?? 30
-        color: ColorUtils.transparentize(Appearance.colors.colLayer0, 0.2)
+        color: "transparent"
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        }
+
+        FrostedWidgetBackground {
+            anchors.fill: parent
+            radius: card.radius
+            borderColor: Appearance.colors.colLayer0Border
+            wallpaperPathOverride: root.wallpaperPath
         }
 
         layer.enabled: true
@@ -114,7 +121,11 @@ AbstractBackgroundWidget {
                     antialiasing: true
                     sourceSize.width: 264
                     sourceSize.height: 264
-                    visible: root.displayedArtFilePath !== ""
+                    visible: opacity > 0
+                    opacity: root.displayedArtFilePath !== "" ? 1 : 0
+                    Behavior on opacity {
+                        NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
+                    }
                 }
 
                 MaterialSymbol {
@@ -182,7 +193,11 @@ AbstractBackgroundWidget {
                     cache: false
                     antialiasing: true
                     asynchronous: true
-                    visible: root.displayedArtFilePath !== ""
+                    visible: opacity > 0
+                    opacity: root.displayedArtFilePath !== "" ? 1 : 0
+                    Behavior on opacity {
+                        NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
+                    }
 
                     layer.enabled: true
                     layer.effect: StyledBlurEffect {
@@ -373,7 +388,11 @@ Image {
             cache: false
             antialiasing: true
             asynchronous: true
-            visible: root.displayedArtFilePath !== ""
+            visible: opacity > 0
+            opacity: root.displayedArtFilePath !== "" ? 1 : 0
+            Behavior on opacity {
+                NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
+            }
 
             layer.enabled: true
             layer.effect: StyledBlurEffect {

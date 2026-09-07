@@ -431,6 +431,7 @@ Singleton {
                 property string borderless: "pills"
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
                 property bool showBackground: true
+                property int backgroundStyle: 1 // 0: Classic, 1: Glass, 2: Aurora, 3: Acrylic, 4: Velvet, 5: Atmosphere
                 property bool verbose: true
                 property bool vertical: false
                 property JsonObject resources: JsonObject {

@@ -17,8 +17,8 @@ GroupButton {
     property bool isDragging: false
     property color colText: root.toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
 
-    leftRadius: (toggled || leftmost) ? (height / 2) : Appearance.rounding.unsharpenmore
-    rightRadius: (toggled || rightmost) ? (height / 2) : Appearance.rounding.unsharpenmore
+    leftRadius: (toggled || leftmost) ? (height / 2) : Appearance.rounding.small
+    rightRadius: (toggled || rightmost) ? (height / 2) : Appearance.rounding.small
 
     horizontalPadding: 12
     verticalPadding: 8 

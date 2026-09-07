@@ -115,7 +115,9 @@ Item {
                 Layout.fillHeight: true
                 Layout.margins: 0
                 implicitWidth: navRail.expanded ? 225 : fab.baseSize
-                color: Appearance.m3colors.m3surfaceContainerLow
+                color: CF.ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.55)
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
                 radius: Appearance.rounding.normal
 
                 Behavior on implicitWidth {

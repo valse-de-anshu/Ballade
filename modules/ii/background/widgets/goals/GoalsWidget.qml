@@ -389,15 +389,13 @@ AbstractBackgroundWidget {
         id: card
         anchors.fill: parent
         radius: Appearance.rounding.verylarge
-        color: Appearance.colors.colBackgroundSurfaceContainer
-        border.width: 1
-        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.45)
+        color: "transparent"
         clip: true
 
-        Rectangle {
+        FrostedWidgetBackground {
             anchors.fill: parent
-            radius: parent.radius
-            color: ColorUtils.transparentize(Appearance.colors.colOnLayer1, 0.96)
+            radius: card.radius
+            wallpaperPathOverride: root.wallpaperPath
         }
 
         // ════════════════════════════════════════════════════════

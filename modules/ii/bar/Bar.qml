@@ -9,6 +9,7 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.functions
 
 Scope {
     id: bar
@@ -178,7 +179,10 @@ Scope {
                                 }
 
                                 implicitSize: Appearance.rounding.screenRounding
-                                color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                                color: !showBarBackground ? "transparent" :
+                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
+                                    (Config.options.bar.backgroundStyle === 4) ? ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.78) :
+                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
 
                                 corner: RoundCorner.CornerEnum.TopLeft
                                 states: State {
@@ -197,7 +201,10 @@ Scope {
                                     bottom: Config.options.bar.bottom ? parent.bottom : undefined
                                 }
                                 implicitSize: Appearance.rounding.screenRounding
-                                color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                                color: !showBarBackground ? "transparent" :
+                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
+                                    (Config.options.bar.backgroundStyle === 4) ? ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.78) :
+                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
 
                                 corner: RoundCorner.CornerEnum.TopRight
                                 states: State {
@@ -217,6 +224,7 @@ Scope {
 
     IpcHandler {
         target: "bar"
+        enabled: !Config.options.bar.vertical
 
         function toggle(): void {
             GlobalStates.barOpen = !GlobalStates.barOpen
