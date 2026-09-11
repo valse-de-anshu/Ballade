@@ -849,8 +849,6 @@ ContentPage {
                                             Config.options.background.widgets.worldClock.enable = checked
                                         else if (modelData.icon === "person")
                                             Config.options.background.widgets.userCard.enable = checked
-                                        else if (modelData.icon === "note_stack_add")
-                                            Config.options.background.widgets.notes.enable = checked
                                         else if (modelData.icon === "track_changes")
                                             Config.options.background.widgets.goals.enable = checked
                                     }

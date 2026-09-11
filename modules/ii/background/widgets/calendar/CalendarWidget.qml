@@ -452,17 +452,13 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: "transparent"
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Border
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-        }
-
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            radius: card.radius
-            wallpaperPathOverride: root.wallpaperPath
         }
 
         Loader {
@@ -479,10 +475,8 @@ AbstractBackgroundWidget {
         // ----------------------------------------------------
         Component {
             id: oneByOneContent
-            Rectangle {
+            Item {
                 anchors.fill: parent
-                radius: card.radius
-                color: Appearance.colors.colPrimaryContainer
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -491,7 +485,7 @@ AbstractBackgroundWidget {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: parent.height * 0.35
-                        color: Appearance.colors.colPrimary
+                        color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
                         topLeftRadius: card.radius
                         topRightRadius: card.radius
 
@@ -502,13 +496,13 @@ AbstractBackgroundWidget {
                                 text: root.today.toLocaleDateString(Qt.locale(), "MMM").toUpperCase()
                                 font.pixelSize: Appearance.font.pixelSize.normal
                                 font.weight: Font.Bold
-                                color: Appearance.colors.colOnPrimary
+                                color: Appearance.colors.colPrimary
                             }
                             StyledText {
                                 text: root.today.toLocaleDateString(Qt.locale(), "ddd").toUpperCase()
                                 font.pixelSize: Appearance.font.pixelSize.normal
                                 font.weight: Font.Bold
-                                color: Appearance.colors.colOnPrimary
+                                color: Appearance.colors.colPrimary
                                 opacity: 0.7
                             }
                         }
@@ -523,7 +517,7 @@ AbstractBackgroundWidget {
                             text: root.today.getDate()
                             font.pixelSize: 52
                             font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimaryContainer
+                            color: Appearance.colors.colOnLayer0
                         }
                     }
                 }
@@ -1418,18 +1412,13 @@ AbstractBackgroundWidget {
             implicitWidth: capsuleCol.implicitWidth + 24
             implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
             radius: 17
-            color: "transparent"
+            color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+            border.width: 1
+            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : Appearance.colors.colLayer0Border
             clip: true
 
             Behavior on implicitWidth { NumberAnimation { duration: 180 } }
             Behavior on implicitHeight { NumberAnimation { duration: 180 } }
-
-            FrostedWidgetBackground {
-                anchors.fill: parent
-                radius: satelliteCard.radius
-                wallpaperPathOverride: root.wallpaperPath
-                borderColor: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.16)
-            }
 
             // Drag Mouse Area with 360° Scroll Wheel Rotation
             MouseArea {

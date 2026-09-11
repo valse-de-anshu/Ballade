@@ -1,3 +1,4 @@
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
@@ -9,6 +10,7 @@ import Quickshell.Services.Notifications
 MaterialShape { // App icon
     id: root
     property var appIcon: ""
+    property string appName: ""
     property var summary: ""
     property var urgency: NotificationUrgency.Normal
     property bool isUrgent: urgency === NotificationUrgency.Critical
@@ -21,11 +23,51 @@ MaterialShape { // App icon
     property real smallAppIconSize: implicitSize * smallAppIconScale
     property bool imageFailed: false
     onImageChanged: imageFailed = false
-    readonly property bool isActualImage: !imageFailed && typeof root.image === "string" && root.image !== "" && !root.image.startsWith("image://qsimage/") && !root.image.startsWith("image://qspixmap/") && (root.image.startsWith("/") || root.image.startsWith("file://") || root.image.startsWith("data:") || root.image.startsWith("image://") || root.image.startsWith("http://") || root.image.startsWith("https://"))
+
+    readonly property string effectiveImage: {
+        if (!imageFailed && typeof root.image === "string" && root.image !== "" && (root.image.startsWith("/") || root.image.startsWith("file://") || root.image.startsWith("data:") || root.image.startsWith("image://") || root.image.startsWith("http://") || root.image.startsWith("https://"))) {
+            return root.image;
+        }
+        if (!imageFailed && typeof root.appIcon === "string" && (root.appIcon.startsWith("/") || root.appIcon.startsWith("file://"))) {
+            return root.appIcon.startsWith("file://") ? root.appIcon : "file://" + root.appIcon;
+        }
+        return "";
+    }
+    readonly property bool isActualImage: effectiveImage !== ""
+
     readonly property string resolvedIconPath: {
-        if (!root.appIcon || root.appIcon === "") return "";
-        let path = Quickshell.iconPath(root.appIcon);
-        return (path && path !== "image-missing") ? path : "";
+        if (root.isActualImage) return "";
+        // 1. Try root.appIcon directly
+        if (root.appIcon && typeof root.appIcon === "string" && root.appIcon !== "") {
+            let path = Quickshell.iconPath(root.appIcon, true);
+            if (path && path !== "") return path;
+            let guessed = AppSearch.guessIcon(root.appIcon);
+            if (guessed && guessed !== "image-missing") {
+                let guessedPath = Quickshell.iconPath(guessed, true);
+                if (guessedPath && guessedPath !== "") return guessedPath;
+            }
+        }
+        // 2. Try root.appName with AppSearch.guessIcon
+        if (root.appName && typeof root.appName === "string" && root.appName !== "") {
+            let path = Quickshell.iconPath(root.appName, true);
+            if (path && path !== "") return path;
+            let guessed = AppSearch.guessIcon(root.appName);
+            if (guessed && guessed !== "image-missing") {
+                let guessedPath = Quickshell.iconPath(guessed, true);
+                if (guessedPath && guessedPath !== "") return guessedPath;
+            }
+        }
+        // 3. Try root.summary with AppSearch.guessIcon (e.g. for KDE Connect where summary is "Discord" / "WhatsApp")
+        if (root.summary && typeof root.summary === "string" && root.summary !== "") {
+            let path = Quickshell.iconPath(root.summary, true);
+            if (path && path !== "") return path;
+            let guessed = AppSearch.guessIcon(root.summary);
+            if (guessed && guessed !== "image-missing") {
+                let guessedPath = Quickshell.iconPath(guessed, true);
+                if (guessedPath && guessedPath !== "") return guessedPath;
+            }
+        }
+        return "";
     }
 
     implicitSize: 38 * scale
@@ -78,7 +120,7 @@ MaterialShape { // App icon
                 anchors.fill: parent
                 readonly property int size: parent.width
 
-                source: root.image
+                source: root.effectiveImage
                 fillMode: Image.PreserveAspectCrop
                 cache: true
                 antialiasing: true

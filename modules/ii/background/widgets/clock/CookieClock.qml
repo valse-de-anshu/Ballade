@@ -21,9 +21,9 @@ Item {
     property real implicitSize: 230
 
     property color colShadow: Appearance.colors.colShadow
-    property color colBackground: Appearance.colors.colPrimaryContainer
-    property color colOnBackground: ColorUtils.mix(Appearance.colors.colSecondary, Appearance.colors.colPrimaryContainer, 0.15)
-    property color colBackgroundInfo: ColorUtils.mix(Appearance.colors.colPrimary, Appearance.colors.colPrimaryContainer, 0.55)
+    property color colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+    property color colOnBackground: Appearance.colors.colOnLayer0
+    property color colBackgroundInfo: Appearance.colors.colPrimary
     property color colHourHand: Appearance.colors.colPrimary
     property color colMinuteHand: Appearance.colors.colTertiary
     property color colSecondHand: Appearance.colors.colPrimary

@@ -157,6 +157,7 @@ MouseArea { // Notification group area
                 Layout.fillWidth: false
                 image: root?.multipleNotifications ? "" : notificationGroup?.notifications[0]?.image ?? ""
                 appIcon: root.notificationGroup?.appIcon
+                appName: root.notificationGroup?.appName ?? ""
                 summary: root.notificationGroup?.notifications[root.notificationCount - 1]?.summary
                 urgency: root.notifications.some(n => n.urgency === NotificationUrgency.Critical.toString()) ? 
                     NotificationUrgency.Critical : NotificationUrgency.Normal
@@ -190,9 +191,9 @@ MouseArea { // Notification group area
                             id: appName
                             elide: Text.ElideRight
                             Layout.fillWidth: true
-                            text: (topRow.showAppName ?
+                            text: NotificationUtils.cleanNotificationText((topRow.showAppName ?
                                 notificationGroup?.appName :
-                                notificationGroup?.notifications[0]?.summary) || ""
+                                notificationGroup?.notifications[0]?.summary) || "")
                             font.pixelSize: topRow.showAppName ?
                                 topRow.fontSize :
                                 Appearance.font.pixelSize.small

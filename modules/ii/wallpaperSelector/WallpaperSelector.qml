@@ -56,17 +56,7 @@ Scope {
             implicitHeight: Screen.height
 
             Component.onCompleted: {
-                GlobalFocusGrab.addDismissable(panelWindow)
                 picker.forceActiveFocus()
-            }
-            Component.onDestruction: {
-                GlobalFocusGrab.removeDismissable(panelWindow)
-            }
-            Connections {
-                target: GlobalFocusGrab
-                function onDismissed() {
-                    GlobalStates.wallpaperSelectorOpen = false
-                }
             }
 
             Item {

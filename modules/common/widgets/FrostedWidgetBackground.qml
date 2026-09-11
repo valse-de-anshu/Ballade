@@ -15,6 +15,7 @@ import qs.modules.common.functions
  *   - Video/live wallpaper support via Images.getStaticWallpaperImage
  *   - Smooth frosted glass ambient tint & optional diffuse surface sheen
  *   - Clean rounded glass border without any harsh artifacts
+ *   - pureGlass mode: skip wallpaper sampling, use only translucent tint (for desktop widgets)
  */
 Item {
     id: root
@@ -28,6 +29,8 @@ Item {
     property bool showSurfaceSheen: false
     property bool showTint: true
     property string wallpaperPathOverride: ""
+    // Set true to skip wallpaper sampling entirely — pure translucent glass tint only
+    property bool pureGlass: false
 
     property int imageVerticalAlignment: Image.AlignVCenter
     property int imageHorizontalAlignment: Image.AlignHCenter
@@ -35,13 +38,14 @@ Item {
     property int sourceHeight: 0
     property size imageSourceSize: Qt.size(sourceWidth, sourceHeight)
 
-    // Invisible source container for FastBlur
+    // Invisible source container for FastBlur (not used in pureGlass mode)
     Item {
         id: bgImageContainer
         anchors.fill: parent
         visible: false
 
         readonly property string effectiveSource: {
+            if (root.pureGlass) return "";
             var path = root.wallpaperPathOverride !== ""
                 ? root.wallpaperPathOverride
                 : ((typeof GlobalStates !== "undefined" && GlobalStates.screenLocked && Config.options.background.lockWall !== "")
@@ -104,20 +108,49 @@ Item {
         }
     }
 
-    // Blurred wallpaper backdrop masked cleanly to rounded shape
+    // Blurred wallpaper backdrop (source for OpacityMask)
     FastBlur {
         id: blurredBg
         anchors.fill: parent
         source: bgImageContainer
         radius: root.blurRadius
+        visible: false
+    }
+
+    // Dedicated layer mask item for OpacityMask to cleanly clip corners
+    Item {
+        id: maskItem
+        anchors.fill: parent
+        visible: false
         layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: Math.max(1, root.width)
-                height: Math.max(1, root.height)
-                radius: root.radius
-            }
+        Rectangle {
+            anchors.fill: parent
+            radius: root.radius
+            color: "black"
+            antialiasing: true
         }
+    }
+
+    // Blurred wallpaper backdrop masked cleanly to rounded shape (skipped in pureGlass mode)
+    OpacityMask {
+        id: maskedBlurredBg
+        anchors.fill: parent
+        source: blurredBg
+        maskSource: maskItem
+        visible: !root.pureGlass
+    }
+
+    // In pureGlass mode: simple dark translucent base instead of wallpaper blur
+    Rectangle {
+        anchors.fill: parent
+        radius: root.radius
+        visible: root.pureGlass
+        color: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.18
+        )
     }
 
     // Frosted Glass Base Tint (Theme-Harmonized Dark Scrim)
@@ -129,16 +162,28 @@ Item {
             orientation: Gradient.Vertical
             GradientStop {
                 position: 0.0
-                color: ColorUtils.applyAlpha(ColorUtils.mix(root.tintColor, Appearance.colors.colPrimary, 0.94), root.tintOpacity * 0.90)
+                color: ColorUtils.applyAlpha(ColorUtils.mix(root.tintColor, Appearance.colors.colPrimary, 0.94), root.pureGlass ? root.tintOpacity * 0.4 : root.tintOpacity * 0.90)
             }
             GradientStop {
                 position: 1.0
-                color: ColorUtils.applyAlpha(ColorUtils.mix(root.tintColor, Appearance.colors.colScrim, 0.82), root.tintOpacity * 1.10)
+                color: ColorUtils.applyAlpha(ColorUtils.mix(root.tintColor, Appearance.colors.colScrim, 0.82), root.pureGlass ? root.tintOpacity * 0.5 : root.tintOpacity * 1.10)
             }
         }
     }
 
-    // Optional Diffuse Surface Sheen (Smooth gradient reflection for bars/cards)
+    // Subtle top-edge glass highlight (pureGlass mode only)
+    Rectangle {
+        anchors.fill: parent
+        radius: root.radius
+        visible: root.pureGlass
+        gradient: Gradient {
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0;  color: ColorUtils.applyAlpha("#ffffff", 0.06) }
+            GradientStop { position: 0.35; color: "transparent" }
+        }
+    }
+
+    // Optional Diffuse Surface Sheen
     Rectangle {
         anchors.fill: parent
         radius: root.radius

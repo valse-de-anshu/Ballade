@@ -18,6 +18,7 @@ env/
 .~lock.*
 *~
 .DS_Store
+.directory
 
 # Temporary sandbox test directories
 /tmp/ballade_sandbox_*

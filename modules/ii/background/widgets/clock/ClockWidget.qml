@@ -112,7 +112,9 @@ AbstractBackgroundWidget {
             implicitHeight: statusTextRow.implicitHeight + 5 * 2
             implicitWidth: statusTextRow.implicitWidth + 5 * 2
             radius: Appearance.rounding.small
-            color: ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, root.clockStyle === "cookie" ? 0 : 1)
+            color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, root.clockStyle === "cookie" ? 0.25 : 0)
+            border.width: root.clockStyle === "cookie" ? 1 : 0
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             Behavior on implicitWidth {
                 animation: Appearance.animation.elementResize.numberAnimation.createObject(this)

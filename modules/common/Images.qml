@@ -48,9 +48,13 @@ Singleton {
         if (!isVid) {
             return clean;
         }
+        const fdThumb = getFreedesktopThumbnail(clean, "x-large");
         if (fallbackThumb && fallbackThumb.length > 0 && !/\.(mp4|webm|mkv|avi|mov)$/i.test(fallbackThumb)) {
-            return FileUtils.trimFileProtocol(fallbackThumb);
+            const cleanFallback = FileUtils.trimFileProtocol(fallbackThumb);
+            if (!/\/[0-9]+\.mp4\.jpg$/i.test(cleanFallback)) {
+                return cleanFallback;
+            }
         }
-        return getFreedesktopThumbnail(clean, "x-large");
+        return fdThumb;
     }
 }

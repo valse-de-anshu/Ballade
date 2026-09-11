@@ -67,7 +67,9 @@ AbstractBackgroundWidget {
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : Appearance.colors.colPrimaryContainer
+            color: sizeMode === "4x1" ? "transparent" : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+            border.width: sizeMode === "4x1" ? 0 : 1
+            border.color: Qt.rgba(1, 1, 1, 0.10)
             radius: Appearance.rounding?.verylarge ?? 30
 
             // 2x2
@@ -150,10 +152,12 @@ AbstractBackgroundWidget {
                             Layout.preferredWidth: 120; Layout.preferredHeight: 54
                             radius: Appearance.rounding.normal
                             color: modelData.isDay
-                                ? Appearance.colors.colPrimary
-                                : Appearance.colors.colSurfaceContainerLow
+                                ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                                : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.20)
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.08)
                             property color fg: modelData.isDay
-                                ? Appearance.colors.colOnPrimary
+                                ? Appearance.colors.colPrimary
                                 : Appearance.colors.colOnLayer0
                             Behavior on color { ColorAnimation { duration: 400 } }
 
@@ -271,20 +275,16 @@ AbstractBackgroundWidget {
                         Layout.fillWidth:  true
 
                         backgroundColor: cityData?.isDay ?? true
-                            ? Appearance.colors.colPrimary
-                            : Appearance.colors.colPrimaryContainer
+                            ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                            : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
                         handColor: cityData?.isDay ?? true
-                            ? Appearance.colors.colOnPrimary
+                            ? Appearance.colors.colPrimary
                             : Appearance.colors.colOnLayer0
                         centerDotColor: cityData?.isDay ?? true
-                            ? Appearance.colors.colOnPrimary
+                            ? Appearance.colors.colPrimary
                             : Appearance.colors.colOnLayer0
                         label:       cityData?.name ?? ""
-                        labelColor:  Qt.rgba(
-                            (cityData?.isDay ?? true ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0).r,
-                            (cityData?.isDay ?? true ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0).g,
-                            (cityData?.isDay ?? true ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0).b,
-                            0.75)
+                        labelColor:  Appearance.colors.colOnLayer0
                         labelSpacing: 6
                         autoTime:    false
                         hourAngle: {

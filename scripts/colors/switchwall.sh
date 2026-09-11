@@ -95,6 +95,18 @@ is_video() {
     [[ "$extension" == "mp4" || "$extension" == "webm" || "$extension" == "mkv" || "$extension" == "avi" || "$extension" == "mov" ]] && return 0 || return 1
 }
 
+get_video_thumbnail_path() {
+    local vpath="$1"
+    local abs_path
+    abs_path="$(realpath -m "$vpath" 2>/dev/null || echo "$vpath")"
+    local hash
+    hash=$(python3 -c "import hashlib, pathlib; print(hashlib.md5(pathlib.Path('''$abs_path''').resolve().as_uri().encode()).hexdigest())" 2>/dev/null)
+    if [ -z "$hash" ]; then
+        hash=$(echo -n "file://$abs_path" | md5sum | awk '{print $1}')
+    fi
+    echo "$THUMBNAIL_DIR/${hash}.jpg"
+}
+
 kill_existing_mpvpaper() {
     pkill -f mpvpaper || true
 }
@@ -220,10 +232,11 @@ switch() {
             fi
 
             # Extract frame for color generation and static UI consumers
-            thumbnail="$THUMBNAIL_DIR/$(basename "$imgpath").jpg"
+            thumbnail="$(get_video_thumbnail_path "$imgpath")"
+            python3 "$SCRIPT_DIR/../thumbnails/ensure_wallpaper_thumbnails.py" --file "$imgpath" >/dev/null 2>&1 &
             if [ ! -s "$thumbnail" ] || [ "$imgpath" -nt "$thumbnail" ]; then
-                tmp_thumb="${thumbnail}.tmp.$$"
-                ffmpeg -y -nostdin -loglevel error -ss 00:00:00.5 -i "$imgpath" -update 1 -vframes 1 -q:v 2 "$tmp_thumb" >/dev/null 2>&1 || ffmpeg -y -nostdin -loglevel error -i "$imgpath" -update 1 -vframes 1 -q:v 2 "$tmp_thumb" >/dev/null 2>&1
+                tmp_thumb="${thumbnail}.tmp.$$.jpg"
+                ffmpeg -y -nostdin -loglevel error -ss 00:00:00.5 -i "$imgpath" -f image2 -vframes 1 -q:v 2 "$tmp_thumb" >/dev/null 2>&1 || ffmpeg -y -nostdin -loglevel error -i "$imgpath" -f image2 -vframes 1 -q:v 2 "$tmp_thumb" >/dev/null 2>&1
                 if [ -s "$tmp_thumb" ]; then
                     mv -f "$tmp_thumb" "$thumbnail"
                 else
@@ -463,10 +476,10 @@ main() {
     local effective_imgpath="$imgpath"
     if is_video "$imgpath"; then
         mkdir -p "$THUMBNAIL_DIR"
-        local early_thumb="$THUMBNAIL_DIR/$(basename "$imgpath").jpg"
+        local early_thumb="$(get_video_thumbnail_path "$imgpath")"
         if [ ! -s "$early_thumb" ] || [ "$imgpath" -nt "$early_thumb" ]; then
-            local tmp_early="${early_thumb}.tmp.$$"
-            ffmpeg -y -nostdin -loglevel error -ss 00:00:00.5 -i "$imgpath" -update 1 -vframes 1 -q:v 2 "$tmp_early" >/dev/null 2>&1 || ffmpeg -y -nostdin -loglevel error -i "$imgpath" -update 1 -vframes 1 -q:v 2 "$tmp_early" >/dev/null 2>&1
+            local tmp_early="${early_thumb}.tmp.$$.jpg"
+            ffmpeg -y -nostdin -loglevel error -ss 00:00:00.5 -i "$imgpath" -f image2 -vframes 1 -q:v 2 "$tmp_early" >/dev/null 2>&1 || ffmpeg -y -nostdin -loglevel error -i "$imgpath" -f image2 -vframes 1 -q:v 2 "$tmp_early" >/dev/null 2>&1
             if [ -s "$tmp_early" ]; then
                 mv -f "$tmp_early" "$early_thumb"
             else

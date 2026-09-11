@@ -40,7 +40,8 @@ Item {
 
         ShapePath {
             id: shapePath
-            strokeWidth: 0
+            strokeWidth: 1
+            strokeColor: Qt.rgba(1, 1, 1, 0.12)
             fillColor: root.color
             pathHints: ShapePath.PathSolid & ShapePath.PathNonIntersecting
 

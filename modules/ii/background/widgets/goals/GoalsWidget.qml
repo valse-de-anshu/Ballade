@@ -389,14 +389,10 @@ AbstractBackgroundWidget {
         id: card
         anchors.fill: parent
         radius: Appearance.rounding.verylarge
-        color: "transparent"
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Border
         clip: true
-
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            radius: card.radius
-            wallpaperPathOverride: root.wallpaperPath
-        }
 
         // ════════════════════════════════════════════════════════
         // 1. MAIN RADAR & ACCORDION VIEW (when no tool is full-canvas)

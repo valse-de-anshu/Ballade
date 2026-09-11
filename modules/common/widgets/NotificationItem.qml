@@ -105,6 +105,9 @@ Item { // Notification item area
         }
 
         image: notificationObject.image
+        appIcon: notificationObject.appIcon
+        appName: notificationObject.appName || ""
+        summary: notificationObject.summary || ""
         anchors.right: background.left
         anchors.top: background.top
         anchors.rightMargin: 10
@@ -159,7 +162,7 @@ Item { // Notification item area
                     font.pixelSize: root.fontSize
                     color: Appearance.colors.colOnLayer3
                     elide: Text.ElideRight
-                    text: root.notificationObject.summary || ""
+                    text: NotificationUtils.cleanNotificationText(root.notificationObject.summary || "")
                 }
                 StyledText {
                     opacity: !root.expanded ? 1 : 0
@@ -173,9 +176,9 @@ Item { // Notification item area
                     elide: Text.ElideRight
                     wrapMode: Text.Wrap // Needed for proper eliding????
                     maximumLineCount: 1
-                    textFormat: Text.StyledText
+                    textFormat: Text.PlainText
                     text: {
-                        return NotificationUtils.processNotificationBody(notificationObject.body, notificationObject.appName || notificationObject.summary).replace(/\n/g, "<br/>")
+                        return NotificationUtils.processNotificationBody(notificationObject.body, notificationObject.appName || notificationObject.summary)
                     }
                 }
             }
@@ -196,10 +199,9 @@ Item { // Notification item area
                     color: Appearance.colors.colSubtext
                     wrapMode: Text.Wrap
                     elide: Text.ElideRight
-                    textFormat: Text.RichText
+                    textFormat: Text.PlainText
                     text: {
-                        return `<style>img{max-width:${expandedContentColumn.width}px;}</style>` + 
-                            `${NotificationUtils.processNotificationBody(notificationObject.body, notificationObject.appName || notificationObject.summary).replace(/\n/g, "<br/>")}`
+                        return NotificationUtils.processNotificationBody(notificationObject.body, notificationObject.appName || notificationObject.summary)
                     }
 
                     onLinkActivated: (link) => {

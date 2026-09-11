@@ -709,6 +709,7 @@ Singleton {
             }
 
             property JsonObject sidebar: JsonObject {
+                property int backgroundStyle: 1 // 0: Classic, 1: Frosted Obsidian, 2: Deep Smoked Velvet, 3: Pure Minimal Onyx, 4: Prismatic Aurora Edge, 5: Soft Atmospheric Mist
                 property bool banner: true
                 property bool mediaPlayer: false
                 property string bannerImage: ""

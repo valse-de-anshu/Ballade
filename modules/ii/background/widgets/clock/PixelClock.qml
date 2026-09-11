@@ -30,7 +30,7 @@ Item {
     readonly property string glyphBottomLeft: DateTime.digitM0
     readonly property string glyphBottomRight: DateTime.digitM1
     property color colText: Appearance.colors.colPrimary
-    readonly property color tintSoft: Appearance.colors.colPrimaryContainer
+    readonly property color tintSoft: Qt.rgba(colText.r, colText.g, colText.b, 0.40)
     readonly property color tintBold: colText
 
     readonly property real fringeSize: isVertical ? root.width * 0.026 : root.height * 0.03

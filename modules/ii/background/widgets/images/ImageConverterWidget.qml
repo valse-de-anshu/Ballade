@@ -208,16 +208,11 @@ AbstractBackgroundWidget {
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        color: "transparent"
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Border
         radius: Appearance.rounding?.large ?? 22
         clip: true
-
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            radius: contentItem.radius
-            borderColor: Appearance.colors.colLayer0Border
-            wallpaperPathOverride: root.wallpaperPath
-        }
 
         ColumnLayout {
             anchors {

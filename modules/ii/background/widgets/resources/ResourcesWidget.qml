@@ -29,13 +29,15 @@ AbstractBackgroundWidget {
         property string value: ""
         property string label: ""
         property int shape: MaterialShape.Shape.Cookie12Sided
-        property color bgColor: Appearance.colors.colPrimaryContainer
+        property color bgColor: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
         property color shapeColor: Appearance.colors.colPrimary
 
         implicitWidth: root.cardWidth
         implicitHeight: root.cardHeight
         radius: Appearance.rounding?.verylarge ?? 30
         color: statCard.bgColor
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.10)
 
         StyledRectangularShadow {
             target: statCard
@@ -101,7 +103,6 @@ AbstractBackgroundWidget {
             value: Math.round(ResourceUsage.memoryUsedPercentage * 100) + "%"
             label: "RAM"
             shape: MaterialShape.Shape.Cookie4Sided
-            bgColor: Appearance.colors.colSecondaryContainer
             shapeColor: Appearance.colors.colSecondary
         }
         StatCard {

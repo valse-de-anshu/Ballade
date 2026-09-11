@@ -20,6 +20,23 @@ Singleton {
         "wps": "wps-office2019-kprometheus",
         "wpsoffice": "wps-office2019-kprometheus",
         "footclient": "foot",
+        "jetbrains-studio": "android-studio",
+        "jetbrains-studio-canary": "android-studio",
+        "jetbrains-idea": "intellij-idea-ultimate-edition",
+        "jetbrains-idea-ce": "idea-community",
+        "jetbrains-pycharm": "pycharm",
+        "jetbrains-pycharm-ce": "pycharm-community",
+        "jetbrains-clion": "clion",
+        "jetbrains-webstorm": "webstorm",
+        "jetbrains-rider": "rider",
+        "jetbrains-datagrip": "datagrip",
+        "jetbrains-rubymine": "rubymine",
+        "jetbrains-goland": "goland",
+        "jetbrains-rustrover": "rustrover",
+        "jetbrains-fleet": "fleet",
+        "md.obsidian.Obsidian": "obsidian",
+        "org.localsend.localsend_app": "localsend",
+        "Ventoy2Disk.gtk3": "ventoy",
     })
     property var regexSubstitutions: [
         {
@@ -37,6 +54,14 @@ Singleton {
         {
             "regex": /gcr.prompter/,
             "replace": "system-lock-screen"
+        },
+        {
+            "regex": /^jetbrains-studio.*$/,
+            "replace": "android-studio"
+        },
+        {
+            "regex": /^jetbrains-(.*)$/,
+            "replace": "$1"
         }
     ]
 
@@ -138,8 +163,8 @@ Singleton {
 
         // Search in desktop entries
         const iconSearchResults = Fuzzy.go(str, preppedIcons, {
-            all: true,
-            key: "name"
+            key: "name",
+            threshold: -200
         }).map(r => {
             return r.obj.entry
         });
