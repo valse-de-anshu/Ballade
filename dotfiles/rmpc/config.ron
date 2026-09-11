@@ -6,7 +6,7 @@
     password: None,
     theme: Some("green"),
     cache_dir: None,
-    lyrics_dir: Some("/mnt/storage/portable_music"),
+    lyrics_dir: Some("/home/valse-de-anshu/.local/share/rmpc/lyrics"),
     enable_lyrics_index: true,
     enable_lyrics_hot_reload: true,
     on_song_change: ["/home/valse-de-anshu/.local/bin/rmpc-fetch-lyrics"],

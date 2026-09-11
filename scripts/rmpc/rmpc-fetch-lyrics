@@ -74,12 +74,14 @@ def repair_audio_tags_if_needed(abs_path, title, artist):
         pass
 
 def sync_all_lyrics_tags():
-    """Scan music directories to ensure all .lrc files have [ti: ...] and [ar: ...] tags."""
+    """Scan music directories to ensure all .lrc files have [ti: ...] and [ar: ...] tags and populate lyrics hub."""
     roots = [
         os.path.join(os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"), "portable_music"),
         "/mnt/storage/portable_music",
         os.path.expanduser("~/Music/internal_music")
     ]
+    hub_dir = os.path.expanduser("~/.local/share/rmpc/lyrics")
+    os.makedirs(hub_dir, exist_ok=True)
     seen = set()
     for root in roots:
         if not os.path.isdir(root) or root in seen:
@@ -103,6 +105,15 @@ def sync_all_lyrics_tags():
                     if parent and parent not in ("portable_music", "internal_music", "Music", "lyrics"):
                         artist = "Lana Del Rey" if parent == "lana del ray" else parent
                 ensure_metadata_tags(fpath, title, artist)
+
+                # Maintain direct file symlink in unified hub for rmpc startup indexer
+                link_path = os.path.join(hub_dir, fname)
+                try:
+                    if not os.path.lexists(link_path):
+                        os.symlink(fpath, link_path)
+                except Exception:
+                    pass
+
 
 def main():
     try:
