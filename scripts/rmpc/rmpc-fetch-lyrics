@@ -1,78 +1,231 @@
 #!/usr/bin/env python3
-# rmpc-fetch-lyrics: Robust synchronized lyrics fetcher for rmpc/mpd.
-# Automatically downloads .lrc lyrics from LRCLIB and never crashes rmpc.
+# rmpc-fetch-lyrics: Robust synchronized lyrics discoverer and fetcher for rmpc/mpd.
+# - Discovers lyrics right inside the song's folder (e.g. <folder>/lyrics/<song>.lrc or <folder>/<song>.lrc).
+# - Automatically adds [ti: ...] and [ar: ...] tags required by rmpc's indexer.
+# - Fetches from LRCLIB when no local lyrics exist and saves into <folder>/lyrics/.
+# - Notifies running rmpc instances to index and display lyrics immediately.
 
-import sys, os, json, urllib.request, urllib.parse, subprocess
+import sys, os, json, re, urllib.request, urllib.parse, subprocess, shutil
 
-try:
-    res = subprocess.run(["rmpc", "song"], capture_output=True, text=True)
-    if res.returncode != 0 or not res.stdout.strip():
-        sys.exit(0)
-    song = json.loads(res.stdout)
-    if not song or not isinstance(song, dict):
-        sys.exit(0)
+def normalize_name(s):
+    """Normalize string for fuzzy matching (lowercase alphanumeric only)."""
+    return re.sub(r'[^a-z0-9]', '', s.lower())
 
-    metadata = song.get("metadata", {})
-    file_path = song.get("file", "")
-    if not file_path:
-        sys.exit(0)
-
-    artist = metadata.get("artist", "") or ""
-    title = metadata.get("title", "") or ""
-
-    base_name = os.path.splitext(os.path.basename(file_path))[0]
-    if not title:
-        title = base_name
-
-    # Determine lyrics destination directory
-    if file_path.startswith("portable_music/"):
-        target_dir = os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage") + "/portable_music/lyrics"
-    elif file_path.startswith("internal_music/"):
-        target_dir = os.path.expanduser("~/Music/internal_music/lyrics")
-    else:
-        target_dir = os.path.expanduser("~/Music/internal_music/lyrics")
-
-    os.makedirs(target_dir, exist_ok=True)
-    target_lrc = os.path.join(target_dir, f"{base_name}.lrc")
-
-    if os.path.exists(target_lrc) and os.path.getsize(target_lrc) > 0:
-        sys.exit(0)
-
-    # Fetch from LRCLIB API
-    params = {"track_name": title}
-    if artist:
-        params["artist_name"] = artist
-    url = f"https://lrclib.net/api/get?{urllib.parse.urlencode(params)}"
-    
-    req = urllib.request.Request(url, headers={"User-Agent": "rmpc-lyrics-fetcher/1.0"})
-    lyrics_content = None
+def ensure_metadata_tags(lrc_path, title, artist, album=""):
+    """Ensure the .lrc file has [ti: ...] and [ar: ...] tags so rmpc can index it."""
     try:
-        with urllib.request.urlopen(req, timeout=4) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode("utf-8"))
-                lyrics_content = data.get("syncedLyrics") or data.get("plainLyrics")
+        with open(lrc_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+
+        has_ti = bool(re.search(r'\[ti:[^\]]+\]', content, re.IGNORECASE))
+        has_ar = bool(re.search(r'\[ar:[^\]]+\]', content, re.IGNORECASE))
+
+        if not has_ti or not has_ar:
+            tags = []
+            if not has_ti and title:
+                tags.append(f"[ti:{title}]")
+            if not has_ar and artist:
+                tags.append(f"[ar:{artist}]")
+            if album and not re.search(r'\[al:[^\]]+\]', content, re.IGNORECASE):
+                tags.append(f"[al:{album}]")
+
+            if tags:
+                new_content = "\n".join(tags) + "\n" + content
+                with open(lrc_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
     except Exception:
         pass
 
-    if not lyrics_content:
-        # Fallback to search endpoint
-        search_query = f"{artist} {title}".strip()
-        search_url = f"https://lrclib.net/api/search?{urllib.parse.urlencode({'q': search_query})}"
-        search_req = urllib.request.Request(search_url, headers={"User-Agent": "rmpc-lyrics-fetcher/1.0"})
+def notify_rmpc(lrc_path, pid=None):
+    """Notify rmpc via remote IPC that lyrics are available."""
+    try:
+        cmd = ["rmpc", "remote"]
+        if pid:
+            cmd.extend(["--pid", str(pid)])
+        cmd.extend(["indexlrc", "--path", lrc_path])
+        subprocess.run(cmd, capture_output=True, text=True, timeout=2)
+    except Exception:
+        pass
+
+def main():
+    try:
+        # 1. Retrieve current song information
+        song = {}
         try:
-            with urllib.request.urlopen(search_req, timeout=4) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    if isinstance(data, list) and len(data) > 0:
-                        lyrics_content = data[0].get("syncedLyrics") or data[0].get("plainLyrics")
+            res = subprocess.run(["rmpc", "song"], capture_output=True, text=True, timeout=2)
+            if res.returncode == 0 and res.stdout.strip():
+                song = json.loads(res.stdout)
         except Exception:
             pass
 
-    if lyrics_content and lyrics_content.strip():
-        with open(target_lrc, "w", encoding="utf-8") as f:
-            f.write(lyrics_content)
-except Exception:
-    pass
+        file_path = song.get("file", "") or os.environ.get("FILE", "")
+        if not file_path:
+            sys.exit(0)
 
-sys.exit(0)
+        metadata = song.get("metadata", {}) if isinstance(song, dict) else {}
+        artist = metadata.get("artist", "") or os.environ.get("ARTIST", "") or ""
+        title = metadata.get("title", "") or os.environ.get("TITLE", "") or ""
+        album = metadata.get("album", "") or os.environ.get("ALBUM", "") or ""
+        pid = os.environ.get("PID", "")
 
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        if not title:
+            title = base_name
+
+        # If artist is missing but base_name is "Title - Artist" or "Artist - Title", try to parse
+        if not artist and " - " in base_name:
+            parts = base_name.split(" - ", 1)
+            artist = parts[1].strip()
+
+        # 2. Resolve absolute song path and directories
+        candidate_roots = [
+            os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"),
+            "/mnt/storage",
+            os.path.expanduser("~/Music"),
+            "/home/valse-de-anshu/Music"
+        ]
+
+        abs_file_path = None
+        if os.path.isabs(file_path) and os.path.exists(file_path):
+            abs_file_path = os.path.realpath(file_path)
+        else:
+            for root in candidate_roots:
+                p = os.path.realpath(os.path.join(root, file_path))
+                if os.path.exists(p):
+                    abs_file_path = p
+                    break
+
+        if not abs_file_path:
+            # Best-effort fallback path
+            abs_file_path = os.path.realpath(os.path.join(candidate_roots[0], file_path))
+
+        song_dir = os.path.dirname(abs_file_path)
+        song_lyrics_dir = os.path.join(song_dir, "lyrics")
+
+        # 3. Search for existing lyrics
+        # Priority:
+        # 1) <song_dir>/lyrics/ (the user's designated organized folder)
+        # 2) <song_dir>/ (alongside the song)
+        # 3) global fallback folders (/mnt/storage/portable_music/lyrics, ~/Music/internal_music/lyrics)
+        search_dirs = [song_lyrics_dir, song_dir]
+        external_lyrics = os.path.join(os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"), "portable_music/lyrics")
+        internal_lyrics = os.path.expanduser("~/Music/internal_music/lyrics")
+        for fb in [external_lyrics, internal_lyrics]:
+            if fb not in search_dirs and os.path.isdir(fb):
+                search_dirs.append(fb)
+
+        matched_lrc = None
+        exact_names = [
+            f"{base_name}.lrc",
+            f"{title}.lrc",
+            f"{title} - {artist}.lrc" if artist else None,
+            f"{artist} - {title}.lrc" if artist else None
+        ]
+        exact_names = [n for n in exact_names if n]
+
+        # Check exact names first
+        for sdir in search_dirs:
+            if not os.path.isdir(sdir):
+                continue
+            for name in exact_names:
+                cand = os.path.join(sdir, name)
+                if os.path.isfile(cand) and os.path.getsize(cand) > 0:
+                    matched_lrc = cand
+                    break
+            if matched_lrc:
+                break
+
+        # Fuzzy / normalized check if not found
+        if not matched_lrc:
+            norm_base = normalize_name(base_name)
+            norm_title = normalize_name(title)
+            for sdir in search_dirs:
+                if not os.path.isdir(sdir):
+                    continue
+                try:
+                    for f in os.listdir(sdir):
+                        if not f.endswith(".lrc"):
+                            continue
+                        f_stem = os.path.splitext(f)[0]
+                        norm_f = normalize_name(f_stem)
+                        if norm_f in (norm_base, norm_title) or (norm_title and (norm_f.startswith(norm_title) or norm_title.startswith(norm_f))):
+                            matched_lrc = os.path.join(sdir, f)
+                            break
+                except Exception:
+                    pass
+                if matched_lrc:
+                    break
+
+        # If found in a fallback directory but not in song_lyrics_dir, copy to song_lyrics_dir
+        if matched_lrc and os.path.dirname(matched_lrc) != song_lyrics_dir:
+            try:
+                os.makedirs(song_lyrics_dir, exist_ok=True)
+                dest = os.path.join(song_lyrics_dir, f"{base_name}.lrc")
+                if not os.path.exists(dest):
+                    shutil.copyfile(matched_lrc, dest)
+                    matched_lrc = dest
+            except Exception:
+                pass
+
+        # 4. If lyrics exist, ensure metadata tags & notify rmpc
+        if matched_lrc and os.path.isfile(matched_lrc) and os.path.getsize(matched_lrc) > 0:
+            ensure_metadata_tags(matched_lrc, title, artist, album)
+            notify_rmpc(matched_lrc, pid)
+            sys.exit(0)
+
+        # 5. Fetch from LRCLIB API if not found
+        params = {"track_name": title}
+        if artist:
+            params["artist_name"] = artist
+        if album:
+            params["album_name"] = album
+        url = f"https://lrclib.net/api/get?{urllib.parse.urlencode(params)}"
+
+        req = urllib.request.Request(url, headers={"User-Agent": "rmpc-lyrics-fetcher/2.0"})
+        lyrics_content = None
+        try:
+            with urllib.request.urlopen(req, timeout=4) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode("utf-8"))
+                    lyrics_content = data.get("syncedLyrics") or data.get("plainLyrics")
+        except Exception:
+            pass
+
+        if not lyrics_content:
+            # Fallback search endpoint
+            query_str = f"{artist} {title}".strip() if artist else title
+            search_url = f"https://lrclib.net/api/search?{urllib.parse.urlencode({'q': query_str})}"
+            search_req = urllib.request.Request(search_url, headers={"User-Agent": "rmpc-lyrics-fetcher/2.0"})
+            try:
+                with urllib.request.urlopen(search_req, timeout=4) as response:
+                    if response.status == 200:
+                        data = json.loads(response.read().decode("utf-8"))
+                        if isinstance(data, list) and len(data) > 0:
+                            lyrics_content = data[0].get("syncedLyrics") or data[0].get("plainLyrics")
+            except Exception:
+                pass
+
+        if lyrics_content and lyrics_content.strip():
+            os.makedirs(song_lyrics_dir, exist_ok=True)
+            target_lrc = os.path.join(song_lyrics_dir, f"{base_name}.lrc")
+            
+            # Prepend metadata tags
+            tags = [f"[ti:{title}]"]
+            if artist:
+                tags.append(f"[ar:{artist}]")
+            if album:
+                tags.append(f"[al:{album}]")
+            full_content = "\n".join(tags) + "\n" + lyrics_content
+
+            with open(target_lrc, "w", encoding="utf-8") as f:
+                f.write(full_content)
+
+            notify_rmpc(target_lrc, pid)
+
+    except Exception:
+        pass
+
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()

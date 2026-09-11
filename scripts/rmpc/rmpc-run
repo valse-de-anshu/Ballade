@@ -57,6 +57,10 @@ if ! pgrep -x mpDris2 >/dev/null; then
     mpDris2 &>/dev/null &
 fi
 
+# Index lyrics for currently loaded track immediately
+"$HOME/.local/bin/rmpc-fetch-lyrics" &>/dev/null &
+
 # --- 5. Launch rmpc TUI ---
 echo "[rmpc-run] Launching rmpc TUI..."
 rmpc "$@"
+
