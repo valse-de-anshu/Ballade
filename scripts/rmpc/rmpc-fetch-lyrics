@@ -73,9 +73,45 @@ def repair_audio_tags_if_needed(abs_path, title, artist):
     except Exception:
         pass
 
+def sync_all_lyrics_tags():
+    """Scan music directories to ensure all .lrc files have [ti: ...] and [ar: ...] tags."""
+    roots = [
+        os.path.join(os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"), "portable_music"),
+        "/mnt/storage/portable_music",
+        os.path.expanduser("~/Music/internal_music")
+    ]
+    seen = set()
+    for root in roots:
+        if not os.path.isdir(root) or root in seen:
+            continue
+        seen.add(root)
+        for dirpath, _, filenames in os.walk(root):
+            for fname in filenames:
+                if not fname.endswith(".lrc"):
+                    continue
+                fpath = os.path.join(dirpath, fname)
+                stem = os.path.splitext(fname)[0]
+                title = stem
+                artist = ""
+                if " - " in stem:
+                    parts = stem.split(" - ", 1)
+                    title = parts[0].strip()
+                    artist = parts[1].strip()
+                else:
+                    parent_dir = os.path.dirname(fpath) if os.path.basename(dirpath) == "lyrics" else dirpath
+                    parent = os.path.basename(parent_dir)
+                    if parent and parent not in ("portable_music", "internal_music", "Music", "lyrics"):
+                        artist = "Lana Del Rey" if parent == "lana del ray" else parent
+                ensure_metadata_tags(fpath, title, artist)
+
 def main():
     try:
+        if "--sync-all" in sys.argv:
+            sync_all_lyrics_tags()
+            sys.exit(0)
+
         # 1. Retrieve current song information
+
         song = {}
         try:
             res = subprocess.run(["rmpc", "song"], capture_output=True, text=True, timeout=2)

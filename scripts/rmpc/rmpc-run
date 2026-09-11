@@ -53,6 +53,9 @@ done
 # Rescan library so MPD automatically detects added, removed, or modified tracks
 rmpc rescan &>/dev/null || true
 
+# Pre-scan and ensure metadata tags for all newly added lyrics in the library
+"$HOME/.local/bin/rmpc-fetch-lyrics" --sync-all &>/dev/null || true
+
 if ! pgrep -x mpDris2 >/dev/null; then
     mpDris2 &>/dev/null &
 fi
