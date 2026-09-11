@@ -3,6 +3,7 @@
 # - Discovers lyrics right inside the song's folder (e.g. <folder>/lyrics/<song>.lrc or <folder>/<song>.lrc).
 # - Automatically adds [ti: ...] and [ar: ...] tags required by rmpc's indexer.
 # - Fetches from LRCLIB when no local lyrics exist and saves into <folder>/lyrics/.
+# - Auto-heals missing ID3 tags on untagged audio files so rmpc never sees "Unknown" artist.
 # - Notifies running rmpc instances to index and display lyrics immediately.
 
 import sys, os, json, re, urllib.request, urllib.parse, subprocess, shutil
@@ -47,6 +48,31 @@ def notify_rmpc(lrc_path, pid=None):
     except Exception:
         pass
 
+def repair_audio_tags_if_needed(abs_path, title, artist):
+    """If the audio file is completely missing ID3/FLAC title/artist, write them."""
+    if not abs_path or not os.path.isfile(abs_path) or not title:
+        return
+    try:
+        import mutagen
+        audio = mutagen.File(abs_path, easy=True)
+        if audio is None:
+            return
+        cur_title = audio.get('title', [None])[0]
+        cur_artist = audio.get('artist', [None])[0]
+        needs_save = False
+        if not cur_title:
+            audio['title'] = title
+            needs_save = True
+        if not cur_artist and artist:
+            audio['artist'] = artist
+            needs_save = True
+        if needs_save:
+            audio.save()
+            # Inform MPD to update metadata for this file in background
+            subprocess.Popen(["rmpc", "update"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
 def main():
     try:
         # 1. Retrieve current song information
@@ -69,13 +95,6 @@ def main():
         pid = os.environ.get("PID", "")
 
         base_name = os.path.splitext(os.path.basename(file_path))[0]
-        if not title:
-            title = base_name
-
-        # If artist is missing but base_name is "Title - Artist" or "Artist - Title", try to parse
-        if not artist and " - " in base_name:
-            parts = base_name.split(" - ", 1)
-            artist = parts[1].strip()
 
         # 2. Resolve absolute song path and directories
         candidate_roots = [
@@ -96,17 +115,34 @@ def main():
                     break
 
         if not abs_file_path:
-            # Best-effort fallback path
             abs_file_path = os.path.realpath(os.path.join(candidate_roots[0], file_path))
 
         song_dir = os.path.dirname(abs_file_path)
         song_lyrics_dir = os.path.join(song_dir, "lyrics")
 
+        # Parse and infer title and artist if missing or unhelpful
+        if not title or title == base_name or not artist or artist.lower() in ("unknown", "none"):
+            if " - " in base_name:
+                parts = base_name.split(" - ", 1)
+                if not title or title == base_name:
+                    title = parts[0].strip()
+                if not artist or artist.lower() in ("unknown", "none"):
+                    artist = parts[1].strip()
+            elif not title:
+                title = base_name
+
+        if not artist or artist.lower() in ("unknown", "none"):
+            parent_name = os.path.basename(song_dir)
+            if parent_name and parent_name not in ("portable_music", "internal_music", "Music"):
+                if parent_name == "lana del ray":
+                    artist = "Lana Del Rey"
+                else:
+                    artist = parent_name
+
+        # Auto-heal audio tags if missing
+        repair_audio_tags_if_needed(abs_file_path, title, artist)
+
         # 3. Search for existing lyrics
-        # Priority:
-        # 1) <song_dir>/lyrics/ (the user's designated organized folder)
-        # 2) <song_dir>/ (alongside the song)
-        # 3) global fallback folders (/mnt/storage/portable_music/lyrics, ~/Music/internal_music/lyrics)
         search_dirs = [song_lyrics_dir, song_dir]
         external_lyrics = os.path.join(os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"), "portable_music/lyrics")
         internal_lyrics = os.path.expanduser("~/Music/internal_music/lyrics")
@@ -192,7 +228,6 @@ def main():
             pass
 
         if not lyrics_content:
-            # Fallback search endpoint
             query_str = f"{artist} {title}".strip() if artist else title
             search_url = f"https://lrclib.net/api/search?{urllib.parse.urlencode({'q': query_str})}"
             search_req = urllib.request.Request(search_url, headers={"User-Agent": "rmpc-lyrics-fetcher/2.0"})
@@ -209,7 +244,6 @@ def main():
             os.makedirs(song_lyrics_dir, exist_ok=True)
             target_lrc = os.path.join(song_lyrics_dir, f"{base_name}.lrc")
             
-            # Prepend metadata tags
             tags = [f"[ti:{title}]"]
             if artist:
                 tags.append(f"[ar:{artist}]")
