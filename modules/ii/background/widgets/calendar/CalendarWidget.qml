@@ -447,25 +447,41 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.36)
+        color: ColorUtils.applyAlpha(
+            ColorUtils.mix(
+                Appearance.colors.colPrimaryContainer,
+                Appearance.colors.colPrimary,
+                0.20
+            ),
+            root.dominantColorIsDark ? 0.32 : 0.50
+        )
         border.width: 1
-        border.color: ColorUtils.applyAlpha("#ffffff", 0.22)
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
         }
 
-        // Thick frosted glass diffuse sheen & specular highlight
+        // Frosted glass specular highlight & refractive sheen
         Rectangle {
             anchors.fill: parent
             radius: card.radius
             color: "transparent"
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.15) }
-                GradientStop { position: 0.30; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
-                GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#000000", 0.08) }
+                GradientStop {
+                    position: 0.0
+                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.70), 0.20)
+                }
+                GradientStop {
+                    position: 0.45
+                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.03)
+                }
+                GradientStop {
+                    position: 1.0
+                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.10)
+                }
             }
         }
 
@@ -629,9 +645,9 @@ AbstractBackgroundWidget {
                     Layout.preferredWidth: 220
                     Layout.fillHeight: true
                     radius: (Appearance.rounding?.verylarge ?? 30) - 10
-                    color: ColorUtils.applyAlpha("#ffffff", 0.04)
+                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.25)
                     border.width: 1
-                    border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                    border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.5), 0.15)
 
                     ColumnLayout {
                         anchors { fill: parent; margins: 14 }
@@ -646,7 +662,7 @@ AbstractBackgroundWidget {
                                 text: root.selectedDate.getDate()
                                 font.pixelSize: 34
                                 font.weight: Font.Bold
-                                color: "#ffffff"
+                                color: Appearance.colors.colOnPrimaryContainer
                             }
 
                             ColumnLayout {
@@ -657,7 +673,7 @@ AbstractBackgroundWidget {
                                     text: root.selectedDate.toLocaleDateString(Qt.locale(), "dddd")
                                     font.pixelSize: Appearance.font.pixelSize.normal
                                     font.weight: Font.Bold
-                                    color: "#ffffff"
+                                    color: Appearance.colors.colOnPrimaryContainer
                                 }
 
                                 RowLayout {
@@ -665,18 +681,18 @@ AbstractBackgroundWidget {
                                     StyledText {
                                         text: root.selectedDate.toLocaleDateString(Qt.locale(), "MMM yyyy")
                                         font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: "#888892"
+                                        color: Appearance.colors.colSubtext
                                     }
                                     StyledText {
                                         text: "•"
                                         font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: "#55555c"
+                                        color: Appearance.colors.colSubtext
                                     }
                                     StyledText {
                                         text: "W" + root.getWeekNumber(root.selectedDate)
                                         font.pixelSize: Appearance.font.pixelSize.smaller
                                         font.weight: Font.Bold
-                                        color: "#e2e8f0"
+                                        color: Appearance.colors.colPrimary
                                     }
                                 }
                             }
@@ -686,7 +702,7 @@ AbstractBackgroundWidget {
                         Rectangle {
                             Layout.fillWidth: true
                             height: 1
-                            color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                            color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.15)
                         }
 
                         // Agenda / Events Scroll Area
@@ -1090,18 +1106,18 @@ AbstractBackgroundWidget {
                             Layout.fillWidth: true
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: Font.Bold
-                            color: "#ffffff"
+                            color: Appearance.colors.colOnPrimaryContainer
                             text: root.viewingDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
                         }
 
-                        // Aesthetic Solid Neutral "Today" Button
+                        // Aesthetic Neutral "Today" Button
                         Rectangle {
                             implicitWidth: 74
                             implicitHeight: 28
                             radius: 14
-                            color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
                             border.width: 1
-                            border.color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+                            border.color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -1110,14 +1126,14 @@ AbstractBackgroundWidget {
                                 MaterialSymbol {
                                     text: "today"
                                     iconSize: 13
-                                    color: "#e2e8f0"
+                                    color: Appearance.colors.colOnPrimaryContainer
                                 }
 
                                 StyledText {
                                     text: "Today"
                                     font.pixelSize: Appearance.font.pixelSize.smaller
                                     font.weight: Font.Bold
-                                    color: "#e2e8f0"
+                                    color: Appearance.colors.colOnPrimaryContainer
                                 }
                             }
 
@@ -1133,18 +1149,18 @@ AbstractBackgroundWidget {
                             }
                         }
 
-                        // Aesthetic Solid Neutral Previous Month Button
+                        // Aesthetic Neutral Previous Month Button
                         Rectangle {
                             implicitWidth: 28; implicitHeight: 28; radius: 14
-                            color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
                             border.width: 1
-                            border.color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+                            border.color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "chevron_left"
                                 iconSize: Appearance.font.pixelSize.normal
-                                color: "#e2e8f0"
+                                color: Appearance.colors.colOnPrimaryContainer
                             }
                             MouseArea {
                                 id: prevBtnMouse
@@ -1155,18 +1171,18 @@ AbstractBackgroundWidget {
                             }
                         }
 
-                        // Aesthetic Solid Neutral Next Month Button
+                        // Aesthetic Neutral Next Month Button
                         Rectangle {
                             implicitWidth: 28; implicitHeight: 28; radius: 14
-                            color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
+                            color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
                             border.width: 1
-                            border.color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
+                            border.color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "chevron_right"
                                 iconSize: Appearance.font.pixelSize.normal
-                                color: "#e2e8f0"
+                                color: Appearance.colors.colOnPrimaryContainer
                             }
                             MouseArea {
                                 id: nextBtnMouse
@@ -1194,7 +1210,7 @@ AbstractBackgroundWidget {
                                     text: modelData
                                     font.pixelSize: Appearance.font.pixelSize.smaller
                                     font.weight: Font.Bold
-                                    color: (index >= 5) ? "#e2e8f0" : "#71717a"
+                                    color: (index >= 5) ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                                 }
                             }
                         }
@@ -1234,10 +1250,10 @@ AbstractBackgroundWidget {
                                             anchors.margins: 1
                                             radius: 8
                                             color: cellItem.isSelected
-                                                ? ColorUtils.applyAlpha("#ffffff", 0.12)
-                                                : (cellMouseArea.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.05) : "transparent")
+                                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
+                                                : (cellMouseArea.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.10) : "transparent")
                                             border.width: cellItem.isSelected ? 1 : 0
-                                            border.color: ColorUtils.applyAlpha("#ffffff", 0.25)
+                                            border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.50)
 
                                              ColumnLayout {
                                                 anchors.fill: parent
@@ -1255,7 +1271,7 @@ AbstractBackgroundWidget {
                                                         width: 22
                                                         height: 22
                                                         radius: 11
-                                                        color: modelData.isToday ? "#ffffff" : "transparent"
+                                                        color: modelData.isToday ? Appearance.colors.colPrimary : "transparent"
                                                     }
 
                                                     StyledText {
@@ -1263,7 +1279,7 @@ AbstractBackgroundWidget {
                                                         text: modelData.day
                                                         font.pixelSize: 11
                                                         font.weight: modelData.isToday || cellItem.isSelected ? Font.Bold : Font.Normal
-                                                        color: modelData.isToday ? "#000000" : "#ffffff"
+                                                        color: modelData.isToday ? Appearance.colors.colOnPrimary : Appearance.colors.colOnPrimaryContainer
                                                         opacity: modelData.currentMonth ? 1.0 : 0.25
                                                     }
                                                 }
@@ -1415,9 +1431,18 @@ AbstractBackgroundWidget {
             implicitWidth: capsuleCol.implicitWidth + 24
             implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
             radius: 17
-            color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.38)
+            color: ColorUtils.applyAlpha(
+                ColorUtils.mix(
+                    Appearance.colors.colPrimaryContainer,
+                    Appearance.colors.colPrimary,
+                    0.20
+                ),
+                root.dominantColorIsDark ? 0.32 : 0.50
+            )
             border.width: 1
-            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.24)
+            border.color: root.isSelectingTarget
+                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7)
+                : ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
             clip: true
 
             Behavior on implicitWidth { NumberAnimation { duration: 180 } }

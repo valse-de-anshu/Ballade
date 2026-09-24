@@ -70,25 +70,41 @@ AbstractBackgroundWidget {
             return root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
         }
         radius: Appearance.rounding?.verylarge ?? 30
-        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.36)
+        color: ColorUtils.applyAlpha(
+            ColorUtils.mix(
+                Appearance.colors.colPrimaryContainer,
+                Appearance.colors.colPrimary,
+                0.20
+            ),
+            root.dominantColorIsDark ? 0.32 : 0.50
+        )
         border.width: 1
-        border.color: ColorUtils.applyAlpha("#ffffff", 0.22)
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
         }
 
-        // Thick frosted glass diffuse sheen & specular highlight
+        // Frosted glass specular highlight & refractive sheen
         Rectangle {
             anchors.fill: parent
             radius: card.radius
             color: "transparent"
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.15) }
-                GradientStop { position: 0.30; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
-                GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#000000", 0.08) }
+                GradientStop {
+                    position: 0.0
+                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.70), 0.20)
+                }
+                GradientStop {
+                    position: 0.45
+                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.03)
+                }
+                GradientStop {
+                    position: 1.0
+                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.10)
+                }
             }
         }
 

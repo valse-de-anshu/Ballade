@@ -63,13 +63,20 @@ AbstractBackgroundWidget {
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.36)
+            color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha(
+                ColorUtils.mix(
+                    Appearance.colors.colPrimaryContainer,
+                    Appearance.colors.colPrimary,
+                    0.20
+                ),
+                root.dominantColorIsDark ? 0.32 : 0.50
+            )
             border.width: sizeMode === "4x1" ? 0 : 1
-            border.color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha("#ffffff", 0.22)
+            border.color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
             radius: Appearance.rounding?.verylarge ?? 30
             clip: true
 
-            // Thick frosted glass diffuse sheen & specular highlight
+            // Frosted glass specular highlight & refractive sheen
             Rectangle {
                 anchors.fill: parent
                 radius: contentRect.radius
@@ -77,9 +84,18 @@ AbstractBackgroundWidget {
                 color: "transparent"
                 gradient: Gradient {
                     orientation: Gradient.Vertical
-                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.15) }
-                    GradientStop { position: 0.30; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
-                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#000000", 0.08) }
+                    GradientStop {
+                        position: 0.0
+                        color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.70), 0.20)
+                    }
+                    GradientStop {
+                        position: 0.45
+                        color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.03)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.10)
+                    }
                 }
             }
 
@@ -163,10 +179,10 @@ AbstractBackgroundWidget {
                             Layout.preferredWidth: 120; Layout.preferredHeight: 54
                             radius: Appearance.rounding.normal
                             color: modelData.isDay
-                                ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                                : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.20)
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.22)
+                                : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
                             border.width: 1
-                            border.color: Qt.rgba(1, 1, 1, 0.08)
+                            border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.5), 0.15)
                             property color fg: modelData.isDay
                                 ? Appearance.colors.colPrimary
                                 : Appearance.colors.colOnLayer0
