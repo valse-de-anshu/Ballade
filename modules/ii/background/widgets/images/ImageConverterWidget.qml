@@ -83,8 +83,25 @@ AbstractBackgroundWidget {
     property int queueDone: 0
     property var batchPaths: []
 
-    implicitWidth:  320
+    // Dynamic Auto-Resizing width calculation based on text content
+    readonly property real headerRequiredWidth: (titleIcon?.implicitWidth ?? 18) + (titleText?.implicitWidth ?? 120) + (badgeRect?.implicitWidth ?? 80) + 48
+    readonly property real statusRequiredWidth: (dropText?.implicitWidth ?? 140) + 64
+    readonly property real bottomRequiredWidth: isAnimationFormat
+        ? ((formatCombo?.implicitWidth ?? 100) + (fpsCombo?.implicitWidth ?? 90) + 44)
+        : (customLimitActive ? 370 : ((formatCombo?.implicitWidth ?? 100) + (sizeCombo?.implicitWidth ?? 110) + 44))
+
+    property real targetWidgetWidth: Math.max(320, headerRequiredWidth, statusRequiredWidth, bottomRequiredWidth)
+
+    implicitWidth: targetWidgetWidth
     implicitHeight: 236
+
+    Behavior on implicitWidth {
+        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    }
+
+    Behavior on implicitHeight {
+        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    }
 
     function applyCustomLimit() {
         var raw = parseFloat(root.customNum);
@@ -248,16 +265,19 @@ AbstractBackgroundWidget {
 
             // Header Bar
             RowLayout {
+                id: headerRow
                 Layout.fillWidth: true
                 spacing: 8
 
                 MaterialSymbol {
+                    id: titleIcon
                     text: root.isAnimationFormat ? "movie" : "auto_fix_high"
                     iconSize: 18
                     color: Appearance.colors.colPrimary
                 }
 
                 StyledText {
+                    id: titleText
                     text: root.isAnimationFormat ? "Animation & Converter" : "Image Converter"
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
@@ -268,6 +288,7 @@ AbstractBackgroundWidget {
 
                 // Live Format & Target Size Badge
                 Rectangle {
+                    id: badgeRect
                     radius: 8
                     color: Appearance.colors.colPrimaryContainer
                     implicitHeight: 22
@@ -360,6 +381,7 @@ AbstractBackgroundWidget {
                     }
 
                     StyledText {
+                        id: dropText
                         Layout.alignment: Qt.AlignHCenter
                         Layout.fillWidth: true
                         font.pixelSize: Appearance.font.pixelSize.small
@@ -413,11 +435,13 @@ AbstractBackgroundWidget {
 
             // Bottom Controls Row
             RowLayout {
+                id: bottomControlsRow
                 Layout.fillWidth: true
                 spacing: 8
 
-                // Format Selector (supports extensive formats + ANIMATE)
+                // Format Selector
                 StyledComboBox {
+                    id: formatCombo
                     Layout.fillWidth: true
                     implicitHeight: 36
                     buttonIcon: "photo"
@@ -441,6 +465,7 @@ AbstractBackgroundWidget {
 
                 // FPS Selector (shown when animation format is selected)
                 StyledComboBox {
+                    id: fpsCombo
                     visible: root.isAnimationFormat
                     Layout.fillWidth: true
                     implicitHeight: 36
@@ -465,6 +490,7 @@ AbstractBackgroundWidget {
 
                 // Standard Presets Dropdown (shown when custom mode is inactive and not animation)
                 StyledComboBox {
+                    id: sizeCombo
                     visible: !root.customLimitActive && !root.isAnimationFormat
                     Layout.fillWidth: true
                     implicitHeight: 36
