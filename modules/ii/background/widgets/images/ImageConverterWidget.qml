@@ -16,6 +16,10 @@ AbstractBackgroundWidget {
 
     configEntryName: "images"
 
+    // Fixed constant dimensions — zero jiggle or size shifting
+    implicitWidth: 364
+    implicitHeight: 326
+
     property list<var> formatOptions: [
         // Animation & Video
         { displayName: "ANIMATE (Frames → Video)", value: "animate", icon: "movie", shortName: "ANIMATE" },
@@ -70,15 +74,15 @@ AbstractBackgroundWidget {
     readonly property string modeDescription: {
         switch (selectedFormat) {
             case "gif":     return "Convert video clips or photos into an animated GIF"
-            case "animate": return "Assemble multiple frame images into a smooth MP4 video"
-            case "mp4":     return "Convert videos or frame sequences into MP4 video"
+            case "animate": return "Assemble image frames into an MP4 video sequence"
+            case "mp4":     return "Convert videos or compile frames into MP4 video"
             case "pdf":     return "Merge multiple images or documents into a single PDF"
-            case "webp":    return "Convert images or video frames to compact WebP"
-            case "png":     return "Convert to lossless transparent PNG"
+            case "webp":    return "Convert images or video frames to modern WebP"
+            case "png":     return "Convert to lossless transparent PNG image"
             case "jpg":     return "Convert to standard compressed JPG photo"
             case "avif":    return "Convert to ultra-compact modern AVIF format"
             case "ico":     return "Convert image into 256x256 desktop App Icon"
-            default:        return "Convert dropped media to " + selectedFormat.toUpperCase()
+            default:        return "Convert media to " + selectedFormat.toUpperCase()
         }
     }
 
@@ -86,7 +90,13 @@ AbstractBackgroundWidget {
     property string customNum: "500"
     property string customUnit: "KB" // "KB" or "MB"
 
-    property string dropStatus: "idle"   // idle | hover | converting | done | error
+    // Staging and execution states
+    property var stagedFiles: []
+    property string detectedFormat: ""
+    property string detectedFileName: ""
+    property real stagedFileSize: 0
+
+    property string dropStatus: "idle"   // idle | staged | hover | converting | done | error
     property string statusMessage: ""
 
     readonly property var acceptedExtensions: [
@@ -99,25 +109,103 @@ AbstractBackgroundWidget {
     property int queueDone: 0
     property var batchPaths: []
 
-    // Dynamic Auto-Resizing width calculation based on text content
-    readonly property real headerRequiredWidth: (titleIcon?.implicitWidth ?? 18) + (titleText?.implicitWidth ?? 120) + (badgeRect?.implicitWidth ?? 80) + 48
-    readonly property real statusRequiredWidth: (dropText?.implicitWidth ?? 140) + 64
-    readonly property real descRequiredWidth: (descText?.implicitWidth ?? 160) + 64
-    readonly property real bottomRequiredWidth: isAnimationFormat
-        ? ((formatCombo?.implicitWidth ?? 130) + (fpsCombo?.implicitWidth ?? 85) + (customLimitActive ? 140 : (sizeCombo?.implicitWidth ?? 95)) + 48)
-        : ((formatCombo?.implicitWidth ?? 130) + (customLimitActive ? 140 : (sizeCombo?.implicitWidth ?? 95)) + 40)
-
-    property real targetWidgetWidth: Math.max(340, headerRequiredWidth, statusRequiredWidth, descRequiredWidth, bottomRequiredWidth)
-
-    implicitWidth: targetWidgetWidth
-    implicitHeight: 252
-
-    Behavior on implicitWidth {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    function formatBytes(bytes) {
+        if (!bytes || bytes <= 0) return ""
+        if (bytes < 1024) return bytes + " B"
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB"
     }
 
-    Behavior on implicitHeight {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    function applyCustomLimit() {
+        var raw = parseFloat(root.customNum)
+        if (isNaN(raw) || raw <= 0) {
+            root.selectedSizeLimit = 0
+            root.selectedSizeLabel = "No Limit"
+            return
+        }
+        if (root.customUnit === "MB") {
+            root.selectedSizeLimit = Math.round(raw * 1024 * 1024)
+            root.selectedSizeLabel = raw + " MB"
+        } else {
+            root.selectedSizeLimit = Math.round(raw * 1024)
+            root.selectedSizeLabel = raw + " KB"
+        }
+    }
+
+    function clearStaged() {
+        root.stagedFiles = []
+        root.detectedFormat = ""
+        root.detectedFileName = ""
+        root.stagedFileSize = 0
+        root.dropStatus = "idle"
+        root.statusMessage = ""
+    }
+
+    function stageFiles(urls) {
+        var valid = []
+        for (var i = 0; i < urls.length; i++) {
+            var cleanPath = urls[i].toString().replace(/^file:\/\//, "").trim()
+            var ext = cleanPath.split(".").pop().toLowerCase()
+            if (root.acceptedExtensions.indexOf(ext) !== -1)
+                valid.push(cleanPath)
+        }
+        if (valid.length === 0) {
+            root.dropStatus = "error"
+            root.statusMessage = "Unsupported format"
+            resetTimer.start()
+            return
+        }
+
+        root.stagedFiles = valid
+        root.detectedFormat = valid[0].split(".").pop().toUpperCase()
+        root.detectedFileName = valid[0].replace(/.*\//, "")
+        root.dropStatus = "staged"
+        root.statusMessage = valid.length === 1 ? "Ready to bake" : (valid.length + " files ready to bake")
+
+        // Read input file size
+        statProc.targetPath = valid[0]
+        statProc.running = true
+    }
+
+    function pasteFromClipboard() {
+        pasteProc.running = false
+        pasteProc.running = true
+    }
+
+    function startBake() {
+        if (root.stagedFiles.length === 0) return
+        root.dropStatus = "converting"
+        const tag = root.selectedSizeLimit > 0 ? ("_" + root.selectedSizeLabel.replace(/\s+/g, "").toLowerCase()) : ""
+        const valid = root.stagedFiles
+
+        if (root.selectedFormat === "pdf") {
+            root.batchPaths = valid
+            root.statusMessage = valid.length === 1 ? "Creating PDF..." : "Merging " + valid.length + " pages..."
+            var outPdf = valid[0].replace(/\.[^/.]+$/, "") + (valid.length > 1 ? "_merged" : "_converted") + tag + ".pdf"
+            batchMaker.outputPath = outPdf
+            batchMaker.command = ["python3", root.scriptPath, "--pdf", outPdf, "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = true
+            return
+        }
+
+        if (root.selectedFormat === "animate" || (root.selectedFormat === "mp4" && valid.length > 1)) {
+            root.batchPaths = valid
+            root.statusMessage = "Compiling " + valid.length + " frames (" + root.selectedFps + " FPS)..."
+            var outAnim = valid[0].replace(/\.[^/.]+$/, "") + "_animated" + tag + ".mp4"
+            batchMaker.outputPath = outAnim
+            batchMaker.command = ["python3", root.scriptPath, "--animate", outAnim, "--fps", root.selectedFps.toString(), "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = true
+            return
+        }
+
+        root.fileQueue = valid.slice(1)
+        root.queueTotal = valid.length
+        root.queueDone = 0
+        root.statusMessage = valid.length > 1 ? "Baking 1 / " + valid.length + "..." : "Baking conversion..."
+        converter.inputPath = valid[0]
+        const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
+        converter.outputPath = valid[0].replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
+        converter.running = true
     }
 
     FileDialog {
@@ -126,24 +214,40 @@ AbstractBackgroundWidget {
         fileMode: FileDialog.OpenFiles
         onAccepted: {
             if (selectedFiles && selectedFiles.length > 0) {
-                root.enqueueFiles(selectedFiles);
+                root.stageFiles(selectedFiles)
             }
         }
     }
 
-    function applyCustomLimit() {
-        var raw = parseFloat(root.customNum);
-        if (isNaN(raw) || raw <= 0) {
-            root.selectedSizeLimit = 0;
-            root.selectedSizeLabel = "No Limit";
-            return;
+    Process {
+        id: statProc
+        property string targetPath: ""
+        command: ["stat", "-c", "%s", targetPath]
+        stdout: StdioCollector {
+            onDataChanged: {
+                let b = parseInt(text.trim())
+                if (!isNaN(b)) root.stagedFileSize = b
+            }
         }
-        if (root.customUnit === "MB") {
-            root.selectedSizeLimit = Math.round(raw * 1024 * 1024);
-            root.selectedSizeLabel = raw + " MB";
-        } else {
-            root.selectedSizeLimit = Math.round(raw * 1024);
-            root.selectedSizeLabel = raw + " KB";
+    }
+
+    Process {
+        id: pasteProc
+        command: ["bash", "-c", "wl-paste -t text/uri-list 2>/dev/null || wl-paste 2>/dev/null"]
+        stdout: StdioCollector {
+            onDataChanged: {
+                let t = text.trim()
+                if (!t) return
+                let lines = t.split("\n")
+                let urls = []
+                for (let i = 0; i < lines.length; i++) {
+                    let l = lines[i].trim()
+                    if (l.length > 0) urls.push(l)
+                }
+                if (urls.length > 0) {
+                    root.stageFiles(urls)
+                }
+            }
         }
     }
 
@@ -172,7 +276,7 @@ AbstractBackgroundWidget {
                 return
             }
             if (root.fileQueue.length > 0) {
-                root.statusMessage = "Converting " + (root.queueDone + 1) + " / " + root.queueTotal + "..."
+                root.statusMessage = "Baking " + (root.queueDone + 1) + " / " + root.queueTotal + "..."
                 processNext()
             } else {
                 root.dropStatus = "done"
@@ -195,7 +299,7 @@ AbstractBackgroundWidget {
                 root.statusMessage = "Saved: " + outputPath.replace(/.*\//, "")
             } else {
                 root.dropStatus = "error"
-                root.statusMessage = "Batch conversion failed"
+                root.statusMessage = "Conversion failed"
             }
             root.batchPaths = []
             resetTimer.start()
@@ -204,9 +308,13 @@ AbstractBackgroundWidget {
 
     Timer {
         id: resetTimer
-        interval: 3500
+        interval: 4000
         repeat: false
-        onTriggered: root.dropStatus = "idle"
+        onTriggered: {
+            if (root.dropStatus === "done" || root.dropStatus === "error") {
+                root.clearStaged()
+            }
+        }
     }
 
     function processNext() {
@@ -219,57 +327,6 @@ AbstractBackgroundWidget {
         converter.running = true
     }
 
-    function enqueueFiles(urls) {
-        var valid = []
-        for (var i = 0; i < urls.length; i++) {
-            var cleanPath = urls[i].toString().replace(/^file:\/\//, "")
-            var ext = cleanPath.split(".").pop().toLowerCase()
-            if (root.acceptedExtensions.indexOf(ext) !== -1)
-                valid.push(cleanPath)
-        }
-        if (valid.length === 0) {
-            root.dropStatus = "error"
-            root.statusMessage = "Unsupported format"
-            resetTimer.start()
-            return
-        }
-
-        root.dropStatus = "converting"
-
-        const tag = root.selectedSizeLimit > 0 ? ("_" + root.selectedSizeLabel.replace(/\s+/g, "").toLowerCase()) : ""
-
-        if (root.selectedFormat === "pdf") {
-            root.batchPaths = valid
-            root.statusMessage = valid.length === 1
-                ? "Creating PDF..."
-                : "Merging " + valid.length + " pages..."
-            var outPdf = valid[0].replace(/\.[^/.]+$/, "") + (valid.length > 1 ? "_merged" : "_converted") + tag + ".pdf"
-            batchMaker.outputPath = outPdf
-            batchMaker.command = ["python3", root.scriptPath, "--pdf", outPdf, "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
-            batchMaker.running = true
-            return
-        }
-
-        if (root.selectedFormat === "animate" || (root.selectedFormat === "mp4" && valid.length > 1)) {
-            root.batchPaths = valid
-            root.statusMessage = "Compiling " + valid.length + " frames (" + root.selectedFps + " FPS)..."
-            var outAnim = valid[0].replace(/\.[^/.]+$/, "") + "_animated" + tag + ".mp4"
-            batchMaker.outputPath = outAnim
-            batchMaker.command = ["python3", root.scriptPath, "--animate", outAnim, "--fps", root.selectedFps.toString(), "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
-            batchMaker.running = true
-            return
-        }
-
-        root.fileQueue = valid.slice(1)
-        root.queueTotal = valid.length
-        root.queueDone = 0
-        root.statusMessage = valid.length > 1 ? "Converting 1 / " + valid.length + "..." : "Converting..."
-        converter.inputPath = valid[0]
-        const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
-        converter.outputPath = valid[0].replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
-        converter.running = true
-    }
-
     StyledRectangularShadow {
         target: contentItem
         z: -2
@@ -278,7 +335,7 @@ AbstractBackgroundWidget {
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
         radius: Appearance.rounding?.large ?? 22
@@ -289,24 +346,21 @@ AbstractBackgroundWidget {
                 fill: parent
                 margins: 14
             }
-            spacing: 10
+            spacing: 8
 
-            // Header Bar
+            // 1. Header Bar
             RowLayout {
-                id: headerRow
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 6
 
                 MaterialSymbol {
-                    id: titleIcon
-                    text: root.isAnimationFormat ? "movie" : "auto_fix_high"
+                    text: root.stagedFiles.length > 0 ? "local_fire_department" : "auto_fix_high"
                     iconSize: 18
-                    color: Appearance.colors.colPrimary
+                    color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
                 }
 
                 StyledText {
-                    id: titleText
-                    text: root.isAnimationFormat ? "Media & Animation Studio" : "Media & Format Converter"
+                    text: "Media Studio"
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colOnLayer1
@@ -314,217 +368,236 @@ AbstractBackgroundWidget {
 
                 Item { Layout.fillWidth: true }
 
-                // Live Format & Target Size Badge
+                // Quick Paste Button
                 Rectangle {
-                    id: badgeRect
-                    radius: 8
-                    color: Appearance.colors.colPrimaryContainer
+                    implicitWidth: 26
                     implicitHeight: 22
-                    implicitWidth: badgeText.implicitWidth + 12
+                    radius: 6
+                    color: pasteHover.containsMouse ? Appearance.colors.colLayer1Hover : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
 
-                    StyledText {
-                        id: badgeText
+                    MaterialSymbol {
                         anchors.centerIn: parent
-                        text: root.selectedFormat.toUpperCase() + (root.isAnimationFormat ? (" · " + root.selectedFps + "FPS") : "") + (root.selectedSizeLimit > 0 ? (" · " + root.selectedSizeLabel) : "")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.weight: Font.DemiBold
-                        color: Appearance.colors.colOnPrimaryContainer
+                        text: "content_paste"
+                        iconSize: 14
+                        color: Appearance.colors.colOnSurfaceVariant
                     }
 
                     MouseArea {
+                        id: pasteHover
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.customLimitActive = !root.customLimitActive
-                            if (root.customLimitActive) root.applyCustomLimit()
-                        }
+                        onClicked: root.pasteFromClipboard()
+                    }
+
+                    StyledToolTip {
+                        extraVisibleCondition: pasteHover.containsMouse
+                        text: "Paste file from clipboard"
                     }
                 }
-            }
 
-            // Drop Area Card (Click or Drop)
-            Rectangle {
-                id: dropZone
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: Appearance.rounding?.normal ?? 16
-                color: {
-                    switch (root.dropStatus) {
-                        case "hover":      return Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.16)
-                        case "converting": return Qt.rgba(Appearance.colors.colSecondary.r, Appearance.colors.colSecondary.g, Appearance.colors.colSecondary.b, 0.16)
-                        case "done":       return Qt.rgba(Appearance.colors.colTertiary.r, Appearance.colors.colTertiary.g, Appearance.colors.colTertiary.b, 0.20)
-                        case "error":      return Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.20)
-                        default:           return ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.45)
-                    }
-                }
-                border.color: {
-                    switch (root.dropStatus) {
-                        case "hover":      return Appearance.colors.colPrimary
-                        case "converting": return Appearance.colors.colSecondary
-                        case "done":       return Appearance.colors.colTertiary
-                        case "error":      return Appearance.colors.colError
-                        default:           return Appearance.colors.colLayer0Border
-                    }
-                }
-                border.width: root.dropStatus === "hover" ? 2 : 1
-
-                Behavior on color        { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
-                Behavior on border.color { animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this) }
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 4
-                    width: parent.width - 20
-
-                    MaterialLoadingIndicator {
-                        Layout.alignment: Qt.AlignHCenter
-                        visible: root.dropStatus === "converting"
-                        loading: root.dropStatus === "converting"
-                        colBg: Appearance.colors.colPrimary
-                        colShape: Appearance.colors.colOnPrimary
-                        implicitSize: 32
-                    }
+                // Clear / Reset Button (when files staged or converting)
+                Rectangle {
+                    visible: root.stagedFiles.length > 0
+                    implicitWidth: 26
+                    implicitHeight: 22
+                    radius: 6
+                    color: clearHover.containsMouse ? Appearance.colors.colErrorContainer : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
 
                     MaterialSymbol {
-                        Layout.alignment: Qt.AlignHCenter
-                        visible: root.dropStatus !== "converting"
-                        iconSize: 26
-                        fill: root.dropStatus === "done" ? 1 : 0
-                        color: {
-                            switch (root.dropStatus) {
-                                case "hover": return Appearance.colors.colPrimary
-                                case "done":  return Appearance.colors.colTertiary
-                                case "error": return Appearance.colors.colError
-                                default:      return Appearance.colors.colPrimary
-                            }
-                        }
-                        text: {
-                            switch (root.dropStatus) {
-                                case "hover": return "file_download"
-                                case "done":  return "check_circle"
-                                case "error": return "error"
-                                default:      return root.isAnimationFormat ? "movie_filter" : "cloud_upload"
-                            }
-                        }
+                        anchors.centerIn: parent
+                        text: "close"
+                        iconSize: 14
+                        color: clearHover.containsMouse ? Appearance.colors.colOnErrorContainer : Appearance.colors.colOnSurfaceVariant
                     }
 
-                    StyledText {
-                        id: dropText
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.fillWidth: true
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideMiddle
-                        color: {
-                            switch (root.dropStatus) {
-                                case "hover":  return Appearance.colors.colPrimary
-                                case "done":   return Appearance.colors.colTertiary
-                                case "error":  return Appearance.colors.colError
-                                default:       return Appearance.colors.colOnLayer0
-                            }
-                        }
-                        opacity: root.dropStatus === "idle" ? 0.95 : 1.0
-                        text: {
-                            switch (root.dropStatus) {
-                                case "idle":       return root.selectedFormat === "animate" ? "Click or Drop frames to compile video" : "Click or Drop files to convert to " + root.selectedFormat.toUpperCase()
-                                case "hover":      return "Release to start conversion"
-                                case "converting": return root.statusMessage
-                                case "done":       return root.statusMessage
-                                case "error":      return root.statusMessage
-                                default:           return ""
-                            }
-                        }
+                    MouseArea {
+                        id: clearHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.clearStaged()
                     }
 
-                    // Mode Intro / Description Subtitle
-                    StyledText {
-                        id: descText
-                        visible: root.dropStatus === "idle"
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.fillWidth: true
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        font.weight: Font.Normal
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideMiddle
-                        color: Appearance.colors.colOnSurfaceVariant
-                        opacity: 0.80
-                        text: root.modeDescription
+                    StyledToolTip {
+                        extraVisibleCondition: clearHover.containsMouse
+                        text: "Clear selected files"
                     }
                 }
+            }
 
-                // Click to browse files
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        fileChooserDialog.open();
-                    }
-                }
+            // 2. Conversion Flow Card: [ Real Media File -> Converting To ]
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 88
+                radius: Appearance.rounding?.normal ?? 14
+                color: root.dropStatus === "hover"
+                    ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.15)
+                    : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.45)
+                border.width: root.dropStatus === "hover" ? 2 : 1
+                border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
 
-                // Drag & Drop Area
-                DropArea {
-                    anchors.fill: parent
-                    keys: ["text/uri-list"]
-                    onEntered: (drag) => {
-                        drag.accept(Qt.CopyAction)
-                        root.dropStatus = "hover"
+                RowLayout {
+                    anchors {
+                        fill: parent
+                        margins: 10
                     }
-                    onExited: {
-                        if (root.dropStatus === "hover")
-                            root.dropStatus = "idle"
+                    spacing: 8
+
+                    // Left Side: Real Media File (Input)
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: 10
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
+                        border.width: 1
+                        border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+
+                        ColumnLayout {
+                            anchors {
+                                fill: parent
+                                margins: 6
+                            }
+                            spacing: 2
+
+                            StyledText {
+                                text: "REAL MEDIA FILE"
+                                font.pixelSize: Appearance.font.pixelSize.smallest - 1
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colPrimary
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                MaterialSymbol {
+                                    text: root.stagedFiles.length > 0
+                                        ? (/\.(mp4|webm|mkv|mov|avi)$/i.test(root.detectedFileName) ? "movie" : "image")
+                                        : "add_photo_alternate"
+                                    iconSize: 22
+                                    color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 0
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: root.stagedFiles.length > 0
+                                            ? (root.stagedFiles.length > 1 ? (root.stagedFiles.length + " frames selected") : root.detectedFileName)
+                                            : "Tap or drop file"
+                                        font.pixelSize: Appearance.font.pixelSize.smallie
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideMiddle
+                                        color: Appearance.colors.colOnLayer1
+                                    }
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: root.stagedFiles.length > 0
+                                            ? (root.detectedFormat + (root.stagedFileSize > 0 ? (" · " + root.formatBytes(root.stagedFileSize)) : ""))
+                                            : "Click to open file picker"
+                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        color: Appearance.colors.colOnSurfaceVariant
+                                    }
+                                }
+                            }
+
+                            Item { Layout.fillHeight: true }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: fileChooserDialog.open()
+                        }
                     }
-                    onDropped: (drop) => {
-                        if (drop.hasUrls && drop.urls.length > 0) {
-                            root.enqueueFiles(drop.urls)
-                        } else {
-                            root.dropStatus = "error"
-                            root.statusMessage = "Could not read dropped file"
-                            resetTimer.start()
+
+                    // Middle Connector: Arrow
+                    Rectangle {
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        radius: 13
+                        color: Appearance.colors.colPrimaryContainer
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "arrow_forward"
+                            iconSize: 14
+                            color: Appearance.colors.colOnPrimaryContainer
+                        }
+                    }
+
+                    // Right Side: Converting To (Target Format)
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: 10
+                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
+                        border.width: 1
+                        border.color: Appearance.colors.colLayer0Border
+
+                        ColumnLayout {
+                            anchors {
+                                fill: parent
+                                margins: 6
+                            }
+                            spacing: 4
+
+                            StyledText {
+                                text: "CONVERTING TO"
+                                font.pixelSize: Appearance.font.pixelSize.smallest - 1
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colSecondary
+                            }
+
+                            StyledComboBox {
+                                Layout.fillWidth: true
+                                implicitHeight: 34
+                                buttonIcon: "swap_horiz"
+                                buttonRadius: 8
+                                colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.60)
+                                colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.80)
+                                colBackgroundActive: Appearance.colors.colPrimaryContainer
+                                model: root.formatOptions
+                                textRole: "shortName"
+                                valueRole: "value"
+                                currentIndex: {
+                                    for (var i = 0; i < model.length; i++) {
+                                        if (model[i].value === root.selectedFormat) return i
+                                    }
+                                    return 0
+                                }
+                                onActivated: (index) => {
+                                    root.selectedFormat = model[index].value
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Bottom Controls Row
+            // 3. Fine-tuning Options Row (FPS + Size Limits)
             RowLayout {
-                id: bottomControlsRow
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 6
 
-                // Target Format Selector
+                // FPS Selector (visible when animated output)
                 StyledComboBox {
-                    id: formatCombo
-                    Layout.fillWidth: true
-                    implicitHeight: 36
-                    buttonIcon: "swap_horiz"
-                    buttonRadius: 10
-                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
-                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
-                    colBackgroundActive: Appearance.colors.colPrimaryContainer
-                    model: root.formatOptions
-                    textRole: "displayName"
-                    valueRole: "value"
-                    currentIndex: {
-                        for (var i = 0; i < model.length; i++) {
-                            if (model[i].value === root.selectedFormat) return i;
-                        }
-                        return 0;
-                    }
-                    onActivated: (index) => {
-                        root.selectedFormat = model[index].value
-                    }
-                }
-
-                // FPS Selector (shown when animation/video/gif format is selected)
-                StyledComboBox {
-                    id: fpsCombo
                     visible: root.isAnimationFormat
                     Layout.fillWidth: false
-                    implicitWidth: 95
-                    implicitHeight: 36
+                    implicitWidth: 100
+                    implicitHeight: 34
                     buttonIcon: "speed"
-                    buttonRadius: 10
+                    buttonRadius: 8
                     colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                     colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
@@ -533,24 +606,22 @@ AbstractBackgroundWidget {
                     valueRole: "value"
                     currentIndex: {
                         for (var i = 0; i < model.length; i++) {
-                            if (model[i].value === root.selectedFps) return i;
+                            if (model[i].value === root.selectedFps) return i
                         }
-                        return 0;
+                        return 0
                     }
                     onActivated: (index) => {
                         root.selectedFps = model[index].value
                     }
                 }
 
-                // Standard Presets Dropdown (always available for ALL formats)
+                // Size Limit Dropdown
                 StyledComboBox {
-                    id: sizeCombo
                     visible: !root.customLimitActive
-                    Layout.fillWidth: false
-                    implicitWidth: 105
-                    implicitHeight: 36
+                    Layout.fillWidth: true
+                    implicitHeight: 34
                     buttonIcon: "compress"
-                    buttonRadius: 10
+                    buttonRadius: 8
                     colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                     colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
@@ -558,11 +629,11 @@ AbstractBackgroundWidget {
                     textRole: "displayName"
                     valueRole: "value"
                     currentIndex: {
-                        if (root.customLimitActive) return model.length - 1;
+                        if (root.customLimitActive) return model.length - 1
                         for (var i = 0; i < model.length; i++) {
-                            if (model[i].value === root.selectedSizeLimit) return i;
+                            if (model[i].value === root.selectedSizeLimit) return i
                         }
-                        return 0;
+                        return 0
                     }
                     onActivated: (index) => {
                         if (model[index].value === -1) {
@@ -576,18 +647,16 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Custom Limit Inline Bar (shown when custom mode is active)
+                // Custom Limit Input
                 RowLayout {
                     visible: root.customLimitActive
-                    Layout.fillWidth: false
-                    implicitWidth: 140
+                    Layout.fillWidth: true
                     spacing: 4
 
-                    // Number Input
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 36
-                        radius: 10
+                        implicitHeight: 34
+                        radius: 8
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                         border.width: 1
                         border.color: numInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
@@ -595,7 +664,7 @@ AbstractBackgroundWidget {
                         TextInput {
                             id: numInput
                             anchors.fill: parent
-                            anchors.leftMargin: 8
+                            anchors.leftMargin: 6
                             anchors.rightMargin: 6
                             verticalAlignment: TextInput.AlignVCenter
                             color: Appearance.colors.colOnSurface
@@ -611,14 +680,11 @@ AbstractBackgroundWidget {
                         }
                     }
 
-                    // Unit Toggle Pill (KB / MB)
                     Rectangle {
-                        implicitHeight: 36
-                        implicitWidth: 46
-                        radius: 10
+                        implicitHeight: 34
+                        implicitWidth: 42
+                        radius: 8
                         color: Appearance.colors.colPrimaryContainer
-                        border.width: 1
-                        border.color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.3)
 
                         StyledText {
                             anchors.centerIn: parent
@@ -638,17 +704,16 @@ AbstractBackgroundWidget {
                         }
                     }
 
-                    // Revert / Close Button
                     Rectangle {
-                        implicitHeight: 36
-                        implicitWidth: 32
-                        radius: 10
+                        implicitHeight: 34
+                        implicitWidth: 30
+                        radius: 8
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "close"
-                            iconSize: 18
+                            iconSize: 16
                             color: Appearance.colors.colOnSurfaceVariant
                         }
 
@@ -662,6 +727,126 @@ AbstractBackgroundWidget {
                             }
                         }
                     }
+                }
+            }
+
+            // 4. Short Intro / Status Caption
+            StyledText {
+                Layout.fillWidth: true
+                font.pixelSize: Appearance.font.pixelSize.smallest
+                color: root.dropStatus === "error"
+                    ? Appearance.colors.colError
+                    : (root.dropStatus === "done" ? Appearance.colors.colTertiary : Appearance.colors.colOnSurfaceVariant)
+                elide: Text.ElideMiddle
+                horizontalAlignment: Text.AlignHCenter
+                text: {
+                    switch (root.dropStatus) {
+                        case "converting": return root.statusMessage
+                        case "done":       return root.statusMessage
+                        case "error":      return root.statusMessage
+                        case "staged":     return root.statusMessage + " · Click Bake to start"
+                        default:           return root.modeDescription
+                    }
+                }
+            }
+
+            // 5. The Prominent "Bake" Button (Starts the conversion on demand)
+            Rectangle {
+                id: bakeButton
+                Layout.fillWidth: true
+                implicitHeight: 42
+                radius: Appearance.rounding?.normal ?? 12
+                color: {
+                    if (root.dropStatus === "converting") return Appearance.colors.colSecondary
+                    if (root.dropStatus === "done")       return Appearance.colors.colTertiary
+                    if (root.stagedFiles.length > 0)     return bakeHover.containsMouse ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimary
+                    return ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
+                }
+                border.width: 1
+                border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+
+                Behavior on color {
+                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                }
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    MaterialLoadingIndicator {
+                        visible: root.dropStatus === "converting"
+                        loading: root.dropStatus === "converting"
+                        colBg: Appearance.colors.colPrimary
+                        colShape: Appearance.colors.colOnPrimary
+                        implicitSize: 22
+                    }
+
+                    MaterialSymbol {
+                        visible: root.dropStatus !== "converting"
+                        text: {
+                            if (root.dropStatus === "done") return "check_circle"
+                            if (root.stagedFiles.length > 0) return "local_fire_department"
+                            return "touch_app"
+                        }
+                        iconSize: 20
+                        color: {
+                            if (root.stagedFiles.length > 0 || root.dropStatus === "done") return Appearance.colors.colOnPrimary
+                            return Appearance.colors.colOnSurfaceVariant
+                        }
+                    }
+
+                    StyledText {
+                        text: {
+                            if (root.dropStatus === "converting") return "Baking in progress..."
+                            if (root.dropStatus === "done")       return "Baking Complete!"
+                            if (root.stagedFiles.length > 0)     return "Bake (" + root.selectedFormat.toUpperCase() + ")"
+                            return "Select or Drop a Media File First"
+                        }
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.weight: Font.DemiBold
+                        color: {
+                            if (root.stagedFiles.length > 0 || root.dropStatus === "done") return Appearance.colors.colOnPrimary
+                            return Appearance.colors.colOnSurfaceVariant
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: bakeHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: root.stagedFiles.length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: {
+                        if (root.dropStatus === "converting") return
+                        if (root.stagedFiles.length > 0) {
+                            root.startBake()
+                        } else {
+                            fileChooserDialog.open()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Full-Card Drag & Drop Area
+        DropArea {
+            anchors.fill: parent
+            keys: ["text/uri-list"]
+            onEntered: (drag) => {
+                drag.accept(Qt.CopyAction)
+                root.dropStatus = "hover"
+            }
+            onExited: {
+                if (root.dropStatus === "hover")
+                    root.dropStatus = root.stagedFiles.length > 0 ? "staged" : "idle"
+            }
+            onDropped: (drop) => {
+                if (drop.hasUrls && drop.urls.length > 0) {
+                    root.stageFiles(drop.urls)
+                } else {
+                    root.dropStatus = "error"
+                    root.statusMessage = "Could not read dropped file"
+                    resetTimer.start()
                 }
             }
         }
