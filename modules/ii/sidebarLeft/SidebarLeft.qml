@@ -165,9 +165,16 @@ Scope { // Scope
             }
 
             margins {
-                top: (!Config.options.bar.vertical && !Config.options.bar.bottom) ? Appearance.sizes.barHeight : 0
-                bottom: (!Config.options.bar.vertical && Config.options.bar.bottom) ? Appearance.sizes.barHeight : 0
-                left: Config.options.bar.vertical ? Appearance.sizes.verticalBarWidth : 0
+                top: {
+                    if (!centerOnly) return 0;
+                    switch (Config.options.bar.cornerStyle) {
+                        case 0: return -Appearance.sizes.barHeight;
+                        case 1: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+                        case 2: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+                        case 3: return -Appearance.sizes.barHeight - Appearance.sizes.hyprlandGapsOut;
+                        default: return 0;
+                    }
+                }
             }
 
             mask: Region {
