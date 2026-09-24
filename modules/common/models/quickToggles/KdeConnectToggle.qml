@@ -7,13 +7,17 @@ import qs.modules.common.widgets
 QuickToggleModel {
     name: Translation.tr("KDE Connect")
     statusText: KdeConnect.connected ? (KdeConnect.deviceName || Translation.tr("Connected")) : Translation.tr("Disconnected")
-    tooltipText: Translation.tr("KDE Connect: %1 | Right-click to restart daemon").arg(statusText)
+    tooltipText: Translation.tr("KDE Connect: %1 | Alt-click to restart daemon").arg(statusText)
     icon: KdeConnect.connected ? "phonelink_ring" : "phonelink_off"
 
     available: true
     toggled: KdeConnect.connected
     mainAction: () => {
+        KdeConnect.refresh()
         KdeConnect.openSettings()
     }
-    hasMenu: true
+    hasMenu: false
+    altAction: () => {
+        KdeConnect.restartDaemon()
+    }
 }

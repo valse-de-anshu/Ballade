@@ -10,13 +10,4 @@ AndroidQuickToggleButton {
     id: root
     
     toggleModel: KdeConnectToggle {}
-
-    onClicked: {
-        KdeConnect.refresh()
-        KdeConnect.openSettings()
-    }
-
-    onSecondaryClicked: {
-        KdeConnect.restartDaemon()
-    }
 }
