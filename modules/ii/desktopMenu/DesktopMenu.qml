@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Qt.labs.folderlistmodel
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
@@ -29,44 +29,43 @@ Scope {
         GlobalStates.desktopMenuOpen = true
     }
 
-    function displayPathFor(path) {
-        if (!path) return path
-        return /\.(mp4|webm|mkv|avi|mov)$/i.test(path)
-            ? (Config.options.background.thumbnailPath || path)
-            : path
-    }
-
-    // Wallpaper folder images and videos
-    FolderListModel {
-        id: wallpaperFolder
-        folder: Wallpapers.directory
-        showDirs: false
-        nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.avif", "*.mp4", "*.webm", "*.mkv", "*.mov"]
-    }
-
-    property int carouselExtraCount: 5
-    property bool useDarkMode: Appearance.m3colors.darkmode
-    property var randomWallpapers: {
-        const current = FileUtils.trimFileProtocol(Config.options.background.wallpaperPath)
-        let all = []
-        for (let i = 0; i < wallpaperFolder.count; i++) {
-            const fp = FileUtils.trimFileProtocol(wallpaperFolder.get(i, "filePath").toString())
-            if (fp !== current) all.push(fp)
+    IpcHandler {
+        target: "desktopMenu"
+        function toggle(): void {
+            root.openCentered(!GlobalStates.desktopMenuOpen)
         }
-        for (let i = all.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [all[i], all[j]] = [all[j], all[i]]
+        function open(): void {
+            root.openCentered(true)
         }
-        return all.slice(0, carouselExtraCount)
+        function close(): void {
+            GlobalStates.desktopMenuOpen = false
+        }
     }
 
-    property var carouselModel: {
-        const current = FileUtils.trimFileProtocol(Config.options.background.wallpaperPath)
-        if (!current || current.length === 0) return randomWallpapers
-        return [current, ...randomWallpapers]
+    // Auto dismiss immediately when moving to a window or switching monitor/workspace
+    Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            if (GlobalStates.desktopMenuOpen) {
+                GlobalStates.desktopMenuOpen = false
+            }
+        }
     }
 
-    // Menu window
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() {
+            if (GlobalStates.desktopMenuOpen) {
+                GlobalStates.desktopMenuOpen = false
+            }
+        }
+        function onFocusedMonitorChanged() {
+            if (GlobalStates.desktopMenuOpen) {
+                GlobalStates.desktopMenuOpen = false
+            }
+        }
+    }
+
     Loader {
         active: GlobalStates.desktopMenuOpen
         sourceComponent: PanelWindow {
@@ -79,6 +78,7 @@ Scope {
             exclusiveZone: 0
             WlrLayershell.namespace: "quickshell:desktopMenu"
             WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: GlobalStates.desktopMenuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             anchors {
                 top: true
@@ -89,33 +89,50 @@ Scope {
 
             property Component openSubmenuComponent: null
             property real submenuAnchorY: 0
-            property real submenuWidth: 284
+            property real submenuWidth: 260
 
             Timer {
                 id: submenuCloseTimer
-                interval: 250
+                interval: 220
                 onTriggered: menuWindow.openSubmenuComponent = null
             }
 
+            // Click outside to dismiss immediately
             MouseArea {
                 anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                acceptedButtons: Qt.AllButtons
+                hoverEnabled: true
                 onClicked: GlobalStates.desktopMenuOpen = false
+                onWheel: GlobalStates.desktopMenuOpen = false
             }
 
-            // Menu card 
+            readonly property color colLayer0Base: Appearance.colors.colLayer0Base ?? Appearance.colors.colLayer0
+
+            // Context Menu card
             Rectangle {
                 id: menuCard
-                width: 348
+                width: 230
                 implicitHeight: menuCol.implicitHeight + 16
-                x: Math.min(Math.max(GlobalStates.desktopMenuX - width / 2, 8), menuWindow.width - width - 8)
-                y: Math.min(Math.max(GlobalStates.desktopMenuY - implicitHeight / 2, 8), menuWindow.height - implicitHeight - 8)
-                radius: Appearance.rounding.verylarge
-                color: "transparent"
+                x: Math.min(Math.max(GlobalStates.desktopMenuX, 12), menuWindow.width - width - 12)
+                y: Math.min(Math.max(GlobalStates.desktopMenuY, 12), menuWindow.height - implicitHeight - 12)
+                radius: 20
+                color: Qt.rgba(menuWindow.colLayer0Base.r, menuWindow.colLayer0Base.g, menuWindow.colLayer0Base.b, 0.22)
+                border.width: 0
+                border.color: "transparent"
+                focus: true
+                Keys.onEscapePressed: GlobalStates.desktopMenuOpen = false
 
-                scale: 0.85
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowBlur: 0.6
+                    shadowVerticalOffset: 4
+                }
+
+                scale: 0.92
                 opacity: 0
-                transformOrigin: Item.Center
+                transformOrigin: Item.TopLeft
 
                 Component.onCompleted: {
                     scale = 1.0
@@ -123,12 +140,13 @@ Scope {
                 }
 
                 Behavior on scale {
-                    animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
                 }
                 Behavior on opacity {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
                 }
 
+                // Prevent click inside menu card from closing the menu
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.AllButtons
@@ -137,199 +155,187 @@ Scope {
                 ColumnLayout {
                     id: menuCol
                     anchors { fill: parent; margins: 8 }
-                    spacing: 4
+                    spacing: 3
 
+                    // Open Terminal
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "terminal"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Terminal"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
+                        }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            Quickshell.execDetached(["bash", "-c", Config.options.apps.terminal || "kitty"])
+                        }
+                    }
+
+                    // Open File Manager
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "folder"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("File Manager"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
+                        }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            Quickshell.execDetached(["bash", "-c", "dolphin ~ || xdg-open ~"])
+                        }
+                    }
+
+                    // Divider
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 160
-                        radius: Appearance.rounding.verylarge
-                        color: Appearance.colors.colLayer0
-                        clip: true
+                        Layout.topMargin: 3
+                        Layout.bottomMargin: 3
+                        implicitHeight: 1
+                        color: Qt.rgba(1, 1, 1, 0.08)
+                    }
 
-                        Carousel {
-                            anchors.fill: parent
-                            anchors.margins: 10
-                            model: root.carouselModel
-                            onWallpaperSelected: (path) => {
-                                Wallpapers.select(path, Appearance.m3colors.darkmode)
-                                GlobalStates.desktopMenuOpen = false
+                    // Next Wallpaper
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "shuffle"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Next Wallpaper"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
+                        }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            Wallpapers.randomFromCurrentFolder(Appearance.m3colors.darkmode)
+                        }
+                    }
+
+                    // Wallpaper Gallery
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "wallpaper"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Wallpaper Gallery"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
+                        }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            GlobalStates.wallpaperSelectorTarget = "wallpaper"
+                            GlobalStates.wallpaperSelectorOpen = true
+                        }
+                    }
+
+                    // Desktop Widgets Submenu
+                    RippleButton {
+                        id: widgetsBtn
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "widgets"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Desktop Widgets"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
+                            MaterialSymbol { text: "chevron_right"; iconSize: 18; color: Appearance.colors.colOnLayer0; opacity: 0.5 }
+                        }
+
+                        Component {
+                            id: widgetsSubmenuComp
+                            WidgetsSubmenu {}
+                        }
+
+                        HoverHandler {
+                            onHoveredChanged: {
+                                if (hovered) {
+                                    submenuCloseTimer.stop()
+                                    menuWindow.submenuAnchorY = menuCard.y + widgetsBtn.y
+                                    menuWindow.openSubmenuComponent = widgetsSubmenuComp
+                                } else {
+                                    submenuCloseTimer.restart()
+                                }
+                            }
+                        }
+                        onClicked: {
+                            if (menuWindow.openSubmenuComponent === widgetsSubmenuComp) {
+                                menuWindow.openSubmenuComponent = null
+                            } else {
+                                submenuCloseTimer.stop()
+                                menuWindow.submenuAnchorY = menuCard.y + widgetsBtn.y
+                                menuWindow.openSubmenuComponent = widgetsSubmenuComp
                             }
                         }
                     }
 
-                    GroupedList {
+                    // Divider
+                    Rectangle {
                         Layout.fillWidth: true
-                        itemVerticalPadding: 16
-                        bgcolor: Appearance.colors.colLayer0
+                        Layout.topMargin: 3
+                        Layout.bottomMargin: 3
+                        implicitHeight: 1
+                        color: Qt.rgba(1, 1, 1, 0.08)
+                    }
 
-                        // Wallpapers
-                        RippleButton {
-                            id: wallpaperRow
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "format_paint"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("Wallpaper & style"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
-                            }
-                            Component {
-                                id: wallpaperSubmenu
-                                WallpaperSubmenu {}
-                            }
-                            HoverHandler {
-                                onHoveredChanged: {
-                                    if (hovered) {
-                                        submenuCloseTimer.stop()
-                                        menuWindow.submenuAnchorY = menuCard.y + wallpaperRow.mapToItem(menuCard, 0, 0).y
-                                        menuWindow.openSubmenuComponent = wallpaperSubmenu
-                                    } else {
-                                        submenuCloseTimer.restart()
-                                    }
-                                }
-                            }
-                            onClicked: GlobalStates.desktopMenuOpen = false
+                    // Ballade Settings
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "settings"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Settings"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
                         }
-
-                        // Widgets
-                        RippleButton {
-                            id: widgetsRow
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "widgets"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("Widgets"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
-                            }
-
-                            Component {
-                                id: widgetsSubmenu
-                                WidgetsSubmenu {}
-                            }
-
-                            HoverHandler {
-                                onHoveredChanged: {
-                                    if (hovered) {
-                                        submenuCloseTimer.stop()
-                                        menuWindow.submenuAnchorY = menuCard.y + widgetsRow.mapToItem(menuCard, 0, 0).y
-                                        menuWindow.openSubmenuComponent = widgetsSubmenu
-                                    } else {
-                                        submenuCloseTimer.restart()
-                                    }
-                                }
-                            }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            GlobalStates.settingsOpen = true
                         }
+                    }
 
-                        // Wallpaper Selector
-                        RippleButton {
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "view_carousel"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("Wallpaper Selector"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol {
-                                    text: "chevron_right"
-                                    iconSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.4
-                                }
-                            }
-                            onClicked: {
-                                GlobalStates.desktopMenuOpen = false
-                                GlobalStates.wallpaperSelectorTarget = "wallpaper"
-                                GlobalStates.wallpaperSelectorOpen = true
-                            }
+                    // Restart Shell
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "refresh"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText { Layout.fillWidth: true; text: Translation.tr("Restart Shell"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
                         }
-
-                        // DropShelf
-                        RippleButton {
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "stacks"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("DropShelf"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                StyledText {
-                                    visible: DropShelf.items.length > 0
-                                    text: DropShelf.items.length
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.6
-                                }
-                                MaterialSymbol {
-                                    visible: DropShelf.items.length === 0
-                                    text: "chevron_right"
-                                    iconSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.4
-                                }
-                            }
-                            onClicked: {
-                                GlobalStates.desktopMenuOpen = false
-                                GlobalStates.dropShelfX = GlobalStates.desktopMenuX
-                                GlobalStates.dropShelfY = GlobalStates.desktopMenuY
-                                GlobalStates.dropShelfOpen = true
-                            }
-                        }
-
-                        // Live Wallpaper
-                        RippleButton {
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "movie"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("Live Wallpaper"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol {
-                                    text: "chevron_right"
-                                    iconSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.4
-                                }
-                            }
-                            onClicked: {
-                                GlobalStates.desktopMenuOpen = false
-                                Wallpapers.openFallbackPicker(
-                                    Appearance.m3colors.darkmode,
-                                    Config.options.wallpaperSelector.liveWallpapersPath ?? ""
-                                )
-                            }
-                        }
-
-                        // Settings
-                        RippleButton {
-                            implicitHeight: 40
-                            colBackground: "transparent"
-                            colBackgroundHover: Appearance.colors.colLayer2
-                            contentItem: RowLayout {
-                                anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                                spacing: 12
-                                MaterialSymbol { text: "settings"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: Translation.tr("Settings"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
-                            }
-                            onClicked: {
-                                GlobalStates.desktopMenuOpen = false
-                                GlobalStates.settingsOpen = true
-                            }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            Quickshell.reload(true)
                         }
                     }
                 }
             }
 
-            // SubMenu
+            // SubMenu (Widgets toggle)
             Loader {
                 id: submenuLoader
                 active: menuWindow.openSubmenuComponent !== null
@@ -341,19 +347,19 @@ Scope {
                     : menuCard.x + menuCard.width + 8
 
                 y: Math.min(
-                    Math.max(menuWindow.submenuAnchorY, 8),
-                    menuWindow.height - (item?.implicitHeight ?? 0) - 8
+                    Math.max(menuWindow.submenuAnchorY, 12),
+                    menuWindow.height - (item?.implicitHeight ?? 0) - 12
                 )
 
-                scale: active ? 1.0 : 0.9
+                scale: active ? 1.0 : 0.92
                 opacity: active ? 1.0 : 0.0
                 transformOrigin: Item.Center
 
                 Behavior on scale {
-                    animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+                    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                 }
                 Behavior on opacity {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
                 }
 
                 HoverHandler {

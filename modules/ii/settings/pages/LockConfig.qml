@@ -10,7 +10,33 @@ ContentPage {
     id: page
     forceWidth: true
 
+    function goTo(term) {
+        const t = term.toLowerCase().trim()
+
+        function findTarget(rootItem) {
+            for (let i = 0; i < rootItem.children.length; i++) {
+                let child = rootItem.children[i]
+                if (child.title && child.title.toLowerCase().includes(t)) {
+                    return child
+                }
+            }
+
+            for (let i = 0; i < rootItem.children.length; i++) {
+                let found = findTarget(rootItem.children[i])
+                if (found) return found
+            }
+            return null
+        }
+
+        let target = findTarget(mainLayout)
+        if (target) {
+            let pos = target.mapToItem(mainLayout, 0, 0)
+            page.contentY = Math.max(0, pos.y - 0)
+        }
+    }
+
     ColumnLayout {
+        id: mainLayout
         Layout.fillWidth: true
         spacing: 20
 
@@ -160,6 +186,168 @@ ContentPage {
                         value: Config.options.lock.blur.extraZoom * 100
                         from: 1; to: 150; stepSize: 2
                         onValueChanged: { Config.options.lock.blur.extraZoom = value / 100 }
+                    }
+                }
+            }
+        }
+
+        // ── 2. Lock Screen Widgets ──────────────────────────────────────────
+        ContentSection {
+            icon: "widgets"
+            shape: MaterialShape.Shape.Pill
+            title: Translation.tr("Lock Screen Widgets")
+            visible: Config.options.lock.showWidgets
+
+            StyledText {
+                Layout.fillWidth: true
+                text: Translation.tr("Configure which widgets appear when your screen is locked, choose their layout positions, and decide whether you can interact with them (e.g. media player controls, calendar) or have clicks pass through to focus password input.")
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.colors.colSubtext
+                wrapMode: Text.Wrap
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "clock"
+                widgetTitle: Translation.tr("Clock")
+                widgetIcon: "schedule"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "media"
+                widgetTitle: Translation.tr("Media Player")
+                widgetIcon: "music_note"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "calendar"
+                widgetTitle: Translation.tr("Calendar")
+                widgetIcon: "calendar_month"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "weather"
+                widgetTitle: Translation.tr("Weather")
+                widgetIcon: "cloud"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "visualizer"
+                widgetTitle: Translation.tr("GPU / Audio Visualizer")
+                widgetIcon: "equalizer"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "userCard"
+                widgetTitle: Translation.tr("User Profile Card")
+                widgetIcon: "person"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "goals"
+                widgetTitle: Translation.tr("Goals & Tasks")
+                widgetIcon: "checklist"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "resources"
+                widgetTitle: Translation.tr("System Resources")
+                widgetIcon: "memory"
+            }
+
+            LockWidgetConfigBlock {
+                widgetKey: "worldClock"
+                widgetTitle: Translation.tr("World Clock")
+                widgetIcon: "public"
+            }
+        }
+    }
+
+    component LockWidgetConfigBlock: ContentSubsection {
+        id: block
+        required property string widgetKey
+        required property string widgetTitle
+        required property string widgetIcon
+
+        readonly property var cfg: (Config.options.lock && Config.options.lock.widgets) ? Config.options.lock.widgets[widgetKey] : null
+
+        title: widgetTitle
+
+        GroupedList {
+            ConfigSwitch {
+                buttonIcon: block.widgetIcon
+                text: Translation.tr("Show on lock screen")
+                checked: Boolean(block.cfg && block.cfg.enable)
+                onCheckedChanged: {
+                    if (block.cfg && block.cfg.enable !== checked) {
+                        block.cfg.enable = checked;
+                        Config.save();
+                    }
+                }
+            }
+
+            ConfigSwitch {
+                visible: Boolean(block.cfg && block.cfg.enable)
+                buttonIcon: "touch_app"
+                text: Translation.tr("Allow interaction on lock screen")
+                checked: Boolean(block.cfg && block.cfg.interactive)
+                onCheckedChanged: {
+                    if (block.cfg && block.cfg.interactive !== checked) {
+                        block.cfg.interactive = checked;
+                        Config.save();
+                    }
+                }
+            }
+
+            ConfigComboBox {
+                visible: Boolean(block.cfg && block.cfg.enable)
+                Layout.fillWidth: true
+                buttonIcon: "place"
+                text: Translation.tr("Position")
+                fieldWidth: 160
+                model: [
+                    { displayName: Translation.tr("Desktop Position"), icon: "desktop_windows", value: "default" },
+                    { displayName: Translation.tr("Center"), icon: "filter_center_focus", value: "center" },
+                    { displayName: Translation.tr("Top"), icon: "vertical_align_top", value: "top" },
+                    { displayName: Translation.tr("Top Left"), icon: "north_west", value: "topLeft" },
+                    { displayName: Translation.tr("Top Right"), icon: "north_east", value: "topRight" },
+                    { displayName: Translation.tr("Bottom"), icon: "vertical_align_bottom", value: "bottom" },
+                    { displayName: Translation.tr("Bottom Left"), icon: "south_west", value: "bottomLeft" },
+                    { displayName: Translation.tr("Bottom Right"), icon: "south_east", value: "bottomRight" },
+                    { displayName: Translation.tr("Custom (X / Y)"), icon: "tune", value: "custom" },
+                ]
+                currentValue: (block.cfg && block.cfg.position) ? block.cfg.position : "default"
+                onSelected: newValue => {
+                    if (block.cfg && block.cfg.position !== newValue) {
+                        block.cfg.position = newValue;
+                        Config.save();
+                    }
+                }
+            }
+
+            ConfigSpinBox {
+                visible: Boolean(block.cfg && block.cfg.enable && block.cfg.position === "custom")
+                icon: "swap_horiz"
+                text: Translation.tr("X Position")
+                value: (block.cfg && block.cfg.x !== undefined) ? block.cfg.x : 0
+                from: 0; to: 7680; stepSize: 10
+                onValueChanged: {
+                    if (block.cfg && block.cfg.x !== value) {
+                        block.cfg.x = value;
+                        Config.save();
+                    }
+                }
+            }
+
+            ConfigSpinBox {
+                visible: Boolean(block.cfg && block.cfg.enable && block.cfg.position === "custom")
+                icon: "swap_vert"
+                text: Translation.tr("Y Position")
+                value: (block.cfg && block.cfg.y !== undefined) ? block.cfg.y : 0
+                from: 0; to: 4320; stepSize: 10
+                onValueChanged: {
+                    if (block.cfg && block.cfg.y !== value) {
+                        block.cfg.y = value;
+                        Config.save();
                     }
                 }
             }

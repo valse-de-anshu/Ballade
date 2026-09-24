@@ -330,45 +330,21 @@ AbstractBackgroundWidget {
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        radius: Appearance.rounding?.large ?? 20
-        color: ColorUtils.applyAlpha(
-            ColorUtils.mix(
-                Appearance.colors.colPrimaryContainer,
-                Appearance.colors.colPrimary,
-                0.20
-            ),
-            root.dominantColorIsDark ? 0.32 : 0.50
+        radius: Appearance.rounding?.verylarge ?? 30
+        color: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.12
         )
-        border.width: 1
-        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
+        border.width: 0
+        border.color: "transparent"
         clip: true
-
-        // Frosted glass specular highlight & refractive sheen
-        Rectangle {
-            anchors.fill: parent
-            radius: contentItem.radius
-            color: "transparent"
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop {
-                    position: 0.0
-                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.70), 0.20)
-                }
-                GradientStop {
-                    position: 0.45
-                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.03)
-                }
-                GradientStop {
-                    position: 1.0
-                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.10)
-                }
-            }
-        }
 
         ColumnLayout {
             anchors {
                 fill: parent
-                margins: 12
+                margins: 14
             }
             spacing: 8
 
@@ -394,18 +370,20 @@ AbstractBackgroundWidget {
 
                 // Quick Paste Button
                 Rectangle {
-                    implicitWidth: 26
-                    implicitHeight: 22
-                    radius: 6
-                    color: pasteHover.containsMouse ? Appearance.colors.colLayer1Hover : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
-                    border.width: 1
-                    border.color: Appearance.colors.colLayer0Border
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: Appearance.rounding.full
+                    color: pasteHover.containsMouse
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.16)
+                    border.width: 0
+                    border.color: "transparent"
 
                     MaterialSymbol {
                         anchors.centerIn: parent
                         text: "content_paste"
-                        iconSize: 14
-                        color: Appearance.colors.colOnSurfaceVariant
+                        iconSize: 15
+                        color: pasteHover.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
                     }
 
                     MouseArea {
@@ -425,17 +403,19 @@ AbstractBackgroundWidget {
                 // Clear / Reset Button
                 Rectangle {
                     visible: root.stagedFiles.length > 0
-                    implicitWidth: 26
-                    implicitHeight: 22
-                    radius: 6
-                    color: clearHover.containsMouse ? Appearance.colors.colErrorContainer : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
-                    border.width: 1
-                    border.color: Appearance.colors.colLayer0Border
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: Appearance.rounding.full
+                    color: clearHover.containsMouse
+                        ? Appearance.colors.colErrorContainer
+                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.16)
+                    border.width: 0
+                    border.color: "transparent"
 
                     MaterialSymbol {
                         anchors.centerIn: parent
                         text: "close"
-                        iconSize: 14
+                        iconSize: 15
                         color: clearHover.containsMouse ? Appearance.colors.colOnErrorContainer : Appearance.colors.colOnSurfaceVariant
                     }
 
@@ -458,12 +438,12 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 78
-                radius: 12
+                radius: Appearance.rounding?.normal ?? 14
                 color: root.dropStatus === "hover"
-                    ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.15)
-                    : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.45)
-                border.width: root.dropStatus === "hover" ? 2 : 1
-                border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                    ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.18)
+                    : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
+                border.width: root.dropStatus === "hover" ? 1 : 0
+                border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : "transparent"
                 clip: true
 
                 RowLayout {
@@ -478,11 +458,11 @@ AbstractBackgroundWidget {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        radius: 8
+                        radius: 10
                         clip: true
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
-                        border.width: 1
-                        border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        border.width: root.stagedFiles.length > 0 ? 1 : 0
+                        border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : "transparent"
 
                         ColumnLayout {
                             anchors {
@@ -554,16 +534,18 @@ AbstractBackgroundWidget {
                     // Middle Connector Arrow
                     Rectangle {
                         Layout.fillWidth: false
-                        implicitWidth: 22
-                        implicitHeight: 22
-                        radius: 11
-                        color: Appearance.colors.colPrimaryContainer
+                        implicitWidth: 24
+                        implicitHeight: 24
+                        radius: 12
+                        color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        border.width: 0
+                        border.color: "transparent"
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "arrow_forward"
-                            iconSize: 13
-                            color: Appearance.colors.colOnPrimaryContainer
+                            iconSize: 14
+                            color: Appearance.colors.colPrimary
                         }
                     }
 
@@ -572,11 +554,11 @@ AbstractBackgroundWidget {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        radius: 8
+                        radius: 10
                         clip: true
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
-                        border.width: 1
-                        border.color: Appearance.colors.colLayer0Border
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        border.width: 0
+                        border.color: "transparent"
 
                         ColumnLayout {
                             anchors {
@@ -601,9 +583,9 @@ AbstractBackgroundWidget {
                                 Layout.preferredWidth: 1
                                 implicitWidth: 0
                                 implicitHeight: 32
-                                buttonRadius: 6
-                                colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.60)
-                                colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.80)
+                                buttonRadius: 8
+                                colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+                                colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
                                 colBackgroundActive: Appearance.colors.colPrimaryContainer
                                 model: root.formatOptions
                                 textRole: "shortName"
@@ -638,9 +620,9 @@ AbstractBackgroundWidget {
                     implicitWidth: 0
                     implicitHeight: 32
                     buttonIcon: "speed"
-                    buttonRadius: 6
-                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
-                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
+                    buttonRadius: 8
+                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.fpsOptions
                     textRole: "displayName"
@@ -664,9 +646,9 @@ AbstractBackgroundWidget {
                     implicitWidth: 0
                     implicitHeight: 32
                     buttonIcon: "compress"
-                    buttonRadius: 6
-                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
-                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
+                    buttonRadius: 8
+                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.sizeOptions
                     textRole: "displayName"
@@ -700,16 +682,16 @@ AbstractBackgroundWidget {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 32
-                        radius: 6
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
-                        border.width: 1
-                        border.color: numInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        radius: 8
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        border.width: numInput.activeFocus ? 1 : 0
+                        border.color: numInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
 
                         TextInput {
                             id: numInput
                             anchors.fill: parent
-                            anchors.leftMargin: 6
-                            anchors.rightMargin: 6
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
                             color: Appearance.colors.colOnSurface
                             font.pixelSize: Appearance.font.pixelSize.small
@@ -727,7 +709,7 @@ AbstractBackgroundWidget {
                     Rectangle {
                         implicitHeight: 32
                         implicitWidth: 38
-                        radius: 6
+                        radius: 8
                         color: Appearance.colors.colPrimaryContainer
 
                         StyledText {
@@ -751,8 +733,8 @@ AbstractBackgroundWidget {
                     Rectangle {
                         implicitHeight: 32
                         implicitWidth: 26
-                        radius: 6
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
+                        radius: 8
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
 
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -799,15 +781,17 @@ AbstractBackgroundWidget {
                 id: bakeButton
                 Layout.fillWidth: true
                 implicitHeight: 38
-                radius: Appearance.rounding?.normal ?? 10
+                radius: Appearance.rounding.full
                 color: {
                     if (root.dropStatus === "converting") return Appearance.colors.colSecondary
                     if (root.dropStatus === "done")       return Appearance.colors.colTertiary
                     if (root.stagedFiles.length > 0)     return bakeHover.containsMouse ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimary
-                    return ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.40)
+                    return bakeHover.containsMouse
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
                 }
-                border.width: 1
-                border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                border.width: 0
+                border.color: "transparent"
 
                 Behavior on color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)

@@ -52,39 +52,15 @@ AbstractBackgroundWidget {
         implicitWidth: root.widgetWidth
         implicitHeight: root.cardHeight
         radius: Appearance.rounding?.verylarge ?? 30
-        color: ColorUtils.applyAlpha(
-            ColorUtils.mix(
-                Appearance.colors.colPrimaryContainer,
-                Appearance.colors.colPrimary,
-                0.20
-            ),
-            root.dominantColorIsDark ? 0.32 : 0.50
+        color: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.12
         )
-        border.width: 1
-        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
+        border.width: 0
+        border.color: "transparent"
         clip: true
-
-        // Frosted glass specular highlight & refractive sheen
-        Rectangle {
-            anchors.fill: parent
-            radius: card.radius
-            color: "transparent"
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop {
-                    position: 0.0
-                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.70), 0.20)
-                }
-                GradientStop {
-                    position: 0.45
-                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.03)
-                }
-                GradientStop {
-                    position: 1.0
-                    color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.10)
-                }
-            }
-        }
 
         Loader {
             anchors.fill: parent

@@ -15,19 +15,32 @@ AbstractBackgroundWidget {
     configEntryName: "visualizer"
 
     // "bars" is the original Rectangle visualizer, the others are shaders/<style>.frag.qsb
-    readonly property string style: configEntry.style ?? "bars"
+    readonly property string style: (configEntry && configEntry.style) ? configEntry.style : "bars"
     readonly property bool shaderStyle: ["aurora", "ring", "dots", "mirror"].includes(style)
     readonly property bool isRing: style === "ring"
-    readonly property bool useCoverColors: shaderStyle && (configEntry.colorSource ?? "theme") === "cover"
+    readonly property bool useCoverColors: shaderStyle && Boolean(configEntry && configEntry.colorSource === "cover")
 
-    // Live size while the ring is being resized, written to the config on release
-    property real ringSizeOverride: -1
-    readonly property real ringSize: ringSizeOverride > 0 ? ringSizeOverride : (configEntry.ringSize ?? 380)
-    readonly property real bandHeight: configEntry.height ?? 260
+    property real ringSize: (Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.ringSize) ? Config.options.background.widgets.visualizer.ringSize : 380
+    property bool isResizing: false
+    Connections {
+        target: Config.options.background.widgets.visualizer
+        function onRingSizeChanged() {
+            if (root.isResizing) return;
+            const cfgVal = Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.ringSize
+                ? Config.options.background.widgets.visualizer.ringSize
+                : 380;
+            if (Math.abs(root.ringSize - cfgVal) > 1) {
+                root.ringSize = cfgVal;
+            }
+        }
+    }
+    readonly property real bandHeight: (configEntry && configEntry.height) ? configEntry.height : 260
     readonly property real barsHeight: 240
 
     implicitWidth: isRing ? ringSize : screenWidth
     implicitHeight: isRing ? ringSize : shaderStyle ? bandHeight : barsHeight
+    width: implicitWidth
+    height: implicitHeight
     x: isRing ? targetX : 0
     y: isRing ? targetY : screenHeight - implicitHeight
     draggable: isRing && placementStrategy === "free" && !Config.options.background.widgetsLocked
@@ -36,7 +49,6 @@ AbstractBackgroundWidget {
     function restoreXYBinding() {
         root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
         root.y = Qt.binding(() => root.isRing ? root.targetY : root.screenHeight - root.implicitHeight);
-        root.z = Qt.binding(() => root.targetZ);
     }
 
     // Palettes: color1 and color2 carry the shape, color3 the accent (peaks, fallback cover)
@@ -60,7 +72,7 @@ AbstractBackgroundWidget {
 
     // Cover art of the current track, cached like the media widget does
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
-    readonly property string artUrl: activePlayer?.trackArtUrl ?? ""
+    readonly property string artUrl: (activePlayer && activePlayer.trackArtUrl) ? activePlayer.trackArtUrl : ""
     readonly property bool needsCover: isRing || useCoverColors
     readonly property string artFilePath: `${Directories.coverArt}/${Qt.md5(artUrl)}`
     property bool coverDownloaded: false
@@ -92,7 +104,7 @@ AbstractBackgroundWidget {
     VisualizerEngine {
         id: levelEngine
         active: root.shaderStyle
-        sensitivity: root.configEntry.sensitivity ?? 1
+        sensitivity: (root.configEntry && root.configEntry.sensitivity !== undefined) ? root.configEntry.sensitivity : 1
     }
 
     Loader {
@@ -132,9 +144,9 @@ AbstractBackgroundWidget {
                 anchors.fill: parent
                 style: root.style
                 engine: levelEngine
-                color1: root.visualizerColors[0]
-                color2: root.visualizerColors[1]
-                color3: root.visualizerColors[2]
+                color1: (root.visualizerColors && root.visualizerColors[0]) ? root.visualizerColors[0] : Appearance.colors.colPrimary
+                color2: (root.visualizerColors && root.visualizerColors[1]) ? root.visualizerColors[1] : Appearance.colors.colTertiary
+                color3: (root.visualizerColors && root.visualizerColors[2]) ? root.visualizerColors[2] : Appearance.colors.colSecondary
                 cover: coverTexture
                 hasCover: coverImage.status === Image.Ready ? 1 : 0
             }
@@ -147,18 +159,31 @@ AbstractBackgroundWidget {
         locked: Config.options.background.widgetsLocked || !root.isRing
         currentWidth: root.ringSize
         resizeMode: "diagonal"
-        onResized: newValue => root.ringSizeOverride = Math.round(Math.min(Math.max(newValue, 200), 900))
-        onResizeFinished: {
-            if (root.ringSizeOverride > 0) root.configEntry.ringSize = root.ringSizeOverride;
-            root.ringSizeOverride = -1;
+        onResized: newValue => {
+            root.isResizing = true;
+            root.ringSize = Math.round(Math.min(Math.max(newValue, 200), 900));
         }
+        onResizeFinished: {
+            const finalSize = root.ringSize;
+            Config.options.background.widgets.visualizer.ringSize = finalSize;
+            Config.save();
+            // Reset flag after a short delay so the Connections handler doesn't fight us
+            resizeCooldownTimer.restart();
+        }
+    }
+
+    Timer {
+        id: resizeCooldownTimer
+        interval: 300
+        repeat: false
+        onTriggered: root.isResizing = false
     }
 
     // Original visualizer: one rounded Rectangle per 12 px of screen width
     component BarsVisualizer: Item {
         id: bars
 
-        readonly property list<real> points: GlobalStates.visualizerPoints
+        readonly property var points: GlobalStates.visualizerPoints
 
         property real barWidth: 4
         property real barSpacing: 8
@@ -228,7 +253,7 @@ AbstractBackgroundWidget {
                     required property int index
                     width: bars.barWidth
                     property real pointValue: {
-                        const v = bars.smoothedPoints[index] ?? 0
+                        const v = (bars.smoothedPoints && bars.smoothedPoints[index] !== undefined) ? bars.smoothedPoints[index] : 0
                         return Math.max(bars.barWidth, (v / bars.maxVisualizerValue) * bars.maxBarHeight)
                     }
                     height: pointValue

@@ -12,47 +12,44 @@ Item {
     implicitWidth: quoteBox.implicitWidth
     implicitHeight: quoteBox.implicitHeight
 
-    DropShadow {
-        source: quoteBox 
-        anchors.fill: quoteBox
-        horizontalOffset: 0
-        verticalOffset: 2
-        radius: 12
-        samples: radius * 2 + 1
-        color: Appearance.colors.colShadow
-        transparentBorder: true
-    }
-    
     Rectangle {
         id: quoteBox
         y: Config.options.background.widgets.clock.style === "pixel" && Config.options.background.widgets.clock.pixel.orientation === "horizontal" ? -26 : 0
         x: Config.options.background.widgets.clock.style === "pixel" && Config.options.background.widgets.clock.pixel.orientation === "horizontal" ? -20 : 0
-        implicitWidth: quoteRow.implicitWidth + 8 * 2
-        implicitHeight: quoteRow.implicitHeight + 4 * 2
-        radius: Appearance.rounding.small
-        color: Appearance.colors.colSecondaryContainer
+        implicitWidth: quoteRow.implicitWidth + 12 * 2
+        implicitHeight: quoteRow.implicitHeight + 6 * 2
+        radius: Appearance.rounding.full
+        color: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.18
+        )
+        border.width: 0
+        border.color: "transparent"
 
         Row {
             id: quoteRow
             anchors.centerIn: parent
-            spacing: 4
+            spacing: 6
             
             MaterialSymbol {
                 id: quoteIcon
-                anchors.top: parent.top
-                iconSize: Appearance.font.pixelSize.huge
+                anchors.verticalCenter: parent.verticalCenter
+                iconSize: Appearance.font.pixelSize.normal
                 text: "format_quote"
-                color: Appearance.colors.colOnSecondaryContainer
+                color: Appearance.colors.colPrimary
             }
             StyledText {
                 id: quoteStyledText
+                anchors.verticalCenter: parent.verticalCenter
                 horizontalAlignment: Text.AlignLeft
                 text: Config.options.background.widgets.clock.quote.text
-                color: Appearance.colors.colOnSecondaryContainer
+                color: Appearance.colors.colOnLayer0
                 font {
                     family: Config.options.background.widgets.clock.quote.followClock ? Config.options.background.widgets.clock.digital.font.family : Appearance.font.family.reading 
-                    pixelSize: Appearance.font.pixelSize.large
-                    weight: Font.Normal
+                    pixelSize: Appearance.font.pixelSize.small
+                    weight: Font.DemiBold
                 }
             }
         }

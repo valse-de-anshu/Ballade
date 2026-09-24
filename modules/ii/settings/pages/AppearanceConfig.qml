@@ -274,8 +274,8 @@ ContentPage {
                         buttonIcon: "check"
                         text: Translation.tr("Enable centered wallpaper")
                         checked: Config.options.background.centeredWallpaper
-                        onClicked: {
-                            Config.options.background.centeredWallpaper = !Config.options.background.centeredWallpaper;
+                        onCheckedChanged: {
+                            Config.options.background.centeredWallpaper = checked;
                         }
                     }
                     ConfigSwitch {
@@ -308,15 +308,7 @@ ContentPage {
                             Config.options.background.centeredWallpaperShape = newValue
                         }
                     }
-                    ColorSelectionArray {
-                        visible: Config.options.background.centeredWallpaper
-                        icon: "palette"
-                        text: Translation.tr("Background Color")
-                        currentValue: Config.options.background.centeredWallpaperColor
-                        onSelected: newValue => {
-                            Config.options.background.centeredWallpaperColor = newValue
-                        }
-                    }
+
                     ConfigSlider {
                         visible: Config.options.background.centeredWallpaper
                         text: Translation.tr("Size")

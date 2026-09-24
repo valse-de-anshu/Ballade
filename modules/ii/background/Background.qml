@@ -8,6 +8,7 @@ import qs.modules.common.widgets.widgetCanvas
 import qs.modules.common.functions as CF
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtMultimedia
 import Qt5Compat.GraphicalEffects
 import Quickshell
@@ -180,11 +181,9 @@ Variants {
 
         screen: modelData
         exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: (GlobalStates.screenLocked && !scaleAnim.running) ? WlrLayer.Overlay : WlrLayer.Bottom
+        WlrLayershell.layer: (GlobalStates.screenLocked && !scaleAnim.running) ? WlrLayer.Overlay : WlrLayer.Background
         WlrLayershell.namespace: "quickshell:background"
-        WlrLayershell.keyboardFocus: GlobalStates.desktopWidgetKeyboardFocus
-            ? WlrKeyboardFocus.OnDemand
-            : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         anchors {
             top: true
             bottom: true
@@ -347,7 +346,7 @@ Variants {
                 smooth: true
                 asynchronous: true
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: !bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled
+                visible: !bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen))
                     && (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0)
                 onStatusChanged: {
                     if (status === Image.Ready && bgRoot.transitionProgress === 0.0) {
@@ -414,7 +413,7 @@ Variants {
                 height: bgRoot.scaledH
                 fillMode: VideoOutput.PreserveAspectCrop
                 layer.enabled: (blurLoader.active || fastBlurLoader.active) && bgRoot.blurFullScreen
-                visible: bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && !bgRoot.centeredWallpaperEnabled
+                visible: bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen))
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
@@ -425,7 +424,7 @@ Variants {
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && bgRoot.wallpaperAnimation !== "" && !bgRoot.centeredWallpaperEnabled && !bgRoot.videoRevealed
+                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && bgRoot.wallpaperAnimation !== "" && !bgRoot.videoRevealed
                     && bgRoot.transitionProgress < 1.0
                 property var fromImage: previousWallpaper
                 property var toImage: wallpaper
@@ -532,56 +531,67 @@ Variants {
             }
 
             Rectangle {
-                id: centeredWallpaperBg
+                id: centeredWallpaperDimOverlay
+                z: 10
                 anchors.fill: parent
-                color: bgRoot.centeredWallpaperColor
-                opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
+                color: "#000000"
+                opacity: bgRoot.centeredWallpaperEnabled ? 0.65 : 0
                 visible: opacity > 0
 
                 Behavior on opacity {
-                    animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
                 }
             }
 
+            // Centered wallpaper shadow behind shape
             MaterialShape {
-                id: centeredWallpaperShapeItem
+                id: centeredWallpaperShadow
+                z: 11
                 anchors.centerIn: parent
                 width: bgRoot.centeredWallpaperSize
                 height: bgRoot.centeredWallpaperSize
-                color: bgRoot.centeredWallpaperColor
+                shape: bgRoot.centeredWallpaperShape
+                color: Qt.rgba(0, 0, 0, 0.5)
+                visible: opacity > 0
+                opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
+                scale: bgRoot.centeredWallpaperEnabled ? 1 : 0.85
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                }
+                Behavior on scale {
+                    NumberAnimation { duration: 350; easing.type: Easing.OutBack }
+                }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.9)
+                    shadowBlur: 0.95
+                    shadowVerticalOffset: 8
+                }
+            }
+
+            // Centered wallpaper shape displaying middle wallpaper
+            MaterialShape {
+                id: centeredWallpaperShapeItem
+                z: 12
+                anchors.centerIn: parent
+                width: bgRoot.centeredWallpaperSize
+                height: bgRoot.centeredWallpaperSize
+                color: "transparent"
                 shape: bgRoot.centeredWallpaperShape
                 transformOrigin: Item.Center
                 visible: opacity > 0
+                opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
+                scale: bgRoot.centeredWallpaperEnabled ? 1 : 0.85
 
-                state: bgRoot.centeredWallpaperEnabled ? "shown" : "hidden"
-
-                states: [
-                    State {
-                        name: "shown"
-                        PropertyChanges { target: centeredWallpaperShapeItem; scale: 1; opacity: 1 }
-                    },
-                    State {
-                        name: "hidden"
-                        PropertyChanges { target: centeredWallpaperShapeItem; scale: 1.4; opacity: 0 }
-                    }
-                ]
-
-                transitions: [
-                    Transition {
-                        to: "shown"
-                        ParallelAnimation {
-                            NumberAnimation { target: centeredWallpaperShapeItem; property: "scale"; from: 0; duration: Appearance.animation.elementMove.duration; easing.type: Easing.InOutCubic }
-                            NumberAnimation { target: centeredWallpaperShapeItem; property: "opacity"; duration: Appearance.animation.elementMove.duration; easing.type: Easing.InOutCubic }
-                        }
-                    },
-                    Transition {
-                        to: "hidden"
-                        ParallelAnimation {
-                            NumberAnimation { target: centeredWallpaperShapeItem; property: "scale"; duration: Appearance.animation.elementMove.duration; easing.type: Easing.InOutCubic }
-                            NumberAnimation { target: centeredWallpaperShapeItem; property: "opacity"; duration: Appearance.animation.elementMove.duration; easing.type: Easing.InOutCubic }
-                        }
-                    }
-                ]
+                Behavior on opacity {
+                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                }
+                Behavior on scale {
+                    NumberAnimation { duration: 350; easing.type: Easing.OutBack }
+                }
 
                 layer.enabled: true
                 layer.effect: OpacityMask {
@@ -592,12 +602,14 @@ Variants {
                     }
                 }
 
-                StyledImage {
+                Image {
                     anchors.fill: parent
-                    source: Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath)
+                    source: bgRoot.wallpaperPath ? ("file://" + CF.FileUtils.trimFileProtocol(Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath))) : ""
                     fillMode: Image.PreserveAspectCrop
-                    cache: false
+                    cache: true
+                    asynchronous: false
                     antialiasing: true
+                    smooth: true
                     sourceSize.width: parent.width
                     sourceSize.height: parent.height
                 }
@@ -701,289 +713,9 @@ Variants {
                     live: true
                 }
 
-                // Visualizer bars drawn directly on top of the wallpaper in the composite.
-                // Position is absolute within the composite, compensating for parallax offset
-                // so bars end up exactly at the true screen bottom, centered on screen width.
-                Item {
-                    id: bgVisualizerLayer
-                    // Match original: full screen width, 240px tall, pinned to screen bottom
-                    x: -bgRoot.parallaxX                               // undo parallax so x=0 on screen
-                    y: bgRoot.screen.height - (220 + 20) - bgRoot.parallaxY  // screen bottom, undo parallax
-                    width: bgRoot.screen.width
-                    height: 220 + 20
-                    visible: Config.options.background.widgets.visualizer.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
 
-                    readonly property list<real> vizPoints: GlobalStates.visualizerPoints
-                    readonly property bool vizPlaying: MprisController.activePlayer?.isPlaying ?? false
-                    readonly property real barW: 8
-                    readonly property real barSp: 12
-                    readonly property real maxH: 220
-                    readonly property real maxVal: 1000
-                    readonly property int barCount: Math.max(1, Math.floor(bgRoot.screen.width / (barW + barSp)))
-
-                    readonly property var smoothedPts: {
-                        if (!vizPlaying || vizActivityOpacity <= 0.01) return Array(barCount).fill(0)
-                        let raw = vizPoints
-                        if (!raw || raw.length === 0) return Array(barCount).fill(0)
-                        let count = barCount
-                        let mapped = new Array(count)
-                        let rawLenM1 = raw.length - 1
-                        for (let i = 0; i < count; i++) {
-                            let progress = i / (count - 1 || 1)
-                            let relPos = progress * rawLenM1
-                            let low = Math.floor(relPos)
-                            let high = Math.ceil(relPos)
-                            let mix = relPos - low
-                            mapped[i] = (raw[low] * (1 - mix)) + (raw[high] * (high < raw.length ? mix : 0))
-                        }
-                        let smoothed = new Array(count)
-                        let sW = 0.2
-                        for (let j = 0; j < count; j++) {
-                            let p = mapped[Math.max(0, j - 1)]
-                            let n = mapped[Math.min(count - 1, j + 1)]
-                            smoothed[j] = (p * sW) + (mapped[j] * (1.0 - 2 * sW)) + (n * sW)
-                        }
-                        return smoothed
-                    }
-
-                    property real vizActivityOpacity: 0
-                    Behavior on vizActivityOpacity {
-                        NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
-                    }
-
-                    Timer {
-                        id: bgVizSilenceTimer
-                        interval: 1000
-                        onTriggered: bgVisualizerLayer.vizActivityOpacity = 0
-                    }
-
-                    onVizPointsChanged: {
-                        if (vizPlaying && vizPoints.some(p => p > 0)) {
-                            vizActivityOpacity = 1.0
-                            bgVizSilenceTimer.restart()
-                        }
-                    }
-
-                    Row {
-                        anchors.bottom: parent.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: bgVisualizerLayer.barSp
-                        opacity: bgVisualizerLayer.vizActivityOpacity
-                        Behavior on opacity {
-                            NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
-                        }
-                        Repeater {
-                            model: bgVisualizerLayer.barCount
-                            Rectangle {
-                                required property int index
-                                width: bgVisualizerLayer.barW
-                                property real pointValue: {
-                                    const v = bgVisualizerLayer.smoothedPts[index] ?? 0
-                                    return Math.max(bgVisualizerLayer.barW, (v / bgVisualizerLayer.maxVal) * bgVisualizerLayer.maxH)
-                                }
-                                height: pointValue
-                                topLeftRadius: bgVisualizerLayer.barW / 2
-                                topRightRadius: bgVisualizerLayer.barW / 2
-                                anchors.bottom: parent.bottom
-                                property real intensity: pointValue / bgVisualizerLayer.maxH
-                                color: Qt.rgba(
-                                    Appearance.colors.colPrimary.r * intensity + Appearance.colors.colPrimaryContainer.r * (1 - intensity),
-                                    Appearance.colors.colPrimary.g * intensity + Appearance.colors.colPrimaryContainer.g * (1 - intensity),
-                                    Appearance.colors.colPrimary.b * intensity + Appearance.colors.colPrimaryContainer.b * (1 - intensity),
-                                    1
-                                )
-                            }
-                        }
-                    }
-                }
             }
 
-            WidgetCanvas {
-                id: widgetCanvas
-                z: 10
-                anchors.fill: parent
-
-                transitions: Transition {
-                    PropertyAnimation {
-                        properties: "width,height"
-                        duration: Appearance.animation.elementMove.duration
-                        easing.type: Appearance.animation.elementMove.type
-                        easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-                    }
-                    AnchorAnimation {
-                        duration: Appearance.animation.elementMove.duration
-                        easing.type: Appearance.animation.elementMove.type
-                        easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
-                    }
-                }
-                FadeLoader {
-                    // Shown when blur is OFF — the normal above-wallpaper position
-                    // When blur is ON, bgVisualizerLayer (z:5) renders it behind the blur instead
-                    shown: Config.options.background.widgets.visualizer.enable
-                        && !bgRoot.userBlurActive
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: VisualizerWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.customImage.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: CustomImage {
-                        screenWidth:        bgRoot.screen.width
-                        screenHeight:       bgRoot.screen.height
-                        scaledScreenWidth:  bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale:     1
-                    }
-                }
-
-                Repeater {
-                    model: Config.options.background.widgets.customImages
-                    delegate: FadeLoader {
-                        required property int index
-                        shown: (Config.options.background.screenList.length === 0
-                                || Config.options.background.screenList.includes(bgRoot.screen.name))
-                        sourceComponent: ExtraCustomImage {
-                            screenWidth:        bgRoot.screen.width
-                            screenHeight:       bgRoot.screen.height
-                            scaledScreenWidth:  bgRoot.screen.width
-                            scaledScreenHeight: bgRoot.screen.height
-                            wallpaperScale:     1
-                            imageIndex:         index
-                        }
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.calendar.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: CalendarWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.weather.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: WeatherWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.clock.enable
-                        && (GlobalStates.screenLocked
-                            || Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: ClockWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                        wallpaperSafetyTriggered: bgRoot.wallpaperSafetyTriggered
-                    }
-                }
-                // Notes moved into GoalsWidget → goals section 2 → notes tool
-                FadeLoader {
-                    shown: Config.options.background.widgets.goals.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: GoalsWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-                FadeLoader {
-                    id: mediaLoader
-                    property bool enableLoading: true
-                    shown: Config.options.background.widgets.media.enable && enableLoading
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: MediaWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                    onLoaded: {
-                        if (item && item.requestReset) {
-                            item.requestReset.connect(() => {
-                                mediaLoader.enableLoading = false
-                                mediaTimer.running = true
-                            })
-                        }
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.images.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: ImageConverterWidget {
-                        screenWidth:        bgRoot.screen.width
-                        screenHeight:       bgRoot.screen.height
-                        scaledScreenWidth:  bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale:     1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.resources.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: ResourcesWidget {
-                        screenWidth:        bgRoot.screen.width
-                        screenHeight:       bgRoot.screen.height
-                        scaledScreenWidth:  bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale:     1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.worldClock.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: WorldClockWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-                FadeLoader {
-                    shown: Config.options.background.widgets.userCard.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
-                    sourceComponent: UserCardWidget {
-                        screenWidth: bgRoot.screen.width
-                        screenHeight: bgRoot.screen.height
-                        scaledScreenWidth: bgRoot.screen.width
-                        scaledScreenHeight: bgRoot.screen.height
-                        wallpaperScale: 1
-                    }
-                }
-            }
 
             MouseArea {
                 id: desktopRightClickArea

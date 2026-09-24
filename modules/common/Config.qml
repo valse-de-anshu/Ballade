@@ -12,6 +12,7 @@ Singleton {
     property bool ready: false
     property int readWriteDelay: 50 // milliseconds
     property bool blockWrites: false
+    property bool suppressReload: false   // true while we just wrote the file ourselves
 
     function setNestedValue(nestedKey, value) {
         let keys = nestedKey.split(".");
@@ -49,11 +50,20 @@ Singleton {
     }
 
     Timer {
+        id: suppressReloadTimer
+        interval: 500
+        repeat: false
+        onTriggered: root.suppressReload = false
+    }
+
+    Timer {
         id: fileReloadTimer
         interval: root.readWriteDelay
         repeat: false
         onTriggered: {
-            configFileView.reload()
+            if (!root.suppressReload) {
+                configFileView.reload()
+            }
         }
     }
 
@@ -62,6 +72,8 @@ Singleton {
         interval: root.readWriteDelay
         repeat: false
         onTriggered: {
+            root.suppressReload = true
+            suppressReloadTimer.restart()
             configFileView.writeAdapter()
         }
     }
@@ -610,6 +622,71 @@ Singleton {
                     property bool requirePasswordToPower: false
                 }
                 property bool materialShapeChars: true
+                property JsonObject widgets: JsonObject {
+                    property JsonObject clock: JsonObject {
+                        property bool enable: true
+                        property bool interactive: false
+                        property string position: "center"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject media: JsonObject {
+                        property bool enable: true
+                        property bool interactive: true
+                        property string position: "bottomLeft"
+                        property real x: 48
+                        property real y: 600
+                    }
+                    property JsonObject calendar: JsonObject {
+                        property bool enable: false
+                        property bool interactive: true
+                        property string position: "bottomRight"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject weather: JsonObject {
+                        property bool enable: false
+                        property bool interactive: true
+                        property string position: "topRight"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject visualizer: JsonObject {
+                        property bool enable: false
+                        property bool interactive: false
+                        property string position: "bottom"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject userCard: JsonObject {
+                        property bool enable: false
+                        property bool interactive: false
+                        property string position: "topRight"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject goals: JsonObject {
+                        property bool enable: false
+                        property bool interactive: true
+                        property string position: "default"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject resources: JsonObject {
+                        property bool enable: false
+                        property bool interactive: false
+                        property string position: "default"
+                        property real x: 0
+                        property real y: 0
+                    }
+                    property JsonObject worldClock: JsonObject {
+                        property bool enable: false
+                        property bool interactive: false
+                        property string position: "default"
+                        property real x: 0
+                        property real y: 0
+                    }
+                }
             }
 
             property JsonObject media: JsonObject {

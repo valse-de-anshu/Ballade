@@ -13,25 +13,35 @@ AbstractBackgroundWidget {
 
     configEntryName: "clock"
 
-    implicitHeight: contentColumn.implicitHeight
+    readonly property string clockStyle: isLockWidget
+        ? Config.options.background.widgets.clock.style
+        : (GlobalStates.screenLocked ? Config.options.background.widgets.clock.styleLocked : Config.options.background.widgets.clock.style)
+    property bool isLockWidget: false
     implicitWidth: contentColumn.implicitWidth
-
-    readonly property string clockStyle: GlobalStates.screenLocked ? Config.options.background.widgets.clock.styleLocked : Config.options.background.widgets.clock.style
-    readonly property bool forceCenter: (GlobalStates.screenLocked && Config.options.lock.centerClock)
+    implicitHeight: contentColumn.implicitHeight
+    readonly property bool forceCenter: (!isLockWidget && GlobalStates.screenLocked && Config.options.lock.centerClock)
     readonly property bool shouldShow: (!Config.options.background.widgets.clock.showOnlyWhenLocked || GlobalStates.screenLocked)
     readonly property string customClockColorKey: Config.options.background.widgets.clock.color ?? ""
     readonly property color resolvedClockColor: {
+        if (GlobalStates.screenLocked) return Appearance.colors.colOnLayer0;
         if (customClockColorKey === "") return root.colText;
         const propName = "col" + customClockColorKey.charAt(0).toUpperCase() + customClockColorKey.slice(1);
         return Appearance.colors[propName] ?? root.colText;
     }
     property bool wallpaperSafetyTriggered: false
     needsColText: clockStyle === "digital" || clockStyle === "pixel"
-    x: forceCenter ? ((root.screenWidth - root.width) / 2) : targetX
-    y: forceCenter ? ((root.screenHeight - root.height) / 2) : targetY
+    width: isLockWidget ? implicitWidth : undefined
+    height: isLockWidget ? implicitHeight : undefined
+    x: isLockWidget ? 0 : (forceCenter ? ((root.screenWidth - root.width) / 2) : targetX)
+    y: isLockWidget ? 0 : (forceCenter ? ((root.screenHeight - root.height) / 2) : targetY)
     visibleWhenLocked: true
 
     function restoreXYBinding() {
+        if (isLockWidget) {
+            root.x = 0;
+            root.y = 0;
+            return;
+        }
         root.x = Qt.binding(() => root.forceCenter ? ((root.screenWidth - root.width) / 2) : root.targetX);
         root.y = Qt.binding(() => root.forceCenter ? ((root.screenHeight - root.height) / 2) : root.targetY);
     }

@@ -27,3 +27,22 @@ hl.window_rule({
     center = true,
 })
 
+-- Frosted glass blur for desktop background widgets (same as sidebars)
+hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, no_anim = true })
+
+-- Frosted glass blur for Settings panel (CTRL+I / SUPER+I)
+hl.layer_rule({ match = { namespace = "quickshell:settings" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:settings" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:settings" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:settings" }, no_anim = true })
+
+-- Frosted glass blur for Desktop Context Menu
+hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, no_anim = true })
+
+

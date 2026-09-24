@@ -115,9 +115,9 @@ Item {
                 Layout.fillHeight: true
                 Layout.margins: 0
                 implicitWidth: navRail.expanded ? 225 : fab.baseSize
-                color: CF.ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.55)
-                border.width: 1
-                border.color: Appearance.colors.colLayer0Border
+                color: Qt.rgba(Appearance.colors.colLayer1Base.r, Appearance.colors.colLayer1Base.g, Appearance.colors.colLayer1Base.b, 0.20)
+                border.width: 0
+                border.color: "transparent"
                 radius: Appearance.rounding.normal
 
                 Behavior on implicitWidth {

@@ -38,7 +38,7 @@ RippleButton {
             down: root.down
             Layout.fillWidth: false
             checked: root.checked
-            onClicked: root.clicked()
+            enabled: false
         }
     }
 }

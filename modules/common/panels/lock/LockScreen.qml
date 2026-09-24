@@ -109,6 +109,9 @@ Scope {
         function focus(): void {
             lockContext.shouldReFocus();
         }
+        function unlock(): void {
+            GlobalStates.screenLocked = false;
+        }
     }
 
     CompositorGlobalShortcut {

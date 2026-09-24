@@ -59,9 +59,14 @@ Scope {
             id: settingsWindow
             width: Math.min(parent.width - 80, 1080)
             height: Math.min(parent.height - 80, 780)
-            color: CF.ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.94)
-            border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            color: Qt.rgba(
+                Appearance.colors.colLayer0Base.r,
+                Appearance.colors.colLayer0Base.g,
+                Appearance.colors.colLayer0Base.b,
+                0.22
+            )
+            border.width: 0
+            border.color: "transparent"
             radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 8
             z: 1
             focus: true
@@ -80,7 +85,7 @@ Scope {
             }
 
             Keys.onPressed: (event) => {
-                if (event.key === Qt.Key_Escape) {
+                if (event.key === Qt.Key_Escape || (event.key === Qt.Key_I && (event.modifiers & Qt.ControlModifier))) {
                     panelWindow.hide();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Up) {
@@ -174,6 +179,10 @@ Scope {
         function toggle(): void { GlobalStates.settingsOpen = !GlobalStates.settingsOpen; }
         function open(): void   { GlobalStates.settingsOpen = true; }
         function close(): void  { GlobalStates.settingsOpen = false; }
+        function openPage(page: string): void {
+            GlobalStates.settingsPage = page;
+            GlobalStates.settingsOpen = true;
+        }
     }
 
     CompositorGlobalShortcut {

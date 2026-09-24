@@ -6,10 +6,13 @@ import qs.modules.common
 import qs.modules.common.widgets
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 
 Item {
     id: root
     implicitHeight: col.implicitHeight + 16
+
+    readonly property color colLayer0Base: Appearance.colors.colLayer0Base ?? Appearance.colors.colLayer0
 
     readonly property var widgetList: [
         { key: "clock",       icon: "schedule",           name: Translation.tr("Clock") },
@@ -27,8 +30,18 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Appearance.rounding.verylarge
-        color: Appearance.colors.colLayer0
+        radius: 20
+        color: Qt.rgba(root.colLayer0Base.r, root.colLayer0Base.g, root.colLayer0Base.b, 0.22)
+        border.width: 0
+        border.color: "transparent"
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.5)
+            shadowBlur: 0.6
+            shadowVerticalOffset: 4
+        }
     }
 
     ColumnLayout {
