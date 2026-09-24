@@ -63,13 +63,13 @@ AbstractBackgroundWidget {
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha("#ffffff", 0.08)
+            color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.36)
             border.width: sizeMode === "4x1" ? 0 : 1
-            border.color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha("#ffffff", 0.16)
+            border.color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha("#ffffff", 0.22)
             radius: Appearance.rounding?.verylarge ?? 30
             clip: true
 
-            // Frosted glass ambient highlight & gradient sheen
+            // Thick frosted glass diffuse sheen & specular highlight
             Rectangle {
                 anchors.fill: parent
                 radius: contentRect.radius
@@ -77,9 +77,9 @@ AbstractBackgroundWidget {
                 color: "transparent"
                 gradient: Gradient {
                     orientation: Gradient.Vertical
-                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.06) }
-                    GradientStop { position: 0.40; color: "transparent" }
-                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#ffffff", 0.02) }
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.15) }
+                    GradientStop { position: 0.30; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#000000", 0.08) }
                 }
             }
 
