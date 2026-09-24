@@ -190,21 +190,6 @@ Singleton {
                     property int gapsIn: 2
                     property int gapsOut: 5
                     property string layout: "dwindle"
-                    // Window border colors & gradients
-                    property JsonObject borderColor: JsonObject {
-                        property bool enable: false
-                        // Palette roles, resolved by Appearance.getColorFromName()
-                        property string activeRole: "layer0Border"
-                        property string activeRoleSecondary: "primary"
-                        property bool activeGradient: true
-                        property int activeAngle: 45
-                        property real activeOpacity: 0.47
-                        property string inactiveRole: "layer0Border"
-                        property string inactiveRoleSecondary: "outlineVariant"
-                        property bool inactiveGradient: false
-                        property int inactiveAngle: 45
-                        property real inactiveOpacity: 0.2
-                    }
                 }
                 property JsonObject input: JsonObject {
                     property string kbLayout: "us"
@@ -449,7 +434,6 @@ Singleton {
                 }
                 property bool bottom: false // Instead of top
                 property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
-                property string groupColor: "layer1"
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property string borderless: "pills"
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
@@ -468,12 +452,6 @@ Singleton {
                     property int memoryWarningThreshold: 95
                     property int swapWarningThreshold: 85
                     property int cpuWarningThreshold: 90
-                }
-                property JsonObject dynamicIsland: JsonObject {
-                    property string visualizerStyle: "dots" // "dots", "wave", "none"
-                    property bool showMediaControls: false
-                    property string leftWidget: "none"
-                    property string rightWidget: "none"
                 }
 
                 property JsonObject divider: JsonObject {

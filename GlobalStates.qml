@@ -43,14 +43,6 @@ Singleton {
     property bool dropShelfOpen: false
     property real dropShelfX: 0
     property real dropShelfY: 0
-    property string osdIndicatorType: "volume"
-    property bool barCenterOnly: false
-    property bool diSessionOpen: false
-    property bool startupLockPending: true
-
-    readonly property bool dynamicIslandEnabled: (Config.options?.bar?.layouts?.leftLayout ?? []).includes("dynamicIsland")
-        || (Config.options?.bar?.layouts?.middleLayout ?? []).includes("dynamicIsland")
-        || (Config.options?.bar?.layouts?.rightLayout ?? []).includes("dynamicIsland")
 
     onSidebarRightOpenChanged: {
         if (GlobalStates.sidebarRightOpen) {

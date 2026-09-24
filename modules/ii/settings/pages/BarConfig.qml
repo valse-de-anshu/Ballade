@@ -47,36 +47,22 @@ ContentPage {
         { id: "utilButtons",       name: Translation.tr("Util Buttons"),         icon: "toggle_on" },
         { id: "sysTray",           name: Translation.tr("Tray"),                 icon: "inbox" },
         { id: "batteryIndicator",  name: Translation.tr("Battery"),              icon: "battery_android_frame_full" },
-        { id: "bluetooth",         name: Translation.tr("Bluetooth"),            icon: "bluetooth" },
         { id: "activeWindow",      name: Translation.tr("Active Window"),        icon: "subtitles" },
         { id: "powerButton",       name: Translation.tr("Power Button"),         icon: "power_settings_new" },
         { id: "updatesCount",      name: Translation.tr("Updates"),              icon: "deployed_code_update" },
         { id: "docktoPanel",       name: Translation.tr("Dock to Panel"),        icon: "apps" },
         { id: "visualizer",        name: Translation.tr("Visualizer"),           icon: "graphic_eq" },
-        { id: "hyprlandXkbIndicator",   name: Translation.tr("Keyboard Layout"), icon: "keyboard" },
-        { id: "divisor",            name: Translation.tr("Divider"),             icon: "horizontal_distribute" },
-        { id: "launcherButton",     name: Translation.tr("Launcher Button"),     icon: "search" },
-        { id: "dynamicIsland",     name: Translation.tr("Dynamic Island"),     icon: "nest_wifi_pro" },
+        { id: "hyprlandXkbIndicator",   name: Translation.tr("Keyboard Layout"), icon: "keyboard" }
     ]
 
-    function availableFor(section) {
+    function availableFor() {
         let used = [
             ...Config.options.bar.layouts.leftLayout,
             ...Config.options.bar.layouts.middleLayout,
             ...Config.options.bar.layouts.rightLayout
         ]
-        if (section === "middle" && Config.options.bar.layouts.middleLayout.length > 0) {
-            return Config.options.bar.layouts.middleLayout.includes("dynamicIsland") ? [] : allWidgets.filter(w => {
-                if (w.id === "dynamicIsland") return false
-                if (w.id === "divisor" && Config.options.bar.borderless !== "transparent") return false
-                const multipleAllowed = ["visualizer", "divisor"]
-                return !used.includes(w.id) || multipleAllowed.includes(w.id)
-            })
-        }
-        const multipleAllowed = ["visualizer", "divisor"]
+        const multipleAllowed = ["visualizer"]
         return allWidgets.filter(w => {
-            if (w.id === "divisor" && Config.options.bar.borderless !== "transparent") return false
-            if (w.id === "dynamicIsland" && (Config.options.bar.vertical || section !== "middle")) return false
             return !used.includes(w.id) || multipleAllowed.includes(w.id)
         })
     }
@@ -178,97 +164,7 @@ ContentPage {
             }
         }
 
-        ContentSection {
-            icon: "view_column"
-            shape: MaterialShape.Shape.Diamond
-            title: Translation.tr("Bar layout")
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 16
-
-                LayoutSection {
-                    sectionTitle: Config.options.bar.vertical ? Translation.tr("Top") : Translation.tr("Left")
-                    layout: Config.options.bar.layouts.leftLayout
-                    availableWidgets: page.availableFor("left")
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.leftLayout = list
-                }
-
-                LayoutSection {
-                    sectionTitle: Translation.tr("Center")
-                    layout: Config.options.bar.layouts.middleLayout
-                    availableWidgets: page.availableFor("middle")
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.middleLayout = list
-                }
-
-                LayoutSection {
-                    sectionTitle: Config.options.bar.vertical ? Translation.tr("Bottom") : Translation.tr("Right")
-                    layout: Config.options.bar.layouts.rightLayout
-                    availableWidgets: page.availableFor("right")
-                    getWidgetName: page.getWidgetName
-                    onUpdate: list => Config.options.bar.layouts.rightLayout = list
-                }
-            }
-        }
-
-        ContentSection {
-            icon: "nest_wifi_pro"
-            shape: MaterialShape.Shape.Cookie4Sided
-            title: Translation.tr("Dynamic Island")
-
-            GroupedList {
-                ConfigSelectionArray {
-                    text: Translation.tr("Left widget")
-                    icon: "right_panel_open"
-                    currentValue: Config.options.bar.dynamicIsland.leftWidget
-                    onSelected: newValue => { Config.options.bar.dynamicIsland.leftWidget = newValue; }
-                    options: [
-                        { displayName: Translation.tr("None"),    icon: "block",        value: "none" },
-                        { displayName: Translation.tr("Clock"),   icon: "schedule",     value: "clockWidget" },
-                        { displayName: Translation.tr("Weather"), icon: "partly_cloudy_day", value: "weatherBar" },
-                        { displayName: Translation.tr("Updates"), icon: "update",       value: "updatesCount" }
-                    ]
-                }
-                ConfigSelectionArray {
-                    text: Translation.tr("Right widget")
-                    icon: "left_panel_open"
-                    currentValue: Config.options.bar.dynamicIsland.rightWidget
-                    onSelected: newValue => { Config.options.bar.dynamicIsland.rightWidget = newValue; }
-                    options: [
-                        { displayName: Translation.tr("None"),         icon: "block",        value: "none" },
-                        { displayName: Translation.tr("System icons"), icon: "settings",     value: "systemIcons" },
-                        { displayName: Translation.tr("Tray"),  icon: "apps",         value: "sysTray" },
-                        { displayName: Translation.tr("Util buttons"), icon: "widgets",   value: "utilButtons" }
-                    ]
-                }
-            }
-
-            ContentSubsection {
-                Layout.topMargin: 10
-                title: Translation.tr("Media")
-                GroupedList {
-                    ConfigSelectionArray {
-                        text: Translation.tr("Visualizer style")
-                        icon: "graphic_eq"
-                        currentValue: Config.options.bar.dynamicIsland.visualizerStyle
-                        onSelected: newValue => { Config.options.bar.dynamicIsland.visualizerStyle = newValue; }
-                        options: [
-                            { displayName: Translation.tr("None"),      icon: "block",       value: "none" },
-                            { displayName: Translation.tr("Dots"),  icon: "steppers",     value: "dots" },
-                            { displayName: Translation.tr("Wave"),  icon: "ssid_chart",   value: "wave" }
-                        ]
-                    }
-                    ConfigSwitch {
-                        buttonIcon: "play_circle"
-                        text: Translation.tr("Show media controls")
-                        checked: Config.options.bar.dynamicIsland.showMediaControls
-                        onCheckedChanged: { Config.options.bar.dynamicIsland.showMediaControls = checked; }
-                    }
-                }
-            }
-        }
 
         ContentSection {
             icon: "pivot_table_chart"

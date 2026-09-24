@@ -36,11 +36,9 @@ ContentPage {
         }
     }
 
-    readonly property var borderColorRoles: ["primary", "secondary", "tertiary", "primaryContainer", "secondaryContainer", "tertiaryContainer", "layer0Border"]
-
     Component.onCompleted: {
         const h = Config.options.hyprland
-        HyprlandConfig.setMany(Object.assign({
+        HyprlandConfig.setMany({
             "decoration:rounding":                  h.decoration.rounding,
             "decoration:blur:enabled":              h.decoration.blur.enabled ? 1 : 0,
             "decoration:blur:size":                 h.decoration.blur.size,
@@ -61,7 +59,7 @@ ContentPage {
             "input:touchpad:disable_while_typing":  h.input.touchpad.disableWhileTyping ? 1 : 0,
             "input:touchpad:clickfinger_behavior":  h.input.touchpad.clickfingerBehavior ? 1 : 0,
             "input:touchpad:scroll_factor":         h.input.touchpad.scrollFactor
-        }, HyprlandConfig.borderColorEntries()))
+        })
     }
     MonitorConfigOption { id: monitorConfig }
 
@@ -402,18 +400,6 @@ ContentPage {
                     }
                 }
 
-                ConfigSwitch {
-                    buttonIcon: "format_paint"
-                    text: Translation.tr("Custom border colors & gradients")
-                    checked: Config.options.hyprland.general.borderColor.enable
-                    onCheckedChanged: {
-                        if (checked === Config.options.hyprland.general.borderColor.enable) return
-                        Config.options.hyprland.general.borderColor.enable = checked
-                        if (checked) HyprlandConfig.applyBorderColors()
-                        else HyprlandConfig.resetBorderColors()
-                    }
-                }
-
                 ConfigSpinBox {
                     icon: "margin"
                     text: Translation.tr("Gaps In")
@@ -461,136 +447,6 @@ ContentPage {
                         if (newVal === Config.options.hyprland.decoration.inactiveOpacity) return
                         Config.options.hyprland.decoration.inactiveOpacity = newVal
                         HyprlandConfig.set("decoration:inactive_opacity", newVal)
-                    }
-                }
-            }
-
-            ContentSubsection {
-                Layout.topMargin: 10
-                visible: Config.options.hyprland.general.borderColor.enable
-                title: Translation.tr("Border Color & Gradient Management")
-
-                GroupedList {
-                    visible: Config.options.hyprland.general.borderColor.enable
-
-                    ColorSelectionArray {
-                        icon: "border_color"
-                        text: Translation.tr("Active border")
-                        options: page.borderColorRoles
-                        currentValue: Config.options.hyprland.general.borderColor.activeRole
-                        onSelected: newValue => {
-                            Config.options.hyprland.general.borderColor.activeRole = newValue
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSpinBox {
-                        icon: "opacity"
-                        text: Translation.tr("Active border opacity")
-                        value: Math.round(Config.options.hyprland.general.borderColor.activeOpacity * 100)
-                        from: 0; to: 100; stepSize: 5
-                        onValueChanged: {
-                            if (value === Math.round(Config.options.hyprland.general.borderColor.activeOpacity * 100)) return
-                            Config.options.hyprland.general.borderColor.activeOpacity = value / 100.0
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSwitch {
-                        buttonIcon: "gradient"
-                        text: Translation.tr("Active border gradient")
-                        checked: Config.options.hyprland.general.borderColor.activeGradient
-                        onCheckedChanged: {
-                            Config.options.hyprland.general.borderColor.activeGradient = checked
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ColorSelectionArray {
-                        visible: Config.options.hyprland.general.borderColor.activeGradient
-                        icon: "palette"
-                        text: Translation.tr("Active gradient secondary")
-                        options: page.borderColorRoles
-                        currentValue: Config.options.hyprland.general.borderColor.activeRoleSecondary
-                        onSelected: newValue => {
-                            Config.options.hyprland.general.borderColor.activeRoleSecondary = newValue
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSlider {
-                        visible: Config.options.hyprland.general.borderColor.activeGradient
-                        text: Translation.tr("Active gradient angle (°)")
-                        buttonIcon: "rotate_right"
-                        usePercentTooltip: false
-                        value: Config.options.hyprland.general.borderColor.activeAngle ?? 45
-                        from: 0
-                        to: 360
-                        stopIndicatorValues: [45, 90, 180, 270]
-                        onValueChanged: {
-                            Config.options.hyprland.general.borderColor.activeAngle = Math.round(value)
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ColorSelectionArray {
-                        icon: "border_color"
-                        text: Translation.tr("Inactive border")
-                        options: page.borderColorRoles
-                        currentValue: Config.options.hyprland.general.borderColor.inactiveRole
-                        onSelected: newValue => {
-                            Config.options.hyprland.general.borderColor.inactiveRole = newValue
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSpinBox {
-                        icon: "opacity"
-                        text: Translation.tr("Inactive border opacity")
-                        value: Math.round(Config.options.hyprland.general.borderColor.inactiveOpacity * 100)
-                        from: 0; to: 100; stepSize: 5
-                        onValueChanged: {
-                            if (value === Math.round(Config.options.hyprland.general.borderColor.inactiveOpacity * 100)) return
-                            Config.options.hyprland.general.borderColor.inactiveOpacity = value / 100.0
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSwitch {
-                        buttonIcon: "gradient"
-                        text: Translation.tr("Inactive border gradient")
-                        checked: Config.options.hyprland.general.borderColor.inactiveGradient
-                        onCheckedChanged: {
-                            Config.options.hyprland.general.borderColor.inactiveGradient = checked
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ColorSelectionArray {
-                        visible: Config.options.hyprland.general.borderColor.inactiveGradient
-                        icon: "palette"
-                        text: Translation.tr("Inactive gradient secondary")
-                        options: page.borderColorRoles
-                        currentValue: Config.options.hyprland.general.borderColor.inactiveRoleSecondary
-                        onSelected: newValue => {
-                            Config.options.hyprland.general.borderColor.inactiveRoleSecondary = newValue
-                            HyprlandConfig.applyBorderColors()
-                        }
-                    }
-
-                    ConfigSlider {
-                        visible: Config.options.hyprland.general.borderColor.inactiveGradient
-                        text: Translation.tr("Inactive gradient angle (°)")
-                        buttonIcon: "rotate_right"
-                        usePercentTooltip: false
-                        value: Config.options.hyprland.general.borderColor.inactiveAngle ?? 45
-                        from: 0
-                        to: 360
-                        stopIndicatorValues: [45, 90, 180, 270]
-                        onValueChanged: {
-                            Config.options.hyprland.general.borderColor.inactiveAngle = Math.round(value)
-                            HyprlandConfig.applyBorderColors()
-                        }
                     }
                 }
             }
