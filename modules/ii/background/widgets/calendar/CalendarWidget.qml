@@ -447,7 +447,7 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
+        color: ColorUtils.applyAlpha("#ffffff", 0.08)
         border.width: 1
         border.color: ColorUtils.applyAlpha("#ffffff", 0.16)
         clip: true
@@ -463,9 +463,9 @@ AbstractBackgroundWidget {
             color: "transparent"
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
-                GradientStop { position: 0.35; color: "transparent" }
-                GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.04) }
+                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.06) }
+                GradientStop { position: 0.40; color: "transparent" }
+                GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#ffffff", 0.02) }
             }
         }
 
@@ -1415,9 +1415,9 @@ AbstractBackgroundWidget {
             implicitWidth: capsuleCol.implicitWidth + 24
             implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
             radius: 17
-            color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
+            color: ColorUtils.applyAlpha("#ffffff", 0.10)
             border.width: 1
-            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.16)
+            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.18)
             clip: true
 
             Behavior on implicitWidth { NumberAnimation { duration: 180 } }

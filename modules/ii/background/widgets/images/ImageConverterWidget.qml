@@ -330,7 +330,7 @@ AbstractBackgroundWidget {
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
+        color: ColorUtils.applyAlpha("#ffffff", 0.08)
         border.width: 1
         border.color: ColorUtils.applyAlpha("#ffffff", 0.16)
         radius: Appearance.rounding?.large ?? 20
@@ -343,9 +343,9 @@ AbstractBackgroundWidget {
             color: "transparent"
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
-                GradientStop { position: 0.35; color: "transparent" }
-                GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.04) }
+                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.06) }
+                GradientStop { position: 0.40; color: "transparent" }
+                GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#ffffff", 0.02) }
             }
         }
 
