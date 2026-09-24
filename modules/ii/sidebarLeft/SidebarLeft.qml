@@ -16,6 +16,25 @@ Scope { // Scope
     property Component contentComponent: SidebarLeftContent {}
     property Item sidebarContent
     readonly property bool centerOnly: Config.options.bar.layouts.leftLayout.length === 0 && Config.options.bar.layouts.rightLayout.length === 0 && !Config.options.bar.vertical
+    readonly property real topOffset: {
+        if (Config.options.bar.vertical || Config.options.bar.bottom || Config?.options.bar.autoHide.enable) {
+            return Appearance.sizes.hyprlandGapsOut;
+        }
+        if (Config.options.bar.cornerStyle === 1) {
+            return Appearance.sizes.barHeight;
+        }
+        return Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+    }
+
+    readonly property real bottomOffset: {
+        if (Config.options.bar.vertical || !Config.options.bar.bottom || Config?.options.bar.autoHide.enable) {
+            return Appearance.sizes.hyprlandGapsOut;
+        }
+        if (Config.options.bar.cornerStyle === 1) {
+            return Appearance.sizes.barHeight;
+        }
+        return Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+    }
 
     function toggleExtend() {
         root.extend = !root.extend;
@@ -164,19 +183,6 @@ Scope { // Scope
                 bottom: true
             }
 
-            margins {
-                top: {
-                    if (!centerOnly) return 0;
-                    switch (Config.options.bar.cornerStyle) {
-                        case 0: return -Appearance.sizes.barHeight;
-                        case 1: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
-                        case 2: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
-                        case 3: return -Appearance.sizes.barHeight - Appearance.sizes.hyprlandGapsOut;
-                        default: return 0;
-                    }
-                }
-            }
-
             mask: Region {
                 item: panelWindow.animatedEntrance ? fullMaskArea : sidebarLeftBackground
             }
@@ -216,9 +222,9 @@ Scope { // Scope
             Rectangle {
                 id: sidebarLeftBackground
                 anchors.top: parent.top
-                anchors.topMargin: Appearance.sizes.hyprlandGapsOut
+                anchors.topMargin: root.topOffset
                 width: panelWindow.sidebarWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-                height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
+                height: parent.height - root.topOffset - root.bottomOffset
                 // Ultra-transparent: just a whisper of tint over the compositor blur
                 color: Qt.rgba(
                     Appearance.colors.colLayer0Base.r,

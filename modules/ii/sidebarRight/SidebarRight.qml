@@ -73,18 +73,25 @@ Scope {
             left: animatedEntrance
         }
 
-        margins {
-            top: {
-                if (!centerOnly) return 0;
-                switch (Config.options.bar.cornerStyle) {
-                case 0: return -Appearance.sizes.barHeight;
-                case 1: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
-                case 2: return -Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
-                case 3: return -Appearance.sizes.barHeight - Appearance.sizes.hyprlandGapsOut;
-                default: return 0;
-                }
-            }
+    readonly property real topOffset: {
+        if (Config.options.bar.vertical || Config.options.bar.bottom || Config?.options.bar.autoHide.enable) {
+            return Appearance.sizes.hyprlandGapsOut;
         }
+        if (Config.options.bar.cornerStyle === 1) {
+            return Appearance.sizes.barHeight;
+        }
+        return Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+    }
+
+    readonly property real bottomOffset: {
+        if (Config.options.bar.vertical || !Config.options.bar.bottom || Config?.options.bar.autoHide.enable) {
+            return Appearance.sizes.hyprlandGapsOut;
+        }
+        if (Config.options.bar.cornerStyle === 1) {
+            return Appearance.sizes.barHeight;
+        }
+        return Appearance.sizes.barHeight + Appearance.sizes.hyprlandGapsOut;
+    }
 
         Item {
             anchors.fill: parent
@@ -142,12 +149,17 @@ Scope {
                     id: sidebarContentLoader
                     active: panelWindow.reallyVisible || Config?.options.sidebar.keepRightSidebarLoaded
                     anchors {
-                        fill: parent
-                        margins: Appearance.sizes.hyprlandGapsOut
+                        top: parent.top
+                        bottom: parent.bottom
+                        left: parent.left
+                        right: parent.right
+                        topMargin: root.topOffset
+                        bottomMargin: root.bottomOffset
                         leftMargin: Appearance.sizes.elevationMargin
+                        rightMargin: Appearance.sizes.hyprlandGapsOut
                     }
                     width: sidebarWidth - Appearance.sizes.hyprlandGapsOut - Appearance.sizes.elevationMargin
-                    height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
+                    height: parent.height - root.topOffset - root.bottomOffset
 
                     focus: GlobalStates.sidebarRightOpen
                     Keys.onPressed: event => {
