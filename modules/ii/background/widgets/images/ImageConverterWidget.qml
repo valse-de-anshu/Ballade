@@ -16,30 +16,30 @@ AbstractBackgroundWidget {
 
     configEntryName: "images"
 
-    // Fixed constant dimensions — zero jiggle or size shifting
-    implicitWidth: 364
-    implicitHeight: 326
+    // Balanced, constant geometry — zero jiggle or size shifting
+    implicitWidth: 350
+    implicitHeight: 284
 
     property list<var> formatOptions: [
         // Animation & Video
-        { displayName: "ANIMATE (Frames → Video)", value: "animate", icon: "movie", shortName: "ANIMATE" },
-        { displayName: "MP4 (Video / Frames)",     value: "mp4",     icon: "videocam", shortName: "MP4" },
-        { displayName: "GIF (Animated GIF)",       value: "gif",     icon: "gif",      shortName: "GIF" },
+        { displayName: "ANIMATE", value: "animate", icon: "movie", shortName: "ANIMATE" },
+        { displayName: "MP4",     value: "mp4",     icon: "videocam", shortName: "MP4" },
+        { displayName: "GIF",     value: "gif",     icon: "gif",      shortName: "GIF" },
         // Daily / Web Images
-        { displayName: "WEBP (Modern Web)",        value: "webp",    icon: "motion_photos_on", shortName: "WEBP" },
-        { displayName: "PNG (Lossless)",           value: "png",     icon: "image",     shortName: "PNG" },
-        { displayName: "JPG (Photo)",              value: "jpg",     icon: "photo",     shortName: "JPG" },
-        { displayName: "PDF (Multi-page Doc)",     value: "pdf",     icon: "picture_as_pdf", shortName: "PDF" },
-        { displayName: "AVIF (Next-Gen)",          value: "avif",    icon: "hd",        shortName: "AVIF" },
-        { displayName: "ICO (App Icon)",           value: "ico",     icon: "star",      shortName: "ICO" },
+        { displayName: "WEBP",    value: "webp",    icon: "motion_photos_on", shortName: "WEBP" },
+        { displayName: "PNG",     value: "png",     icon: "image",     shortName: "PNG" },
+        { displayName: "JPG",     value: "jpg",     icon: "photo",     shortName: "JPG" },
+        { displayName: "PDF",     value: "pdf",     icon: "picture_as_pdf", shortName: "PDF" },
+        { displayName: "AVIF",    value: "avif",    icon: "hd",        shortName: "AVIF" },
+        { displayName: "ICO",     value: "ico",     icon: "star",      shortName: "ICO" },
         // Professional / Specialized
-        { displayName: "BMP (Bitmap)",             value: "bmp",     icon: "grid_on",   shortName: "BMP" },
-        { displayName: "TIFF (Print / Raw)",       value: "tiff",    icon: "photo_library", shortName: "TIFF" },
-        { displayName: "HEIC (Apple Photo)",       value: "heic",    icon: "camera",    shortName: "HEIC" },
-        { displayName: "JXL (JPEG XL)",            value: "jxl",     icon: "tune",      shortName: "JXL" },
-        { displayName: "PSD (Photoshop)",          value: "psd",     icon: "brush",     shortName: "PSD" },
-        { displayName: "TGA (Targa)",              value: "tga",     icon: "sports_esports", shortName: "TGA" },
-        { displayName: "PPM (Portable Pixmap)",    value: "ppm",     icon: "terminal",  shortName: "PPM" },
+        { displayName: "BMP",     value: "bmp",     icon: "grid_on",   shortName: "BMP" },
+        { displayName: "TIFF",    value: "tiff",    icon: "photo_library", shortName: "TIFF" },
+        { displayName: "HEIC",    value: "heic",    icon: "camera",    shortName: "HEIC" },
+        { displayName: "JXL",     value: "jxl",     icon: "tune",      shortName: "JXL" },
+        { displayName: "PSD",     value: "psd",     icon: "brush",     shortName: "PSD" },
+        { displayName: "TGA",     value: "tga",     icon: "sports_esports", shortName: "TGA" },
+        { displayName: "PPM",     value: "ppm",     icon: "terminal",  shortName: "PPM" },
     ]
 
     property list<var> fpsOptions: [
@@ -160,7 +160,7 @@ AbstractBackgroundWidget {
         root.detectedFormat = valid[0].split(".").pop().toUpperCase()
         root.detectedFileName = valid[0].replace(/.*\//, "")
         root.dropStatus = "staged"
-        root.statusMessage = valid.length === 1 ? "Ready to bake" : (valid.length + " files ready to bake")
+        root.statusMessage = valid.length === 1 ? "Ready to bake" : (valid.length + " files ready")
 
         // Read input file size
         statProc.targetPath = valid[0]
@@ -338,13 +338,13 @@ AbstractBackgroundWidget {
         color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
-        radius: Appearance.rounding?.large ?? 22
+        radius: Appearance.rounding?.large ?? 20
         clip: true
 
         ColumnLayout {
             anchors {
                 fill: parent
-                margins: 14
+                margins: 12
             }
             spacing: 8
 
@@ -398,7 +398,7 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Clear / Reset Button (when files staged or converting)
+                // Clear / Reset Button
                 Rectangle {
                     visible: root.stagedFiles.length > 0
                     implicitWidth: 26
@@ -430,29 +430,32 @@ AbstractBackgroundWidget {
                 }
             }
 
-            // 2. Conversion Flow Card: [ Real Media File -> Converting To ]
+            // 2. Conversion Flow Card: Balanced 50/50 Split [ Input Media -> Converting To ]
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 88
-                radius: Appearance.rounding?.normal ?? 14
+                implicitHeight: 78
+                radius: 12
                 color: root.dropStatus === "hover"
                     ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.15)
                     : ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.45)
                 border.width: root.dropStatus === "hover" ? 2 : 1
                 border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                clip: true
 
                 RowLayout {
                     anchors {
                         fill: parent
-                        margins: 10
+                        margins: 8
                     }
-                    spacing: 8
+                    spacing: 6
 
-                    // Left Side: Real Media File (Input)
+                    // Left Box: Real Media File (Exactly 50% width, strictly clipped)
                     Rectangle {
                         Layout.fillWidth: true
+                        Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        radius: 10
+                        radius: 8
+                        clip: true
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
                         border.width: 1
                         border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
@@ -462,12 +465,14 @@ AbstractBackgroundWidget {
                                 fill: parent
                                 margins: 6
                             }
-                            spacing: 2
+                            spacing: 1
 
                             StyledText {
+                                Layout.fillWidth: true
                                 text: "REAL MEDIA FILE"
                                 font.pixelSize: Appearance.font.pixelSize.smallest - 1
                                 font.weight: Font.Bold
+                                elide: Text.ElideRight
                                 color: Appearance.colors.colPrimary
                             }
 
@@ -481,7 +486,7 @@ AbstractBackgroundWidget {
                                     text: root.stagedFiles.length > 0
                                         ? (/\.(mp4|webm|mkv|mov|avi)$/i.test(root.detectedFileName) ? "movie" : "image")
                                         : "add_photo_alternate"
-                                    iconSize: 22
+                                    iconSize: 20
                                     color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
                                 }
 
@@ -492,7 +497,7 @@ AbstractBackgroundWidget {
                                     StyledText {
                                         Layout.fillWidth: true
                                         text: root.stagedFiles.length > 0
-                                            ? (root.stagedFiles.length > 1 ? (root.stagedFiles.length + " frames selected") : root.detectedFileName)
+                                            ? (root.stagedFiles.length > 1 ? (root.stagedFiles.length + " frames") : root.detectedFileName)
                                             : "Tap or drop file"
                                         font.pixelSize: Appearance.font.pixelSize.smallie
                                         font.weight: Font.DemiBold
@@ -504,8 +509,9 @@ AbstractBackgroundWidget {
                                         Layout.fillWidth: true
                                         text: root.stagedFiles.length > 0
                                             ? (root.detectedFormat + (root.stagedFileSize > 0 ? (" · " + root.formatBytes(root.stagedFileSize)) : ""))
-                                            : "Click to open file picker"
+                                            : "Browse media"
                                         font.pixelSize: Appearance.font.pixelSize.smallest
+                                        elide: Text.ElideRight
                                         color: Appearance.colors.colOnSurfaceVariant
                                     }
                                 }
@@ -521,26 +527,29 @@ AbstractBackgroundWidget {
                         }
                     }
 
-                    // Middle Connector: Arrow
+                    // Middle Connector Arrow
                     Rectangle {
-                        implicitWidth: 26
-                        implicitHeight: 26
-                        radius: 13
+                        Layout.fillWidth: false
+                        implicitWidth: 22
+                        implicitHeight: 22
+                        radius: 11
                         color: Appearance.colors.colPrimaryContainer
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "arrow_forward"
-                            iconSize: 14
+                            iconSize: 13
                             color: Appearance.colors.colOnPrimaryContainer
                         }
                     }
 
-                    // Right Side: Converting To (Target Format)
+                    // Right Box: Converting To (Exactly 50% width, strictly clipped)
                     Rectangle {
                         Layout.fillWidth: true
+                        Layout.preferredWidth: 1
                         Layout.fillHeight: true
-                        radius: 10
+                        radius: 8
+                        clip: true
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
                         border.width: 1
                         border.color: Appearance.colors.colLayer0Border
@@ -550,20 +559,25 @@ AbstractBackgroundWidget {
                                 fill: parent
                                 margins: 6
                             }
-                            spacing: 4
+                            spacing: 2
 
                             StyledText {
+                                Layout.fillWidth: true
                                 text: "CONVERTING TO"
                                 font.pixelSize: Appearance.font.pixelSize.smallest - 1
                                 font.weight: Font.Bold
+                                elide: Text.ElideRight
                                 color: Appearance.colors.colSecondary
                             }
 
+                            Item { Layout.fillHeight: true }
+
                             StyledComboBox {
                                 Layout.fillWidth: true
-                                implicitHeight: 34
-                                buttonIcon: "swap_horiz"
-                                buttonRadius: 8
+                                Layout.preferredWidth: 1
+                                implicitWidth: 0
+                                implicitHeight: 32
+                                buttonRadius: 6
                                 colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.60)
                                 colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.80)
                                 colBackgroundActive: Appearance.colors.colPrimaryContainer
@@ -580,24 +594,27 @@ AbstractBackgroundWidget {
                                     root.selectedFormat = model[index].value
                                 }
                             }
+
+                            Item { Layout.fillHeight: true }
                         }
                     }
                 }
             }
 
-            // 3. Fine-tuning Options Row (FPS + Size Limits)
+            // 3. Fine-tuning Options Row: Perfectly Balanced Ratios
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
 
-                // FPS Selector (visible when animated output)
+                // FPS Selector (only for animated / video formats)
                 StyledComboBox {
                     visible: root.isAnimationFormat
-                    Layout.fillWidth: false
-                    implicitWidth: 100
-                    implicitHeight: 34
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    implicitWidth: 0
+                    implicitHeight: 32
                     buttonIcon: "speed"
-                    buttonRadius: 8
+                    buttonRadius: 6
                     colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                     colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
@@ -615,13 +632,15 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Size Limit Dropdown
+                // Size Limit Dropdown (Balanced 50% or 100% width)
                 StyledComboBox {
                     visible: !root.customLimitActive
                     Layout.fillWidth: true
-                    implicitHeight: 34
+                    Layout.preferredWidth: 1
+                    implicitWidth: 0
+                    implicitHeight: 32
                     buttonIcon: "compress"
-                    buttonRadius: 8
+                    buttonRadius: 6
                     colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                     colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
@@ -647,16 +666,17 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Custom Limit Input
+                // Custom Limit Input (Takes exact slot)
                 RowLayout {
                     visible: root.customLimitActive
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     spacing: 4
 
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 34
-                        radius: 8
+                        implicitHeight: 32
+                        radius: 6
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                         border.width: 1
                         border.color: numInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
@@ -681,9 +701,9 @@ AbstractBackgroundWidget {
                     }
 
                     Rectangle {
-                        implicitHeight: 34
-                        implicitWidth: 42
-                        radius: 8
+                        implicitHeight: 32
+                        implicitWidth: 38
+                        radius: 6
                         color: Appearance.colors.colPrimaryContainer
 
                         StyledText {
@@ -705,15 +725,15 @@ AbstractBackgroundWidget {
                     }
 
                     Rectangle {
-                        implicitHeight: 34
-                        implicitWidth: 30
-                        radius: 8
+                        implicitHeight: 32
+                        implicitWidth: 26
+                        radius: 6
                         color: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "close"
-                            iconSize: 16
+                            iconSize: 14
                             color: Appearance.colors.colOnSurfaceVariant
                         }
 
@@ -744,18 +764,18 @@ AbstractBackgroundWidget {
                         case "converting": return root.statusMessage
                         case "done":       return root.statusMessage
                         case "error":      return root.statusMessage
-                        case "staged":     return root.statusMessage + " · Click Bake to start"
+                        case "staged":     return root.statusMessage + " · Click Bake to convert"
                         default:           return root.modeDescription
                     }
                 }
             }
 
-            // 5. The Prominent "Bake" Button (Starts the conversion on demand)
+            // 5. The Prominent "Bake" Button
             Rectangle {
                 id: bakeButton
                 Layout.fillWidth: true
-                implicitHeight: 42
-                radius: Appearance.rounding?.normal ?? 12
+                implicitHeight: 38
+                radius: Appearance.rounding?.normal ?? 10
                 color: {
                     if (root.dropStatus === "converting") return Appearance.colors.colSecondary
                     if (root.dropStatus === "done")       return Appearance.colors.colTertiary
@@ -771,14 +791,14 @@ AbstractBackgroundWidget {
 
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: 6
 
                     MaterialLoadingIndicator {
                         visible: root.dropStatus === "converting"
                         loading: root.dropStatus === "converting"
                         colBg: Appearance.colors.colPrimary
                         colShape: Appearance.colors.colOnPrimary
-                        implicitSize: 22
+                        implicitSize: 20
                     }
 
                     MaterialSymbol {
@@ -788,7 +808,7 @@ AbstractBackgroundWidget {
                             if (root.stagedFiles.length > 0) return "local_fire_department"
                             return "touch_app"
                         }
-                        iconSize: 20
+                        iconSize: 18
                         color: {
                             if (root.stagedFiles.length > 0 || root.dropStatus === "done") return Appearance.colors.colOnPrimary
                             return Appearance.colors.colOnSurfaceVariant
