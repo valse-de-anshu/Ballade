@@ -2,9 +2,11 @@
 """
 Production Media & Image Converter and Optimizer for Ballade / Quickshell.
 Supports:
-- Image formats: WEBP, PNG, JPEG, PDF, AVIF, GIF, ICO, BMP, TIFF, HEIC, JXL, PSD, TGA, PPM.
-- Video to GIF & Video to Image: MP4, WEBM, MKV, MOV, AVI, FLV -> GIF / WEBP / PNG / JPG.
-- Image Sequence / Animation: Multiple image frames -> MP4 / Animated GIF / WebP (with customizable FPS).
+- Image to Image conversions: WEBP, PNG, JPEG, PDF, AVIF, GIF, ICO, BMP, TIFF, HEIC, JXL, PSD, TGA, PPM.
+- Video to GIF & Video to Video: MP4, WEBM, MKV, MOV, AVI, FLV -> GIF / MP4 / WEBM (with size limits & FPS control).
+- Video to Image: Extract high quality frames from any video to PNG / JPG / WEBP / AVIF / etc.
+- Frame Sequences (Animation): Compile multiple images -> MP4 Video / Animated GIF (with FPS & size limits).
+- Multi-image to PDF: Merge image collections into compressed PDFs.
 - Handles strict size limits (e.g. 4KB, 50KB, 200KB, 500KB, 1MB, 2MB, 5MB, 10MB, or custom user limits)
   with smart multi-pass quality optimization, color quantization, and dimension scaling.
 """
@@ -82,6 +84,52 @@ def convert_video_to_gif(src_path, dst_path, max_bytes=0, fps=15):
         return True
     return False
 
+def convert_video_to_video(src_path, dst_path, max_bytes=0, fps=0):
+    """Converts/compresses a video file to MP4 with multi-stage size reduction."""
+    stages = [
+        {"crf": 20, "scale": None},
+        {"crf": 26, "scale": 1280},
+        {"crf": 32, "scale": 854},
+        {"crf": 38, "scale": 640}
+    ] if max_bytes > 0 else [{"crf": 20, "scale": None}]
+
+    tmp_out = dst_path + ".tmp.mp4"
+    for st in stages:
+        vf_parts = []
+        if fps and fps > 0:
+            vf_parts.append(f"fps={fps}")
+        if st["scale"]:
+            vf_parts.append(f"scale='min({st['scale']},trunc(iw/2)*2)':-2")
+        else:
+            vf_parts.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
+        vf = ",".join(vf_parts)
+
+        cmd = [
+            "ffmpeg", "-y", "-loglevel", "error",
+            "-i", src_path,
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-crf", str(st["crf"]),
+            "-preset", "medium",
+            "-vf", vf,
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            tmp_out
+        ]
+        res = subprocess.run(cmd, capture_output=True)
+        if res.returncode == 0 and os.path.exists(tmp_out):
+            if max_bytes <= 0 or os.path.getsize(tmp_out) <= max_bytes or st == stages[-1]:
+                shutil.move(tmp_out, dst_path)
+                return True
+            try:
+                os.remove(tmp_out)
+            except Exception:
+                pass
+    if os.path.exists(tmp_out):
+        shutil.move(tmp_out, dst_path)
+        return True
+    return False
+
 def convert_frames_to_animation(frame_paths, dst_path, target_fmt="mp4", fps=24, max_bytes=0):
     """Compiles multiple image frames into a video (MP4/WEBM) or animated GIF/WEBP."""
     if not frame_paths:
@@ -134,24 +182,42 @@ def convert_frames_to_animation(frame_paths, dst_path, target_fmt="mp4", fps=24,
             return os.path.exists(dst_path)
 
         else:
-            # Compile to MP4 / Video (default)
-            crf = 20
-            if max_bytes > 0:
-                # Estimate required CRF / scale
-                crf = 23
-            cmd = [
-                "ffmpeg", "-y", "-loglevel", "error",
-                "-framerate", str(fps),
-                "-i", input_pattern,
-                "-c:v", "libx264",
-                "-pix_fmt", "yuv420p",
-                "-crf", str(crf),
-                "-preset", "medium",
-                "-movflags", "+faststart",
-                dst_path
-            ]
-            res = subprocess.run(cmd, capture_output=True)
-            return res.returncode == 0 and os.path.exists(dst_path)
+            # Compile to MP4 / Video with size limit stages
+            stages = [
+                {"crf": 20, "scale": None},
+                {"crf": 26, "scale": 1280},
+                {"crf": 32, "scale": 854},
+                {"crf": 38, "scale": 640}
+            ] if max_bytes > 0 else [{"crf": 20, "scale": None}]
+
+            tmp_out = dst_path + ".tmp.mp4"
+            for st in stages:
+                vf = f"scale='min({st['scale']},trunc(iw/2)*2)':-2" if st["scale"] else "scale=trunc(iw/2)*2:trunc(ih/2)*2"
+                cmd = [
+                    "ffmpeg", "-y", "-loglevel", "error",
+                    "-framerate", str(fps),
+                    "-i", input_pattern,
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-crf", str(st["crf"]),
+                    "-preset", "medium",
+                    "-vf", vf,
+                    "-movflags", "+faststart",
+                    tmp_out
+                ]
+                res = subprocess.run(cmd, capture_output=True)
+                if res.returncode == 0 and os.path.exists(tmp_out):
+                    if max_bytes <= 0 or os.path.getsize(tmp_out) <= max_bytes or st == stages[-1]:
+                        shutil.move(tmp_out, dst_path)
+                        return True
+                    try:
+                        os.remove(tmp_out)
+                    except Exception:
+                        pass
+            if os.path.exists(tmp_out):
+                shutil.move(tmp_out, dst_path)
+                return True
+            return os.path.exists(dst_path)
 
 def convert_video_to_image(src_path, dst_path, target_fmt="png"):
     """Extracts the first frame from a video file into the target image format."""
@@ -208,10 +274,7 @@ def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0, fps=15):
         if target_fmt in ("GIF",):
             return convert_video_to_gif(src_path, dst_path, max_bytes=max_bytes, fps=fps)
         elif target_fmt in ("MP4", "WEBM", "ANIMATE"):
-            # Passthrough or re-encode
-            cmd = ["ffmpeg", "-y", "-i", src_path, "-c:v", "libx264", "-pix_fmt", "yuv420p", dst_path]
-            res = subprocess.run(cmd, capture_output=True)
-            return res.returncode == 0 and os.path.exists(dst_path)
+            return convert_video_to_video(src_path, dst_path, max_bytes=max_bytes, fps=fps)
         else:
             # Video to static image (extract frame)
             return convert_video_to_image(src_path, dst_path, target_fmt.lower())

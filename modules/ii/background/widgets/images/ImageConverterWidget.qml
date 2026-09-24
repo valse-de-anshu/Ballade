@@ -16,26 +16,25 @@ AbstractBackgroundWidget {
     configEntryName: "images"
 
     property list<var> formatOptions: [
-        // Animation & Sequence
-        { displayName: "ANIMATE", value: "animate", icon: "movie" },
-        { displayName: "MP4",     value: "mp4",     icon: "videocam" },
-        // Daily / Regular
-        { displayName: "GIF",     value: "gif",     icon: "gif" },
-        { displayName: "WEBP",    value: "webp",    icon: "motion_photos_on" },
-        { displayName: "PNG",     value: "png",     icon: "image" },
-        { displayName: "JPG",     value: "jpg",     icon: "photo" },
-        { displayName: "PDF",     value: "pdf",     icon: "picture_as_pdf" },
-        // Occasional / Web & Icons
-        { displayName: "AVIF",    value: "avif",    icon: "hd" },
-        { displayName: "ICO",     value: "ico",     icon: "star" },
-        { displayName: "BMP",     value: "bmp",     icon: "grid_on" },
+        // Animation & Video
+        { displayName: "ANIMATE (Frames → Video)", value: "animate", icon: "movie", shortName: "ANIMATE" },
+        { displayName: "MP4 (Video / Frames)",     value: "mp4",     icon: "videocam", shortName: "MP4" },
+        { displayName: "GIF (Animated GIF)",       value: "gif",     icon: "gif",      shortName: "GIF" },
+        // Daily / Web Images
+        { displayName: "WEBP (Modern Web)",        value: "webp",    icon: "motion_photos_on", shortName: "WEBP" },
+        { displayName: "PNG (Lossless)",           value: "png",     icon: "image",     shortName: "PNG" },
+        { displayName: "JPG (Photo)",              value: "jpg",     icon: "photo",     shortName: "JPG" },
+        { displayName: "PDF (Multi-page Doc)",     value: "pdf",     icon: "picture_as_pdf", shortName: "PDF" },
+        { displayName: "AVIF (Next-Gen)",          value: "avif",    icon: "hd",        shortName: "AVIF" },
+        { displayName: "ICO (App Icon)",           value: "ico",     icon: "star",      shortName: "ICO" },
         // Professional / Specialized
-        { displayName: "TIFF",    value: "tiff",    icon: "photo_library" },
-        { displayName: "HEIC",    value: "heic",    icon: "camera" },
-        { displayName: "JXL",     value: "jxl",     icon: "tune" },
-        { displayName: "PSD",     value: "psd",     icon: "brush" },
-        { displayName: "TGA",     value: "tga",     icon: "sports_esports" },
-        { displayName: "PPM",     value: "ppm",     icon: "terminal" },
+        { displayName: "BMP (Bitmap)",             value: "bmp",     icon: "grid_on",   shortName: "BMP" },
+        { displayName: "TIFF (Print / Raw)",       value: "tiff",    icon: "photo_library", shortName: "TIFF" },
+        { displayName: "HEIC (Apple Photo)",       value: "heic",    icon: "camera",    shortName: "HEIC" },
+        { displayName: "JXL (JPEG XL)",            value: "jxl",     icon: "tune",      shortName: "JXL" },
+        { displayName: "PSD (Photoshop)",          value: "psd",     icon: "brush",     shortName: "PSD" },
+        { displayName: "TGA (Targa)",              value: "tga",     icon: "sports_esports", shortName: "TGA" },
+        { displayName: "PPM (Portable Pixmap)",    value: "ppm",     icon: "terminal",  shortName: "PPM" },
     ]
 
     property list<var> fpsOptions: [
@@ -48,7 +47,6 @@ AbstractBackgroundWidget {
 
     property list<var> sizeOptions: [
         { displayName: "No Limit", value: 0 },
-        { displayName: "4 KB",     value: 4 * 1024 },
         { displayName: "50 KB",    value: 50 * 1024 },
         { displayName: "200 KB",   value: 200 * 1024 },
         { displayName: "500 KB",   value: 500 * 1024 },
@@ -56,6 +54,8 @@ AbstractBackgroundWidget {
         { displayName: "2 MB",     value: 2 * 1024 * 1024 },
         { displayName: "5 MB",     value: 5 * 1024 * 1024 },
         { displayName: "10 MB",    value: 10 * 1024 * 1024 },
+        { displayName: "25 MB",    value: 25 * 1024 * 1024 },
+        { displayName: "50 MB",    value: 50 * 1024 * 1024 },
         { displayName: "Custom...", value: -1 }
     ]
 
@@ -64,7 +64,22 @@ AbstractBackgroundWidget {
     property int selectedSizeLimit: 0
     property string selectedSizeLabel: "No Limit"
 
-    readonly property bool isAnimationFormat: selectedFormat === "animate" || selectedFormat === "mp4"
+    readonly property bool isAnimationFormat: selectedFormat === "animate" || selectedFormat === "mp4" || selectedFormat === "gif"
+
+    readonly property string modeDescription: {
+        switch (selectedFormat) {
+            case "gif":     return "Convert video clips or photos into an animated GIF"
+            case "animate": return "Assemble multiple frame images into a smooth MP4 video"
+            case "mp4":     return "Convert videos or frame sequences into MP4 video"
+            case "pdf":     return "Merge multiple images or documents into a single PDF"
+            case "webp":    return "Convert images or video frames to compact WebP"
+            case "png":     return "Convert to lossless transparent PNG"
+            case "jpg":     return "Convert to standard compressed JPG photo"
+            case "avif":    return "Convert to ultra-compact modern AVIF format"
+            case "ico":     return "Convert image into 256x256 desktop App Icon"
+            default:        return "Convert dropped media to " + selectedFormat.toUpperCase()
+        }
+    }
 
     property bool customLimitActive: false
     property string customNum: "500"
@@ -86,14 +101,15 @@ AbstractBackgroundWidget {
     // Dynamic Auto-Resizing width calculation based on text content
     readonly property real headerRequiredWidth: (titleIcon?.implicitWidth ?? 18) + (titleText?.implicitWidth ?? 120) + (badgeRect?.implicitWidth ?? 80) + 48
     readonly property real statusRequiredWidth: (dropText?.implicitWidth ?? 140) + 64
+    readonly property real descRequiredWidth: (descText?.implicitWidth ?? 160) + 64
     readonly property real bottomRequiredWidth: isAnimationFormat
-        ? ((formatCombo?.implicitWidth ?? 100) + (fpsCombo?.implicitWidth ?? 90) + 44)
-        : (customLimitActive ? 370 : ((formatCombo?.implicitWidth ?? 100) + (sizeCombo?.implicitWidth ?? 110) + 44))
+        ? ((formatCombo?.implicitWidth ?? 130) + (fpsCombo?.implicitWidth ?? 85) + (customLimitActive ? 140 : (sizeCombo?.implicitWidth ?? 95)) + 48)
+        : ((formatCombo?.implicitWidth ?? 130) + (customLimitActive ? 140 : (sizeCombo?.implicitWidth ?? 95)) + 40)
 
-    property real targetWidgetWidth: Math.max(320, headerRequiredWidth, statusRequiredWidth, bottomRequiredWidth)
+    property real targetWidgetWidth: Math.max(340, headerRequiredWidth, statusRequiredWidth, descRequiredWidth, bottomRequiredWidth)
 
     implicitWidth: targetWidgetWidth
-    implicitHeight: 236
+    implicitHeight: 252
 
     Behavior on implicitWidth {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
@@ -278,7 +294,7 @@ AbstractBackgroundWidget {
 
                 StyledText {
                     id: titleText
-                    text: root.isAnimationFormat ? "Animation & Converter" : "Image Converter"
+                    text: root.isAnimationFormat ? "Media & Animation Studio" : "Media & Format Converter"
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colOnLayer1
@@ -345,8 +361,8 @@ AbstractBackgroundWidget {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 6
-                    width: parent.width - 24
+                    spacing: 4
+                    width: parent.width - 20
 
                     MaterialLoadingIndicator {
                         Layout.alignment: Qt.AlignHCenter
@@ -354,13 +370,13 @@ AbstractBackgroundWidget {
                         loading: root.dropStatus === "converting"
                         colBg: Appearance.colors.colPrimary
                         colShape: Appearance.colors.colOnPrimary
-                        implicitSize: 34
+                        implicitSize: 32
                     }
 
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
                         visible: root.dropStatus !== "converting"
-                        iconSize: 28
+                        iconSize: 26
                         fill: root.dropStatus === "done" ? 1 : 0
                         color: {
                             switch (root.dropStatus) {
@@ -385,7 +401,7 @@ AbstractBackgroundWidget {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.fillWidth: true
                         font.pixelSize: Appearance.font.pixelSize.small
-                        font.weight: Font.Medium
+                        font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideMiddle
                         color: {
@@ -396,17 +412,32 @@ AbstractBackgroundWidget {
                                 default:       return Appearance.colors.colOnLayer0
                             }
                         }
-                        opacity: root.dropStatus === "idle" ? 0.90 : 1.0
+                        opacity: root.dropStatus === "idle" ? 0.95 : 1.0
                         text: {
                             switch (root.dropStatus) {
-                                case "idle":       return root.isAnimationFormat ? "Drop frames to make animation" : "Drop media/images to convert"
-                                case "hover":      return "Release to start"
+                                case "idle":       return root.selectedFormat === "animate" ? "Drop frames to compile animation" : "Drop files to convert to " + root.selectedFormat.toUpperCase()
+                                case "hover":      return "Release to start conversion"
                                 case "converting": return root.statusMessage
                                 case "done":       return root.statusMessage
                                 case "error":      return root.statusMessage
                                 default:           return ""
                             }
                         }
+                    }
+
+                    // Mode Intro / Description Subtitle
+                    StyledText {
+                        id: descText
+                        visible: root.dropStatus === "idle"
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.fillWidth: true
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.Normal
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideMiddle
+                        color: Appearance.colors.colOnSurfaceVariant
+                        opacity: 0.80
+                        text: root.modeDescription
                     }
                 }
 
@@ -439,12 +470,12 @@ AbstractBackgroundWidget {
                 Layout.fillWidth: true
                 spacing: 8
 
-                // Format Selector
+                // Target Format Selector
                 StyledComboBox {
                     id: formatCombo
                     Layout.fillWidth: true
                     implicitHeight: 36
-                    buttonIcon: "photo"
+                    buttonIcon: "swap_horiz"
                     buttonRadius: 10
                     colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
                     colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
@@ -463,11 +494,12 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // FPS Selector (shown when animation format is selected)
+                // FPS Selector (shown when animation/video/gif format is selected)
                 StyledComboBox {
                     id: fpsCombo
                     visible: root.isAnimationFormat
-                    Layout.fillWidth: true
+                    Layout.fillWidth: false
+                    implicitWidth: 95
                     implicitHeight: 36
                     buttonIcon: "speed"
                     buttonRadius: 10
@@ -488,11 +520,12 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Standard Presets Dropdown (shown when custom mode is inactive and not animation)
+                // Standard Presets Dropdown (always available for ALL formats)
                 StyledComboBox {
                     id: sizeCombo
-                    visible: !root.customLimitActive && !root.isAnimationFormat
-                    Layout.fillWidth: true
+                    visible: !root.customLimitActive
+                    Layout.fillWidth: false
+                    implicitWidth: 105
                     implicitHeight: 36
                     buttonIcon: "compress"
                     buttonRadius: 10
@@ -524,7 +557,8 @@ AbstractBackgroundWidget {
                 // Custom Limit Inline Bar (shown when custom mode is active)
                 RowLayout {
                     visible: root.customLimitActive
-                    Layout.fillWidth: true
+                    Layout.fillWidth: false
+                    implicitWidth: 140
                     spacing: 4
 
                     // Number Input
