@@ -330,16 +330,28 @@ AbstractBackgroundWidget {
     StyledRectangularShadow {
         target: contentItem
         z: -2
+        visible: Config.options.background.widgets.shadow ?? true
     }
 
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+        color: "transparent"
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
         radius: Appearance.rounding?.large ?? 20
         clip: true
+
+        FastBlurred {
+            anchors.fill: parent
+            blurSource: root.wallpaperItem
+            cardRadius: contentItem.radius
+            tint: Appearance.colors.colLayer1
+            tintOpacity: 0.55
+            trackX: root.x  
+            trackY: root.y
+            visible: Config.options.background.widgets.blurWidgets ?? true
+        }
 
         ColumnLayout {
             anchors {

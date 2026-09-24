@@ -12,36 +12,30 @@ import qs.modules.ii.background.widgets
 Item {
     id: root
 
-    readonly property var pixelConfig: Config.options.background.widgets.clock.pixel ?? {}
-    readonly property bool isVertical: (pixelConfig.orientation ?? "vertical") === "vertical"
-    readonly property real baseSize: (pixelConfig.size && pixelConfig.size > 0) ? pixelConfig.size : (isVertical ? 252 : 150)
-    readonly property real scaleFactor: isVertical ? (baseSize / 252) : (baseSize / 150)
+    readonly property bool isVertical: Config.options.background.widgets.clock.pixel.orientation === "vertical"
+    required property Item wallpaperItem
+    property real originX: 0
+    property real originY: 0
 
-    implicitWidth: isVertical ? (276 * scaleFactor) : (420 * scaleFactor)
-    implicitHeight: baseSize
-
-    readonly property string fontFamily: pixelConfig.font?.family ?? "Google Sans Flex"
-    readonly property int fontWeight: pixelConfig.font?.weight ?? 1000
-    readonly property real fontWidth: pixelConfig.font?.width ?? 100
-    readonly property real fontRoundness: pixelConfig.font?.roundness ?? 0
+    implicitWidth: isVertical ? 276 : 420
+    implicitHeight: isVertical ? 252 + 12 : 150
 
     readonly property string glyphTopLeft: DateTime.digitH0
     readonly property string glyphTopRight: DateTime.digitH1
     readonly property string glyphBottomLeft: DateTime.digitM0
     readonly property string glyphBottomRight: DateTime.digitM1
-    property color colText: Appearance.colors.colPrimary
-    readonly property color tintSoft: Qt.rgba(colText.r, colText.g, colText.b, 0.40)
-    readonly property color tintBold: colText
+    readonly property color tintSoft: Appearance.colors.colPrimaryContainer
+    readonly property color tintBold: Appearance.colors.colPrimary
 
     readonly property real fringeSize: isVertical ? root.width * 0.026 : root.height * 0.03
-    readonly property real tileW: isVertical ? root.width * 0.66 : root.width * 0.30
+    readonly property real tileW: isVertical ? root.width * 0.66 : root.width * 0.327
     readonly property real tileH: isVertical ? root.height * 0.66 : root.height * 0.9
     readonly property real glyphSize: isVertical ? root.height * 0.66 : root.height * 0.85
 
     readonly property real pos0X: isVertical ? root.width * 0.00 : root.width * 0.00
-    readonly property real pos1X: isVertical ? root.width * 0.30 : root.width * 0.15
-    readonly property real pos2X: isVertical ? root.width * 0.00 : root.width * 0.46
-    readonly property real pos3X: isVertical ? root.width * 0.30 : root.width * 0.60
+    readonly property real pos1X: isVertical ? root.width * 0.30 : root.width * 0.163
+    readonly property real pos2X: isVertical ? root.width * 0.00 : root.width * 0.50
+    readonly property real pos3X: isVertical ? root.width * 0.30 : root.width * 0.653
 
     readonly property real pos0Y: isVertical ? root.height * -0.04 : root.height * 0.05
     readonly property real pos1Y: isVertical ? root.height * -0.04 : root.height * 0.05
@@ -62,10 +56,16 @@ Item {
     }
     readonly property var fringeSamples: ringSamples(16, fringeSize)
 
+    property bool blurWidgets: Config.options.background.widgets.blurWidgets
+
     StyledDropShadow {
-        id: glyphShadow
         target: glyphStage
-        visible: Config.options.background.widgets.enableShadows ?? false
+        color: Appearance.colors.colShadow
+        radius: 8
+        samples: 16
+        horizontalOffset: 5
+        verticalOffset: 6
+        visible: Config.options.background.widgets.shadow
     }
 
     Item {
@@ -76,15 +76,11 @@ Item {
             width: root.tileW
             height: root.tileH
             font {
-                family: root.fontFamily
-                weight: root.fontWeight
-                bold: root.fontWeight >= 600
+                family: "Google Sans Flex"
+                weight: 1000
+                bold: true
                 pixelSize: root.glyphSize
-                variableAxes: ({
-                    "wght": root.fontWeight,
-                    "wdth": root.fontWidth,
-                    "ROND": root.fontRoundness
-                })
+                variableAxes: ({ "wght": 1000 })
             }
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -118,11 +114,34 @@ Item {
             }
         }
         OpacityMask {
+            id: shapeA
             anchors.fill: parent
             source: tileAFace
             maskSource: tileAPunch
             invert: true
             z: 0
+            visible: !root.blurWidgets
+        }
+        FastBlurred {
+            id: blurA
+            x: root.pos0X
+            y: root.pos0Y
+            width: root.tileW
+            height: root.tileH
+            cardRadius: 0
+            blurSource: root.wallpaperItem
+            tint: root.tintSoft
+            tintOpacity: 0.55
+            trackX: root.originX + root.pos0X
+            trackY: root.originY + root.pos0Y
+            visible: false
+        }
+        OpacityMask {
+            anchors.fill: parent
+            source: blurA
+            maskSource: shapeA
+            z: 0
+            visible: root.blurWidgets
         }
 
         Item {
@@ -152,11 +171,34 @@ Item {
             }
         }
         OpacityMask {
+            id: shapeB
             anchors.fill: parent
             source: tileBFace
             maskSource: tileBPunch
             invert: true
             z: 1
+            visible: !root.blurWidgets
+        }
+        FastBlurred {
+            id: blurB
+            x: root.pos1X
+            y: root.pos1Y
+            width: root.tileW
+            height: root.tileH
+            cardRadius: 0
+            blurSource: root.wallpaperItem
+            tint: root.tintBold
+            tintOpacity: 0.55
+            trackX: root.originX + root.pos1X
+            trackY: root.originY + root.pos1Y
+            visible: false
+        }
+        OpacityMask {
+            anchors.fill: parent
+            source: blurB
+            maskSource: shapeB
+            z: 1
+            visible: root.blurWidgets
         }
 
         Item {
@@ -185,19 +227,76 @@ Item {
             }
         }
         OpacityMask {
+            id: shapeC
             anchors.fill: parent
             source: tileCFace
             maskSource: tileCPunch
             invert: true
             z: 2
+            visible: !root.blurWidgets
+        }
+        FastBlurred {
+            id: blurC
+            x: root.pos2X
+            y: root.pos2Y
+            width: root.tileW
+            height: root.tileH
+            cardRadius: 0
+            blurSource: root.wallpaperItem
+            tint: root.tintBold
+            tintOpacity: 0.55
+            trackX: root.originX + root.pos2X
+            trackY: root.originY + root.pos2Y
+            visible: false
+        }
+        OpacityMask {
+            anchors.fill: parent
+            source: blurC
+            maskSource: shapeC
+            z: 2
+            visible: root.blurWidgets
         }
 
+        Item {
+            id: tileDFace
+            anchors.fill: parent
+            visible: false
+            GlyphTile {
+                x: root.pos3X
+                y: root.pos3Y
+                text: root.glyphBottomRight
+                color: "white"
+            }
+        }
         GlyphTile {
+            id: tileDPlain
             x: root.pos3X
             y: root.pos3Y
             text: root.glyphBottomRight
             color: root.tintSoft
             z: 3
+            visible: !root.blurWidgets
+        }
+        FastBlurred {
+            id: blurD
+            x: root.pos3X
+            y: root.pos3Y
+            width: root.tileW
+            height: root.tileH
+            cardRadius: 0
+            blurSource: root.wallpaperItem
+            tint: root.tintSoft
+            tintOpacity: 0.55
+            trackX: root.originX + root.pos3X
+            trackY: root.originY + root.pos3Y
+            visible: false
+        }
+        OpacityMask {
+            anchors.fill: parent
+            source: blurD
+            maskSource: tileDFace
+            z: 3
+            visible: root.blurWidgets
         }
 
         Column {
@@ -213,6 +312,16 @@ Item {
                 radius: width / 2
                 color: root.tintBold
                 anchors.horizontalCenter: parent.horizontalCenter
+                FastBlurred {
+                    anchors.fill: parent
+                    cardRadius: width / 2
+                    blurSource: root.wallpaperItem
+                    tint: root.tintBold
+                    tintOpacity: 0.55
+                    trackX: root.originX + root.colonX
+                    trackY: root.originY + root.pos0Y + root.tileH / 2 - height / 2
+                    visible: root.blurWidgets
+                }
             }
             Rectangle {
                 width: root.colonDotSize
@@ -220,29 +329,17 @@ Item {
                 radius: width / 2
                 color: root.tintBold
                 anchors.horizontalCenter: parent.horizontalCenter
+                FastBlurred {
+                    anchors.fill: parent
+                    cardRadius: width / 2
+                    blurSource: root.wallpaperItem
+                    tint: root.tintBold
+                    tintOpacity: 0.55
+                    trackX: root.originX + root.colonX
+                    trackY: root.originY + root.pos0Y + root.tileH / 2 - height / 2 + root.colonGap + root.colonDotSize
+                    visible: root.blurWidgets
+                }
             }
-        }
-
-        Text {
-            visible: DateTime.is12Hour && (root.pixelConfig.showAmPm ?? true)
-            text: DateTime.ampm
-            font {
-                family: root.fontFamily
-                weight: root.fontWeight
-                bold: root.fontWeight >= 600
-                pixelSize: Math.max(14, root.glyphSize * 0.18)
-                variableAxes: ({
-                    "wght": root.fontWeight,
-                    "wdth": root.fontWidth,
-                    "ROND": root.fontRoundness
-                })
-            }
-            color: root.tintBold
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.rightMargin: root.isVertical ? 4 : 8
-            anchors.bottomMargin: root.isVertical ? 4 : 6
-            z: 5
         }
     }
 }

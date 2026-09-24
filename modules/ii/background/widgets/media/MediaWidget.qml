@@ -64,6 +64,7 @@ AbstractBackgroundWidget {
     StyledRectangularShadow {
         target: card
         z: -2
+        visible: Config.options.background.widgets.shadow ?? true
     }
 
     Rectangle {
@@ -76,17 +77,23 @@ AbstractBackgroundWidget {
         }
         radius: Appearance.rounding?.verylarge ?? 30
         color: "transparent"
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Border
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
         }
 
-        FrostedWidgetBackground {
+        FastBlurred {
             anchors.fill: parent
-            radius: card.radius
-            borderColor: Appearance.colors.colLayer0Border
-            wallpaperPathOverride: root.wallpaperPath
+            blurSource: root.wallpaperItem
+            cardRadius: card.radius
+            tint: Appearance.colors.colLayer1
+            tintOpacity: 0.55
+            trackX: root.x  
+            trackY: root.y
+            visible: Config.options.background.widgets.blurWidgets ?? true
         }
 
         layer.enabled: true

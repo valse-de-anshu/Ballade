@@ -383,16 +383,28 @@ AbstractBackgroundWidget {
     StyledRectangularShadow {
         target: card
         z: -1
+        visible: Config.options.background.widgets.shadow ?? true
     }
 
     Rectangle {
         id: card
         anchors.fill: parent
         radius: Appearance.rounding.verylarge
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        color: "transparent"
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
         clip: true
+
+        FastBlurred {
+            anchors.fill: parent
+            blurSource: root.wallpaperItem
+            cardRadius: card.radius
+            tint: Appearance.colors.colLayer1
+            tintOpacity: 0.55
+            trackX: root.x  
+            trackY: root.y
+            visible: Config.options.background.widgets.blurWidgets ?? true
+        }
 
         // ════════════════════════════════════════════════════════
         // 1. MAIN RADAR & ACCORDION VIEW (when no tool is full-canvas)

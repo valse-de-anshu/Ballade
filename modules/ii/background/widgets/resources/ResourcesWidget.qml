@@ -35,13 +35,25 @@ AbstractBackgroundWidget {
         implicitWidth: root.cardWidth
         implicitHeight: root.cardHeight
         radius: Appearance.rounding?.verylarge ?? 30
-        color: statCard.bgColor
+        color: "transparent"
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.color: Appearance.colors.colLayer0Border
 
         StyledRectangularShadow {
             target: statCard
             z: -2
+            visible: Config.options.background.widgets.shadow ?? true
+        }
+
+        FastBlurred {
+            anchors.fill: parent
+            blurSource: root.wallpaperItem
+            cardRadius: statCard.radius
+            tint: Appearance.colors.colLayer1
+            tintOpacity: 0.55
+            trackX: statCard.x + root.x
+            trackY: statCard.y + root.y
+            visible: Config.options.background.widgets.blurWidgets ?? true
         }
 
         ColumnLayout {

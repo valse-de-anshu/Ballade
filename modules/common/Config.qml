@@ -228,6 +228,9 @@ Singleton {
                 property string splitSide: "left" // left, right
                 property bool showSnapLines: true
                 property JsonObject widgets: JsonObject {
+                    property bool blurWidgets: true
+                    property real blurRadius: 32
+                    property bool shadow: true
                     property JsonObject clock: JsonObject {
                         property bool enable: true
                         property bool showOnlyWhenLocked: false

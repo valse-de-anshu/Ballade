@@ -61,16 +61,28 @@ AbstractBackgroundWidget {
 
         StyledDropShadow { 
             target: contentRect 
-            visible: sizeMode !== "4x1"
+            visible: sizeMode !== "4x1" && (Config.options.background.widgets.shadow ?? true)
+            z: -2
         }
 
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+            color: "transparent"
             border.width: sizeMode === "4x1" ? 0 : 1
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.color: Appearance.colors.colLayer0Border
             radius: Appearance.rounding?.verylarge ?? 30
+
+            FastBlurred {
+                anchors.fill: parent
+                blurSource: root.wallpaperItem
+                cardRadius: contentRect.radius
+                tint: Appearance.colors.colLayer1
+                tintOpacity: 0.55
+                trackX: root.x  
+                trackY: root.y
+                visible: (Config.options.background.widgets.blurWidgets ?? true) && sizeMode === "2x2"
+            }
 
             // 2x2
             ColumnLayout {
