@@ -147,23 +147,20 @@ Singleton {
     signal discardAll();
     signal timeout(id: var);
 
-    Process {
-        id: notifSoundProc
-        property string soundPath: Config.options.sounds.notificationSoundPath || ""
-        property int volume: Config.options.sounds.notificationVolume ?? 70
-        command: {
-            let p = soundPath.trim();
-            if (p.startsWith("file://")) p = p.substring(7);
-            let vol = Math.max(0, Math.min(100, volume));
-            return [
-                "bash",
-                Directories.scriptPath + "/play-audio.sh",
-                "--file", p,
-                "--volume", vol.toString(),
-                "--fallback", "/usr/share/sounds/freedesktop/stereo/message.oga",
-                "--category", "notification"
-            ];
-        }
+    function playNotificationSound() {
+        if (root.silent || !(Config.options.sounds.notifications ?? true)) return;
+        let soundPath = Config.options.sounds.notificationSoundPath || "";
+        let p = soundPath.trim();
+        if (p.startsWith("file://")) p = p.substring(7);
+        let vol = Math.max(0, Math.min(100, Config.options.sounds.notificationVolume ?? 70));
+        Quickshell.execDetached([
+            "bash",
+            Directories.scriptPath + "/play-audio.sh",
+            "--file", p,
+            "--volume", vol.toString(),
+            "--fallback", "/usr/share/sounds/freedesktop/stereo/message.oga",
+            "--category", "notification"
+        ]);
     }
 
 	NotificationServer {
@@ -201,10 +198,7 @@ Singleton {
             root.notify(newNotifObject);
 
             // Notification Sound Effect
-            if (!root.silent && (Config.options.sounds.notifications ?? true)) {
-                notifSoundProc.running = false
-                notifSoundProc.running = true
-            }
+            root.playNotificationSound();
 
             // console.log(notifToString(newNotifObject));
             notifFileView.setText(stringifyList(root.list));

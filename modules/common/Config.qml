@@ -41,6 +41,7 @@ Singleton {
         }
 
         obj[keys[keys.length - 1]] = convertedValue;
+        fileWriteTimer.restart();
     }
 
     function save() {

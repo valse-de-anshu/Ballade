@@ -46,6 +46,8 @@ for ((i=0;i<${#ARGS[@]};i++)); do
     fi
 done
 
+ENC_FLAGS=(-c libx264 --pixel-format yuv420p -p crf=18 -p preset=ultrafast -p "x264-params=colorprim=bt709:transfer=bt709:colormatrix=bt709:fullrange=on" -F "scale=in_range=full:out_range=full:in_color_matrix=bt709:out_color_matrix=bt709")
+
 if pgrep wf-recorder > /dev/null; then
     notify-send "Recording Stopped" "Stopped" -a 'Recorder' &
     pkill wf-recorder &
@@ -53,9 +55,9 @@ else
     if [[ $FULLSCREEN_FLAG -eq 1 ]]; then
         notify-send "Starting recording" 'recording_'"$(getdate)"'.mp4' -a 'Recorder' & disown
         if [[ $SOUND_FLAG -eq 1 ]]; then
-            wf-recorder -o "$(getactivemonitor)" --pixel-format yuv420p -f './recording_'"$(getdate)"'.mp4' -t --audio="$(getaudiooutput)"
+            wf-recorder -o "$(getactivemonitor)" "${ENC_FLAGS[@]}" -f './recording_'"$(getdate)"'.mp4' -t --audio="$(getaudiooutput)"
         else
-            wf-recorder -o "$(getactivemonitor)" --pixel-format yuv420p -f './recording_'"$(getdate)"'.mp4' -t
+            wf-recorder -o "$(getactivemonitor)" "${ENC_FLAGS[@]}" -f './recording_'"$(getdate)"'.mp4' -t
         fi
     else
         # If a manual region was provided via --region, use it; otherwise run slurp as before.
@@ -70,9 +72,9 @@ else
 
         notify-send "Starting recording" 'recording_'"$(getdate)"'.mp4' -a 'Recorder' & disown
         if [[ $SOUND_FLAG -eq 1 ]]; then
-            wf-recorder --pixel-format yuv420p -f './recording_'"$(getdate)"'.mp4' -t --geometry "$region" --audio="$(getaudiooutput)"
+            wf-recorder "${ENC_FLAGS[@]}" -f './recording_'"$(getdate)"'.mp4' -t --geometry "$region" --audio="$(getaudiooutput)"
         else
-            wf-recorder --pixel-format yuv420p -f './recording_'"$(getdate)"'.mp4' -t --geometry "$region"
+            wf-recorder "${ENC_FLAGS[@]}" -f './recording_'"$(getdate)"'.mp4' -t --geometry "$region"
         fi
     fi
 fi

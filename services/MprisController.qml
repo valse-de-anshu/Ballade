@@ -127,6 +127,15 @@ Singleton {
 	}
 
 	function updateTrack() {
+		if (!this.activePlayer) {
+			this.fallbackArtUrl = "";
+			this.readyArtFilePath = "";
+			this.activeTrack = null;
+			this.trackChanged(__reverse);
+			this.__reverse = false;
+			return;
+		}
+
 		let art = this.activePlayer?.trackArtUrl ?? "";
 		if (!art || art.length === 0) {
 			ytFallbackProcess.running = true;
@@ -148,6 +157,8 @@ Singleton {
 		// Trigger art download for tracks that already have an art URL
 		if (art && art.length > 0) {
 			Qt.callLater(() => root.triggerArtDownload(art))
+		} else {
+			this.readyArtFilePath = "";
 		}
 	}
 

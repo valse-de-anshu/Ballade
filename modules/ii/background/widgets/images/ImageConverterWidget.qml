@@ -16,23 +16,34 @@ AbstractBackgroundWidget {
     configEntryName: "images"
 
     property list<var> formatOptions: [
+        // Animation & Sequence
+        { displayName: "ANIMATE", value: "animate", icon: "movie" },
+        { displayName: "MP4",     value: "mp4",     icon: "videocam" },
         // Daily / Regular
-        { displayName: "WEBP", value: "webp", icon: "motion_photos_on" },
-        { displayName: "PNG",  value: "png",  icon: "image" },
-        { displayName: "JPG",  value: "jpg",  icon: "photo" },
-        { displayName: "PDF",  value: "pdf",  icon: "picture_as_pdf" },
+        { displayName: "GIF",     value: "gif",     icon: "gif" },
+        { displayName: "WEBP",    value: "webp",    icon: "motion_photos_on" },
+        { displayName: "PNG",     value: "png",     icon: "image" },
+        { displayName: "JPG",     value: "jpg",     icon: "photo" },
+        { displayName: "PDF",     value: "pdf",     icon: "picture_as_pdf" },
         // Occasional / Web & Icons
-        { displayName: "AVIF", value: "avif", icon: "hd" },
-        { displayName: "GIF",  value: "gif",  icon: "gif" },
-        { displayName: "ICO",  value: "ico",  icon: "star" },
-        { displayName: "BMP",  value: "bmp",  icon: "grid_on" },
+        { displayName: "AVIF",    value: "avif",    icon: "hd" },
+        { displayName: "ICO",     value: "ico",     icon: "star" },
+        { displayName: "BMP",     value: "bmp",     icon: "grid_on" },
         // Professional / Specialized
-        { displayName: "TIFF", value: "tiff", icon: "photo_library" },
-        { displayName: "HEIC", value: "heic", icon: "camera" },
-        { displayName: "JXL",  value: "jxl",  icon: "tune" },
-        { displayName: "PSD",  value: "psd",  icon: "brush" },
-        { displayName: "TGA",  value: "tga",  icon: "sports_esports" },
-        { displayName: "PPM",  value: "ppm",  icon: "terminal" },
+        { displayName: "TIFF",    value: "tiff",    icon: "photo_library" },
+        { displayName: "HEIC",    value: "heic",    icon: "camera" },
+        { displayName: "JXL",     value: "jxl",     icon: "tune" },
+        { displayName: "PSD",     value: "psd",     icon: "brush" },
+        { displayName: "TGA",     value: "tga",     icon: "sports_esports" },
+        { displayName: "PPM",     value: "ppm",     icon: "terminal" },
+    ]
+
+    property list<var> fpsOptions: [
+        { displayName: "24 FPS", value: 24 },
+        { displayName: "30 FPS", value: 30 },
+        { displayName: "60 FPS", value: 60 },
+        { displayName: "15 FPS", value: 15 },
+        { displayName: "12 FPS", value: 12 },
     ]
 
     property list<var> sizeOptions: [
@@ -49,8 +60,11 @@ AbstractBackgroundWidget {
     ]
 
     property string selectedFormat: "webp"
+    property int selectedFps: 24
     property int selectedSizeLimit: 0
     property string selectedSizeLabel: "No Limit"
+
+    readonly property bool isAnimationFormat: selectedFormat === "animate" || selectedFormat === "mp4"
 
     property bool customLimitActive: false
     property string customNum: "500"
@@ -60,7 +74,7 @@ AbstractBackgroundWidget {
     property string statusMessage: ""
 
     readonly property var acceptedExtensions: [
-        "png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif","ico","tga","heic","heif","jxl","psd","ppm"
+        "png","jpg","jpeg","webp","avif","bmp","gif","tiff","tif","ico","tga","heic","heif","jxl","psd","ppm","mp4","webm","mkv","mov","avi","flv"
     ]
     readonly property string scriptPath: Quickshell.env("HOME") + "/.config/quickshell/ballade/scripts/images/convert_image.py"
 
@@ -69,8 +83,8 @@ AbstractBackgroundWidget {
     property int queueDone: 0
     property var batchPaths: []
 
-    implicitWidth:  310
-    implicitHeight: 232
+    implicitWidth:  320
+    implicitHeight: 236
 
     function applyCustomLimit() {
         var raw = parseFloat(root.customNum);
@@ -98,6 +112,7 @@ AbstractBackgroundWidget {
             "--input", inputPath,
             "--output", outputPath,
             "--format", root.selectedFormat,
+            "--fps", root.selectedFps.toString(),
             "--max-bytes", root.selectedSizeLimit.toString()
         ]
         onExited: (exitCode) => {
@@ -127,17 +142,15 @@ AbstractBackgroundWidget {
     }
 
     Process {
-        id: pdfMaker
+        id: batchMaker
         property string outputPath: ""
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 root.dropStatus = "done"
-                root.statusMessage = root.batchPaths.length === 1
-                    ? "Saved: " + outputPath.replace(/.*\//, "")
-                    : root.batchPaths.length + " pages → PDF"
+                root.statusMessage = "Saved: " + outputPath.replace(/.*\//, "")
             } else {
                 root.dropStatus = "error"
-                root.statusMessage = "PDF conversion failed"
+                root.statusMessage = "Batch conversion failed"
             }
             root.batchPaths = []
             resetTimer.start()
@@ -156,7 +169,8 @@ AbstractBackgroundWidget {
         root.fileQueue = root.fileQueue.slice(1)
         converter.inputPath = next
         const tag = root.selectedSizeLimit > 0 ? ("_" + root.selectedSizeLabel.replace(/\s+/g, "").toLowerCase()) : ""
-        converter.outputPath = next.replace(/\.[^/.]+$/, "") + tag + "_converted." + root.selectedFormat
+        const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
+        converter.outputPath = next.replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
         converter.running = true
     }
 
@@ -185,9 +199,19 @@ AbstractBackgroundWidget {
                 ? "Creating PDF..."
                 : "Merging " + valid.length + " pages..."
             var outPdf = valid[0].replace(/\.[^/.]+$/, "") + (valid.length > 1 ? "_merged" : "_converted") + tag + ".pdf"
-            pdfMaker.outputPath = outPdf
-            pdfMaker.command = ["python3", root.scriptPath, "--pdf", outPdf, "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
-            pdfMaker.running = true
+            batchMaker.outputPath = outPdf
+            batchMaker.command = ["python3", root.scriptPath, "--pdf", outPdf, "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = true
+            return
+        }
+
+        if (root.selectedFormat === "animate" || (root.selectedFormat === "mp4" && valid.length > 1)) {
+            root.batchPaths = valid
+            root.statusMessage = "Compiling " + valid.length + " frames (" + root.selectedFps + " FPS)..."
+            var outAnim = valid[0].replace(/\.[^/.]+$/, "") + "_animated" + tag + ".mp4"
+            batchMaker.outputPath = outAnim
+            batchMaker.command = ["python3", root.scriptPath, "--animate", outAnim, "--fps", root.selectedFps.toString(), "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = true
             return
         }
 
@@ -196,7 +220,8 @@ AbstractBackgroundWidget {
         root.queueDone = 0
         root.statusMessage = valid.length > 1 ? "Converting 1 / " + valid.length + "..." : "Converting..."
         converter.inputPath = valid[0]
-        converter.outputPath = valid[0].replace(/\.[^/.]+$/, "") + tag + "_converted." + root.selectedFormat
+        const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
+        converter.outputPath = valid[0].replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
         converter.running = true
     }
 
@@ -227,13 +252,13 @@ AbstractBackgroundWidget {
                 spacing: 8
 
                 MaterialSymbol {
-                    text: "auto_fix_high"
+                    text: root.isAnimationFormat ? "movie" : "auto_fix_high"
                     iconSize: 18
                     color: Appearance.colors.colPrimary
                 }
 
                 StyledText {
-                    text: "Image Converter"
+                    text: root.isAnimationFormat ? "Animation & Converter" : "Image Converter"
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colOnLayer1
@@ -251,7 +276,7 @@ AbstractBackgroundWidget {
                     StyledText {
                         id: badgeText
                         anchors.centerIn: parent
-                        text: root.selectedFormat.toUpperCase() + (root.selectedSizeLimit > 0 ? (" · " + root.selectedSizeLabel) : "")
+                        text: root.selectedFormat.toUpperCase() + (root.isAnimationFormat ? (" · " + root.selectedFps + "FPS") : "") + (root.selectedSizeLimit > 0 ? (" · " + root.selectedSizeLabel) : "")
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         font.weight: Font.DemiBold
                         color: Appearance.colors.colOnPrimaryContainer
@@ -329,7 +354,7 @@ AbstractBackgroundWidget {
                                 case "hover": return "file_download"
                                 case "done":  return "check_circle"
                                 case "error": return "error"
-                                default:      return "cloud_upload"
+                                default:      return root.isAnimationFormat ? "movie_filter" : "cloud_upload"
                             }
                         }
                     }
@@ -352,7 +377,7 @@ AbstractBackgroundWidget {
                         opacity: root.dropStatus === "idle" ? 0.90 : 1.0
                         text: {
                             switch (root.dropStatus) {
-                                case "idle":       return "Drop images to convert"
+                                case "idle":       return root.isAnimationFormat ? "Drop frames to make animation" : "Drop media/images to convert"
                                 case "hover":      return "Release to start"
                                 case "converting": return root.statusMessage
                                 case "done":       return root.statusMessage
@@ -391,7 +416,7 @@ AbstractBackgroundWidget {
                 Layout.fillWidth: true
                 spacing: 8
 
-                // Format Selector (supports extensive formats)
+                // Format Selector (supports extensive formats + ANIMATE)
                 StyledComboBox {
                     Layout.fillWidth: true
                     implicitHeight: 36
@@ -414,9 +439,33 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Standard Presets Dropdown (shown when custom mode is inactive)
+                // FPS Selector (shown when animation format is selected)
                 StyledComboBox {
-                    visible: !root.customLimitActive
+                    visible: root.isAnimationFormat
+                    Layout.fillWidth: true
+                    implicitHeight: 36
+                    buttonIcon: "speed"
+                    buttonRadius: 10
+                    colBackground: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.50)
+                    colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colLayer0Base, 0.70)
+                    colBackgroundActive: Appearance.colors.colPrimaryContainer
+                    model: root.fpsOptions
+                    textRole: "displayName"
+                    valueRole: "value"
+                    currentIndex: {
+                        for (var i = 0; i < model.length; i++) {
+                            if (model[i].value === root.selectedFps) return i;
+                        }
+                        return 0;
+                    }
+                    onActivated: (index) => {
+                        root.selectedFps = model[index].value
+                    }
+                }
+
+                // Standard Presets Dropdown (shown when custom mode is inactive and not animation)
+                StyledComboBox {
+                    visible: !root.customLimitActive && !root.isAnimationFormat
                     Layout.fillWidth: true
                     implicitHeight: 36
                     buttonIcon: "compress"

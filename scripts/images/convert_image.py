@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-Production Image Converter and Optimizer for Ballade / Quickshell.
-Supports: WEBP, PNG, JPEG, PDF, AVIF, GIF, ICO, BMP, TIFF, HEIC, JXL, PSD, TGA, PPM.
-Handles strict size limits (e.g. 4KB, 50KB, 200KB, 500KB, 1MB, 2MB, 5MB, or custom user limits)
-with smart quality optimization, color quantization, and dimension scaling.
+Production Media & Image Converter and Optimizer for Ballade / Quickshell.
+Supports:
+- Image formats: WEBP, PNG, JPEG, PDF, AVIF, GIF, ICO, BMP, TIFF, HEIC, JXL, PSD, TGA, PPM.
+- Video to GIF & Video to Image: MP4, WEBM, MKV, MOV, AVI, FLV -> GIF / WEBP / PNG / JPG.
+- Image Sequence / Animation: Multiple image frames -> MP4 / Animated GIF / WebP (with customizable FPS).
+- Handles strict size limits (e.g. 4KB, 50KB, 200KB, 500KB, 1MB, 2MB, 5MB, 10MB, or custom user limits)
+  with smart multi-pass quality optimization, color quantization, and dimension scaling.
 """
 
 import sys
@@ -11,9 +14,156 @@ import os
 import io
 import argparse
 import subprocess
+import tempfile
+import shutil
+import re
+
 from PIL import Image
 
+VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".mov", ".avi", ".flv", ".wmv", ".m4v"}
 MAGICK_FALLBACK_FORMATS = {"HEIC", "JXL", "PSD"}
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+
+def is_video_file(path):
+    ext = os.path.splitext(path)[1].lower()
+    return ext in VIDEO_EXTS
+
+def convert_video_to_gif(src_path, dst_path, max_bytes=0, fps=15):
+    """Converts a video file to an animated GIF using FFmpeg with palettegen/paletteuse."""
+    if not os.path.exists(src_path):
+        return False
+
+    stages = [
+        {"fps": min(fps, 18), "scale": 720, "colors": 256},
+        {"fps": min(fps, 15), "scale": 540, "colors": 192},
+        {"fps": min(fps, 12), "scale": 420, "colors": 128},
+        {"fps": min(fps, 10), "scale": 320, "colors": 96},
+        {"fps": min(fps, 8),  "scale": 240, "colors": 64},
+        {"fps": 6,            "scale": 180, "colors": 32},
+    ]
+
+    if max_bytes <= 0:
+        stages = [{"fps": fps, "scale": -1, "colors": 256}]
+
+    tmp_out = dst_path + ".tmp.gif"
+
+    for st in stages:
+        f = st["fps"]
+        sc = st["scale"]
+        col = st["colors"]
+
+        if sc == -1:
+            vf = f"fps={f},split[s0][s1];[s0]palettegen=max_colors={col}:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3"
+        else:
+            vf = f"fps={f},scale='min({sc},iw)':-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors={col}:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3"
+
+        cmd = [
+            "ffmpeg", "-y", "-loglevel", "error",
+            "-i", src_path,
+            "-vf", vf,
+            tmp_out
+        ]
+
+        res = subprocess.run(cmd, capture_output=True)
+        if res.returncode == 0 and os.path.exists(tmp_out):
+            size = os.path.getsize(tmp_out)
+            if max_bytes <= 0 or size <= max_bytes or st == stages[-1]:
+                shutil.move(tmp_out, dst_path)
+                return True
+            try:
+                os.remove(tmp_out)
+            except Exception:
+                pass
+
+    if os.path.exists(tmp_out):
+        shutil.move(tmp_out, dst_path)
+        return True
+    return False
+
+def convert_frames_to_animation(frame_paths, dst_path, target_fmt="mp4", fps=24, max_bytes=0):
+    """Compiles multiple image frames into a video (MP4/WEBM) or animated GIF/WEBP."""
+    if not frame_paths:
+        return False
+
+    # Sort frames naturally
+    frames = sorted(frame_paths, key=natural_sort_key)
+
+    # Create temporary directory with symlinked / numbered frames for ffmpeg
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for idx, src in enumerate(frames):
+            ext = os.path.splitext(src)[1] or ".png"
+            dest_name = os.path.join(tmp_dir, f"frame_{idx:06d}{ext}")
+            try:
+                os.symlink(os.path.abspath(src), dest_name)
+            except Exception:
+                shutil.copyfile(src, dest_name)
+
+        input_pattern = os.path.join(tmp_dir, f"frame_%06d{os.path.splitext(frames[0])[1] or '.png'}")
+        target_fmt = target_fmt.lower()
+
+        if target_fmt in ("gif",):
+            # Compile to GIF
+            stages = [
+                {"scale": -1, "colors": 256},
+                {"scale": 640, "colors": 192},
+                {"scale": 480, "colors": 128},
+                {"scale": 320, "colors": 64}
+            ] if max_bytes > 0 else [{"scale": -1, "colors": 256}]
+
+            for st in stages:
+                sc = st["scale"]
+                col = st["colors"]
+                if sc == -1:
+                    vf = f"split[s0][s1];[s0]palettegen=max_colors={col}[p];[s1][p]paletteuse=dither=bayer"
+                else:
+                    vf = f"scale='min({sc},iw)':-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors={col}[p];[s1][p]paletteuse=dither=bayer"
+
+                cmd = [
+                    "ffmpeg", "-y", "-loglevel", "error",
+                    "-framerate", str(fps),
+                    "-i", input_pattern,
+                    "-vf", vf,
+                    dst_path
+                ]
+                res = subprocess.run(cmd, capture_output=True)
+                if res.returncode == 0 and os.path.exists(dst_path):
+                    if max_bytes <= 0 or os.path.getsize(dst_path) <= max_bytes or st == stages[-1]:
+                        return True
+            return os.path.exists(dst_path)
+
+        else:
+            # Compile to MP4 / Video (default)
+            crf = 20
+            if max_bytes > 0:
+                # Estimate required CRF / scale
+                crf = 23
+            cmd = [
+                "ffmpeg", "-y", "-loglevel", "error",
+                "-framerate", str(fps),
+                "-i", input_pattern,
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-crf", str(crf),
+                "-preset", "medium",
+                "-movflags", "+faststart",
+                dst_path
+            ]
+            res = subprocess.run(cmd, capture_output=True)
+            return res.returncode == 0 and os.path.exists(dst_path)
+
+def convert_video_to_image(src_path, dst_path, target_fmt="png"):
+    """Extracts the first frame from a video file into the target image format."""
+    cmd = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-ss", "00:00:00.100",
+        "-i", src_path,
+        "-vframes", "1",
+        dst_path
+    ]
+    res = subprocess.run(cmd, capture_output=True)
+    return res.returncode == 0 and os.path.exists(dst_path)
 
 def convert_with_magick(src_path, dst_path, target_fmt, max_bytes=0):
     """Fallback to ImageMagick for formats like HEIC, JXL, PSD."""
@@ -25,7 +175,6 @@ def convert_with_magick(src_path, dst_path, target_fmt, max_bytes=0):
         return res.returncode == 0 and os.path.exists(dst_path) and os.path.getsize(dst_path) > 0
 
     # Fast 3-stage compression check
-    # Stage 1: Standard high quality
     cmd = ["magick", src_path]
     if target_fmt in ("HEIC", "JXL"):
         cmd.extend(["-quality", "75"])
@@ -34,7 +183,6 @@ def convert_with_magick(src_path, dst_path, target_fmt, max_bytes=0):
     if os.path.exists(dst_path) and os.path.getsize(dst_path) <= max_bytes:
         return True
 
-    # Stage 2: 70% scale, quality 50
     cmd = ["magick", src_path, "-resize", "70%"]
     if target_fmt in ("HEIC", "JXL"):
         cmd.extend(["-quality", "50"])
@@ -43,7 +191,6 @@ def convert_with_magick(src_path, dst_path, target_fmt, max_bytes=0):
     if os.path.exists(dst_path) and os.path.getsize(dst_path) <= max_bytes:
         return True
 
-    # Stage 3: 45% scale, quality 30
     cmd = ["magick", src_path, "-resize", "45%"]
     if target_fmt in ("HEIC", "JXL"):
         cmd.extend(["-quality", "30"])
@@ -51,10 +198,27 @@ def convert_with_magick(src_path, dst_path, target_fmt, max_bytes=0):
     res = subprocess.run(cmd, capture_output=True)
     return res.returncode == 0 and os.path.exists(dst_path)
 
-def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0):
+def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0, fps=15):
     target_fmt = target_fmt.upper()
     if target_fmt in ("JPG", "JPE"):
         target_fmt = "JPEG"
+
+    # Check if input is a video
+    if is_video_file(src_path):
+        if target_fmt in ("GIF",):
+            return convert_video_to_gif(src_path, dst_path, max_bytes=max_bytes, fps=fps)
+        elif target_fmt in ("MP4", "WEBM", "ANIMATE"):
+            # Passthrough or re-encode
+            cmd = ["ffmpeg", "-y", "-i", src_path, "-c:v", "libx264", "-pix_fmt", "yuv420p", dst_path]
+            res = subprocess.run(cmd, capture_output=True)
+            return res.returncode == 0 and os.path.exists(dst_path)
+        else:
+            # Video to static image (extract frame)
+            return convert_video_to_image(src_path, dst_path, target_fmt.lower())
+
+    # If target is video format but input is single image
+    if target_fmt in ("MP4", "ANIMATE"):
+        return convert_frames_to_animation([src_path], dst_path, target_fmt="mp4", fps=fps, max_bytes=max_bytes)
 
     # Use ImageMagick for special formats
     if target_fmt in MAGICK_FALLBACK_FORMATS:
@@ -63,7 +227,7 @@ def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0):
     try:
         img = Image.open(src_path)
     except Exception:
-        # If Pillow cannot open (e.g. source is HEIC), try magick first to temporary png
+        # If Pillow cannot open (e.g. source is HEIC/PSD), try magick first to temporary png
         tmp_png = dst_path + ".tmp.png"
         res = subprocess.run(["magick", src_path, tmp_png], capture_output=True)
         if res.returncode == 0 and os.path.exists(tmp_png):
@@ -77,14 +241,12 @@ def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0):
 
     # Handle format-specific requirements
     if target_fmt == "ICO":
-        # ICO max size is 256x256
         if img.width > 256 or img.height > 256:
             img.thumbnail((256, 256), Image.Resampling.LANCZOS)
         if img.mode not in ("RGBA", "RGB"):
             img = img.convert("RGBA")
 
     elif target_fmt in ("JPEG", "BMP", "PPM", "TGA"):
-        # Strip alpha for formats that don't support RGBA cleanly
         if target_fmt in ("JPEG", "BMP", "PPM") and img.mode in ("RGBA", "LA", "P"):
             bg = Image.new("RGB", img.size, (255, 255, 255))
             if img.mode == "P":
@@ -170,7 +332,6 @@ def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0):
                     break
 
     if best_buf is None:
-        # Final fallback: compress aggressively
         buf = io.BytesIO()
         s_img = img.resize((max(16, orig_w // 4), max(16, orig_h // 4)), Image.Resampling.BOX)
         if target_fmt in ("JPEG", "WEBP", "AVIF"):
@@ -228,13 +389,15 @@ def convert_to_pdf(input_paths, output_path, max_bytes=0):
     return True
 
 def main():
-    parser = argparse.ArgumentParser(description="Image Converter & Compressor")
+    parser = argparse.ArgumentParser(description="Media Converter & Compressor")
     parser.add_argument("--input", "-i", type=str, help="Input file path")
     parser.add_argument("--output", "-o", type=str, help="Output file path")
     parser.add_argument("--format", "-f", type=str, default="", help="Target format")
     parser.add_argument("--max-bytes", "-m", type=int, default=0, help="Maximum file size in bytes (0 for unlimited)")
+    parser.add_argument("--fps", type=int, default=24, help="FPS for video / animation conversion")
     parser.add_argument("--pdf", type=str, help="Output PDF path for multiple inputs")
-    parser.add_argument("extra_inputs", nargs="*", help="Extra inputs for PDF conversion")
+    parser.add_argument("--animate", type=str, help="Output video/animation path for multiple frame inputs")
+    parser.add_argument("extra_inputs", nargs="*", help="Extra inputs for PDF or Animation conversion")
 
     args = parser.parse_args()
 
@@ -249,6 +412,18 @@ def main():
         success = convert_to_pdf(all_inputs, args.pdf, args.max_bytes)
         sys.exit(0 if success else 1)
 
+    if args.animate:
+        all_inputs = []
+        if args.input:
+            all_inputs.append(args.input)
+        all_inputs.extend(args.extra_inputs)
+        if not all_inputs:
+            sys.stderr.write("No input frames provided for animation.\n")
+            sys.exit(1)
+        target_fmt = "gif" if args.animate.lower().endswith(".gif") else "mp4"
+        success = convert_frames_to_animation(all_inputs, args.animate, target_fmt=target_fmt, fps=args.fps, max_bytes=args.max_bytes)
+        sys.exit(0 if success else 1)
+
     if not args.input or not args.output:
         sys.stderr.write("Both --input and --output are required.\n")
         sys.exit(1)
@@ -259,7 +434,7 @@ def main():
         target_fmt = ext if ext else "webp"
 
     try:
-        success = optimize_single_image(args.input, args.output, target_fmt, args.max_bytes)
+        success = optimize_single_image(args.input, args.output, target_fmt, args.max_bytes, fps=args.fps)
         sys.exit(0 if success else 1)
     except Exception as e:
         sys.stderr.write(f"Conversion error: {e}\n")
