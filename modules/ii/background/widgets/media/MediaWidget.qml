@@ -61,12 +61,6 @@ AbstractBackgroundWidget {
     implicitHeight: card.implicitHeight
     implicitWidth: card.implicitWidth
 
-    StyledRectangularShadow {
-        target: card
-        z: -2
-        visible: Config.options.background.widgets.shadow ?? true
-    }
-
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
@@ -76,24 +70,13 @@ AbstractBackgroundWidget {
             return root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
         }
         radius: Appearance.rounding?.verylarge ?? 30
-        color: "transparent"
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
         border.width: 1
-        border.color: Appearance.colors.colLayer0Border
+        border.color: Qt.rgba(1, 1, 1, 0.10)
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-        }
-
-        FastBlurred {
-            anchors.fill: parent
-            blurSource: root.wallpaperItem
-            cardRadius: card.radius
-            tint: Appearance.colors.colLayer1
-            tintOpacity: 0.55
-            trackX: root.x  
-            trackY: root.y
-            visible: Config.options.background.widgets.blurWidgets ?? true
         }
 
         layer.enabled: true

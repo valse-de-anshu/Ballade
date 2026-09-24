@@ -380,31 +380,14 @@ AbstractBackgroundWidget {
     // ════════════════════════════════════════════════════════
     // ROOT FROSTED GLASS CONTAINER & SHADOW
     // ════════════════════════════════════════════════════════
-    StyledRectangularShadow {
-        target: card
-        z: -1
-        visible: Config.options.background.widgets.shadow ?? true
-    }
-
     Rectangle {
         id: card
         anchors.fill: parent
         radius: Appearance.rounding.verylarge
-        color: "transparent"
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
         border.width: 1
-        border.color: Appearance.colors.colLayer0Border
+        border.color: Qt.rgba(1, 1, 1, 0.10)
         clip: true
-
-        FastBlurred {
-            anchors.fill: parent
-            blurSource: root.wallpaperItem
-            cardRadius: card.radius
-            tint: Appearance.colors.colLayer1
-            tintOpacity: 0.55
-            trackX: root.x  
-            trackY: root.y
-            visible: Config.options.background.widgets.blurWidgets ?? true
-        }
 
         // ════════════════════════════════════════════════════════
         // 1. MAIN RADAR & ACCORDION VIEW (when no tool is full-canvas)

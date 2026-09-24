@@ -19,7 +19,6 @@ Item {
     required property int scaledScreenWidth
     required property int scaledScreenHeight
     required property real wallpaperScale
-    property Item wallpaperItem: null
 
     property var cfg: Config.options.background.widgets.customImages[root.imageIndex] ?? {}
     property string imagePath: cfg.path ?? ""

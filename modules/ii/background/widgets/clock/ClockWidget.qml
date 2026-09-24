@@ -58,7 +58,6 @@ AbstractBackgroundWidget {
             fade: false
             sourceComponent: CookieClock {
                 anchors.horizontalCenter: parent.horizontalCenter
-                wallpaperItem: root.wallpaperItem
             }
         }
 
@@ -80,7 +79,6 @@ AbstractBackgroundWidget {
             fade: false
             sourceComponent: PixelClock {
                 colText: root.resolvedClockColor
-                wallpaperItem: root.wallpaperItem
             }
         }
 

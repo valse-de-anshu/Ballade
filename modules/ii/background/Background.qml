@@ -858,7 +858,6 @@ Variants {
                             scaledScreenWidth:  bgRoot.screen.width
                             scaledScreenHeight: bgRoot.screen.height
                             wallpaperScale:     1
-                            wallpaperItem:      wallpaper
                             imageIndex:         index
                         }
                     }
@@ -873,7 +872,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                 }
                 FadeLoader {
@@ -886,7 +884,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                 }
                 FadeLoader {
@@ -900,7 +897,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                         wallpaperSafetyTriggered: bgRoot.wallpaperSafetyTriggered
                     }
                 }
@@ -915,7 +911,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                 }
                 FadeLoader {
@@ -930,7 +925,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                     onLoaded: {
                         if (item && item.requestReset) {
@@ -951,7 +945,6 @@ Variants {
                         scaledScreenWidth:  bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale:     1
-                        wallpaperItem:      wallpaper
                     }
                 }
                 FadeLoader {
@@ -964,7 +957,6 @@ Variants {
                         scaledScreenWidth:  bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale:     1
-                        wallpaperItem:      wallpaper
                     }
                 }
                 FadeLoader {
@@ -977,7 +969,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                 }
                 FadeLoader {
@@ -990,7 +981,6 @@ Variants {
                         scaledScreenWidth: bgRoot.screen.width
                         scaledScreenHeight: bgRoot.screen.height
                         wallpaperScale: 1
-                        wallpaperItem: wallpaper
                     }
                 }
             }

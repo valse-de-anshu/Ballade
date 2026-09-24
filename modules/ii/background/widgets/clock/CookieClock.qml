@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -19,15 +20,10 @@ Item {
 
     property real implicitSize: 230
 
-    property Item wallpaperItem: null
-    property real originX: 0
-    property real originY: 0
-    property bool blurWidgets: Config.options.background.widgets.blurWidgets
-
     property color colShadow: Appearance.colors.colShadow
-    property color colBackground: Appearance.colors.colPrimaryContainer
-    property color colOnBackground: ColorUtils.mix(Appearance.colors.colSecondary, Appearance.colors.colPrimaryContainer, 0.15)
-    property color colBackgroundInfo: ColorUtils.mix(Appearance.colors.colPrimary, Appearance.colors.colPrimaryContainer, 0.55)
+    property color colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+    property color colOnBackground: Appearance.colors.colOnLayer0
+    property color colBackgroundInfo: Appearance.colors.colPrimary
     property color colHourHand: Appearance.colors.colPrimary
     property color colMinuteHand: Appearance.colors.colTertiary
     property color colSecondHand: Appearance.colors.colPrimary
@@ -79,76 +75,50 @@ Item {
         onLoaded: {
             root.setClockPreset(categoryFileView.text().trim())
         }
-        onLoadFailed: (error) => {}
     }
 
     property bool useSineCookie: Config.options.background.widgets.clock.cookie.useSineCookie
-    Item {
-        id: cookieContainer
-        anchors.fill: parent
+    StyledDropShadow {
+        target: root.useSineCookie ? sineCookieLoader : roundedPolygonCookieLoader
+    }
+    Loader {
+        id: sineCookieLoader
+        z: 0
+        visible: false // The DropShadow already draws it
+        active: root.useSineCookie
+        sourceComponent: SineCookie {
+            implicitSize: root.implicitSize
+            sides: Config.options.background.widgets.clock.cookie.sides
+            color: root.colBackground
 
-        RotationAnimation on rotation {
-            running: Config.options.background.widgets.clock.cookie.constantlyRotate
-            duration: 30000
-            easing.type: Easing.Linear
-            loops: Animation.Infinite
-            from: 360
-            to: 0
-        }
-
-        StyledDropShadow {
-            target: cookieShapes
-            visible: !root.blurWidgets && Config.options.background.widgets.shadow
-        }
-
-        Item {
-            id: cookieShapes
-            anchors.fill: parent
-
-            Loader {
-                id: sineCookieLoader
-                anchors.fill: parent
-                z: 0
-                visible: !root.blurWidgets
-                active: root.useSineCookie
-                sourceComponent: SineCookie {
-                    implicitSize: root.implicitSize
-                    sides: Config.options.background.widgets.clock.cookie.sides
-                    color: root.colBackground
-                }
-            }
-            Loader {
-                id: roundedPolygonCookieLoader
-                anchors.fill: parent
-                z: 0
-                visible: !root.blurWidgets
-                active: !root.useSineCookie
-                sourceComponent: MaterialCookie {
-                    implicitSize: root.implicitSize
-                    sides: Config.options.background.widgets.clock.cookie.sides
-                    color: root.colBackground
-                }
+            RotationAnimation on rotation {
+                running: Config.options.background.widgets.clock.cookie.constantlyRotate && root.visible && !GlobalStates.screenLocked
+                duration: 30000
+                easing.type: Easing.Linear
+                loops: Animation.Infinite
+                from: 360
+                to: 0
             }
         }
+    }
+    Loader {
+        id: roundedPolygonCookieLoader
+        z: 0
+        visible: false // The DropShadow already draws it
+        active: !root.useSineCookie
+        sourceComponent: MaterialCookie {
+            implicitSize: root.implicitSize
+            sides: Config.options.background.widgets.clock.cookie.sides
+            color: root.colBackground
 
-        // Blurred wallpaper, masked by the cookie shape
-        FastBlurred {
-            id: cookieBlur
-            anchors.fill: parent
-            blurSource: root.wallpaperItem
-            cardRadius: 0
-            tint: Appearance.colors.colLayer1
-            tintOpacity: 0.55
-            trackX: root.originX + root.x
-            trackY: root.originY + root.y
-            visible: false
-        }
-        OpacityMask {
-            anchors.fill: parent
-            source: cookieBlur
-            maskSource: root.useSineCookie ? sineCookieLoader.item : roundedPolygonCookieLoader.item
-            z: 0
-            visible: root.blurWidgets
+            RotationAnimation on rotation {
+                running: Config.options.background.widgets.clock.cookie.constantlyRotate && root.visible && !GlobalStates.screenLocked
+                duration: 30000
+                easing.type: Easing.Linear
+                loops: Animation.Infinite
+                from: 360
+                to: 0
+            }
         }
     }
 

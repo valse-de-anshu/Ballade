@@ -150,12 +150,6 @@ AbstractBackgroundWidget {
         radius: Appearance.rounding?.verylarge ?? 30
         color: "transparent"
 
-        StyledRectangularShadow {
-            target: card
-            z: -2
-            visible: Config.options.background.widgets.shadow
-        }
-
         Loader {
             anchors.fill: parent
             sourceComponent: {
@@ -207,18 +201,9 @@ AbstractBackgroundWidget {
             Rectangle {
                 anchors.fill: parent
                 radius: Appearance.rounding?.verylarge ?? 30
-                color: Appearance.colors.colPrimaryContainer
-
-                FastBlurred {
-                    anchors.fill: parent
-                    blurSource: root.wallpaperItem
-                    cardRadius: card.radius
-                    tint: Appearance.colors.colLayer1
-                    tintOpacity: 0.55
-                    trackX: root.x  
-                    trackY: root.y
-                    visible: Config.options.background.widgets.blurWidgets 
-                }
+                color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.10)
 
                 RowLayout {
                     anchors { fill: parent; margins: 10 }
@@ -371,17 +356,7 @@ AbstractBackgroundWidget {
                             radius: Appearance.rounding?.verylarge ?? 30
                         }
                     }
-                }
 
-                FastBlurred {
-                    anchors.fill: parent
-                    blurSource: root.wallpaperItem
-                    cardRadius: Appearance.rounding?.verylarge ?? 30
-                    tint: Appearance.colors.colLayer1
-                    tintOpacity: 0.55
-                    trackX: root.x  
-                    trackY: root.y
-                    visible: Config.options.background.widgets.blurWidgets 
                 }
 
                 Rectangle {
@@ -599,19 +574,10 @@ AbstractBackgroundWidget {
                     id: cardBg
                     anchors.fill: parent
                     radius: Appearance.rounding?.verylarge ?? 30
-                    color: Appearance.colors.colPrimaryContainer
+                    color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.10)
                     clip: true
-
-                    FastBlurred {
-                        anchors.fill: parent
-                        blurSource: root.wallpaperItem
-                        cardRadius: cardBg.radius
-                        tint: Appearance.colors.colLayer1
-                        tintOpacity: 0.55
-                        trackX: root.x
-                        trackY: root.y
-                        visible: Config.options.background.widgets.blurWidgets
-                    }
 
                     Item {
                         id: heroWrap
