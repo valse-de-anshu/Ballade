@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import qs.services
@@ -117,6 +118,17 @@ AbstractBackgroundWidget {
 
     Behavior on implicitHeight {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+    }
+
+    FileDialog {
+        id: fileChooserDialog
+        title: Translation.tr("Select Media or Image Files to Convert")
+        fileMode: FileDialog.OpenFiles
+        onAccepted: {
+            if (selectedFiles && selectedFiles.length > 0) {
+                root.enqueueFiles(selectedFiles);
+            }
+        }
     }
 
     function applyCustomLimit() {
@@ -330,7 +342,7 @@ AbstractBackgroundWidget {
                 }
             }
 
-            // Drop Area Card
+            // Drop Area Card (Click or Drop)
             Rectangle {
                 id: dropZone
                 Layout.fillWidth: true
@@ -415,7 +427,7 @@ AbstractBackgroundWidget {
                         opacity: root.dropStatus === "idle" ? 0.95 : 1.0
                         text: {
                             switch (root.dropStatus) {
-                                case "idle":       return root.selectedFormat === "animate" ? "Drop frames to compile animation" : "Drop files to convert to " + root.selectedFormat.toUpperCase()
+                                case "idle":       return root.selectedFormat === "animate" ? "Click or Drop frames to compile video" : "Click or Drop files to convert to " + root.selectedFormat.toUpperCase()
                                 case "hover":      return "Release to start conversion"
                                 case "converting": return root.statusMessage
                                 case "done":       return root.statusMessage
@@ -441,6 +453,16 @@ AbstractBackgroundWidget {
                     }
                 }
 
+                // Click to browse files
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        fileChooserDialog.open();
+                    }
+                }
+
+                // Drag & Drop Area
                 DropArea {
                     anchors.fill: parent
                     keys: ["text/uri-list"]
