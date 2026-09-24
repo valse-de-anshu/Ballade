@@ -19,7 +19,7 @@ Item {
 
     property real implicitSize: 230
 
-    required property Item wallpaperItem
+    property Item wallpaperItem: null
     property real originX: 0
     property real originY: 0
     property bool blurWidgets: Config.options.background.widgets.blurWidgets

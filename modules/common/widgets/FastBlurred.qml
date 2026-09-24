@@ -4,7 +4,7 @@ import qs.modules.common
 
 Item {
     id: root
-    required property Item blurSource
+    property Item blurSource: null
     property real cardRadius: 30
     property color tint: Appearance.colors.colLayer1
     property real tintOpacity: 0.55

@@ -13,7 +13,8 @@ Item {
     id: root
 
     readonly property bool isVertical: Config.options.background.widgets.clock.pixel.orientation === "vertical"
-    required property Item wallpaperItem
+    property Item wallpaperItem: null
+    property color colText: Appearance.colors.colPrimary
     property real originX: 0
     property real originY: 0
 
@@ -25,7 +26,7 @@ Item {
     readonly property string glyphBottomLeft: DateTime.digitM0
     readonly property string glyphBottomRight: DateTime.digitM1
     readonly property color tintSoft: Appearance.colors.colPrimaryContainer
-    readonly property color tintBold: Appearance.colors.colPrimary
+    readonly property color tintBold: root.colText
 
     readonly property real fringeSize: isVertical ? root.width * 0.026 : root.height * 0.03
     readonly property real tileW: isVertical ? root.width * 0.66 : root.width * 0.327
