@@ -175,6 +175,13 @@ Scope {
             function open(): void {
                 GlobalStates.sidebarRightOpen = true;
             }
+
+            function openNightLight(): void {
+                GlobalStates.sidebarRightOpen = true;
+                if (sidebarContentLoader.item) {
+                    sidebarContentLoader.item.showNightLightDialog = true;
+                }
+            }
         }
 
         CompositorGlobalShortcut {

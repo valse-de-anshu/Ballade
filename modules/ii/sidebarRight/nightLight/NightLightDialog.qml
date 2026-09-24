@@ -15,7 +15,6 @@ WindowDialog {
     id: root
     property var screen: root.QsWindow.window?.screen
     property var brightnessMonitor: Brightness.getMonitorForScreen(screen)
-    backgroundHeight: 700
 
     WindowDialogTitle {
         text: Translation.tr("Eye protection")
@@ -32,7 +31,7 @@ WindowDialog {
     }
 
     GroupedList {
-        itemVerticalPadding: 16
+        itemVerticalPadding: 10
         bgcolor: Appearance.colors.colSurfaceContainerHigh  
         ConfigSwitch {
             Layout.topMargin: -2
@@ -75,7 +74,7 @@ WindowDialog {
     }
 
     GroupedList {
-        itemVerticalPadding: 16
+        itemVerticalPadding: 10
         bgcolor: Appearance.colors.colSurfaceContainerHigh
         ConfigSwitch {
             Layout.topMargin: -2  
@@ -113,7 +112,7 @@ WindowDialog {
     }
 
     GroupedList {
-        itemVerticalPadding: 16
+        itemVerticalPadding: 10
         bgcolor: Appearance.colors.colSurfaceContainerHigh  
 
         WindowDialogSlider {
@@ -129,7 +128,7 @@ WindowDialog {
     }
 
     GroupedList {
-        itemVerticalPadding: 16
+        itemVerticalPadding: 10
         bgcolor: Appearance.colors.colSurfaceContainerHigh
         WindowDialogSlider {
             from: Hyprsunset.gammaLowerLimit / 100
