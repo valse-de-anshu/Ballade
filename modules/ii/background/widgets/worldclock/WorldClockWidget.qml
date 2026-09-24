@@ -4,6 +4,7 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.functions
 import qs.modules.common.widgets.widgetCanvas
 import qs.modules.ii.background.widgets
 
@@ -62,10 +63,25 @@ AbstractBackgroundWidget {
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+            color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
             border.width: sizeMode === "4x1" ? 0 : 1
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.color: sizeMode === "4x1" ? "transparent" : ColorUtils.applyAlpha("#ffffff", 0.16)
             radius: Appearance.rounding?.verylarge ?? 30
+            clip: true
+
+            // Frosted glass ambient highlight & gradient sheen
+            Rectangle {
+                anchors.fill: parent
+                radius: contentRect.radius
+                visible: sizeMode !== "4x1"
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
+                    GradientStop { position: 0.35; color: "transparent" }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.04) }
+                }
+            }
 
             // 2x2
             ColumnLayout {

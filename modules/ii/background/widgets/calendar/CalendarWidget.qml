@@ -447,13 +447,26 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.color: ColorUtils.applyAlpha("#ffffff", 0.16)
         clip: true
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
+        }
+
+        // Frosted glass ambient highlight & gradient sheen
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "transparent"
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
+                GradientStop { position: 0.35; color: "transparent" }
+                GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.04) }
+            }
         }
 
         Loader {
@@ -1396,20 +1409,15 @@ AbstractBackgroundWidget {
             }
         }
 
-        StyledRectangularShadow {
-            target: satelliteCard
-            z: -1
-        }
-
         // Minimalist Frosted Glass Capsule / Badge
         Rectangle {
             id: satelliteCard
             implicitWidth: capsuleCol.implicitWidth + 24
             implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
             radius: 17
-            color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+            color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
             border.width: 1
-            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : Appearance.colors.colLayer0Border
+            border.color: root.isSelectingTarget ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7) : ColorUtils.applyAlpha("#ffffff", 0.16)
             clip: true
 
             Behavior on implicitWidth { NumberAnimation { duration: 180 } }

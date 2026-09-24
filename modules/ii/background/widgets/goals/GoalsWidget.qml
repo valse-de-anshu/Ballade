@@ -384,10 +384,23 @@ AbstractBackgroundWidget {
         id: card
         anchors.fill: parent
         radius: Appearance.rounding.verylarge
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.62)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.color: ColorUtils.applyAlpha("#ffffff", 0.16)
         clip: true
+
+        // Frosted glass ambient highlight & gradient sheen
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "transparent"
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
+                GradientStop { position: 0.35; color: "transparent" }
+                GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.04) }
+            }
+        }
 
         // ════════════════════════════════════════════════════════
         // 1. MAIN RADAR & ACCORDION VIEW (when no tool is full-canvas)
