@@ -918,6 +918,7 @@ ContentPage {
                 }
 
                 ConfigSelectionArray {
+                    stacked: true
                     text: Translation.tr("Shader Style")
                     icon: "style"
                     currentValue: settingsVisualizer.entry.style

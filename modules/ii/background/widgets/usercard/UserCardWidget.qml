@@ -25,7 +25,7 @@ AbstractBackgroundWidget {
     readonly property real snapHeight2: 120
     readonly property real snapHeight3: 252
 
-    property string sizeMode: root.configEntry.sizeMode ?? "2x2"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
 
     property real widgetWidth: {
         switch (root.sizeMode) {
@@ -43,29 +43,24 @@ AbstractBackgroundWidget {
         }
     }
 
-    readonly property real heightToggleFraction: 0.3
-    readonly property real heightToggleDelta: (root.snapHeight3 - root.snapHeight2) * root.heightToggleFraction
-    readonly property real wideThreshold: (root.snapWidth3 + root.snapWidth4) / 2
+    function modeForDimensions(w, h) {
+        // Height threshold between short (120) and tall (252) with hysteresis
+        const currentIsTall = (root.sizeMode === "2x2" || root.sizeMode === "2x3");
+        const tallThreshold = currentIsTall ? 170 : 200;
+        const isTall = h >= tallThreshold;
 
-    function modeForDrag(dx, dy, startWidth) {
-        var mid = (root.snapWidth1 + root.snapWidth2) / 2
-        var newWidth = startWidth + dx
-
-        if (newWidth < mid) return "1x1"
-
-        if (root.sizeMode === "1x1") {
-            return dy > root.heightToggleDelta ? "2x2" : "1x2"
+        if (!isTall) {
+            // Short modes: 1x1 (132) or 1x2 (276)
+            const currentIs1x1 = (root.sizeMode === "1x1");
+            const widthThreshold = currentIs1x1 ? 220 : 190;
+            return w >= widthThreshold ? "1x2" : "1x1";
+        } else {
+            // Tall modes: 1x1 (if dragged far left), 2x2 (276), or 2x3 (420)
+            if (w < 170) return "1x1";
+            const currentIs2x3 = (root.sizeMode === "2x3");
+            const wideThreshold = currentIs2x3 ? 335 : 365;
+            return w >= wideThreshold ? "2x3" : "2x2";
         }
-
-        if (dy > root.heightToggleDelta) {
-            return newWidth > root.wideThreshold ? "2x3" : "2x2"
-        }
-        if (dy < -root.heightToggleDelta) return "1x2"
-
-        if (root.sizeMode === "2x2" || root.sizeMode === "2x3") {
-            return newWidth > root.wideThreshold ? "2x3" : "2x2"
-        }
-        return root.sizeMode
     }
 
     property int avatarSize: 64
@@ -76,8 +71,8 @@ AbstractBackgroundWidget {
     property var currentQuip: weatherQuip()
 
     function weatherQuip() {
-        const desc = (Weather.data?.description ?? "").toLowerCase();
-        const temp = Weather.data?.temp ?? "--";
+        const desc = (Weather.data && Weather.data.description ? Weather.data.description : "").toLowerCase();
+        const temp = (Weather.data && Weather.data.temp) ? Weather.data.temp : "--";
         if (desc.includes("rain"))
             return { text: `• raining, grab a coffee`, icon: "coffee" };
         if (desc.includes("clear"))
@@ -86,7 +81,8 @@ AbstractBackgroundWidget {
             return { text: `• a bit cloudy today`, icon: "cloud" };
         if (desc.includes("snow"))
             return { text: `• snowing`, icon: "ac_unit" };
-        return { text: `• ${Weather.data?.description ?? ""}`, icon: "thermostat" };
+        const weatherDesc = (Weather.data && Weather.data.description) ? Weather.data.description : "";
+        return { text: `• ${weatherDesc}`, icon: "thermostat" };
     }
 
     function greetingFor(hour) {
@@ -136,7 +132,7 @@ AbstractBackgroundWidget {
     component AvatarImage: Image {
         source: Config.options.profile.avatarPath !== ""
             ? "file://" + Config.options.profile.avatarPicture
-            : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+            : "file:///home/" + (Quickshell.env("USER") ? Quickshell.env("USER") : "user") + "/.face"
         sourceSize.width: width * 2
         sourceSize.height: height * 2
         fillMode: Image.PreserveAspectCrop
@@ -147,7 +143,7 @@ AbstractBackgroundWidget {
         id: card
         implicitWidth: root.widgetWidth
         implicitHeight: root.widgetHeight
-        radius: Appearance.rounding?.verylarge ?? 30
+        radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
         color: "transparent"
 
         Loader {
@@ -171,7 +167,7 @@ AbstractBackgroundWidget {
                     maskSource: Rectangle {
                         width: avatarSingleWrap.width
                         height: avatarSingleWrap.height
-                        radius: Appearance.rounding?.verylarge ?? 30
+                        radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
                     }
                 }
 
@@ -200,7 +196,7 @@ AbstractBackgroundWidget {
             id: oneByTwoContent
             Rectangle {
                 anchors.fill: parent
-                radius: Appearance.rounding?.verylarge ?? 30
+                radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
                 color: Qt.rgba(
                     Appearance.colors.colLayer0Base.r,
                     Appearance.colors.colLayer0Base.g,
@@ -224,7 +220,7 @@ AbstractBackgroundWidget {
                             maskSource: Rectangle {
                                 width: avatarWideWrap.width
                                 height: avatarWideWrap.height
-                                radius: (Appearance.rounding?.verylarge ?? 30) - 6
+                                radius: ((Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30) - 6
                             }
                         }
 
@@ -359,7 +355,7 @@ AbstractBackgroundWidget {
                         maskSource: Rectangle {
                             width: outerRect.width
                             height: outerRect.height
-                            radius: Appearance.rounding?.verylarge ?? 30
+                            radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
                         }
                     }
 
@@ -367,7 +363,7 @@ AbstractBackgroundWidget {
 
                 Rectangle {
                     anchors.fill: blurredBg
-                    radius: Appearance.rounding?.verylarge ?? 30
+                    radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
                     color: Appearance.colors.colScrim
                     opacity: 0.1
                 }
@@ -514,7 +510,7 @@ AbstractBackgroundWidget {
                         anchors.margins: 3
                         source: Config.options.profile.avatarPath !== ""
                             ? "file://" + Config.options.profile.avatarPicture
-                            : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                            : "file:///home/" + (Quickshell.env("USER") ? Quickshell.env("USER") : "user") + "/.face"
                         sourceSize.width: avatarImage.width * 2
                         sourceSize.height: avatarImage.height * 2
                         fillMode: Image.PreserveAspectCrop
@@ -579,7 +575,7 @@ AbstractBackgroundWidget {
                 Rectangle {
                     id: cardBg
                     anchors.fill: parent
-                    radius: Appearance.rounding?.verylarge ?? 30
+                    radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
                     color: Qt.rgba(
                         Appearance.colors.colLayer0Base.r,
                         Appearance.colors.colLayer0Base.g,
@@ -668,7 +664,7 @@ AbstractBackgroundWidget {
                             anchors.margins: 3
                             source: Config.options.profile.avatarPath !== ""
                                 ? "file://" + Config.options.profile.avatarPicture
-                                : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                                : "file:///home/" + (Quickshell.env("USER") ? Quickshell.env("USER") : "user") + "/.face"
                             sourceSize.width: avatarImage3.width * 2
                             sourceSize.height: avatarImage3.height * 2
                             fillMode: Image.PreserveAspectCrop
@@ -700,9 +696,9 @@ AbstractBackgroundWidget {
                             top: avatarRect3.bottom
                             bottom: parent.bottom
                             leftMargin: 16
-                            rightMargin: 16
+                            rightMargin: 22
                             topMargin: 6
-                            bottomMargin: 12
+                            bottomMargin: 14
                         }
                         spacing: 3
 
@@ -850,8 +846,11 @@ AbstractBackgroundWidget {
             hoverActive: root.containsMouse
             locked: Config.options.background.widgetsLocked
             currentWidth: root.widgetWidth
+            currentHeight: root.widgetHeight
             resizeMode: "diagonal"
-            onResizedXY: (dx, dy, startWidth) => { root.sizeMode = root.modeForDrag(dx, dy, startWidth) }
+            onResizedXY: (newW, newH) => {
+                root.sizeMode = root.modeForDimensions(newW, newH)
+            }
             onResizeFinished: {
                 root.configEntry.sizeMode = root.sizeMode
             }

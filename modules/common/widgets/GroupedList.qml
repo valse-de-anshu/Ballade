@@ -20,6 +20,26 @@ Rectangle {
     border.width: 1
     border.color: root.borderColor
 
+    property int layoutVersion: 0
+
+    function hasNextVisible(idx, _version) {
+        for (let i = idx + 1; i < root.items.length; ++i) {
+            if (root.items[i] && root.items[i].visible) return true;
+        }
+        return false;
+    }
+
+    Component.onCompleted: {
+        for (let i = 0; i < root.items.length; ++i) {
+            const child = root.items[i]
+            if (child) {
+                child.visibleChanged.connect(() => {
+                    root.layoutVersion++
+                })
+            }
+        }
+    }
+
     ColumnLayout {
         id: col
         anchors {
@@ -33,13 +53,19 @@ Rectangle {
         Repeater {
             model: root.items.length
             delegate: ColumnLayout {
+                id: delegateItem
                 required property int index
+                readonly property Item sourceItem: (root.items && index < root.items.length) ? root.items[index] : null
+                readonly property bool itemVisible: Boolean(sourceItem && sourceItem.visible)
+
+                visible: delegateItem.itemVisible
                 Layout.fillWidth: true
                 spacing: 0
 
                 Item {
+                    visible: delegateItem.itemVisible
                     Layout.fillWidth: true
-                    implicitHeight: (root.items[index] ? root.items[index].implicitHeight : 0) + root.itemVerticalPadding
+                    implicitHeight: delegateItem.itemVisible ? ((delegateItem.sourceItem ? delegateItem.sourceItem.implicitHeight : 0) + root.itemVerticalPadding) : 0
 
                     ColumnLayout {
                         id: contentArea
@@ -47,7 +73,7 @@ Rectangle {
                         spacing: 0
 
                         Component.onCompleted: {
-                            const child = root.items[index]
+                            const child = delegateItem.sourceItem
                             if (child) {
                                 child.parent = contentArea
                                 child.Layout.fillWidth = true
@@ -57,7 +83,7 @@ Rectangle {
                 }
 
                 Rectangle {
-                    visible: index < root.items.length - 1
+                    visible: delegateItem.itemVisible && root.hasNextVisible(index, root.layoutVersion)
                     Layout.fillWidth: true
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
