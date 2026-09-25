@@ -208,22 +208,6 @@ ContentPage {
                         { displayName: Translation.tr("Separated"), icon: "view_column_2",  value: "separated" }
                     ]
                 }
-                ConfigComboBox {
-                    text: Translation.tr("Background theme")
-                    buttonIcon: "palette"
-                    enabled: Config.options.bar.showBackground
-                    currentValue: (Config.options.bar.backgroundStyle !== undefined) ? Config.options.bar.backgroundStyle : 1
-                    fieldWidth: 160
-                    onSelected: newValue => { Config.options.bar.backgroundStyle = newValue; }
-                    model: [
-                        { displayName: Translation.tr("Classic (Solid)"),       value: 0 },
-                        { displayName: Translation.tr("Frosted Glass"),         value: 1 },
-                        { displayName: Translation.tr("Crystal Wallpaper"),     value: 2 },
-                        { displayName: Translation.tr("Atmospheric Vignette"),  value: 3 },
-                        { displayName: Translation.tr("Smoked Wallpaper Glass"), value: 4 },
-                        { displayName: Translation.tr("Luminous Horizon Glass"), value: 5 }
-                    ]
-                }
                 ConfigRow{
                     uniform: true
                     ConfigSwitch {

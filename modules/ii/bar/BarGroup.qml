@@ -20,8 +20,10 @@ Item {
             leftMargin: root.vertical ? 4 : 0
             rightMargin: root.vertical ? 4 : 0
         }
-        color: Config.options?.bar.borderless ? "transparent" : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.35)
-        border.width: Config.options?.bar.borderless ? 0 : 1
+        color: (Config.options?.bar.borderless === "transparent" || Config.options?.bar.borderless === true)
+            ? "transparent"
+            : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.22)
+        border.width: (Config.options?.bar.borderless === "transparent" || Config.options?.bar.borderless === true) ? 0 : 1
         border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
         radius: Appearance.rounding.small
     }

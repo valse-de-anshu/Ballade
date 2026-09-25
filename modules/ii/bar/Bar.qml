@@ -14,6 +14,9 @@ import qs.modules.common.functions
 Scope {
     id: bar
     property bool showBarBackground: Config.options.bar.showBackground
+    readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base)
+        ? Appearance.colors.colLayer0Base
+        : Appearance.colors.colLayer0
 
     Variants {
         // For each monitor
@@ -180,9 +183,12 @@ Scope {
 
                                 implicitSize: Appearance.rounding.screenRounding
                                 color: !showBarBackground ? "transparent" :
-                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
-                                    (Config.options.bar.backgroundStyle === 4) ? ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.78) :
-                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
+                                    Qt.rgba(
+                                        bar.colLayer0Base.r,
+                                        bar.colLayer0Base.g,
+                                        bar.colLayer0Base.b,
+                                        0.15
+                                    )
 
                                 corner: RoundCorner.CornerEnum.TopLeft
                                 states: State {
@@ -202,9 +208,12 @@ Scope {
                                 }
                                 implicitSize: Appearance.rounding.screenRounding
                                 color: !showBarBackground ? "transparent" :
-                                    (Config.options.bar.backgroundStyle === 0) ? Appearance.colors.colLayer0 :
-                                    (Config.options.bar.backgroundStyle === 4) ? ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.78) :
-                                    ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.45)
+                                    Qt.rgba(
+                                        bar.colLayer0Base.r,
+                                        bar.colLayer0Base.g,
+                                        bar.colLayer0Base.b,
+                                        0.15
+                                    )
 
                                 corner: RoundCorner.CornerEnum.TopRight
                                 states: State {

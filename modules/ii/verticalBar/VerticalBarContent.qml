@@ -33,7 +33,9 @@ Item { // Bar content region
             target: barBackground
         }
     }
-    readonly property int bgStyle: Config.options.bar.backgroundStyle ?? 1
+    readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base)
+        ? Appearance.colors.colLayer0Base
+        : Appearance.colors.colLayer0
 
     // Background
     Rectangle {
@@ -42,127 +44,38 @@ Item { // Bar content region
             fill: parent
             margins: Config.options.bar.cornerStyle === 1 ? (Appearance.sizes.hyprlandGapsOut) : 0
         }
-        color: "transparent"
+        visible: Config.options.bar.showBackground
         radius: Config.options.bar.cornerStyle === 1 ? Appearance.rounding.windowRounding : 0
+        color: Qt.rgba(
+            root.colLayer0Base.r,
+            root.colLayer0Base.g,
+            root.colLayer0Base.b,
+            0.15
+        )
+        border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.15)
         clip: true
 
-        // STYLE 0: CLASSIC
+        // Subtle specular highlight gradient across the glass rim
         Rectangle {
             anchors.fill: parent
             radius: barBackground.radius
-            visible: Config.options.bar.showBackground && root.bgStyle === 0
-            color: Appearance.colors.colLayer0
-            border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
-            border.color: Appearance.colors.colLayer0Border
-        }
-
-        // STYLE 1: FROSTED
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            visible: Config.options.bar.showBackground && root.bgStyle === 1
-            radius: barBackground.radius
-            blurRadius: 36
-            tintOpacity: 0.28
-            showSurfaceSheen: false
-            imageHorizontalAlignment: Config.options.bar.bottom ? Image.AlignRight : Image.AlignLeft
-            imageVerticalAlignment: Image.AlignVCenter
-            sourceHeight: root.screen?.height ?? (Screen.height > 0 ? Screen.height : 1080)
-            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.10) : "transparent"
-            showBorder: Config.options.bar.cornerStyle === 1
-        }
-
-        // STYLE 2: WALLPAPER
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            visible: Config.options.bar.showBackground && root.bgStyle === 2
-            radius: barBackground.radius
-            blurRadius: 24
-            tintOpacity: 0.12
-            showSurfaceSheen: true
-            imageHorizontalAlignment: Config.options.bar.bottom ? Image.AlignRight : Image.AlignLeft
-            imageVerticalAlignment: Image.AlignVCenter
-            sourceHeight: root.screen?.height ?? (Screen.height > 0 ? Screen.height : 1080)
-            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.12) : "transparent"
-            showBorder: Config.options.bar.cornerStyle === 1
-        }
-
-        // STYLE 3: ATMOSPHERE
-        Item {
-            anchors.fill: parent
-            visible: Config.options.bar.showBackground && root.bgStyle === 3
-
-            FrostedWidgetBackground {
-                anchors.fill: parent
-                radius: barBackground.radius
-                blurRadius: 44
-                tintOpacity: 0.0
-                showTint: false
-                showBorder: false
-                imageHorizontalAlignment: Config.options.bar.bottom ? Image.AlignRight : Image.AlignLeft
-                imageVerticalAlignment: Image.AlignVCenter
-                sourceHeight: root.screen?.height ?? (Screen.height > 0 ? Screen.height : 1080)
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: barBackground.radius
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop {
-                        position: !Config.options.bar.bottom ? 0.0 : 1.0
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.40)
-                    }
-                    GradientStop {
-                        position: !Config.options.bar.bottom ? 0.65 : 0.35
-                        color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.15)
-                    }
-                    GradientStop {
-                        position: !Config.options.bar.bottom ? 1.0 : 0.0
-                        color: "transparent"
-                    }
+            color: "transparent"
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop {
+                    position: 0.0
+                    color: ColorUtils.applyAlpha("#ffffff", 0.08)
+                }
+                GradientStop {
+                    position: 0.35
+                    color: ColorUtils.applyAlpha("#ffffff", 0.02)
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "transparent"
                 }
             }
-        }
-
-        // STYLE 4: SMOKED
-        Item {
-            anchors.fill: parent
-            visible: Config.options.bar.showBackground && root.bgStyle === 4
-
-            FrostedWidgetBackground {
-                anchors.fill: parent
-                radius: barBackground.radius
-                blurRadius: 50
-                tintOpacity: 0.40
-                showSurfaceSheen: false
-                imageHorizontalAlignment: Config.options.bar.bottom ? Image.AlignRight : Image.AlignLeft
-                imageVerticalAlignment: Image.AlignVCenter
-                sourceHeight: root.screen?.height ?? (Screen.height > 0 ? Screen.height : 1080)
-                borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha("#ffffff", 0.07) : "transparent"
-                showBorder: Config.options.bar.cornerStyle === 1
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: barBackground.radius
-                color: Appearance.colors.colPrimary
-                opacity: 0.04
-            }
-        }
-
-        // STYLE 5: LUMINOUS
-        FrostedWidgetBackground {
-            anchors.fill: parent
-            visible: Config.options.bar.showBackground && root.bgStyle === 5
-            radius: barBackground.radius
-            blurRadius: 34
-            tintOpacity: 0.22
-            showSurfaceSheen: true
-            imageHorizontalAlignment: Config.options.bar.bottom ? Image.AlignRight : Image.AlignLeft
-            imageVerticalAlignment: Image.AlignVCenter
-            sourceHeight: root.screen?.height ?? (Screen.height > 0 ? Screen.height : 1080)
-            borderColor: Config.options.bar.cornerStyle === 1 ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.20) : "transparent"
-            showBorder: Config.options.bar.cornerStyle === 1
         }
 
         // Clean subtle edge glass border when cornerStyle === 0 (Hug style)
@@ -174,8 +87,8 @@ Item { // Bar content region
                 left: Config.options.bar.bottom ? parent.left : undefined
             }
             width: 1
-            color: ColorUtils.applyAlpha("#ffffff", 0.08)
-            visible: Config.options.bar.showBackground && Config.options.bar.cornerStyle === 0 && (root.bgStyle !== 0 && root.bgStyle !== 3)
+            color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.12)
+            visible: Config.options.bar.cornerStyle === 0
         }
     }
 

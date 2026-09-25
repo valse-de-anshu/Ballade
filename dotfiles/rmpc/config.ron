@@ -4,7 +4,7 @@
 (
     address: "127.0.0.1:6600",
     password: None,
-    theme: Some("orange"),
+    theme: Some("green"),
     cache_dir: None,
     lyrics_dir: Some("/home/valse-de-anshu/.local/share/rmpc/lyrics"),
     enable_lyrics_index: true,

@@ -45,4 +45,13 @@ hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, xray = true })
 hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, ignore_alpha = 0.05 })
 hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, no_anim = true })
 
+-- Frosted glass blur for Bar (top, bottom, left, right)
+hl.layer_rule({ match = { namespace = "quickshell:bar" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:bar" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:bar" }, ignore_alpha = 0.05 })
+
+hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, ignore_alpha = 0.05 })
+
 
