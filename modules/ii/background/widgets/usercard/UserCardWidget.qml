@@ -16,51 +16,18 @@ AbstractBackgroundWidget {
     configEntryName: "userCard"
     hoverEnabled: true
 
-    readonly property real snapWidth1: 132
-    readonly property real snapWidth2: 276
     readonly property real snapWidth3: 276
     readonly property real snapWidth4: 420
-
-    readonly property real snapHeight1: 120
-    readonly property real snapHeight2: 120
     readonly property real snapHeight3: 252
 
-    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode === "2x3") ? "2x3" : "2x2"
 
-    property real widgetWidth: {
-        switch (root.sizeMode) {
-            case "1x1": return snapWidth1
-            case "1x2": return snapWidth2
-            case "2x3": return snapWidth4
-            default:    return snapWidth3
-        }
-    }
-    property real widgetHeight: {
-        switch (root.sizeMode) {
-            case "1x1": return snapHeight1
-            case "1x2": return snapHeight2
-            default:    return snapHeight3
-        }
-    }
+    property real widgetWidth: root.sizeMode === "2x3" ? snapWidth4 : snapWidth3
+    property real widgetHeight: snapHeight3
 
-    function modeForDimensions(w, h) {
-        // Height threshold between short (120) and tall (252) with hysteresis
-        const currentIsTall = (root.sizeMode === "2x2" || root.sizeMode === "2x3");
-        const tallThreshold = currentIsTall ? 170 : 200;
-        const isTall = h >= tallThreshold;
-
-        if (!isTall) {
-            // Short modes: 1x1 (132) or 1x2 (276)
-            const currentIs1x1 = (root.sizeMode === "1x1");
-            const widthThreshold = currentIs1x1 ? 220 : 190;
-            return w >= widthThreshold ? "1x2" : "1x1";
-        } else {
-            // Tall modes: 1x1 (if dragged far left), 2x2 (276), or 2x3 (420)
-            if (w < 170) return "1x1";
-            const currentIs2x3 = (root.sizeMode === "2x3");
-            const wideThreshold = currentIs2x3 ? 335 : 365;
-            return w >= wideThreshold ? "2x3" : "2x2";
-        }
+    function modeForDimensions(w, _h) {
+        const threshold = root.sizeMode === "2x3" ? 335 : 365
+        return w >= threshold ? "2x3" : "2x2"
     }
 
     property int avatarSize: 64
@@ -94,38 +61,21 @@ AbstractBackgroundWidget {
     readonly property string greetingText: greetingFor(DateTime.hour24)
     readonly property string todayString: "Today • " + DateTime.clock.date.toLocaleDateString(Qt.locale(), "dddd d MMM")
 
-    // Uptime split into days / hours / minutes for the 2x3 stats row
-    property int uptimeSeconds: 0
-    readonly property int uptimeDays: Math.floor(root.uptimeSeconds / 86400)
-    readonly property int uptimeHours: Math.floor((root.uptimeSeconds % 86400) / 3600)
-    readonly property int uptimeMinutes: Math.floor((root.uptimeSeconds % 3600) / 60)
-
-    Process {
-        id: uptimeProc
-        command: ["cat", "/proc/uptime"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const secs = parseFloat(text.trim().split(" ")[0])
-                if (!isNaN(secs)) root.uptimeSeconds = Math.floor(secs)
-            }
-        }
-    }
-
-    Timer {
-        interval: 60000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: uptimeProc.running = true
+    readonly property string welcomingMessage: {
+        const custom = (Config.options.background.widgets.userCard && Config.options.background.widgets.userCard.customText)
+            ? Config.options.background.widgets.userCard.customText.trim()
+            : ""
+        if (custom.length > 0) return custom
+        const hour = DateTime.hour24
+        if (hour >= 18 || hour < 4) return "Welcome home darling, you worked so hard today ♡"
+        if (hour >= 12) return "Welcome back honey! Come relax, I missed you ♡"
+        return "Good morning my love! Have a wonderful day ahead ♡"
     }
 
     implicitWidth:  card.implicitWidth
     implicitHeight: card.implicitHeight
 
     Behavior on widgetWidth {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-    }
-    Behavior on widgetHeight {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
@@ -148,137 +98,7 @@ AbstractBackgroundWidget {
 
         Loader {
             anchors.fill: parent
-            sourceComponent: {
-                if (root.sizeMode === "1x1") return oneByOneContent
-                if (root.sizeMode === "1x2") return oneByTwoContent
-                if (root.sizeMode === "2x3") return twoByThreeContent
-                return twoByTwoContent
-            }
-        }
-
-        // 1x1
-        Component {
-            id: oneByOneContent
-            Item {
-                id: avatarSingleWrap
-                anchors.fill: parent
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: avatarSingleWrap.width
-                        height: avatarSingleWrap.height
-                        radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
-                    }
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: Appearance.colors.colLayer0
-                }
-
-                AvatarImage {
-                    id: avatarSingle
-                    anchors.fill: parent
-                }
-
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: "account_circle"
-                    iconSize: 32
-                    color: Appearance.colors.colOnPrimaryContainer
-                    visible: avatarSingle.status === Image.Error
-                }
-            }
-        }
-
-        // 1x2
-        Component {
-            id: oneByTwoContent
-            Rectangle {
-                anchors.fill: parent
-                radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
-                color: Qt.rgba(
-                    Appearance.colors.colLayer0Base.r,
-                    Appearance.colors.colLayer0Base.g,
-                    Appearance.colors.colLayer0Base.b,
-                    0.12
-                )
-                border.width: 0
-                border.color: "transparent"
-                clip: true
-
-                RowLayout {
-                    anchors { fill: parent; margins: 10 }
-                    spacing: 12
-
-                    Item {
-                        id: avatarWideWrap
-                        Layout.preferredWidth: parent.height
-                        Layout.preferredHeight: parent.height 
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: avatarWideWrap.width
-                                height: avatarWideWrap.height
-                                radius: ((Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30) - 6
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            color: Appearance.colors.colLayer0
-                        }
-
-                        AvatarImage {
-                            id: avatarWide
-                            anchors.fill: parent
-                        }
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "account_circle"
-                            iconSize: 32
-                            color: Appearance.colors.colOnPrimaryContainer
-                            visible: avatarWide.status === Image.Error
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 2
-
-                        Item { Layout.fillHeight: true }
-
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: "Hi, " + root.username + "!"
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimaryContainer
-                            elide: Text.ElideRight
-                        }
-
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: root.greetingText
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.8
-                            elide: Text.ElideRight
-                        }
-
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: root.todayString
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.6
-                            elide: Text.ElideRight
-                        }
-                    }
-                }
-            }
+            sourceComponent: root.sizeMode === "2x3" ? twoByThreeContent : twoByTwoContent
         }
 
         // 2x2 (original design)
@@ -717,78 +537,33 @@ AbstractBackgroundWidget {
                             Layout.fillWidth: true
                             spacing: 10
 
-                            ColumnLayout {
-                                spacing: 0
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: root.uptimeDays
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                }
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: "days"
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                    opacity: 0.6
-                                }
-                            }
-
-                            Rectangle {
-                                Layout.preferredWidth: 1
-                                Layout.preferredHeight: 28
-                                color: Appearance.colors.colOnPrimaryContainer
-                                opacity: 0.15
-                            }
-
-                            ColumnLayout {
-                                spacing: 0
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: root.uptimeHours
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                }
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: "hours"
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                    opacity: 0.6
-                                }
-                            }
-
-                            Rectangle {
-                                Layout.preferredWidth: 1
-                                Layout.preferredHeight: 28
-                                color: Appearance.colors.colOnPrimaryContainer
-                                opacity: 0.15
-                            }
-
-                            ColumnLayout {
-                                spacing: 0
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: root.uptimeMinutes
-                                    font.pixelSize: Appearance.font.pixelSize.normal
-                                    font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                }
-                                StyledText {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: "min"
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colOnPrimaryContainer
-                                    opacity: 0.6
-                                }
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Rectangle {
+                            RowLayout {
                                 Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 8
+
+                                MaterialSymbol {
+                                    text: "favorite"
+                                    iconSize: 18
+                                    color: Appearance.colors.colPrimary
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: root.welcomingMessage
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.italic: true
+                                    color: Appearance.colors.colOnPrimaryContainer
+                                    wrapMode: Text.WordWrap
+                                    maximumLineCount: 2
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: 90
                                 implicitHeight: 36
                                 radius: Appearance.rounding.full
                                 color: Appearance.colors.colOnPrimaryContainer
@@ -847,12 +622,14 @@ AbstractBackgroundWidget {
             locked: Config.options.background.widgetsLocked
             currentWidth: root.widgetWidth
             currentHeight: root.widgetHeight
-            resizeMode: "diagonal"
-            onResizedXY: (newW, newH) => {
-                root.sizeMode = root.modeForDimensions(newW, newH)
+            resizeMode: "horizontal"
+            onResized: (newW) => {
+                root.sizeMode = root.modeForDimensions(newW, root.widgetHeight)
             }
             onResizeFinished: {
-                root.configEntry.sizeMode = root.sizeMode
+                if (root.configEntry) {
+                    root.configEntry.sizeMode = root.sizeMode
+                }
             }
         }
     }

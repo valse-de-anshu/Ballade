@@ -34,3 +34,9 @@ sounds/*.flac
 sounds/login_greetings/*.flac
 sounds/login_greetings/subtitles.txt
 sounds/login_greetings/
+
+# Dynamic wallpaper runtime caches
+mpvpaper_thumbnails/
+**/mpvpaper_thumbnails/
+__restore_video_wallpaper.sh
+**/__restore_video_wallpaper.sh

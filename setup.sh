@@ -147,7 +147,7 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                 mkdir -p "$HOME/.config/vesktop/themes"
                 cp -rn "$app/"* "$HOME/.config/Vencord/themes/" 2>/dev/null || true
                 cp -rn "$app/"* "$HOME/.config/vesktop/themes/" 2>/dev/null || true
-                echo "   ↳ Vencord & Vesktop DiscordPlus theme installed"
+                echo "   ↳ Vencord & Vesktop themes installed (DiscordPlus & Frosted Glass)"
             elif [ "$app_name" = "fastfetch" ]; then
                 mkdir -p "$HOME/.config/fastfetch"
                 cp -rn "$app/"* "$HOME/.config/fastfetch/" 2>/dev/null || true
@@ -155,6 +155,18 @@ if [ -d "$BALLADE_DIR/dotfiles" ]; then
                     sed -i "s|/home/[^/]*|${HOME}|g" "$HOME/.config/fastfetch/config.jsonc"
                 fi
                 echo "   ↳ Fastfetch config installed & paths dynamically adapted to $HOME"
+            elif [ "$app_name" = "rmpc" ]; then
+                mkdir -p "$HOME/.config/rmpc"
+                cp -rn "$app/"* "$HOME/.config/rmpc/" 2>/dev/null || true
+                if [ -f "$HOME/.config/rmpc/config.ron" ]; then
+                    sed -i "s|/home/[^/]*|${HOME}|g" "$HOME/.config/rmpc/config.ron"
+                fi
+                echo "   ↳ rmpc config installed & paths dynamically adapted to $HOME"
+            elif [ "$app_name" = "mpv" ]; then
+                mkdir -p "$HOME/.config/mpv"
+                cp -rn "$app/"* "$HOME/.config/mpv/" 2>/dev/null || true
+                [ -f "$HOME/.config/mpv/scripts/uosc/bin/ziggy-linux" ] && chmod +x "$HOME/.config/mpv/scripts/uosc/bin/ziggy-linux" 2>/dev/null || true
+                echo "   ↳ mpv configuration, shaders, and uosc scripts installed"
             else
                 mkdir -p "$HOME/.config/$app_name"
                 cp -rn "$app/"* "$HOME/.config/$app_name/" 2>/dev/null || true

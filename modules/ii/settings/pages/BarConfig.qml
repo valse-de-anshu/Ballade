@@ -212,7 +212,7 @@ ContentPage {
                     text: Translation.tr("Background theme")
                     buttonIcon: "palette"
                     enabled: Config.options.bar.showBackground
-                    currentValue: Config.options.bar.backgroundStyle ?? 1
+                    currentValue: (Config.options.bar.backgroundStyle !== undefined) ? Config.options.bar.backgroundStyle : 1
                     fieldWidth: 160
                     onSelected: newValue => { Config.options.bar.backgroundStyle = newValue; }
                     model: [
@@ -431,7 +431,7 @@ ContentPage {
                 ConfigSelectionArray {
                     text: Translation.tr("Indicator style")
                     icon: "page_control"
-                    currentValue: Config.options.bar.workspaces.indicatorStyle ?? "dot"
+                    currentValue: (Config.options.bar.workspaces.indicatorStyle !== undefined) ? Config.options.bar.workspaces.indicatorStyle : "dot"
                     onSelected: newValue => {
                         Config.options.bar.workspaces.indicatorStyle = newValue;
                         Config.options.bar.workspaces.alwaysShowNumbers = false;

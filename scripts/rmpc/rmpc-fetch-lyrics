@@ -147,8 +147,7 @@ def main():
         candidate_roots = [
             os.environ.get("RMPC_EXTERNAL_DRIVE", "/mnt/storage"),
             "/mnt/storage",
-            os.path.expanduser("~/Music"),
-            "/home/valse-de-anshu/Music"
+            os.path.expanduser("~/Music")
         ]
 
         abs_file_path = None

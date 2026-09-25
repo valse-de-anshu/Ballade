@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -21,8 +19,9 @@ Scope {
             GlobalStates.desktopMenuOpen = false
             return
         }
-        const focusedName = Hyprland.focusedMonitor?.name
-        const screen = Quickshell.screens.find(s => s.name === focusedName) ?? Quickshell.screens[0]
+        const focusedName = (Hyprland.focusedMonitor && Hyprland.focusedMonitor.name) ? Hyprland.focusedMonitor.name : ""
+        const foundScreen = Quickshell.screens.find(s => s.name === focusedName)
+        const screen = foundScreen ? foundScreen : Quickshell.screens[0]
         GlobalStates.desktopMenuScreen = screen
         GlobalStates.desktopMenuX = screen.width / 2
         GlobalStates.desktopMenuY = screen.height / 2
@@ -31,13 +30,13 @@ Scope {
 
     IpcHandler {
         target: "desktopMenu"
-        function toggle(): void {
+        function toggle() {
             root.openCentered(!GlobalStates.desktopMenuOpen)
         }
-        function open(): void {
+        function open() {
             root.openCentered(true)
         }
-        function close(): void {
+        function close() {
             GlobalStates.desktopMenuOpen = false
         }
     }
@@ -71,7 +70,7 @@ Scope {
         sourceComponent: PanelWindow {
             id: menuWindow
 
-            screen: GlobalStates.desktopMenuScreen ?? Quickshell.screens[0]
+            screen: GlobalStates.desktopMenuScreen ? GlobalStates.desktopMenuScreen : Quickshell.screens[0]
 
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
@@ -106,12 +105,12 @@ Scope {
                 onWheel: GlobalStates.desktopMenuOpen = false
             }
 
-            readonly property color colLayer0Base: Appearance.colors.colLayer0Base ?? Appearance.colors.colLayer0
+            readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base) ? Appearance.colors.colLayer0Base : Appearance.colors.colLayer0
 
             // Context Menu card
             Rectangle {
                 id: menuCard
-                width: 230
+                width: 264
                 implicitHeight: menuCol.implicitHeight + 16
                 x: Math.min(Math.max(GlobalStates.desktopMenuX, 12), menuWindow.width - width - 12)
                 y: Math.min(Math.max(GlobalStates.desktopMenuY, 12), menuWindow.height - implicitHeight - 12)
@@ -243,6 +242,63 @@ Scope {
                         }
                     }
 
+                    // Centered Wallpaper Submenu
+                    RippleButton {
+                        id: centeredWallpaperBtn
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol { text: "crop_square"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("Centered Wallpaper")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnLayer0
+                                elide: Text.ElideRight
+                            }
+                            MaterialSymbol {
+                                text: "chevron_right"
+                                iconSize: 18
+                                color: Appearance.colors.colOnLayer0
+                                opacity: 0.5
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            }
+                        }
+
+                        Component {
+                            id: centeredWallpaperSubmenuComp
+                            CenteredWallpaperSubmenu {}
+                        }
+
+                        HoverHandler {
+                            onHoveredChanged: {
+                                if (hovered) {
+                                    submenuCloseTimer.stop()
+                                    menuWindow.submenuWidth = 330
+                                    menuWindow.submenuAnchorY = menuCard.y + centeredWallpaperBtn.y
+                                    menuWindow.openSubmenuComponent = centeredWallpaperSubmenuComp
+                                } else {
+                                    submenuCloseTimer.restart()
+                                }
+                            }
+                        }
+                        onClicked: {
+                            if (menuWindow.openSubmenuComponent === centeredWallpaperSubmenuComp) {
+                                menuWindow.openSubmenuComponent = null
+                            } else {
+                                submenuCloseTimer.stop()
+                                menuWindow.submenuWidth = 330
+                                menuWindow.submenuAnchorY = menuCard.y + centeredWallpaperBtn.y
+                                menuWindow.openSubmenuComponent = centeredWallpaperSubmenuComp
+                            }
+                        }
+                    }
+
                     // Desktop Widgets Submenu
                     RippleButton {
                         id: widgetsBtn
@@ -255,8 +311,20 @@ Scope {
                             anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                             spacing: 12
                             MaterialSymbol { text: "widgets"; iconSize: 20; color: Appearance.colors.colOnLayer0 }
-                            StyledText { Layout.fillWidth: true; text: Translation.tr("Desktop Widgets"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
-                            MaterialSymbol { text: "chevron_right"; iconSize: 18; color: Appearance.colors.colOnLayer0; opacity: 0.5 }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("Desktop Widgets")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnLayer0
+                                elide: Text.ElideRight
+                            }
+                            MaterialSymbol {
+                                text: "chevron_right"
+                                iconSize: 18
+                                color: Appearance.colors.colOnLayer0
+                                opacity: 0.5
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            }
                         }
 
                         Component {
@@ -268,6 +336,7 @@ Scope {
                             onHoveredChanged: {
                                 if (hovered) {
                                     submenuCloseTimer.stop()
+                                    menuWindow.submenuWidth = 260
                                     menuWindow.submenuAnchorY = menuCard.y + widgetsBtn.y
                                     menuWindow.openSubmenuComponent = widgetsSubmenuComp
                                 } else {
@@ -280,6 +349,7 @@ Scope {
                                 menuWindow.openSubmenuComponent = null
                             } else {
                                 submenuCloseTimer.stop()
+                                menuWindow.submenuWidth = 260
                                 menuWindow.submenuAnchorY = menuCard.y + widgetsBtn.y
                                 menuWindow.openSubmenuComponent = widgetsSubmenuComp
                             }
@@ -348,7 +418,7 @@ Scope {
 
                 y: Math.min(
                     Math.max(menuWindow.submenuAnchorY, 12),
-                    menuWindow.height - (item?.implicitHeight ?? 0) - 12
+                    menuWindow.height - (item && item.implicitHeight !== undefined ? item.implicitHeight : 0) - 12
                 )
 
                 scale: active ? 1.0 : 0.92

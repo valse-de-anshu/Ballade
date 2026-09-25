@@ -5,10 +5,10 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
 
-Flow {
+Item {
     id: root
     Layout.fillWidth: true
-    spacing: 6
+    implicitHeight: Math.max(38, flowContainer.childrenRect.height)
 
     property var options: []
     property var currentValue: null
@@ -60,71 +60,77 @@ Flow {
         }
     }
 
-    Repeater {
-        model: root.options
-        delegate: RippleButton {
-            id: shapeButton
-            required property string modelData
-            required property int index
+    Flow {
+        id: flowContainer
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        spacing: 6
 
-            property bool isSelected: root.currentValue === modelData
+        Repeater {
+            model: root.options
+            delegate: RippleButton {
+                id: shapeButton
+                required property string modelData
+                required property int index
 
-            implicitWidth: 38
-            implicitHeight: 38
-            buttonRadius: Appearance.rounding.medium ?? 12
+                property bool isSelected: root.currentValue === modelData
 
-            colBackground: isSelected
-                ? Appearance.colors.colPrimaryContainer
-                : ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHigh, 0.4)
-            colBackgroundHover: isSelected
-                ? Appearance.colors.colPrimaryContainerHover
-                : Appearance.colors.colSurfaceContainerHighest
-            colRipple: isSelected
-                ? Appearance.colors.colPrimaryActive
-                : Appearance.colors.colSecondaryContainerActive
+                implicitWidth: 38
+                implicitHeight: 38
+                buttonRadius: Appearance.rounding.medium ?? 12
 
-            border: isSelected
-            borderWidth: 2
-            colBorder: Appearance.colors.colPrimary
+                colBackground: isSelected
+                    ? Appearance.colors.colPrimaryContainer
+                    : ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHigh, 0.4)
+                colBackgroundHover: isSelected
+                    ? Appearance.colors.colPrimaryContainerHover
+                    : Appearance.colors.colSurfaceContainerHighest
+                colRipple: isSelected
+                    ? Appearance.colors.colPrimaryActive
+                    : Appearance.colors.colSecondaryContainerActive
 
-            StyledToolTip {
-                text: shapeButton.modelData
-            }
+                border: isSelected
+                borderWidth: 2
+                colBorder: Appearance.colors.colPrimary
 
-            contentItem: Item {
-                anchors.centerIn: parent
-                implicitWidth: 20
-                implicitHeight: 20
-
-                MaterialSymbol {
-                    visible: shapeButton.modelData === "Free"
-                    anchors.centerIn: parent
-                    text: "crop_free"
-                    iconSize: 20
-                    color: shapeButton.isSelected
-                        ? Appearance.colors.colPrimary
-                        : Appearance.colors.colOnSurfaceVariant
-                    Behavior on color {
-                        ColorAnimation { duration: 180 }
-                    }
+                StyledToolTip {
+                    text: shapeButton.modelData
                 }
 
-                MaterialShape {
-                    visible: shapeButton.modelData !== "Free"
+                contentItem: Item {
                     anchors.centerIn: parent
-                    implicitWidth: shapeButton.modelData === "VerticalRectangle" ? 14 : 20
+                    implicitWidth: 20
                     implicitHeight: 20
-                    shape: root.getShape(shapeButton.modelData)
-                    color: shapeButton.isSelected
-                        ? Appearance.colors.colPrimary
-                        : Appearance.colors.colOnSurfaceVariant
-                    Behavior on color {
-                        ColorAnimation { duration: 180 }
+
+                    MaterialSymbol {
+                        visible: shapeButton.modelData === "Free"
+                        anchors.centerIn: parent
+                        text: "crop_free"
+                        iconSize: 20
+                        color: shapeButton.isSelected
+                            ? Appearance.colors.colPrimary
+                            : Appearance.colors.colOnSurfaceVariant
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+
+                    MaterialShape {
+                        visible: shapeButton.modelData !== "Free"
+                        anchors.centerIn: parent
+                        implicitWidth: shapeButton.modelData === "VerticalRectangle" ? 14 : 20
+                        implicitHeight: 20
+                        shape: root.getShape(shapeButton.modelData)
+                        color: shapeButton.isSelected
+                            ? Appearance.colors.colPrimary
+                            : Appearance.colors.colOnSurfaceVariant
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
                     }
                 }
-            }
 
-            downAction: () => root.selected(shapeButton.modelData)
+                downAction: () => root.selected(shapeButton.modelData)
+            }
         }
     }
 }

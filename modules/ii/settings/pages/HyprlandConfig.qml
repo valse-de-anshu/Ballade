@@ -83,18 +83,21 @@ ContentPage {
             }
 
             ContentSubsection {
+                id: monitorDetailSection
                 Layout.topMargin: 10
-                title: (monitorConfig.monitors[monitorCanvas.selectedIndex]?.name ?? "")
+                readonly property var currentMonitor: (monitorConfig.monitors && monitorCanvas.selectedIndex >= 0 && monitorCanvas.selectedIndex < monitorConfig.monitors.length) ? monitorConfig.monitors[monitorCanvas.selectedIndex] : null
+
+                title: (currentMonitor && currentMonitor.name ? currentMonitor.name : "")
                     + " · "
-                    + (monitorConfig.monitors[monitorCanvas.selectedIndex]?.description ?? "")
+                    + (currentMonitor && currentMonitor.description ? currentMonitor.description : "")
 
                 GroupedList {
                     ConfigSwitch {
                         buttonIcon: "tv_off"
                         text: Translation.tr("Enabled")
-                        checked: !(monitorConfig.monitors[monitorCanvas.selectedIndex]?.disabled ?? false)
+                        checked: !(monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.disabled)
                         onCheckedChanged: {
-                            if (checked === !(monitorConfig.monitors[monitorCanvas.selectedIndex]?.disabled ?? false)) return
+                            if (checked === !(monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.disabled)) return
                             monitorConfig.updateMonitor(monitorCanvas.selectedIndex, { disabled: !checked })
                             monitorConfig.applyAndSave(monitorCanvas.selectedIndex)
                         }
@@ -105,9 +108,9 @@ ContentPage {
                         buttonIcon: "aspect_ratio"
                         text: Translation.tr("Resolution & Refresh Rate")
                         textRole: "display"
-                        model: (monitorConfig.monitors[monitorCanvas.selectedIndex]?.availableModes ?? [])
+                        model: ((monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.availableModes) ? monitorDetailSection.currentMonitor.availableModes : [])
                             .map(mode => ({ display: mode, value: mode }))
-                        currentValue: monitorConfig.monitors[monitorCanvas.selectedIndex]?.currentMode ?? ""
+                        currentValue: (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.currentMode) ? monitorDetailSection.currentMonitor.currentMode : ""
                         onSelected: newValue => {
                             const mode = newValue
                             const parts = mode.match(/(\d+)x(\d+)@([\d.]+)Hz/)
@@ -124,7 +127,7 @@ ContentPage {
                     ConfigSelectionArray {
                         text: Translation.tr("Orientation")
                         icon: "mobile_rotate"
-                        currentValue: monitorConfig.monitors[monitorCanvas.selectedIndex]?.transform ?? 0
+                        currentValue: (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.transform !== undefined) ? monitorDetailSection.currentMonitor.transform : 0
                         onSelected: newValue => {
                             monitorConfig.updateMonitor(monitorCanvas.selectedIndex, { transform: newValue })
                             monitorConfig.applyAndSave(monitorCanvas.selectedIndex)
@@ -140,11 +143,12 @@ ContentPage {
                     ConfigSpinBox {
                         icon: "zoom_in"
                         text: Translation.tr("Scale")
-                        value: Math.round((monitorConfig.monitors[monitorCanvas.selectedIndex]?.scale ?? 1.0) * 100)
+                        value: Math.round(((monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.scale !== undefined) ? monitorDetailSection.currentMonitor.scale : 1.0) * 100)
                         from: 50; to: 300; stepSize: 25
                         onValueChanged: {
                             const newVal = value / 100.0
-                            if (newVal === (monitorConfig.monitors[monitorCanvas.selectedIndex]?.scale ?? 1.0)) return
+                            const curScale = (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.scale !== undefined) ? monitorDetailSection.currentMonitor.scale : 1.0
+                            if (newVal === curScale) return
                             monitorConfig.updateMonitor(monitorCanvas.selectedIndex, { scale: newVal })
                             monitorConfig.applyAndSave(monitorCanvas.selectedIndex)
                         }
@@ -153,10 +157,11 @@ ContentPage {
                     ConfigSpinBox {
                         icon: "swap_horiz"
                         text: Translation.tr("Position X")
-                        value: monitorConfig.monitors[monitorCanvas.selectedIndex]?.x ?? 0
+                        value: (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.x !== undefined) ? monitorDetailSection.currentMonitor.x : 0
                         from: 0; to: 7680; stepSize: 1
                         onValueChanged: {
-                            if (value === (monitorConfig.monitors[monitorCanvas.selectedIndex]?.x ?? 0)) return
+                            const curX = (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.x !== undefined) ? monitorDetailSection.currentMonitor.x : 0
+                            if (value === curX) return
                             monitorConfig.updateMonitor(monitorCanvas.selectedIndex, { x: value })
                             monitorConfig.applyAndSave(monitorCanvas.selectedIndex)
                         }
@@ -165,10 +170,11 @@ ContentPage {
                     ConfigSpinBox {
                         icon: "swap_vert"
                         text: Translation.tr("Position Y")
-                        value: monitorConfig.monitors[monitorCanvas.selectedIndex]?.y ?? 0
+                        value: (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.y !== undefined) ? monitorDetailSection.currentMonitor.y : 0
                         from: 0; to: 4320; stepSize: 1
                         onValueChanged: {
-                            if (value === (monitorConfig.monitors[monitorCanvas.selectedIndex]?.y ?? 0)) return
+                            const curY = (monitorDetailSection.currentMonitor && monitorDetailSection.currentMonitor.y !== undefined) ? monitorDetailSection.currentMonitor.y : 0
+                            if (value === curY) return
                             monitorConfig.updateMonitor(monitorCanvas.selectedIndex, { y: value })
                             monitorConfig.applyAndSave(monitorCanvas.selectedIndex)
                         }

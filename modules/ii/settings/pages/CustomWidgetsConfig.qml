@@ -265,9 +265,9 @@ ContentPage {
                         Layout.fillWidth: true
                         Item { Layout.fillWidth: true }
                         StyledText {
-                            text: (Config.options.background.widgets.userCard.customText?.length ?? 0) + " / 40"
+                            text: (Config.options.background.widgets.userCard.customText ? Config.options.background.widgets.userCard.customText.length : 0) + " / 40"
                             font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: (Config.options.background.widgets.userCard.customText?.length ?? 0) >= 40
+                            color: (Config.options.background.widgets.userCard.customText && Config.options.background.widgets.userCard.customText.length >= 40)
                                    ? Appearance.colors.colError
                                    : Appearance.colors.colSubtext
                         }

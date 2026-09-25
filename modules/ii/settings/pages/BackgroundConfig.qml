@@ -323,21 +323,27 @@ ContentPage {
 
                 GroupedList {
                     ConfigSwitch {
+                        id: bgCenteredSwitch
                         Layout.fillWidth: true
                         buttonIcon: "check"
                         text: Translation.tr("Enable")
                         checked: Config.options.background.centeredWallpaper
                         onCheckedChanged: {
-                            Config.options.background.centeredWallpaper = checked;
+                            if (Config.options.background.centeredWallpaper !== checked) {
+                                Config.options.background.centeredWallpaper = checked;
+                            }
                         }
                     }
                     ConfigSwitch {
+                        id: bgLockOnlySwitch
                         Layout.fillWidth: true
                         buttonIcon: "lock"
                         text: Translation.tr("Show only when locked")
                         checked: Config.options.background.centeredWallpaperOnlyWhenLocked
                         onCheckedChanged: {
-                            Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            if (Config.options.background.centeredWallpaperOnlyWhenLocked !== checked) {
+                                Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            }
                         }
                         enabled: Config.options.background.centeredWallpaper && WM.compositor !== "niri"
                     }
@@ -347,6 +353,7 @@ ContentPage {
                     Layout.topMargin: 0
                     visible: Config.options.background.centeredWallpaper
                     ConfigSelectionShapeArray {
+                        id: bgShapeArray
                         currentValue: Config.options.background.centeredWallpaperShape
                         shapeColor: Appearance.colors.colPrimary
                         backgroundColor: Appearance.colors.colPrimaryContainer
@@ -363,16 +370,42 @@ ContentPage {
                     }
 
                     ConfigSlider {
+                        id: bgSizeSlider
                         visible: Config.options.background.centeredWallpaper
                         text: Translation.tr("Size")
                         value: Config.options.background.centeredWallpaperSize
                         usePercentTooltip: false
                         buttonIcon: "aspect_ratio"
-                        from: 400
-                        to: 800
-                        stopIndicatorValues: [400]
-                        onValueChanged: {
-                            Config.options.background.centeredWallpaperSize = value;
+                        from: 200
+                        to: 1800
+                        stepSize: 10
+                        stopIndicatorValues: [400, 800, 1200, 1600]
+                        onMoved: {
+                            Config.options.background.centeredWallpaperSize = Math.round(value)
+                        }
+                    }
+                }
+
+                Connections {
+                    target: Config.options.background
+                    function onCenteredWallpaperChanged() {
+                        if (bgCenteredSwitch.checked !== Config.options.background.centeredWallpaper) {
+                            bgCenteredSwitch.checked = Config.options.background.centeredWallpaper
+                        }
+                    }
+                    function onCenteredWallpaperOnlyWhenLockedChanged() {
+                        if (bgLockOnlySwitch.checked !== Config.options.background.centeredWallpaperOnlyWhenLocked) {
+                            bgLockOnlySwitch.checked = Config.options.background.centeredWallpaperOnlyWhenLocked
+                        }
+                    }
+                    function onCenteredWallpaperShapeChanged() {
+                        if (bgShapeArray.currentValue !== Config.options.background.centeredWallpaperShape) {
+                            bgShapeArray.currentValue = Config.options.background.centeredWallpaperShape
+                        }
+                    }
+                    function onCenteredWallpaperSizeChanged() {
+                        if (!bgSizeSlider.pressed && Math.round(bgSizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
+                            bgSizeSlider.value = Config.options.background.centeredWallpaperSize
                         }
                     }
                 }
@@ -851,7 +884,7 @@ ContentPage {
                     ConfigSelectionArray {
                         text: Translation.tr("Orientation")
                         icon: "screen_rotation"
-                        currentValue: Config.options.background.widgets.clock.pixel.orientation ?? "vertical"
+                        currentValue: (Config.options.background.widgets.clock.pixel.orientation !== undefined) ? Config.options.background.widgets.clock.pixel.orientation : "vertical"
                         onSelected: newValue => {
                             Config.options.background.widgets.clock.pixel.orientation = newValue;
                         }
@@ -872,7 +905,7 @@ ContentPage {
                     ConfigSwitch {
                         buttonIcon: "schedule"
                         text: Translation.tr("Show AM/PM")
-                        checked: Config.options.background.widgets.clock.pixel.showAmPm ?? true
+                        checked: (Config.options.background.widgets.clock.pixel.showAmPm !== undefined) ? Config.options.background.widgets.clock.pixel.showAmPm : true
                         onCheckedChanged: {
                             Config.options.background.widgets.clock.pixel.showAmPm = checked;
                         }
@@ -882,7 +915,7 @@ ContentPage {
                 MaterialTextArea {
                     Layout.fillWidth: true
                     placeholderText: Translation.tr("Font family")
-                    text: Config.options.background.widgets.clock.pixel.font?.family ?? "Google Sans Flex"
+                    text: (Config.options.background.widgets.clock.pixel.font && Config.options.background.widgets.clock.pixel.font.family) ? Config.options.background.widgets.clock.pixel.font.family : "Google Sans Flex"
                     wrapMode: TextEdit.Wrap
 
                     Timer {
@@ -906,7 +939,7 @@ ContentPage {
 
                     ConfigSlider {
                         text: Translation.tr("Clock size")
-                        value: Config.options.background.widgets.clock.pixel.size ?? 252
+                        value: (Config.options.background.widgets.clock.pixel.size !== undefined) ? Config.options.background.widgets.clock.pixel.size : 252
                         usePercentTooltip: false
                         buttonIcon: "format_size"
                         from: 100
@@ -919,7 +952,7 @@ ContentPage {
 
                     ConfigSlider {
                         text: Translation.tr("Font weight")
-                        value: Config.options.background.widgets.clock.pixel.font?.weight ?? 1000
+                        value: (Config.options.background.widgets.clock.pixel.font && Config.options.background.widgets.clock.pixel.font.weight !== undefined) ? Config.options.background.widgets.clock.pixel.font.weight : 1000
                         usePercentTooltip: false
                         buttonIcon: "format_bold"
                         from: 100
@@ -934,7 +967,7 @@ ContentPage {
 
                     ConfigSlider {
                         text: Translation.tr("Font width")
-                        value: Config.options.background.widgets.clock.pixel.font?.width ?? 100
+                        value: (Config.options.background.widgets.clock.pixel.font && Config.options.background.widgets.clock.pixel.font.width !== undefined) ? Config.options.background.widgets.clock.pixel.font.width : 100
                         usePercentTooltip: false
                         buttonIcon: "fit_width"
                         from: 25
@@ -949,7 +982,7 @@ ContentPage {
 
                     ConfigSlider {
                         text: Translation.tr("Font roundness")
-                        value: Config.options.background.widgets.clock.pixel.font?.roundness ?? 0
+                        value: (Config.options.background.widgets.clock.pixel.font && Config.options.background.widgets.clock.pixel.font.roundness !== undefined) ? Config.options.background.widgets.clock.pixel.font.roundness : 0
                         usePercentTooltip: false
                         buttonIcon: "line_curve"
                         from: 0
@@ -1027,7 +1060,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "opacity"
                     text: Translation.tr("Add transparency")
-                    checked: Config.options.background.widgets.customImage.transparent ?? false
+                    checked: (Config.options.background.widgets.customImage.transparent !== undefined) ? Config.options.background.widgets.customImage.transparent : false
                     onCheckedChanged: {
                         Config.options.background.widgets.customImage.transparent = checked;
                     }
@@ -1036,7 +1069,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "loop"
                     text: Translation.tr("Infinite Loop (Play continuously)")
-                    checked: Config.options.background.widgets.customImage.infiniteLoop ?? false
+                    checked: (Config.options.background.widgets.customImage.infiniteLoop !== undefined) ? Config.options.background.widgets.customImage.infiniteLoop : false
                     onCheckedChanged: {
                         Config.options.background.widgets.customImage.infiniteLoop = checked;
                     }
@@ -1045,7 +1078,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "image"
                     text: Translation.tr("Image File Path")
-                    value: Config.options.background.widgets.customImage.path ?? ""
+                    value: (Config.options.background.widgets.customImage.path !== undefined) ? Config.options.background.widgets.customImage.path : ""
                     onValueChanged: {
                         Config.options.background.widgets.customImage.path = value;
                     }

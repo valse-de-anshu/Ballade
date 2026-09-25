@@ -548,19 +548,19 @@ Variants {
                 id: centeredWallpaperShadow
                 z: 11
                 anchors.centerIn: parent
-                width: bgRoot.centeredWallpaperSize
-                height: bgRoot.centeredWallpaperSize
+                width: 1000
+                height: 1000
                 shape: bgRoot.centeredWallpaperShape
                 color: Qt.rgba(0, 0, 0, 0.5)
                 visible: opacity > 0
                 opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
-                scale: bgRoot.centeredWallpaperEnabled ? 1 : 0.85
+                scale: (bgRoot.centeredWallpaperSize / 1000) * (bgRoot.centeredWallpaperEnabled ? 1 : 0.85)
 
                 Behavior on opacity {
                     NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
                 }
                 Behavior on scale {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutBack }
+                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
                 }
 
                 layer.enabled: true
@@ -577,27 +577,27 @@ Variants {
                 id: centeredWallpaperShapeItem
                 z: 12
                 anchors.centerIn: parent
-                width: bgRoot.centeredWallpaperSize
-                height: bgRoot.centeredWallpaperSize
+                width: 1000
+                height: 1000
                 color: "transparent"
                 shape: bgRoot.centeredWallpaperShape
                 transformOrigin: Item.Center
                 visible: opacity > 0
                 opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
-                scale: bgRoot.centeredWallpaperEnabled ? 1 : 0.85
+                scale: (bgRoot.centeredWallpaperSize / 1000) * (bgRoot.centeredWallpaperEnabled ? 1 : 0.85)
 
                 Behavior on opacity {
                     NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
                 }
                 Behavior on scale {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutBack }
+                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
                 }
 
                 layer.enabled: true
                 layer.effect: OpacityMask {
                     maskSource: MaterialShape {
-                        width: centeredWallpaperShapeItem.width
-                        height: centeredWallpaperShapeItem.height
+                        width: 1000
+                        height: 1000
                         shape: bgRoot.centeredWallpaperShape
                     }
                 }
@@ -607,11 +607,9 @@ Variants {
                     source: bgRoot.wallpaperPath ? ("file://" + CF.FileUtils.trimFileProtocol(Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath))) : ""
                     fillMode: Image.PreserveAspectCrop
                     cache: true
-                    asynchronous: false
+                    asynchronous: true
                     antialiasing: true
                     smooth: true
-                    sourceSize.width: parent.width
-                    sourceSize.height: parent.height
                 }
             }
 

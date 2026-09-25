@@ -521,7 +521,7 @@ ContentPage {
                     ConfigSelectionArray {
                         text: Translation.tr("Orientation")
                         icon: "screen_rotation"
-                        currentValue: Config.options.background.widgets.clock.pixel.orientation ?? "vertical"
+                        currentValue: (Config.options.background.widgets.clock.pixel.orientation !== undefined) ? Config.options.background.widgets.clock.pixel.orientation : "vertical"
                         onSelected: newValue => {
                             Config.options.background.widgets.clock.pixel.orientation = newValue;
                         }
@@ -542,7 +542,7 @@ ContentPage {
                     ConfigSwitch {
                         buttonIcon: "schedule"
                         text: Translation.tr("Show AM/PM")
-                        checked: Config.options.background.widgets.clock.pixel.showAmPm ?? true
+                        checked: (Config.options.background.widgets.clock.pixel.showAmPm !== undefined) ? Config.options.background.widgets.clock.pixel.showAmPm : true
                         onCheckedChanged: {
                             Config.options.background.widgets.clock.pixel.showAmPm = checked;
                         }
@@ -576,7 +576,7 @@ ContentPage {
 
                     ConfigSlider {
                         text: Translation.tr("Clock size")
-                        value: Config.options.background.widgets.clock.pixel.size ?? 252
+                        value: (Config.options.background.widgets.clock.pixel.size !== undefined) ? Config.options.background.widgets.clock.pixel.size : 252
                         usePercentTooltip: false
                         buttonIcon: "format_size"
                         from: 100
@@ -697,7 +697,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "opacity"
                     text: Translation.tr("Add transparency")
-                    checked: Config.options.background.widgets.customImage.transparent ?? false
+                    checked: (Config.options.background.widgets.customImage.transparent !== undefined) ? Config.options.background.widgets.customImage.transparent : false
                     onCheckedChanged: {
                         Config.options.background.widgets.customImage.transparent = checked;
                     }
@@ -706,7 +706,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "loop"
                     text: Translation.tr("Infinite Loop (Play continuously)")
-                    checked: Config.options.background.widgets.customImage.infiniteLoop ?? false
+                    checked: (Config.options.background.widgets.customImage.infiniteLoop !== undefined) ? Config.options.background.widgets.customImage.infiniteLoop : false
                     onCheckedChanged: {
                         Config.options.background.widgets.customImage.infiniteLoop = checked;
                     }
@@ -715,7 +715,7 @@ ContentPage {
                     Layout.fillWidth: true
                     buttonIcon: "image"
                     text: Translation.tr("Image File Path")
-                    value: Config.options.background.widgets.customImage.path ?? ""
+                    value: (Config.options.background.widgets.customImage.path !== undefined) ? Config.options.background.widgets.customImage.path : ""
                     onValueChanged: {
                         Config.options.background.widgets.customImage.path = value;
                     }
@@ -1107,7 +1107,7 @@ ContentPage {
                                 Layout.fillWidth: true
                                 buttonIcon: "opacity"
                                 text: Translation.tr("Add transparency")
-                                checked: modelData.transparent ?? false
+                                checked: (modelData.transparent !== undefined) ? modelData.transparent : false
                                 onCheckedChanged: {
                                     if (checked === Boolean(modelData.transparent)) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
@@ -1122,7 +1122,7 @@ ContentPage {
                                 Layout.fillWidth: true
                                 buttonIcon: "loop"
                                 text: Translation.tr("Infinite Loop (Play continuously)")
-                                checked: modelData.infiniteLoop ?? false
+                                checked: (modelData.infiniteLoop !== undefined) ? modelData.infiniteLoop : false
                                 onCheckedChanged: {
                                     if (checked === Boolean(modelData.infiniteLoop)) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
@@ -1138,9 +1138,10 @@ ContentPage {
                                 buttonIcon: "image"
                                 text: Translation.tr("Image / GIF File Path")
                                 placeholderText: Translation.tr("Paste absolute path, e.g. /home/user/Pictures/mygif.gif")
-                                value: modelData.path ?? ""
+                                value: (modelData.path !== undefined) ? modelData.path : ""
                                 onValueChanged: {
-                                    if (value === (modelData.path ?? "")) return;
+                                    const curP = (modelData.path !== undefined) ? modelData.path : ""
+                                    if (value === curP) return;
                                     var arr = Config.options.background.widgets.customImages.slice()
                                     if (arr[index]) {
                                         arr[index] = Object.assign({}, arr[index], { path: value })
@@ -1159,7 +1160,7 @@ ContentPage {
 
                             // Shape picker for this widget
                             ConfigSelectionShapeArray {
-                                currentValue: modelData.shape ?? "Cookie4Sided"
+                                currentValue: (modelData.shape !== undefined) ? modelData.shape : "Cookie4Sided"
                                 shapeColor: Appearance.colors.colPrimary
                                 backgroundColor: Appearance.colors.colPrimaryContainer
                                 options: [
@@ -1252,7 +1253,7 @@ ContentPage {
                         Layout.fillWidth: true
                         buttonIcon: "edit_note"
                         text: Translation.tr("Custom Text")
-                        placeholderText: Translation.tr("Leave empty to show weather instead")
+                        placeholderText: Translation.tr("Custom quote or message (max 40 chars)")
                         value: Config.options.background.widgets.userCard.customText
                         onValueChanged: {
                             // Enforce 40 char limit

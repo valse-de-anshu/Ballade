@@ -49,8 +49,8 @@ Canvas {
         id: resizeArea
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        width: 30
-        height: 30
+        width: 22
+        height: 22
         hoverEnabled: true
         cursorShape: root.resizeMode === "diagonal" ? Qt.SizeFDiagCursor : (root.resizeMode === "vertical" ? Qt.SizeVerCursor : Qt.SizeHorCursor)
         preventStealing: true

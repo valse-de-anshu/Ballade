@@ -270,21 +270,27 @@ ContentPage {
 
                 GroupedList {
                     ConfigSwitch {
+                        id: appCenteredSwitch
                         Layout.fillWidth: true
                         buttonIcon: "check"
                         text: Translation.tr("Enable centered wallpaper")
                         checked: Config.options.background.centeredWallpaper
                         onCheckedChanged: {
-                            Config.options.background.centeredWallpaper = checked;
+                            if (Config.options.background.centeredWallpaper !== checked) {
+                                Config.options.background.centeredWallpaper = checked;
+                            }
                         }
                     }
                     ConfigSwitch {
+                        id: appLockOnlySwitch
                         Layout.fillWidth: true
                         buttonIcon: "lock"
                         text: Translation.tr("Show only when locked")
                         checked: Config.options.background.centeredWallpaperOnlyWhenLocked
                         onCheckedChanged: {
-                            Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            if (Config.options.background.centeredWallpaperOnlyWhenLocked !== checked) {
+                                Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            }
                         }
                         enabled: Config.options.background.centeredWallpaper && WM.compositor !== "niri"
                     }
@@ -294,6 +300,7 @@ ContentPage {
                     Layout.topMargin: 0
                     visible: Config.options.background.centeredWallpaper
                     ConfigSelectionShapeArray {
+                        id: appShapeArray
                         currentValue: Config.options.background.centeredWallpaperShape
                         shapeColor: Appearance.colors.colPrimary
                         backgroundColor: Appearance.colors.colPrimaryContainer
@@ -310,15 +317,42 @@ ContentPage {
                     }
 
                     ConfigSlider {
+                        id: appSizeSlider
                         visible: Config.options.background.centeredWallpaper
                         text: Translation.tr("Size")
                         value: Config.options.background.centeredWallpaperSize
                         usePercentTooltip: false
                         buttonIcon: "aspect_ratio"
-                        from: 400
-                        to: 800
-                        onValueChanged: {
-                            Config.options.background.centeredWallpaperSize = value
+                        from: 200
+                        to: 1800
+                        stepSize: 10
+                        stopIndicatorValues: [400, 800, 1200, 1600]
+                        onMoved: {
+                            Config.options.background.centeredWallpaperSize = Math.round(value)
+                        }
+                    }
+                }
+
+                Connections {
+                    target: Config.options.background
+                    function onCenteredWallpaperChanged() {
+                        if (appCenteredSwitch.checked !== Config.options.background.centeredWallpaper) {
+                            appCenteredSwitch.checked = Config.options.background.centeredWallpaper
+                        }
+                    }
+                    function onCenteredWallpaperOnlyWhenLockedChanged() {
+                        if (appLockOnlySwitch.checked !== Config.options.background.centeredWallpaperOnlyWhenLocked) {
+                            appLockOnlySwitch.checked = Config.options.background.centeredWallpaperOnlyWhenLocked
+                        }
+                    }
+                    function onCenteredWallpaperShapeChanged() {
+                        if (appShapeArray.currentValue !== Config.options.background.centeredWallpaperShape) {
+                            appShapeArray.currentValue = Config.options.background.centeredWallpaperShape
+                        }
+                    }
+                    function onCenteredWallpaperSizeChanged() {
+                        if (!appSizeSlider.pressed && Math.round(appSizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
+                            appSizeSlider.value = Config.options.background.centeredWallpaperSize
                         }
                     }
                 }

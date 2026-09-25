@@ -190,10 +190,10 @@ Item {
                     value: Config.options.background.centeredWallpaperSize
                     usePercentTooltip: false
                     buttonIcon: "aspect_ratio"
-                    from: 400
-                    to: 800
-                    stopIndicatorValues: [400]
-                    onValueChanged: Config.options.background.centeredWallpaperSize = value
+                    from: 200
+                    to: 1800
+                    stopIndicatorValues: [400, 800, 1200, 1600]
+                    onMoved: Config.options.background.centeredWallpaperSize = Math.round(value)
                 }
             }
         }
