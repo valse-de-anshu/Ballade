@@ -33,36 +33,31 @@ Rectangle {
         Repeater {
             model: root.items.length
             delegate: ColumnLayout {
-                id: rowDelegate
                 required property int index
-                readonly property Item childItem: (index >= 0 && index < root.items.length) ? root.items[index] : null
-                readonly property bool itemVisible: Boolean(childItem && childItem.visible)
-
-                visible: rowDelegate.itemVisible
                 Layout.fillWidth: true
                 spacing: 0
 
-                ColumnLayout {
-                    id: contentArea
+                Item {
                     Layout.fillWidth: true
-                    visible: rowDelegate.itemVisible
-                    Layout.topMargin: root.itemVerticalPadding / 2
-                    Layout.bottomMargin: root.itemVerticalPadding / 2
-                    Layout.leftMargin: 8
-                    Layout.rightMargin: 8
-                    spacing: 0
+                    implicitHeight: (root.items[index] ? root.items[index].implicitHeight : 0) + root.itemVerticalPadding
 
-                    Component.onCompleted: {
-                        const child = root.items[index];
-                        if (child) {
-                            child.parent = contentArea;
-                            child.Layout.fillWidth = true;
+                    ColumnLayout {
+                        id: contentArea
+                        anchors { fill: parent; margins: 6 }
+                        spacing: 0
+
+                        Component.onCompleted: {
+                            const child = root.items[index]
+                            if (child) {
+                                child.parent = contentArea
+                                child.Layout.fillWidth = true
+                            }
                         }
                     }
                 }
 
                 Rectangle {
-                    visible: rowDelegate.itemVisible && (index < root.items.length - 1)
+                    visible: index < root.items.length - 1
                     Layout.fillWidth: true
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
