@@ -66,43 +66,66 @@ AbstractBackgroundWidget {
         }
     }
     readonly property var coverPalette: {
-        // The most saturated cover colors, lifted so they read on any wallpaper
-        const colors = Array.from(coverQuantizer.colors).sort((a, b) => b.hslSaturation - a.hslSaturation);
-        if (colors.length < 3) return null;
-        const lifted = colors.map(c => Qt.hsla(Math.max(c.hslHue, 0), Math.max(c.hslSaturation, 0.45), Math.min(Math.max(c.hslLightness, 0.62), 0.85), 1));
-        return root.style === "dots" ? [root.themePalette[0], lifted[0], lifted[1]] : lifted.slice(0, 3);
+        const rawColors = Array.from((coverQuantizer && coverQuantizer.colors) ? coverQuantizer.colors : []);
+        if (!rawColors || rawColors.length === 0) return null;
+
+        // Score colors prioritizing high saturation and vibrant contrast
+        const scored = rawColors.map(c => {
+            const sat = c.hslSaturation !== undefined ? c.hslSaturation : 0;
+            const lit = c.hslLightness !== undefined ? c.hslLightness : 0.5;
+            const hue = c.hslHue !== undefined ? c.hslHue : 0;
+            const score = sat * 2.0 + (1.0 - Math.abs(lit - 0.5));
+            return { color: c, score: score, sat: sat, lit: lit, hue: hue };
+        }).sort((a, b) => b.score - a.score);
+
+        if (scored.length === 0) return null;
+
+        // Pick up to 3 distinct colors from the cover
+        const picked = [];
+        for (let i = 0; i < scored.length && picked.length < 3; i++) {
+            const candidate = scored[i].color;
+            const isDistinct = picked.every(p => {
+                const hDiff = Math.abs((candidate.hslHue >= 0 ? candidate.hslHue : 0) - (p.hslHue >= 0 ? p.hslHue : 0));
+                const sDiff = Math.abs(candidate.hslSaturation - p.hslSaturation);
+                const lDiff = Math.abs(candidate.hslLightness - p.hslLightness);
+                return (hDiff > 0.08 || sDiff > 0.22 || lDiff > 0.22);
+            });
+            if (isDistinct || picked.length === 0) {
+                picked.push(candidate);
+            }
+        }
+
+        const c1 = picked[0] ? picked[0] : scored[0].color;
+        const c2 = picked[1] ? picked[1] : null;
+        const c3 = picked[2] ? picked[2] : null;
+
+        function boost(c, targetL) {
+            const h = (c.hslHue !== undefined && c.hslHue >= 0) ? c.hslHue : 0;
+            const s = Math.max((c.hslSaturation !== undefined ? c.hslSaturation : 0.6), 0.5);
+            const l = Math.min(Math.max((c.hslLightness !== undefined ? c.hslLightness : targetL), targetL - 0.15), targetL + 0.15);
+            return Qt.hsla(h, Math.min(s * 1.15, 1.0), Math.max(0.35, Math.min(l, 0.8)), 1.0);
+        }
+
+        const boosted1 = boost(c1, 0.55);
+        const boosted2 = c2 ? boost(c2, 0.65) : Qt.hsla((boosted1.hslHue + 0.08) % 1.0, boosted1.hslSaturation, 0.70, 1.0);
+        const boosted3 = c3 ? boost(c3, 0.75) : Qt.hsla((boosted1.hslHue + 0.16) % 1.0, Math.min(boosted1.hslSaturation + 0.1, 1.0), 0.80, 1.0);
+
+        return [boosted1, boosted2, boosted3];
     }
     readonly property var visualizerColors: (root.useCoverColors && root.coverPalette) ? root.coverPalette : root.themePalette
 
-    // Cover art of the current track, cached like the media widget does
-    readonly property MprisPlayer activePlayer: MprisController.activePlayer
-    readonly property string artUrl: (activePlayer && activePlayer.trackArtUrl) ? activePlayer.trackArtUrl : ""
-    readonly property bool needsCover: isRing || useCoverColors
-    readonly property string artFilePath: `${Directories.coverArt}/${Qt.md5(artUrl)}`
-    property bool coverDownloaded: false
+    // Cover art path powered reliably by MprisController
     readonly property string coverUrl: {
-        if (!root.needsCover || root.artUrl.length === 0) return "";
-        if (root.artUrl.startsWith("file://")) return root.artUrl;
-        return root.coverDownloaded ? Qt.resolvedUrl(root.artFilePath) : "";
+        const path = MprisController.readyArtFilePath;
+        if (!path || path.length === 0) return "";
+        return path.startsWith("file://") ? path : Qt.resolvedUrl(path);
     }
 
-    onArtFilePathChanged: fetchCover()
-    onNeedsCoverChanged: fetchCover()
-    function fetchCover() {
-        root.coverDownloaded = false;
-        if (!root.needsCover || root.artUrl.length === 0 || root.artUrl.startsWith("file://")) return;
-        coverDownloader.command = ["bash", "-c", '[ -f "$1" ] || curl -sSL "$2" -o "$1"', "_", root.artFilePath, root.artUrl];
-        coverDownloader.running = true;
-    }
-    Process {
-        id: coverDownloader
-        onExited: root.coverDownloaded = true
-    }
     ColorQuantizer {
         id: coverQuantizer
-        source: root.useCoverColors ? root.coverUrl : ""
-        depth: 2
-        rescaleSize: 64
+        source: root.coverUrl
+        depth: 3
+        rescaleSize: 96
     }
 
     VisualizerEngine {

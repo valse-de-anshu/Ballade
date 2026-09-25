@@ -33,13 +33,19 @@ Rectangle {
         Repeater {
             model: root.items.length
             delegate: ColumnLayout {
+                id: rowDelegate
                 required property int index
+                readonly property Item childItem: (index >= 0 && index < root.items.length) ? root.items[index] : null
+                readonly property bool itemVisible: Boolean(childItem && childItem.visible)
+
+                visible: rowDelegate.itemVisible
                 Layout.fillWidth: true
                 spacing: 0
 
                 Item {
                     Layout.fillWidth: true
-                    implicitHeight: (root.items[index]?.implicitHeight ?? 0) + root.itemVerticalPadding
+                    visible: rowDelegate.itemVisible
+                    implicitHeight: rowDelegate.itemVisible ? ((childItem ? childItem.implicitHeight : 0) + root.itemVerticalPadding) : 0
 
                     ColumnLayout {
                         id: contentArea
@@ -47,17 +53,17 @@ Rectangle {
                         spacing: 0
 
                         Component.onCompleted: {
-                            const child = root.items[index]
+                            const child = root.items[index];
                             if (child) {
-                                child.parent = contentArea
-                                child.Layout.fillWidth = true
+                                child.parent = contentArea;
+                                child.Layout.fillWidth = true;
                             }
                         }
                     }
                 }
 
                 Rectangle {
-                    visible: index < root.items.length - 1
+                    visible: rowDelegate.itemVisible && (index < root.items.length - 1)
                     Layout.fillWidth: true
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12

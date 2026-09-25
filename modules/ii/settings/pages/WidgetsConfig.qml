@@ -902,7 +902,9 @@ ContentPage {
             title: Translation.tr("GPU Visualizer")
 
             readonly property var entry: Config.options.background.widgets.visualizer
-            readonly property bool bandStyle: ["mirror", "aurora", "dots"].includes(entry.style)
+            readonly property bool isShader: Boolean(entry && entry.style !== "bars")
+            readonly property bool isRing: Boolean(entry && entry.style === "ring")
+            readonly property bool bandStyle: Boolean(entry && ["mirror", "aurora", "dots"].includes(entry.style))
 
             GroupedList {
                 ConfigSwitch {
@@ -914,6 +916,7 @@ ContentPage {
                         settingsVisualizer.entry.enable = checked;
                     }
                 }
+
                 ConfigSelectionArray {
                     text: Translation.tr("Shader Style")
                     icon: "style"
@@ -953,7 +956,7 @@ ContentPage {
                 ConfigSelectionArray {
                     text: Translation.tr("Colors")
                     icon: "palette"
-                    enabled: settingsVisualizer.entry.style !== "bars"
+                    visible: settingsVisualizer.isShader
                     currentValue: settingsVisualizer.entry.colorSource
                     onSelected: newValue => {
                         settingsVisualizer.entry.colorSource = newValue;
@@ -976,7 +979,7 @@ ContentPage {
                     text: Translation.tr("Sensitivity (%)")
                     buttonIcon: "tune"
                     usePercentTooltip: false
-                    enabled: settingsVisualizer.entry.style !== "bars"
+                    visible: settingsVisualizer.isShader
                     value: settingsVisualizer.entry.sensitivity * 100
                     from: 50
                     to: 300
@@ -985,11 +988,12 @@ ContentPage {
                         settingsVisualizer.entry.sensitivity = Math.round(value) / 100;
                     }
                 }
+
                 ConfigSlider {
                     text: Translation.tr("Height (%)")
                     buttonIcon: "height"
                     usePercentTooltip: true
-                    enabled: settingsVisualizer.entry.style !== "bars" && settingsVisualizer.bandStyle
+                    visible: settingsVisualizer.bandStyle
                     value: settingsVisualizer.entry.height
                     from: 0
                     to: 100
@@ -998,11 +1002,12 @@ ContentPage {
                         settingsVisualizer.entry.height = Math.round(value);
                     }
                 }
+
                 ConfigSlider {
                     text: Translation.tr("Ring Size")
                     buttonIcon: "aspect_ratio"
                     usePercentTooltip: false
-                    enabled: settingsVisualizer.entry.style === "ring"
+                    visible: settingsVisualizer.isRing
                     value: settingsVisualizer.entry.ringSize
                     from: 200
                     to: 900

@@ -9,7 +9,7 @@ RowLayout {
     id: root
     property string text: ""
     property string icon: ""
-    property list<var> options: [
+    property var options: [
         {
             "displayName": "Option 1",
             "icon": "check",
@@ -43,6 +43,11 @@ RowLayout {
             color: Appearance.colors.colOnSecondaryContainer
             opacity: root.enabled ? 1 : 0.4
         }
+    }
+
+    Item {
+        Layout.fillWidth: true
+        visible: root.text !== ""
     }
 
     Flow {
