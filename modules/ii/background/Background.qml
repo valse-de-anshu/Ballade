@@ -375,7 +375,12 @@ Variants {
 
                 Component.onCompleted: updatePlayback()
                 onMediaStatusChanged: {
-                    if (mediaStatus === MediaPlayer.LoadedMedia && shouldPlay) {
+                    if ((mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) && shouldPlay) {
+                        play();
+                    }
+                }
+                onSourceChanged: {
+                    if (source.toString() !== "" && shouldPlay) {
                         play();
                     }
                 }
@@ -413,7 +418,7 @@ Variants {
                 height: bgRoot.scaledH
                 fillMode: VideoOutput.PreserveAspectCrop
                 layer.enabled: (blurLoader.active || fastBlurLoader.active) && bgRoot.blurFullScreen
-                visible: bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen))
+                visible: bgRoot.wallpaperIsVideo
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 

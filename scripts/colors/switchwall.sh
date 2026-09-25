@@ -120,19 +120,6 @@ create_restore_script() {
 # Time: $(date)
 
 pkill -f mpvpaper || true
-
-monitors=\$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | .name' 2>/dev/null)
-if [ -z "\$monitors" ]; then
-    monitors=\$(mpvpaper -d 2>/dev/null | awk '/\[\*\] Output:/ {print \$3}')
-fi
-if [ -z "\$monitors" ]; then
-    monitors="*"
-fi
-
-for monitor in \$monitors; do
-    setsid mpvpaper -p -o "$VIDEO_OPTS" "\$monitor" "$video_path" >/dev/null 2>&1 &
-    sleep 0.1
-done
 EOF
     mv "$RESTORE_SCRIPT.tmp" "$RESTORE_SCRIPT"
     chmod +x "$RESTORE_SCRIPT"
@@ -207,9 +194,6 @@ switch() {
             mkdir -p "$THUMBNAIL_DIR"
 
             missing_deps=()
-            if ! command -v mpvpaper &> /dev/null; then
-                missing_deps+=("mpvpaper")
-            fi
             if ! command -v ffmpeg &> /dev/null; then
                 missing_deps+=("ffmpeg")
             fi
@@ -224,7 +208,7 @@ switch() {
                     "Missing dependencies: ${missing_deps[*]}")
                 if [[ "$action" == "install_arch" ]]; then
                     kitty -1 sudo pacman -S "${missing_deps[*]}"
-                    if command -v mpvpaper &>/dev/null && command -v ffmpeg &>/dev/null; then
+                    if command -v ffmpeg &>/dev/null; then
                         notify-send 'Wallpaper switcher' 'Alright, try again!' -a "Wallpaper switcher"
                     fi
                 fi
@@ -258,22 +242,8 @@ switch() {
                 exit 1
             fi
 
-            # Set video wallpaper via mpvpaper with auto-pause (only launch if not --noswitch)
-            if [[ "$noswitch_flag" != "1" ]]; then
-                kill_existing_mpvpaper
-                local video_path="$imgpath"
-                monitors=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | .name' 2>/dev/null)
-                if [[ -z "$monitors" ]]; then
-                    monitors=$(mpvpaper -d 2>/dev/null | awk '/\[\*\] Output:/ {print $3}')
-                fi
-                if [[ -z "$monitors" ]]; then
-                    monitors="*"
-                fi
-                for monitor in $monitors; do
-                    setsid mpvpaper -p -o "$VIDEO_OPTS" "$monitor" "$video_path" >/dev/null 2>&1 &
-                    sleep 0.1
-                done
-            fi
+            # Kill any stray mpvpaper processes — QuickShell natively renders live video wallpapers with FastBlur shaders
+            kill_existing_mpvpaper
         else
             effective_image="$imgpath"
             matugen_args+=(image "$imgpath")

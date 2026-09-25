@@ -48,6 +48,13 @@ Singleton {
     }
     
     Connections {
+        target: Config.options?.background ?? null
+        function onWallpaperPathChanged() {
+            root.confirmedPath = ""
+        }
+    }
+
+    Connections {
         target: Config.options?.theme ?? null
         function onActivePresetChanged() {
             // Fallback if userPath doesn't exist
