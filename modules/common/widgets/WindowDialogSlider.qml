@@ -1,4 +1,3 @@
-pragma ComponentBehavior: Bound
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
@@ -7,8 +6,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Widgets
 
-Column {
+ColumnLayout {
     id: root
+    Layout.fillWidth: true
+    spacing: 2
 
     property alias text: sliderName.text
     property alias from: sliderWidget.from
@@ -19,25 +20,20 @@ Column {
 
     signal moved()
     
-    spacing: -2
     ContentSubsectionLabel {
         id: sliderName
-        visible: text?.length > 0
+        visible: Boolean(text && text.length > 0)
+        Layout.fillWidth: true
         text: ""
-        anchors {
-            left: parent.left
-            right: parent.right
-        }
     }
+
     StyledSlider {
         id: sliderWidget
-        anchors {
-            left: parent.left
-            right: parent.right
-            leftMargin: 4
-            rightMargin: 4
-        }
+        Layout.fillWidth: true
+        Layout.leftMargin: 4
+        Layout.rightMargin: 4
         configuration: StyledSlider.Configuration.S
         onMoved: root.moved()
     }
 }
+

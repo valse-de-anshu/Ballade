@@ -42,22 +42,21 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 0
 
-                Item {
+                ColumnLayout {
+                    id: contentArea
                     Layout.fillWidth: true
                     visible: rowDelegate.itemVisible
-                    implicitHeight: rowDelegate.itemVisible ? ((childItem ? childItem.implicitHeight : 0) + root.itemVerticalPadding) : 0
+                    Layout.topMargin: root.itemVerticalPadding / 2
+                    Layout.bottomMargin: root.itemVerticalPadding / 2
+                    Layout.leftMargin: 8
+                    Layout.rightMargin: 8
+                    spacing: 0
 
-                    ColumnLayout {
-                        id: contentArea
-                        anchors { fill: parent; margins: 6 }
-                        spacing: 0
-
-                        Component.onCompleted: {
-                            const child = root.items[index];
-                            if (child) {
-                                child.parent = contentArea;
-                                child.Layout.fillWidth = true;
-                            }
+                    Component.onCompleted: {
+                        const child = root.items[index];
+                        if (child) {
+                            child.parent = contentArea;
+                            child.Layout.fillWidth = true;
                         }
                     }
                 }
