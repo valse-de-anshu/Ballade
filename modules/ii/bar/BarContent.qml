@@ -18,23 +18,6 @@ Item { // Bar content region
     property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen?.width) ? 2 : (Appearance.sizes.barShortenScreenWidthThreshold >= screen?.width) ? 1 : 0
     readonly property int centerSideModuleWidth: (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened : (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : Appearance.sizes.barCenterSideModuleWidth
 
-    component VerticalBarSeparator: Rectangle {
-        Layout.topMargin: Appearance.sizes.baseBarHeight / 3
-        Layout.bottomMargin: Appearance.sizes.baseBarHeight / 3
-        Layout.fillHeight: true
-        implicitWidth: 1
-        color: ColorUtils.applyAlpha("#ffffff", 0.12)
-    }
-
-    // Background shadow
-    Loader {
-        active: Config.options.bar.showBackground && Config.options.bar.cornerStyle === 1 && Config.options.bar.floatStyleShadow
-        anchors.fill: barBackground
-        sourceComponent: StyledRectangularShadow {
-            anchors.fill: undefined // The loader's anchors act on this, and this should not have any anchor
-            target: barBackground
-        }
-    }
     readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base)
         ? Appearance.colors.colLayer0Base
         : Appearance.colors.colLayer0
@@ -98,9 +81,9 @@ Item { // Bar content region
         id: barLeftSideMouseArea
 
         anchors {
-            top: parent.top
-            bottom: parent.bottom
-            left: parent.left
+            top: barBackground.top
+            bottom: barBackground.bottom
+            left: barBackground.left
             right: middleSection.left
         }
         implicitWidth: leftSectionRowLayout.implicitWidth
@@ -149,9 +132,9 @@ Item { // Bar content region
     Row { // Middle section
         id: middleSection
         anchors {
-            top: parent.top
-            bottom: parent.bottom
-            horizontalCenter: parent.horizontalCenter
+            top: barBackground.top
+            bottom: barBackground.bottom
+            horizontalCenter: barBackground.horizontalCenter
         }
         spacing: 4
 
@@ -169,10 +152,6 @@ Item { // Bar content region
                 visible: root.useShortenedForm < 2
                 Layout.fillWidth: true
             }
-        }
-
-        VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
         }
 
         BarGroup {
@@ -195,10 +174,6 @@ Item { // Bar content region
                     }
                 }
             }
-        }
-
-        VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
         }
 
         MouseArea {
@@ -238,10 +213,10 @@ Item { // Bar content region
         id: barRightSideMouseArea
 
         anchors {
-            top: parent.top
-            bottom: parent.bottom
+            top: barBackground.top
+            bottom: barBackground.bottom
             left: middleSection.right
-            right: parent.right
+            right: barBackground.right
         }
         implicitWidth: rightSectionRowLayout.implicitWidth
         implicitHeight: Appearance.sizes.baseBarHeight

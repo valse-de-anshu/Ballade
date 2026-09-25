@@ -24,15 +24,7 @@ Item { // Bar content region
         color: Appearance.colors.colOutlineVariant
     }
 
-    // Background shadow
-    Loader {
-        active: Config.options.bar.showBackground && Config.options.bar.cornerStyle === 1
-        anchors.fill: barBackground
-        sourceComponent: StyledRectangularShadow {
-            anchors.fill: undefined // The loader's anchors act on this, and this should not have any anchor
-            target: barBackground
-        }
-    }
+
     readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base)
         ? Appearance.colors.colLayer0Base
         : Appearance.colors.colLayer0
@@ -94,11 +86,14 @@ Item { // Bar content region
 
     FocusedScrollMouseArea { // Top section | scroll to change brightness
         id: barTopSectionMouseArea
-        anchors.top: parent.top
+        anchors {
+            top: barBackground.top
+            left: barBackground.left
+            right: barBackground.right
+        }
         implicitHeight: topSectionColumnLayout.implicitHeight
         implicitWidth: Appearance.sizes.baseVerticalBarWidth
-        height: (root.height - middleSection.height) / 2
-        width: Appearance.sizes.verticalBarWidth
+        height: (barBackground.height - middleSection.height) / 2
 
         onScrollDown: Brightness.decreaseBrightness()
         onScrollUp: Brightness.increaseBrightness()
@@ -128,7 +123,7 @@ Item { // Bar content region
 
     Column { // Middle section
         id: middleSection
-        anchors.centerIn: parent
+        anchors.centerIn: barBackground
         spacing: 4
 
         Bar.BarGroup {
@@ -145,10 +140,6 @@ Item { // Bar content region
                 Layout.fillWidth: true
                 Layout.fillHeight: false
             }
-        }
-
-        HorizontalBarSeparator {
-            visible: Config.options?.bar.borderless
         }
 
         Bar.BarGroup {
@@ -171,10 +162,6 @@ Item { // Bar content region
                     }
                 }
             }
-        }
-
-        HorizontalBarSeparator {
-            visible: Config.options?.bar.borderless
         }
 
         Bar.BarGroup {
@@ -203,12 +190,13 @@ Item { // Bar content region
         id: barBottomSectionMouseArea
 
         anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
+            left: barBackground.left
+            right: barBackground.right
+            bottom: barBackground.bottom
         }
         implicitWidth: Appearance.sizes.baseVerticalBarWidth
         implicitHeight: bottomSectionColumnLayout.implicitHeight
+        height: (barBackground.height - middleSection.height) / 2
         
         onScrollDown: Audio.decrementVolume();
         onScrollUp: Audio.incrementVolume();

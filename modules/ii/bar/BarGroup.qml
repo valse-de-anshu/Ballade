@@ -11,23 +11,6 @@ Item {
     implicitHeight: vertical ? (gridLayout.implicitHeight + padding * 2) : Appearance.sizes.baseBarHeight
     default property alias items: gridLayout.children
 
-    Rectangle {
-        id: background
-        anchors {
-            fill: parent
-            topMargin: root.vertical ? 0 : 4
-            bottomMargin: root.vertical ? 0 : 4
-            leftMargin: root.vertical ? 4 : 0
-            rightMargin: root.vertical ? 4 : 0
-        }
-        color: (Config.options?.bar.borderless === "transparent" || Config.options?.bar.borderless === true)
-            ? "transparent"
-            : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.22)
-        border.width: (Config.options?.bar.borderless === "transparent" || Config.options?.bar.borderless === true) ? 0 : 1
-        border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
-        radius: Appearance.rounding.small
-    }
-
     GridLayout {
         id: gridLayout
         columns: root.vertical ? 1 : -1
