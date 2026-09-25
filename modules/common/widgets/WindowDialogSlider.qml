@@ -6,10 +6,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Widgets
 
-ColumnLayout {
+Column {
     id: root
-    Layout.fillWidth: true
-    spacing: 2
 
     property alias text: sliderName.text
     property alias from: sliderWidget.from
@@ -20,20 +18,25 @@ ColumnLayout {
 
     signal moved()
     
+    spacing: -2
     ContentSubsectionLabel {
         id: sliderName
         visible: Boolean(text && text.length > 0)
-        Layout.fillWidth: true
         text: ""
+        anchors {
+            left: parent.left
+            right: parent.right
+        }
     }
-
     StyledSlider {
         id: sliderWidget
-        Layout.fillWidth: true
-        Layout.leftMargin: 4
-        Layout.rightMargin: 4
+        anchors {
+            left: parent.left
+            right: parent.right
+            leftMargin: 4
+            rightMargin: 4
+        }
         configuration: StyledSlider.Configuration.S
         onMoved: root.moved()
     }
 }
-

@@ -9,8 +9,8 @@ Rectangle {
     id: root
 
     property bool show: false
-    default property alias _contentData: contentColumn.data
-    property real backgroundHeight: Math.min(root.height - (Appearance?.sizes.hyprlandGapsOut ?? 0) * 2, contentColumn.implicitHeight + dialogBackground.radius * 2)
+    default property alias contentData: contentColumn.data
+    property real backgroundHeight: dialogBackground.implicitHeight
     property real backgroundWidth: 350
     property real backgroundAnimationMovementDistance: 60
     
@@ -26,17 +26,11 @@ Rectangle {
     Behavior on color {
         animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
     }
-    visible: root.show || dialogBackground.implicitHeight > 0
+    visible: dialogBackground.implicitHeight > 0
 
     onShowChanged: {
         dialogBackgroundHeightAnimation.easing.bezierCurve = (show ? Appearance.animationCurves.emphasizedDecel : Appearance.animationCurves.emphasizedAccel)
         dialogBackground.implicitHeight = show ? backgroundHeight : 0
-    }
-
-    onBackgroundHeightChanged: {
-        if (show) {
-            dialogBackground.implicitHeight = backgroundHeight;
-        }
     }
 
     radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
@@ -54,10 +48,10 @@ Rectangle {
         radius: Appearance.rounding.large
         color: Appearance.m3colors.m3surfaceContainerHigh // Use opaque version of layer3
         
-        property real targetY: Math.max(Appearance.sizes.hyprlandGapsOut, root.height / 2 - root.backgroundHeight / 2)
+        property real targetY: root.height / 2 - root.backgroundHeight / 2
         y: root.show ? targetY : (targetY - root.backgroundAnimationMovementDistance)
         implicitWidth: root.backgroundWidth
-        implicitHeight: 0
+        implicitHeight: contentColumn.implicitHeight + dialogBackground.radius * 2
         Behavior on implicitHeight {
             NumberAnimation {
                 id: dialogBackgroundHeightAnimation
