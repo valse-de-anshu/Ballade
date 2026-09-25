@@ -34,7 +34,11 @@ AbstractBackgroundWidget {
             }
         }
     }
-    readonly property real bandHeight: (configEntry && configEntry.height) ? configEntry.height : 260
+    // height stored as 0-100 percentage. 0% → 20px sliver, 100% → full screen height.
+    // Widget is anchored to bottom (y = screenHeight - implicitHeight), so small height
+    // = only the very top edge of aurora is visible peeking up from the bottom.
+    readonly property real heightPct: (configEntry && configEntry.height !== undefined) ? Math.max(0, Math.min(configEntry.height, 100)) : 100
+    readonly property real bandHeight: 20 + (heightPct / 100) * (screenHeight - 20)
     readonly property real barsHeight: 240
 
     implicitWidth: isRing ? ringSize : screenWidth

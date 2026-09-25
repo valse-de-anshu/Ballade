@@ -366,7 +366,7 @@ Singleton {
                         property string style: "bars" // "bars", "mirror", "aurora", "ring", "dots"
                         property string colorSource: "theme" // "theme", "cover"
                         property real sensitivity: 1
-                        property int height: 260 // mirror, aurora and dots
+                        property int height: 100 // mirror, aurora and dots — 0-100% of screen height
                         property int ringSize: 380
                     }
 

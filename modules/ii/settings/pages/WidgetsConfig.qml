@@ -986,14 +986,14 @@ ContentPage {
                     }
                 }
                 ConfigSlider {
-                    text: Translation.tr("Height")
+                    text: Translation.tr("Height (%)")
                     buttonIcon: "height"
-                    usePercentTooltip: false
+                    usePercentTooltip: true
                     enabled: settingsVisualizer.entry.style !== "bars" && settingsVisualizer.bandStyle
                     value: settingsVisualizer.entry.height
-                    from: 120
-                    to: 600
-                    stopIndicatorValues: [260]
+                    from: 0
+                    to: 100
+                    stopIndicatorValues: [100]
                     onValueChanged: {
                         settingsVisualizer.entry.height = Math.round(value);
                     }
