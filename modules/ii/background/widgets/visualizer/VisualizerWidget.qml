@@ -66,51 +66,87 @@ AbstractBackgroundWidget {
         }
     }
     readonly property var coverPalette: {
-        const rawColors = Array.from((coverQuantizer && coverQuantizer.colors) ? coverQuantizer.colors : []);
-        if (!rawColors || rawColors.length === 0) return null;
+        const raw = Array.from((coverQuantizer && coverQuantizer.colors) ? coverQuantizer.colors : []);
+        if (!raw || raw.length === 0) return null;
 
-        // Score colors prioritizing high saturation and vibrant contrast
-        const scored = rawColors.map(c => {
-            const sat = c.hslSaturation !== undefined ? c.hslSaturation : 0;
-            const lit = c.hslLightness !== undefined ? c.hslLightness : 0.5;
-            const hue = c.hslHue !== undefined ? c.hslHue : 0;
-            const score = sat * 2.0 + (1.0 - Math.abs(lit - 0.5));
-            return { color: c, score: score, sat: sat, lit: lit, hue: hue };
-        }).sort((a, b) => b.score - a.score);
+        // Categorize into chromatic colors and monochrome/grayscale tones
+        const chromatic = [];
+        const monochrome = [];
 
-        if (scored.length === 0) return null;
+        for (let i = 0; i < raw.length; i++) {
+            const c = raw[i];
+            const sat = (c && c.hslSaturation !== undefined) ? c.hslSaturation : 0;
+            const lit = (c && c.hslLightness !== undefined) ? c.hslLightness : 0.5;
+            const hue = (c && c.hslHue !== undefined) ? c.hslHue : -1;
 
-        // Pick up to 3 distinct colors from the cover
-        const picked = [];
-        for (let i = 0; i < scored.length && picked.length < 3; i++) {
-            const candidate = scored[i].color;
-            const isDistinct = picked.every(p => {
-                const hDiff = Math.abs((candidate.hslHue >= 0 ? candidate.hslHue : 0) - (p.hslHue >= 0 ? p.hslHue : 0));
-                const sDiff = Math.abs(candidate.hslSaturation - p.hslSaturation);
-                const lDiff = Math.abs(candidate.hslLightness - p.hslLightness);
-                return (hDiff > 0.08 || sDiff > 0.22 || lDiff > 0.22);
-            });
-            if (isDistinct || picked.length === 0) {
-                picked.push(candidate);
+            if (hue >= 0 && sat > 0.12 && lit > 0.05 && lit < 0.95) {
+                // Saturated color with genuine hue
+                const vibrance = sat * 1.5 + (1.0 - Math.abs(lit - 0.5));
+                chromatic.push({ color: c, sat: sat, lit: lit, hue: hue, score: vibrance });
+            } else {
+                // Achromatic / neutral (black, white, gray)
+                monochrome.push({ color: c, lit: lit });
             }
         }
 
-        const c1 = picked[0] ? picked[0] : scored[0].color;
-        const c2 = picked[1] ? picked[1] : null;
-        const c3 = picked[2] ? picked[2] : null;
+        chromatic.sort((a, b) => b.score - a.score);
+        monochrome.sort((a, b) => b.lit - a.lit);
 
-        function boost(c, targetL) {
-            const h = (c.hslHue !== undefined && c.hslHue >= 0) ? c.hslHue : 0;
-            const s = Math.max((c.hslSaturation !== undefined ? c.hslSaturation : 0.6), 0.5);
-            const l = Math.min(Math.max((c.hslLightness !== undefined ? c.hslLightness : targetL), targetL - 0.15), targetL + 0.15);
-            return Qt.hsla(h, Math.min(s * 1.15, 1.0), Math.max(0.35, Math.min(l, 0.8)), 1.0);
+        // Find distinct chromatic colors (different hues)
+        const distinctChromatic = [];
+        for (let i = 0; i < chromatic.length; i++) {
+            const candidate = chromatic[i];
+            const isDistinct = distinctChromatic.every(p => {
+                let hDiff = Math.abs(candidate.hue - p.hue);
+                if (hDiff > 0.5) hDiff = 1.0 - hDiff;
+                return hDiff > 0.07;
+            });
+            if (isDistinct || distinctChromatic.length === 0) {
+                distinctChromatic.push(candidate);
+            }
         }
 
-        const boosted1 = boost(c1, 0.55);
-        const boosted2 = c2 ? boost(c2, 0.65) : Qt.hsla((boosted1.hslHue + 0.08) % 1.0, boosted1.hslSaturation, 0.70, 1.0);
-        const boosted3 = c3 ? boost(c3, 0.75) : Qt.hsla((boosted1.hslHue + 0.16) % 1.0, Math.min(boosted1.hslSaturation + 0.1, 1.0), 0.80, 1.0);
+        function formatColor(h, s, l) {
+            return Qt.hsla(Math.max(0, Math.min(h, 1.0)),
+                           Math.max(0, Math.min(s, 1.0)),
+                           Math.max(0.25, Math.min(l, 0.92)),
+                           1.0);
+        }
 
-        return [boosted1, boosted2, boosted3];
+        // Case 1: 3 or more distinct colorful tones in artwork
+        if (distinctChromatic.length >= 3) {
+            const c1 = formatColor(distinctChromatic[0].hue, Math.max(distinctChromatic[0].sat, 0.5), Math.max(0.45, Math.min(distinctChromatic[0].lit, 0.7)));
+            const c2 = formatColor(distinctChromatic[1].hue, Math.max(distinctChromatic[1].sat, 0.5), Math.max(0.5, Math.min(distinctChromatic[1].lit, 0.75)));
+            const c3 = formatColor(distinctChromatic[2].hue, Math.max(distinctChromatic[2].sat, 0.5), Math.max(0.55, Math.min(distinctChromatic[2].lit, 0.8)));
+            return [c1, c2, c3];
+        }
+
+        // Case 2: 2 distinct colorful tones in artwork
+        if (distinctChromatic.length === 2) {
+            const c1 = formatColor(distinctChromatic[0].hue, Math.max(distinctChromatic[0].sat, 0.55), 0.52);
+            const c2 = formatColor(distinctChromatic[1].hue, Math.max(distinctChromatic[1].sat, 0.55), 0.68);
+            const avgHue = (distinctChromatic[0].hue + distinctChromatic[1].hue) / 2.0;
+            const c3 = formatColor(avgHue, Math.max(distinctChromatic[0].sat, 0.6), 0.80);
+            return [c1, c2, c3];
+        }
+
+        // Case 3: 1 dominant colorful tone (e.g. Blue logo with black & white background)
+        if (distinctChromatic.length === 1) {
+            const base = distinctChromatic[0];
+            const h = base.hue;
+            const s = Math.max(base.sat, 0.6);
+            // Main color, lighter vibrant tip highlight, deep rich base
+            const c1 = formatColor(h, s, 0.52);
+            const c2 = formatColor(h, Math.max(s * 0.85, 0.4), 0.78);
+            const c3 = formatColor((h + 0.04) % 1.0, s, 0.38);
+            return [c1, c2, c3];
+        }
+
+        // Case 4: Completely monochrome / black & white cover art
+        const c1 = Qt.rgba(0.95, 0.96, 0.98, 1.0);  // Pure bright white
+        const c2 = Qt.rgba(0.65, 0.70, 0.78, 1.0);  // Cool silver slate
+        const c3 = Qt.rgba(0.25, 0.28, 0.34, 1.0);  // Deep charcoal
+        return [c1, c2, c3];
     }
     readonly property var visualizerColors: (root.useCoverColors && root.coverPalette) ? root.coverPalette : root.themePalette
 
