@@ -4,6 +4,7 @@ import QtMultimedia
 import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
 import qs.services
@@ -30,6 +31,15 @@ AbstractBackgroundWidget {
     readonly property real snapHeight3: 252
 
     property string sizeMode: (root.configEntry && root.configEntry.sizeMode === "2x3") ? "2x3" : "2x2"
+
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode === "2x3" ? "2x3" : "2x2";
+            }
+        }
+    }
 
     property real widgetWidth: root.sizeMode === "2x3" ? snapWidth4 : snapWidth3
     property real widgetHeight: snapHeight3
@@ -483,7 +493,7 @@ AbstractBackgroundWidget {
                         }
 
                         Connections {
-                            target: ToplevelManager
+                            target: (typeof ToplevelManager !== "undefined") ? ToplevelManager : null
                             function onActiveToplevelChanged() {
                                 cardVideoPlayer.updatePlayback();
                             }

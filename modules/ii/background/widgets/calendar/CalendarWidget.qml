@@ -25,7 +25,31 @@ AbstractBackgroundWidget {
     readonly property real snapWidth2: singleWidth * 2 + cardSpacing  
     readonly property real snapWidth3: 640  
 
-    property string sizeMode: root.configEntry.sizeMode ?? "2x2"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
+
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode
+            }
+        }
+        function onSatelliteXChanged() {
+            if (root.configEntry && typeof root.configEntry.satelliteX === "number") {
+                root.satelliteX = root.configEntry.satelliteX
+            }
+        }
+        function onSatelliteYChanged() {
+            if (root.configEntry && typeof root.configEntry.satelliteY === "number") {
+                root.satelliteY = root.configEntry.satelliteY
+            }
+        }
+        function onSatelliteRotationChanged() {
+            if (root.configEntry && typeof root.configEntry.satelliteRotation === "number") {
+                root.satelliteRotation = root.configEntry.satelliteRotation
+            }
+        }
+    }
 
     property real widgetWidth: {
         switch (root.sizeMode) {
@@ -104,10 +128,10 @@ AbstractBackgroundWidget {
         ? pinnedTargets[0]
         : ({ date: "", title: "", type: "festival" })
     property bool isSelectingTarget: false
-    property real satelliteX: 16
-    property real satelliteY: -58
+    property real satelliteX: (root.configEntry && typeof root.configEntry.satelliteX === "number") ? root.configEntry.satelliteX : 16
+    property real satelliteY: (root.configEntry && typeof root.configEntry.satelliteY === "number") ? root.configEntry.satelliteY : -58
     property bool satelliteVertical: false
-    property real satelliteRotation: 0
+    property real satelliteRotation: (root.configEntry && typeof root.configEntry.satelliteRotation === "number") ? root.configEntry.satelliteRotation : 0
 
     FileView {
         id: targetFileView
@@ -125,16 +149,33 @@ AbstractBackgroundWidget {
                             type: parsed.type || "festival"
                         }]
                     }
-                    if (typeof parsed.x === "number") root.satelliteX = parsed.x
-                    if (typeof parsed.y === "number") root.satelliteY = parsed.y
+                    if (root.configEntry && typeof root.configEntry.satelliteX === "number") {
+                        root.satelliteX = root.configEntry.satelliteX
+                    } else if (typeof parsed.x === "number") {
+                        root.satelliteX = parsed.x
+                    }
+                    if (root.configEntry && typeof root.configEntry.satelliteY === "number") {
+                        root.satelliteY = root.configEntry.satelliteY
+                    } else if (typeof parsed.y === "number") {
+                        root.satelliteY = parsed.y
+                    }
                     if (typeof parsed.vertical === "boolean") root.satelliteVertical = parsed.vertical
-                    if (typeof parsed.rotation === "number") root.satelliteRotation = parsed.rotation
+                    if (root.configEntry && typeof root.configEntry.satelliteRotation === "number") {
+                        root.satelliteRotation = root.configEntry.satelliteRotation
+                    } else if (typeof parsed.rotation === "number") {
+                        root.satelliteRotation = parsed.rotation
+                    }
                 }
             } catch (e) {}
         }
     }
 
     function saveSatelliteState() {
+        if (root.configEntry) {
+            root.configEntry.satelliteX = root.satelliteX
+            root.configEntry.satelliteY = root.satelliteY
+            root.configEntry.satelliteRotation = root.satelliteRotation
+        }
         let payload = {
             targets: root.pinnedTargets || [],
             x: root.satelliteX,

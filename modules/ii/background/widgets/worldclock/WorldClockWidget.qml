@@ -13,7 +13,16 @@ AbstractBackgroundWidget {
     configEntryName: "worldClock"
     hoverEnabled: true
 
-    property string sizeMode: root.configEntry.sizeMode ?? "2x2"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
+
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
 
     property real widgetWidth:  sizeMode === "2x2" ? 276 : 420
     property real widgetHeight: sizeMode === "2x2" ? 252 : 120

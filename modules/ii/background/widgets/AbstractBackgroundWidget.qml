@@ -35,8 +35,23 @@ AbstractWidget {
 
     draggable: !Config.options.background.widgetsLocked
     function restoreXYBinding() {
+        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.configEntry?.y ?? 0, root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.targetX);
         root.y = Qt.binding(() => root.targetY);
+    }
+
+    Connections {
+        target: root.configEntry
+        function onXChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
+        function onYChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
+        function onPlacementStrategyChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
     }
 
     onReleased: {

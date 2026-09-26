@@ -31,7 +31,16 @@ AbstractBackgroundWidget {
     property real buttonIconSize: 18
     property bool showLyrics: false
 
-    property string sizeMode: root.configEntry.sizeMode ?? "1x3"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "1x3"
+
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
 
     readonly property real singleWidth: 132
     readonly property real snapWidth1: root.singleWidth

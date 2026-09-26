@@ -21,7 +21,16 @@ AbstractBackgroundWidget {
     readonly property real snapWidth2: root.singleWidth * 2 + root.cardSpacing
     readonly property real snapWidth3: root.singleWidth * 3 + root.cardSpacing * 2
 
-    property string sizeMode: root.configEntry.sizeMode ?? "1x3"
+    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "1x3"
+
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
 
     property real widgetWidth: {
         switch (root.sizeMode) {

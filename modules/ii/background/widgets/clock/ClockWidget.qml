@@ -30,8 +30,8 @@ AbstractBackgroundWidget {
     }
     property bool wallpaperSafetyTriggered: false
     needsColText: clockStyle === "digital" || clockStyle === "pixel"
-    width: isLockWidget ? implicitWidth : undefined
-    height: isLockWidget ? implicitHeight : undefined
+    width: implicitWidth
+    height: implicitHeight
     x: isLockWidget ? 0 : (forceCenter ? ((root.screenWidth - root.width) / 2) : targetX)
     y: isLockWidget ? 0 : (forceCenter ? ((root.screenHeight - root.height) / 2) : targetY)
     visibleWhenLocked: true
@@ -42,8 +42,23 @@ AbstractBackgroundWidget {
             root.y = 0;
             return;
         }
+        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.configEntry?.y ?? 0, root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.forceCenter ? ((root.screenWidth - root.width) / 2) : root.targetX);
         root.y = Qt.binding(() => root.forceCenter ? ((root.screenHeight - root.height) / 2) : root.targetY);
+    }
+
+    Connections {
+        target: root.configEntry
+        function onXChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
+        function onYChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
+        function onStyleChanged() {
+            if (!root.dragging) root.restoreXYBinding();
+        }
     }
 
     property var textHorizontalAlignment: {

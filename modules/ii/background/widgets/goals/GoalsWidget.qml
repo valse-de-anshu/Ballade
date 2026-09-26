@@ -21,6 +21,15 @@ AbstractBackgroundWidget {
     property string sizeMode: configEntry?.sizeMode ?? "full"
     readonly property bool isCompact: sizeMode === "compact"
 
+    Connections {
+        target: root.configEntry
+        function onSizeModeChanged() {
+            if (root.configEntry && root.configEntry.sizeMode) {
+                root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
+
     implicitWidth: root.sectionMode === "wellbeing" ? 340 : 260
     implicitHeight: isCompact ? 250 : (root.sectionMode === "wellbeing" ? 540 : 500)
 

@@ -49,6 +49,11 @@ Singleton {
         configFileView.writeAdapter();
     }
 
+    function reload() {
+        root.suppressReload = false;
+        configFileView.reload();
+    }
+
     Timer {
         id: suppressReloadTimer
         interval: 500
@@ -310,6 +315,9 @@ Singleton {
                         property real x: 400
                         property real y: 100
                         property string sizeMode: "2x2"
+                        property real satelliteX: 16
+                        property real satelliteY: -58
+                        property real satelliteRotation: 0
                     }
                     property JsonObject worldClock: JsonObject {
                         property bool enable: false

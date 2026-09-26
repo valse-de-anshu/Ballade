@@ -143,6 +143,26 @@ Singleton {
         onExited: root.refresh()
     }
 
+    Timer {
+        id: saveDebounceTimer
+        interval: 100
+        repeat: false
+        property string pendingName: ""
+        property string pendingDesc: ""
+        onTriggered: {
+            saveProc.command = ["bash", Directories.presetsScriptPath, "--save", pendingName, pendingDesc]
+            saveProc.running = true
+        }
+    }
+
+    Process {
+        id: applyProc
+        onExited: {
+            Config.reload()
+            MaterialThemeLoader.reapplyTheme()
+        }
+    }
+
     Process {
         id: deleteProc
         onExited: root.refresh()
@@ -165,15 +185,17 @@ Singleton {
         if (name.length === 0) return
 
         Config.save()
-        saveProc.command = ["bash", Directories.presetsScriptPath, "--save", name, description]
-        saveProc.running = true
+        saveDebounceTimer.pendingName = name
+        saveDebounceTimer.pendingDesc = description
+        saveDebounceTimer.restart()
     }
 
     function apply(name) {
         GlobalStates.settingsOpen = false
         Wallpapers.confirmedPath = ""
         Wallpapers.previewPath = ""
-        Quickshell.execDetached(["bash", Directories.presetsScriptPath, "--apply", name])
+        applyProc.command = ["bash", Directories.presetsScriptPath, "--apply", name]
+        applyProc.running = true
     }
 
     function remove(name) {

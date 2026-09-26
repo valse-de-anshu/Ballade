@@ -1,6 +1,11 @@
 <div align="center">
 
-# 🎼 Ballade
+<img src="assets/images/banner.png" alt="Ballade Banner" width="100%" />
+
+<br/><br/>
+
+<img src="assets/images/ballade.png" alt="Ballade" width="450" />
+
 ### A Modern Frosted-Glass Desktop Shell for Hyprland
 
 [![Hyprland](https://img.shields.io/badge/Hyprland-Wayland-00B0FF?style=flat-square&logo=archlinux&logoColor=white)](https://hyprland.org/)
@@ -268,7 +273,7 @@ flatpak install flathub io.missioncenter.MissionCenter
 | `CTRL + SUPER + T` | **Wallpaper Picker** | 3D Panoramic cover-flow wallpaper carousel |
 | `SUPER + I` / `CTRL + I` / `SUPER + ESC` | **Settings Hub** | Graphical configuration overlay |
 | `SUPER + ALT + Space` | **Window Centering** | Toggle centered compact window focus mode |
-
+| `super + /` | **keybingings** | toggle keybinging cheat sheet | 
 ### Terminal & Script IPC Triggers:
 ```bash
 qs -c ballade ipc call sidebarLeft toggle        # Toggle Left Sidebar
