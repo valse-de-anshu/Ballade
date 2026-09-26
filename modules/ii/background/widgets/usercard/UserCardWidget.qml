@@ -459,63 +459,6 @@ AbstractBackgroundWidget {
                             sourceSize: Qt.size(root.snapWidth4, heroWrap.height)
                         }
 
-                        MediaPlayer {
-                            id: cardVideoPlayer
-                            source: root.bannerIsVideo ? (root.bannerPath.startsWith("file://") ? root.bannerPath : "file://" + root.bannerPath) : ""
-                            videoOutput: cardVideoOutput
-                            loops: MediaPlayer.Infinite
-                            audioOutput: null
-
-                            readonly property bool shouldPlay: root.bannerIsVideo && !GlobalStates.screenLocked && !(ToplevelManager?.activeToplevel?.fullscreen ?? false)
-
-                            function updatePlayback() {
-                                if (shouldPlay) play(); else pause();
-                            }
-
-                            Component.onCompleted: updatePlayback()
-                            onMediaStatusChanged: {
-                                if ((mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) && shouldPlay) {
-                                    play();
-                                }
-                            }
-                            onSourceChanged: {
-                                if (source.toString() !== "" && shouldPlay) {
-                                    play();
-                                }
-                            }
-                        }
-
-                        Connections {
-                            target: GlobalStates
-                            function onScreenLockedChanged() {
-                                cardVideoPlayer.updatePlayback();
-                            }
-                        }
-
-                        Connections {
-                            target: (typeof ToplevelManager !== "undefined") ? ToplevelManager : null
-                            function onActiveToplevelChanged() {
-                                cardVideoPlayer.updatePlayback();
-                            }
-                        }
-
-                        Connections {
-                            target: root
-                            function onBannerIsVideoChanged() {
-                                cardVideoPlayer.updatePlayback();
-                            }
-                            function onBannerPathChanged() {
-                                cardVideoPlayer.updatePlayback();
-                            }
-                        }
-
-                        VideoOutput {
-                            id: cardVideoOutput
-                            anchors.fill: parent
-                            fillMode: VideoOutput.PreserveAspectCrop
-                            visible: root.bannerIsVideo
-                        }
-
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor

@@ -190,56 +190,6 @@ Item {
                                         sourceSize.width: wallpaperRect.width * 2
                                         sourceSize.height: wallpaperRect.height * 2
                                     }
-
-                                    MediaPlayer {
-                                        id: sidebarBannerPlayer
-                                        source: wallpaperRect.bannerIsVideo ? (wallpaperRect.bannerPath.startsWith("file://") ? wallpaperRect.bannerPath : "file://" + wallpaperRect.bannerPath) : ""
-                                        videoOutput: sidebarBannerVideoOutput
-                                        loops: MediaPlayer.Infinite
-                                        audioOutput: null
-
-                                        readonly property bool shouldPlay: wallpaperRect.bannerIsVideo && GlobalStates.sidebarRightOpen
-
-                                        function updatePlayback() {
-                                            if (shouldPlay) play(); else pause();
-                                        }
-
-                                        Component.onCompleted: updatePlayback()
-                                        onMediaStatusChanged: {
-                                            if ((mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) && shouldPlay) {
-                                                play();
-                                            }
-                                        }
-                                        onSourceChanged: {
-                                            if (source.toString() !== "" && shouldPlay) {
-                                                play();
-                                            }
-                                        }
-                                    }
-
-                                    Connections {
-                                        target: GlobalStates
-                                        function onSidebarRightOpenChanged() {
-                                            sidebarBannerPlayer.updatePlayback();
-                                        }
-                                    }
-
-                                    Connections {
-                                        target: wallpaperRect
-                                        function onBannerIsVideoChanged() {
-                                            sidebarBannerPlayer.updatePlayback();
-                                        }
-                                        function onBannerPathChanged() {
-                                            sidebarBannerPlayer.updatePlayback();
-                                        }
-                                    }
-
-                                    VideoOutput {
-                                        id: sidebarBannerVideoOutput
-                                        anchors.fill: parent
-                                        fillMode: VideoOutput.PreserveAspectCrop
-                                        visible: wallpaperRect.bannerIsVideo
-                                    }
                                 }
 
                                 MouseArea {
