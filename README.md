@@ -22,31 +22,133 @@ It combines frosted-glass aesthetics with automatic **Material Design 3** color 
 
 ---
 
-### 📸 Showcase
+### 📸 Showcase Gallery
 
-| 🌲 Forest Green & Widgets | 🔴 Crimson Red & YouTube `[CC]` |
+<details open>
+<summary><b>🎨 Color Presets & Dynamic Material Theming (9 Handcrafted Themes)</b></summary>
+<br/>
+
+| ☕ Catppuccin Preset | 🌲 Forest Green Preset |
 | :---: | :---: |
-| <img src="assets/screenshots/theme-green-widgets.png" width="460" alt="Green Theme" /> | <img src="assets/screenshots/theme-red-ytcc.png" width="460" alt="Red Theme YouTube CC" /> |
+| <img src="assets/screenshots/THEME/CATPPUCCIN.png" width="460" alt="Catppuccin Theme" /> | <img src="assets/screenshots/THEME/GREEN.png" width="460" alt="Green Theme" /> |
 
-| 🌸 Sakura Pink & Sidebar | 🔮 Amethyst Purple: rmpc & Fastfetch |
+| 🌌 Sapphire Blue Preset | 🌸 Sakura Pink Preset |
 | :---: | :---: |
-| <img src="assets/screenshots/theme-pink.png" width="460" alt="Pink Theme" /> | <img src="assets/screenshots/theme-purple-rmpc-fastfetch.png" width="460" alt="Purple Theme rmpc" /> |
+| <img src="assets/screenshots/THEME/BLUE.png" width="460" alt="Blue Theme" /> | <img src="assets/screenshots/THEME/PINK.png" width="460" alt="Pink Theme" /> |
 
-| 🌌 Tokyo Night Blue: Discord & Obsidian | 🪙 Golden Theme: Settings Hub |
+| 🔮 Amethyst Purple Preset | 🪙 Golden Hour Preset |
 | :---: | :---: |
-| <img src="assets/screenshots/theme-blue-discord-obsidian.png" width="460" alt="Blue Theme Apps" /> | <img src="assets/screenshots/theme-gold-settings.png" width="460" alt="Gold Theme Settings" /> |
+| <img src="assets/screenshots/THEME/PURPLE.png" width="460" alt="Purple Theme" /> | <img src="assets/screenshots/THEME/GOLDEN.png" width="460" alt="Golden Theme" /> |
 
-| 🦊 Sunset Orange: VS Code & Micro | 🌑 Grayscale: Dolphin & Joplin |
+| 🦊 Sunset Orange Preset | 🔴 Crimson Red Preset |
 | :---: | :---: |
-| <img src="assets/screenshots/theme-orange-code-micro.png" width="460" alt="Orange Theme Code" /> | <img src="assets/screenshots/theme-grayscale-dolphin-joplin.png" width="460" alt="Grayscale Theme Dolphin" /> |
+| <img src="assets/screenshots/THEME/ORANGE.png" width="460" alt="Orange Theme" /> | <img src="assets/screenshots/THEME/RED.png" width="460" alt="Red Theme" /> |
 
-| 🌇 3D Panorama Wallpaper Picker & Kitty | 📊 Focus Journal & Dynamic CAVA Visualizer |
-| :---: | :---: |
-| <img src="assets/screenshots/theme-red-panorama-kitty.png" width="460" alt="Red Theme Panorama" /> | <img src="assets/screenshots/productivity-hub-journal.png" width="460" alt="Focus Journal and CAVA Visualizer" /> |
-
-| 🌫️ Blur Effect on Desktop |
+| 🌑 Monochrome Gray Preset |
 | :---: |
-| <img src="assets/screenshots/blur-effect-desktop.png" width="940" alt="Blur Effect on Desktop with CAVA Visualizer" /> |
+| <img src="assets/screenshots/THEME/GRAY.png" width="460" alt="Gray Theme" /> |
+
+</details>
+
+<br/>
+
+<details open>
+<summary><b>🌊 Real-time Audio Visualizers (5 Interactive Styles)</b></summary>
+<br/>
+
+| 🌌 Aurora Waveform Visualizer | 📊 Classic CAVA Audio Spectrum |
+| :---: | :---: |
+| <img src="assets/screenshots/VISULIZER/AURORA.png" width="460" alt="Aurora Visualizer" /> | <img src="assets/screenshots/VISULIZER/CAVA.png" width="460" alt="CAVA Visualizer" /> |
+
+| 🪞 Mirrored CAVA Dual Spectrum | ⭕ Circular Ring Visualizer |
+| :---: | :---: |
+| <img src="assets/screenshots/VISULIZER/MIRROR%20CAVA.png" width="460" alt="Mirror CAVA Visualizer" /> | <img src="assets/screenshots/VISULIZER/RING.png" width="460" alt="Ring Visualizer" /> |
+
+| 🔘 Dot Matrix Spectrum Visualizer |
+| :---: |
+| <img src="assets/screenshots/VISULIZER/DOT.png" width="460" alt="Dot Visualizer" /> |
+
+</details>
+
+<br/>
+
+<details open>
+<summary><b>🖥️ Desktop Shell, Floating Bars & Overviews</b></summary>
+<br/>
+
+| 📑 Docked Dual Sidebars (Left & Right) | 🪟 Interactive Window & Workspace Overview |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/LEFT%20%26%20RIGHT%20SIDE%20BAR.png" width="460" alt="Left and Right Sidebars" /> | <img src="assets/screenshots/GENRAL%20STUFF/OVERVIEW%20OF%20WINDOW.png" width="460" alt="Window Overview" /> |
+
+| ⬅️ Left Floating Status Bar | ➡️ Right Floating Status Bar |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/LEFT%20BAR.png" width="460" alt="Left Bar" /> | <img src="assets/screenshots/GENRAL%20STUFF/RIGHT%20BAR.png" width="460" alt="Right Bar" /> |
+
+| ⬇️ Bottom Floating Dock & Bar | ⚙️ QuickShell Central Settings Panel |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/BOTTOM%20BAR.png" width="460" alt="Bottom Bar" /> | <img src="assets/screenshots/GENRAL%20STUFF/SETTINGS%20PANNEL.png" width="460" alt="Settings Panel" /> |
+
+</details>
+
+<br/>
+
+<details open>
+<summary><b>🧩 Interactive Productivity Hub & Specialized Widgets</b></summary>
+<br/>
+
+| 🎵 Music Lyrics Player & Task Hub | 🤖 LLM AI Assistant & Pomodoro Timer |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/music%20%26%20task.png" width="460" alt="Music and Task" /> | <img src="assets/screenshots/GENRAL%20STUFF/llm%20chat%20%26%20pomodoro.png" width="460" alt="LLM Chat and Pomodoro" /> |
+
+| 🌐 Translation Engine & Countdown Timer | 🎌 Anime Airing Tracker & Calendar |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/translation%20%26%20timer.png" width="460" alt="Translation and Timer" /> | <img src="assets/screenshots/GENRAL%20STUFF/anime%20%26%20calander.png" width="460" alt="Anime Tracker and Calendar" /> |
+
+| 🧪 Interactive Periodic Table Reference | ✨ Animated Desktop Stickers & Mascot |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/periodic%20table.png" width="460" alt="Periodic Table" /> | <img src="assets/screenshots/GENRAL%20STUFF/animated%20stickers%20.png" width="460" alt="Animated Stickers" /> |
+
+| 📋 Visual Clipboard History Manager | ⌨️ Hyprland Keybindings Quick Reference |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/clipboard.png" width="460" alt="Clipboard Manager" /> | <img src="assets/screenshots/GENRAL%20STUFF/keybindings.png" width="460" alt="Keybindings Cheatsheet" /> |
+
+</details>
+
+<br/>
+
+<details open>
+<summary><b>🖼️ Dynamic Wallpaper System & Desktop HUD</b></summary>
+<br/>
+
+| 🌅 3D Coverflow Wallpaper Selector | 🖼️ Centered Dynamic Wallpaper Mode |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/wallpaper%20selector%20.png" width="460" alt="Wallpaper Selector" /> | <img src="assets/screenshots/GENRAL%20STUFF/CENTRED%20WALLPAPER.png" width="460" alt="Centered Wallpaper" /> |
+
+| 💬 Interactive Home Screen Popups & Actions |
+| :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/POP%20UP%20IN%20HOME%20SCREEN.png" width="460" alt="Home Screen Popups" /> |
+
+</details>
+
+<br/>
+
+<details open>
+<summary><b>💻 Synchronized Ecosystem & App Suite (16 Themed Subsystems)</b></summary>
+<br/>
+
+| ⚡ Fastfetch System Information | 💻 Kitty Terminal with Dynamic Palette |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/FAST-FEATCH.png" width="460" alt="Fastfetch" /> | <img src="assets/screenshots/GENRAL%20STUFF/TERMINAL.png" width="460" alt="Terminal" /> |
+
+| 🎶 rmpc Terminal Music Player & Album Art | 📝 Visual Studio Code (Synchronized Theme) |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/RMPC.png" width="460" alt="rmpc Music Player" /> | <img src="assets/screenshots/GENRAL%20STUFF/vs-code.png" width="460" alt="VS Code" /> |
+
+| 🐬 Dolphin File Manager (Kvantum Qt6) | 📓 Joplin & Obsidian Markdown Notes |
+| :---: | :---: |
+| <img src="assets/screenshots/GENRAL%20STUFF/DOLPHINE.png" width="460" alt="Dolphin File Manager" /> | <img src="assets/screenshots/GENRAL%20STUFF/jopline%20%26%20obsedian.png" width="460" alt="Joplin and Obsidian" /> |
+
+</details>
 
 ---
 

@@ -1,6 +1,6 @@
 # 🎵 Complete `rmpc` + `mpd` Custom Ecosystem Guide
 
-This document explains the comprehensive custom `rmpc` terminal music player setup bundled with Ballade. If you are starting fresh with `mpd` and `rmpc`, this guide explains every dependency, service, script, and configuration required to recreate this environment.
+This document is a comprehensive guide to this machine's custom `rmpc` terminal music player setup. If you were starting from a fresh Linux install with just `mpd` and `rmpc`, this document explains every dependency, service, script, and configuration required to recreate this exact environment.
 
 ---
 
@@ -28,41 +28,37 @@ The setup relies on background services running harmoniously:
 
 ---
 
-## 📂 3. The Directory Architecture & Lyrics Routing
+## 📂 3. The Dual-Drive Directory Architecture
 
-To support seamless switching between internal storage and an external portable drive (if you have one), the `rmpc` config expects a strict directory structure.
+To support seamless switching between internal laptop storage and an external portable drive, we use a strict directory structure.
 
 ```text
 📁 ~/Music/                          (MPD Root Directory)
 ├── 📁 internal_music/               (Songs stored on laptop)
 │   └── 📁 lyrics/                   (Internal .lrc files)
 │
-└── 🔗 portable_music/               (Optional: Symlink to external drive)
+└── 🔗 portable_music/               (Symlink to external drive)
     -> /mnt/storage/portable_music/
        ├── Song.flac
        └── 📁 lyrics/                (Portable .lrc files)
 ```
 
-> **⚠️ IMPORTANT SYSTEM TWEAKS FOR YOU:**
-> If you don't use a portable drive, you can just store all your music in `~/Music/internal_music/`.
-> If your external drive is mounted differently, you **must** update the hardcoded `/mnt/storage` paths inside `~/.local/bin/rmpc-run` and `~/.local/bin/rmpc-fetch-lyrics` to match your system.
-
 ### The "Lyrics Hub" Routing Trick
-`rmpc` only allows setting a single `lyrics_dir` in its config. To make it find lyrics for *both* drives simultaneously, the `rmpc-run` script creates a routing hub at `~/.local/share/rmpc/lyrics`.
-Inside this hub, it places symlinks that exactly match the MPD directory names:
+`rmpc` only allows setting a single `lyrics_dir` in its config. To make it find lyrics for *both* drives simultaneously, we created a routing hub at `~/.local/share/rmpc/lyrics`.
+Inside this hub, we place symlinks that exactly match the MPD directory names:
 - `internal_music -> ~/Music/internal_music/lyrics`
 - `portable_music -> /mnt/storage/portable_music/lyrics`
 
-When a song plays from `portable_music/Song.flac`, `rmpc` checks `~/.local/share/rmpc/lyrics/portable_music/Song.lrc`, which routes directly to the correct drive!
+When a song plays from `portable_music/Song.flac`, `rmpc` checks `~/.local/share/rmpc/lyrics/portable_music/Song.lrc`, which routes directly to the external drive!
 
 ---
 
 ## 📜 4. Custom Automation Scripts
 
-Ballade installs two custom scripts to `~/.local/bin/` to automate the entire ecosystem.
+We use two custom scripts stored in `~/.local/bin/` to automate the entire ecosystem.
 
 ### `rmpc-run` (The Master Launcher)
-You should **always** launch the player using `rmpc-run` instead of just `rmpc`. On execution, it:
+You should always launch the player using `rmpc-run`. On execution, it:
 1. Kills any stale `mpDris2` processes and deletes old `/tmp/mpd.fifo` files.
 2. Auto-creates all necessary directory structures and symlinks (self-healing).
 3. Restarts `mpd.service` cleanly.
@@ -71,7 +67,7 @@ You should **always** launch the player using `rmpc-run` instead of just `rmpc`.
 6. Finally, launches the `rmpc` TUI. When you quit the UI, a `trap` catches the exit and cleanly shuts down all background daemons.
 
 ### `rmpc-fetch-lyrics` (The Silent Downloader)
-Linked in `~/.config/rmpc/config.ron` via `on_song_change: ["~/.local/bin/rmpc-fetch-lyrics"]`.
+Linked in `config.ron` via `on_song_change: ["~/.local/bin/rmpc-fetch-lyrics"]` (or dynamically configured by `setup.sh`).
 - Written in pure Python.
 - Reads the current playing song from `rmpc song`.
 - Queries the `lrclib.net` API for synced `.lrc` lyrics.
@@ -84,6 +80,25 @@ Linked in `~/.config/rmpc/config.ron` via `on_song_change: ["~/.local/bin/rmpc-f
 
 - **`mpd.conf`**: Configured to follow symlinks (`follow_outside_symlinks "yes"`).
 - **`config.ron`**: 
-  - 8 custom color themes matching Ballade presets.
+  - 10 custom color themes (catppuccin, tokyo_night, etc.).
   - Square album art rendering.
-  - Custom single-key keybindings (`p` for pause, `j`/`k` for navigation, `+` / `-` for volume, `u` for rescan).
+  - Custom single-key keybindings (`p` for pause, `j`/`k` for navigation, `=` / `-` for volume, `u` for rescan).
+
+---
+
+## ⚠️ 6. Past Mistakes & Lessons Learned
+
+1. **The `music_symlink` MPD Duplicate Bug**
+   - *Mistake*: We created a folder called `music_symlink/` inside `~/Music` to hold external drive shortcuts. 
+   - *Result*: MPD indexed it alongside the actual symlinks, creating duplicate tracks with broken paths like `music_symlink/portable_music/Song.flac`. This broke the lyrics routing because `rmpc` tried to look for a `music_symlink` folder.
+   - *Fix*: Deleted `music_symlink`. MPD must only see direct top-level folders (`internal_music`, `portable_music`).
+
+2. **Lyrics Resolution vs `walkdir` Symlink Ignorance**
+   - *Mistake*: Expected `rmpc lyricsindex` to scan the symlinked folders in the Lyrics Hub.
+   - *Result*: Rust's `walkdir` library does not follow symlinks by default, so the index remained completely empty.
+   - *Fix*: Realized the index isn't strictly necessary. Because our symlink names *exactly* match the MPD directory prefixes, `rmpc`'s fallback direct-path lookup finds the lyrics flawlessly.
+
+3. **"External Command Failed" Popups**
+   - *Mistake*: The original bash-based lyrics fetcher crashed if a song had missing metadata or if `curl` failed.
+   - *Result*: `rmpc` would show an annoying "External command failed" popup on the screen.
+   - *Fix*: Rewrote the fetcher in Python with strict `try/except` blocks to guarantee it never crashes `rmpc`.
