@@ -8,6 +8,7 @@ import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 import Quickshell.Io
 import Quickshell
 import Quickshell.Bluetooth
@@ -161,16 +162,14 @@ Item {
                                 radius: sysRect.radius
                                 color: "transparent"
 
-                                StyledImage {
+                                readonly property string bannerPath: Config.options.sidebar.bannerImage !== "" 
+                                    ? Config.options.sidebar.bannerImage 
+                                    : (Config.options.background?.wallpaperPath || "")
+                                readonly property bool bannerIsVideo: Boolean(bannerPath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(bannerPath)
+
+                                Item {
+                                    id: bannerClipWrap
                                     anchors.fill: parent
-                                    fillMode: Image.PreserveAspectCrop
-                                    source: Config.options.sidebar.bannerImage !== "" 
-                                        ? Config.options.sidebar.bannerImage 
-                                        : Appearance.effectiveWallpaperImagePath
-                                    cache: false
-                                    antialiasing: true
-                                    sourceSize.width: wallpaperRect.width * 2
-                                    sourceSize.height: wallpaperRect.height * 2
                                     layer.enabled: true
                                     layer.effect: OpacityMask {
                                         maskSource: Rectangle {
@@ -179,7 +178,70 @@ Item {
                                             radius: wallpaperRect.radius
                                         }
                                     }
+
+                                    StyledImage {
+                                        anchors.fill: parent
+                                        fillMode: Image.PreserveAspectCrop
+                                        source: wallpaperRect.bannerIsVideo
+                                            ? Images.getStaticWallpaperImage(wallpaperRect.bannerPath, Config.options.background.thumbnailPath)
+                                            : (Config.options.sidebar.bannerImage !== "" ? Config.options.sidebar.bannerImage : Appearance.effectiveWallpaperImagePath)
+                                        cache: false
+                                        antialiasing: true
+                                        sourceSize.width: wallpaperRect.width * 2
+                                        sourceSize.height: wallpaperRect.height * 2
+                                    }
+
+                                    MediaPlayer {
+                                        id: sidebarBannerPlayer
+                                        source: wallpaperRect.bannerIsVideo ? (wallpaperRect.bannerPath.startsWith("file://") ? wallpaperRect.bannerPath : "file://" + wallpaperRect.bannerPath) : ""
+                                        videoOutput: sidebarBannerVideoOutput
+                                        loops: MediaPlayer.Infinite
+                                        audioOutput: null
+
+                                        readonly property bool shouldPlay: wallpaperRect.bannerIsVideo && GlobalStates.sidebarRightOpen
+
+                                        function updatePlayback() {
+                                            if (shouldPlay) play(); else pause();
+                                        }
+
+                                        Component.onCompleted: updatePlayback()
+                                        onMediaStatusChanged: {
+                                            if ((mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) && shouldPlay) {
+                                                play();
+                                            }
+                                        }
+                                        onSourceChanged: {
+                                            if (source.toString() !== "" && shouldPlay) {
+                                                play();
+                                            }
+                                        }
+                                    }
+
+                                    Connections {
+                                        target: GlobalStates
+                                        function onSidebarRightOpenChanged() {
+                                            sidebarBannerPlayer.updatePlayback();
+                                        }
+                                    }
+
+                                    Connections {
+                                        target: wallpaperRect
+                                        function onBannerIsVideoChanged() {
+                                            sidebarBannerPlayer.updatePlayback();
+                                        }
+                                        function onBannerPathChanged() {
+                                            sidebarBannerPlayer.updatePlayback();
+                                        }
+                                    }
+
+                                    VideoOutput {
+                                        id: sidebarBannerVideoOutput
+                                        anchors.fill: parent
+                                        fillMode: VideoOutput.PreserveAspectCrop
+                                        visible: wallpaperRect.bannerIsVideo
+                                    }
                                 }
+
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor

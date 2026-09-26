@@ -348,6 +348,7 @@ Singleton {
                         property real x: 400
                         property real y: 100
                         property string customText: ""
+                        property string sizeMode: "2x2"
                     }
 
                     property JsonObject images: JsonObject {
