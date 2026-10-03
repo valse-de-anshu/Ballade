@@ -37,8 +37,10 @@ RippleButton {
     readonly property bool isImage: isCliphistImage || localImagePath !== ""
     readonly property string detectedColor: !isImage ? ColorUtils.detectColor(cleanedText) : ""
     readonly property bool hasDetectedColor: detectedColor !== ""
-    readonly property bool isPinned: Cliphist.isPinned(entryString)
-    readonly property bool isCurrentClipboard: Quickshell.clipboardText !== "" && (root.cleanedText === Quickshell.clipboardText)
+    readonly property bool isPinned: {
+        const _ = Cliphist.pinRevision;
+        return Cliphist.isPinned(entryString);
+    }
 
     implicitWidth: ListView.view ? ListView.view.width : 400
     implicitHeight: isImage ? 58 : 46
@@ -161,7 +163,7 @@ RippleButton {
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 buttonRadius: Appearance.rounding.full
-                colBackground: "transparent"
+                colBackground: root.isPinned ? ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85) : "transparent"
                 colBackgroundHover: Appearance.colors.colLayer2
                 colRipple: Appearance.colors.colLayer2Active
                 onClicked: root.pinToggled()

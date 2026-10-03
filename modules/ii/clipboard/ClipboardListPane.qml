@@ -63,24 +63,18 @@ Item {
         const currIndex = root.selectedIndex;
         Cliphist.deleteEntry(entry);
 
-        // Keep view positioned on current item index
-        const newLen = root.filteredList.length;
-        if (newLen > 0) {
-            root.selectedIndex = Math.min(currIndex, newLen - 1);
-            listView.currentIndex = root.selectedIndex;
-            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-        } else {
-            root.selectedIndex = -1;
-            listView.currentIndex = -1;
-        }
-        searchField.forceActiveFocus();
-    }
-
-    onSelectedIndexChanged: {
-        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
-            listView.currentIndex = root.selectedIndex;
-            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-        }
+        Qt.callLater(() => {
+            const newLen = root.filteredList.length;
+            if (newLen > 0) {
+                root.selectedIndex = Math.min(currIndex, newLen - 1);
+                listView.currentIndex = root.selectedIndex;
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+            } else {
+                root.selectedIndex = -1;
+                listView.currentIndex = -1;
+            }
+            searchField.forceActiveFocus();
+        });
     }
 
     onFilteredListChanged: {
@@ -91,10 +85,12 @@ Item {
         } else if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
         }
-        listView.currentIndex = root.selectedIndex;
-        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
-            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-        }
+        Qt.callLater(() => {
+            if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+                listView.currentIndex = root.selectedIndex;
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+            }
+        });
     }
 
     ColumnLayout {
@@ -284,6 +280,12 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 120
             focusPolicy: Qt.NoFocus
+
+            onCurrentIndexChanged: {
+                if (currentIndex >= 0 && currentIndex < count) {
+                    listView.positionViewAtIndex(currentIndex, ListView.Contain);
+                }
+            }
 
             ScrollBar.vertical: StyledScrollBar {}
 

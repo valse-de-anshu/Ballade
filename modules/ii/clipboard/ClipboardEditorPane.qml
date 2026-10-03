@@ -42,70 +42,90 @@ Item {
     readonly property bool hasDetectedColor: detectedColor !== ""
     readonly property string imageFilePath: `${Directories.cliphistDecode}/${entryId}.png`
 
-    function checkIsBinary(text) {
-        if (!text || text.length === 0) return false;
-        const checkLen = Math.min(text.length, 512);
-        for (let i = 0; i < checkLen; i++) {
-            const code = text.charCodeAt(i);
-            if (code === 0) return true;
-            if (code < 32 && code !== 9 && code !== 10 && code !== 13) return true;
-        }
-        return false;
-    }
-
-    readonly property bool isBinary: !isImage && checkIsBinary(rawDecodedText)
-
     readonly property int charCount: editorText.length
     readonly property int lineCount: editorText === "" ? 0 : editorText.split(/\r\n|\r|\n/).length
 
     function focusEditor() {
-        if (!isImage && !hasDetectedColor && !isBinary) {
+        if (!isImage && !hasDetectedColor) {
             textArea.forceActiveFocus();
         } else {
             editorBox.forceActiveFocus();
         }
     }
 
+    Timer {
+        id: textDecodeTimer
+        interval: 80
+        repeat: false
+        onTriggered: {
+            if (!root.currentEntry || root.isImage) return;
+            textDecodeProc.running = false;
+            textDecodeProc.command = [
+                "bash", "-c",
+                `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode`
+            ];
+            textDecodeProc.running = true;
+        }
+    }
+
     function decodeCurrentEntry() {
-        if (imageViewer) imageViewer.source = "";
-        if (!root.currentEntry) {
+        const entry = root.currentEntry;
+        if (!entry) {
             root._settingText = true;
             root.rawDecodedText = "";
             root.editorText = "";
+            textArea.text = "";
             root._settingText = false;
             root.isLoading = false;
+            if (imageViewer) imageViewer.source = "";
             return;
         }
 
+        const id = Cliphist.getEntryId(entry);
+        const isCliphistImg = Cliphist.entryIsImage(entry);
+        let clean = StringUtils.cleanCliphistEntry(entry).trim();
+        if (clean.startsWith("file://")) clean = clean.substring(7);
+        const isLocalImg = /^\/.*\.(png|jpe?g|webp|gif|svg|bmp|ico|avif)$/i.test(clean);
+
         // 1. Direct local image file
-        if (root.localImagePath !== "") {
+        if (isLocalImg) {
             root.isLoading = false;
+            textDecodeTimer.stop();
+            textDecodeProc.running = false;
+            imageDecodeProc.running = false;
             if (imageViewer) {
-                imageViewer.source = "file://" + root.localImagePath;
+                imageViewer.source = "file://" + clean;
             }
             return;
         }
 
         // 2. Cliphist binary image
-        if (root.isCliphistImage) {
+        if (isCliphistImg) {
             root.isLoading = true;
+            textDecodeTimer.stop();
+            textDecodeProc.running = false;
+            const targetPath = `${Directories.cliphistDecode}/${id}.png`;
             imageDecodeProc.running = false;
             imageDecodeProc.command = [
                 "bash", "-c",
-                `mkdir -p '${Directories.cliphistDecode}' && rm -f '${root.imageFilePath}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
+                `[ -s '${targetPath}' ] || (mkdir -p '${Directories.cliphistDecode}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(entry)}' | ${Cliphist.cliphistBinary} decode > '${targetPath}')`
             ];
             imageDecodeProc.running = true;
             return;
         }
 
-        // 3. Text decode
+        // 3. Text or Color
+        if (imageViewer) imageViewer.source = "";
+        imageDecodeProc.running = false;
+
+        // Immediate snippet preview so navigation feels instant
+        root._settingText = true;
+        root.editorText = clean;
+        textArea.text = clean;
+        root._settingText = false;
+
         root.isLoading = true;
-        textDecodeProc.running = false;
-        textDecodeProc.command = [
-            "bash", "-c",
-            `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode`
-        ];
-        textDecodeProc.running = true;
+        textDecodeTimer.restart();
     }
 
     Component.onCompleted: {
@@ -126,21 +146,20 @@ Item {
         stdout: StdioCollector {
             id: textCollector
             onStreamFinished: {
-                const fullText = textCollector.text;
+                let fullText = textCollector.text;
+                // Strip ANSI escape codes and null bytes
+                fullText = fullText.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").replace(/\0/g, "");
+
                 root._settingText = true;
                 root.rawDecodedText = fullText;
 
-                if (root.checkIsBinary(fullText)) {
-                    root.editorText = "";
-                    textArea.text = "";
-                } else if (fullText.length > 35000) {
-                    root.editorText = fullText.substring(0, 35000);
-                    textArea.text = root.editorText;
+                if (fullText.length > 50000) {
+                    root.editorText = fullText.substring(0, 50000);
                 } else {
                     root.editorText = fullText;
-                    if (textArea.text !== fullText) {
-                        textArea.text = fullText;
-                    }
+                }
+                if (textArea.text !== root.editorText) {
+                    textArea.text = root.editorText;
                 }
                 root._settingText = false;
                 root.isLoading = false;
@@ -153,14 +172,14 @@ Item {
         id: imageDecodeProc
         command: [
             "bash", "-c",
-            `mkdir -p '${Directories.cliphistDecode}' && rm -f '${root.imageFilePath}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
+            `[ -s '${root.imageFilePath}' ] || (mkdir -p '${Directories.cliphistDecode}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}')`
         ]
         onExited: (exitCode, exitStatus) => {
             root.isLoading = false;
             if (exitCode === 0) {
-                if (imageViewer) {
-                    imageViewer.source = "";
-                    imageViewer.source = "file://" + root.imageFilePath;
+                const id = Cliphist.getEntryId(root.currentEntry);
+                if (id && imageViewer) {
+                    imageViewer.source = "file://" + Directories.cliphistDecode + "/" + id + ".png";
                 }
             }
         }
@@ -187,7 +206,7 @@ Item {
 
                 MaterialSymbol {
                     iconSize: 20
-                    text: root.isImage ? "image" : (root.hasDetectedColor ? "palette" : (root.isBinary ? "data_object" : "edit_note"))
+                    text: root.isImage ? "image" : (root.hasDetectedColor ? "palette" : "edit_note")
                     color: Appearance.colors.colPrimary
                 }
 
@@ -196,7 +215,6 @@ Item {
                         if (!root.currentEntry) return Translation.tr("Editor");
                         if (root.isImage) return Translation.tr("Image");
                         if (root.hasDetectedColor) return root.detectedColor;
-                        if (root.isBinary) return Translation.tr("Binary Data");
                         return `${root.charCount} chars • ${root.lineCount} lines`;
                     }
                     font.pixelSize: Appearance.font.pixelSize.normal
@@ -227,7 +245,7 @@ Item {
 
             // Actions for Text
             RowLayout {
-                visible: !root.isImage && !root.isBinary && !root.hasDetectedColor
+                visible: !root.isImage && !root.hasDetectedColor
                 spacing: 6
 
                 // Revert
@@ -379,33 +397,6 @@ Item {
                     }
                 }
             }
-
-            // Actions for Binary Data
-            RowLayout {
-                visible: root.isBinary
-                spacing: 6
-
-                RippleButton {
-                    implicitHeight: 32
-                    implicitWidth: copyBinRow.implicitWidth + 18
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: Appearance.colors.colPrimary
-                    colBackgroundHover: Appearance.colors.colPrimaryHover
-                    colRipple: Appearance.colors.colPrimaryContainerActive
-                    onClicked: {
-                        Cliphist.copy(root.currentEntry);
-                        root.showNotification(Translation.tr("Copied binary data"));
-                    }
-
-                    contentItem: RowLayout {
-                        id: copyBinRow
-                        anchors.centerIn: parent
-                        spacing: 5
-                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                        StyledText { text: Translation.tr("Copy Data"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
-                    }
-                }
-            }
         }
 
         // Horizontal Separator (matches left pane separator)
@@ -444,10 +435,6 @@ Item {
                         Cliphist.copyText(root.detectedColor);
                         root.requestClose();
                         event.accepted = true;
-                    } else if (root.isBinary) {
-                        Cliphist.copy(root.currentEntry);
-                        root.requestClose();
-                        event.accepted = true;
                     }
                 }
             }
@@ -481,7 +468,7 @@ Item {
             Item {
                 anchors.fill: parent
                 anchors.margins: 10
-                visible: !!root.currentEntry && !root.isImage && !root.hasDetectedColor && !root.isBinary
+                visible: !!root.currentEntry && !root.isImage && !root.hasDetectedColor
 
                 Flickable {
                     id: flickable
@@ -663,49 +650,6 @@ Item {
                         font.pixelSize: Appearance.font.pixelSize.normal
                         font.weight: Font.DemiBold
                         color: Appearance.colors.colOnLayer1
-                    }
-                }
-            }
-
-            // VIEW 4: BINARY CONTENT PREVIEW
-            Item {
-                anchors.fill: parent
-                visible: !!root.currentEntry && !root.isImage && !root.hasDetectedColor && root.isBinary
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 12
-                    implicitWidth: 260
-
-                    MaterialSymbol {
-                        Layout.alignment: Qt.AlignHCenter
-                        iconSize: 42
-                        text: "data_object"
-                        color: Appearance.colors.colSubtext
-                    }
-
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Translation.tr("Binary Data")
-                        font.pixelSize: Appearance.font.pixelSize.normal
-                        font.weight: Font.DemiBold
-                        color: Appearance.colors.colOnLayer1
-                    }
-
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Translation.tr("%1 bytes • Raw binary content").arg(root.rawDecodedText.length)
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        color: Appearance.colors.colSubtext
-                    }
-
-                    StyledText {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        text: Translation.tr("Direct text preview is disabled to prevent system slowdown.")
-                        font.pixelSize: 11
-                        color: Appearance.colors.colSubtext
                     }
                 }
             }

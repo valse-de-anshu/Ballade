@@ -33,13 +33,46 @@ Rectangle {
         target: root
     }
 
-    readonly property var rawFiltered: Cliphist.fuzzyQuery(root.searchQuery)
+    readonly property var rawFiltered: {
+        const _ = Cliphist.pinRevision;
+        return Cliphist.fuzzyQuery(root.searchQuery);
+    }
+
+    property string selectedEntryId: ""
 
     readonly property string selectedEntry: {
         if (root.rawFiltered.length === 0 || root.selectedIndex < 0 || root.selectedIndex >= root.rawFiltered.length) {
             return "";
         }
         return root.rawFiltered[root.selectedIndex];
+    }
+
+    onSelectedEntryChanged: {
+        if (root.selectedEntry) {
+            root.selectedEntryId = Cliphist.getEntryId(root.selectedEntry);
+        }
+    }
+
+    onRawFilteredChanged: {
+        if (root.rawFiltered.length === 0) {
+            root.selectedIndex = -1;
+            return;
+        }
+        if (root.selectedEntryId !== "") {
+            for (let i = 0; i < root.rawFiltered.length; i++) {
+                if (Cliphist.getEntryId(root.rawFiltered[i]) === root.selectedEntryId) {
+                    if (root.selectedIndex !== i) {
+                        root.selectedIndex = i;
+                    }
+                    return;
+                }
+            }
+        }
+        if (root.selectedIndex >= root.rawFiltered.length) {
+            root.selectedIndex = root.rawFiltered.length - 1;
+        } else if (root.selectedIndex < 0) {
+            root.selectedIndex = 0;
+        }
     }
 
     function showToast(msg) {

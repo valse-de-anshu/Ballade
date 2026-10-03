@@ -16,7 +16,7 @@ Rectangle {
     property string blurText: "Image hidden"
 
     property string imageDecodePath: Directories.cliphistDecode
-    property string imageDecodeFileName: `${entryNumber}`
+    property string imageDecodeFileName: `${entryNumber}.png`
     property string imageDecodeFilePath: `${imageDecodePath}/${imageDecodeFileName}`
     property string source
 
@@ -39,13 +39,14 @@ Rectangle {
         return match ? parseInt(match[2]) : 0;
     }
     property real scale: {
-        return Math.min(root.maxWidth / imageWidth, root.maxHeight / imageHeight, 1);
+        return Math.min(root.maxWidth / Math.max(1, imageWidth), root.maxHeight / Math.max(1, imageHeight), 1);
     }
 
     color: Appearance.colors.colLayer1
     radius: Appearance.rounding.small
-    implicitHeight: imageHeight * scale
-    implicitWidth: imageWidth * scale
+    implicitHeight: imageHeight > 0 ? (imageHeight * scale) : root.maxHeight
+    implicitWidth: imageWidth > 0 ? (imageWidth * scale) : root.maxWidth
+    clip: true
 
     Component.onCompleted: {
         decodeImageProcess.running = true;
@@ -53,22 +54,20 @@ Rectangle {
 
     Process {
         id: decodeImageProcess
-        command: ["bash", "-c", `[ -f ${imageDecodeFilePath} ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}'`]
+        command: [
+            "bash", "-c",
+            `[ -s '${imageDecodeFilePath}' ] || (mkdir -p '${imageDecodePath}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}')`
+        ]
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
                 root.source = imageDecodeFilePath;
             } else {
-                console.error("[CliphistImage] Failed to decode image for entry:", root.entry);
                 root.source = "";
             }
         }
     }
 
-    Component.onDestruction: {
-        Quickshell.execDetached(["bash", "-c", `[ -f '${imageDecodeFilePath}' ] && rm -f '${imageDecodeFilePath}'`]);
-    }
-
-    layer.enabled: true
+    layer.enabled: root.blur
     layer.effect: OpacityMask {
         maskSource: Rectangle {
             width: image.width
@@ -81,7 +80,7 @@ Rectangle {
         id: image
         anchors.fill: parent
 
-        source: Qt.resolvedUrl(root.source)
+        source: root.source ? (root.source.startsWith("file://") ? root.source : ("file://" + root.source)) : ""
         fillMode: Image.PreserveAspectFit
         antialiasing: true
         asynchronous: true

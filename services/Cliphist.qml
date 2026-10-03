@@ -26,49 +26,79 @@ Singleton {
         return m ? m[1] : "";
     }
 
-    function isPinned(entry) {
-        if (!entry || !Persistent.ready) return false;
-        const entryId = getEntryId(entry);
-        const list = Persistent.states.pinnedClipboard || [];
-        for (let i = 0; i < list.length; i++) {
-            const item = list[i];
-            const storedId = getEntryId(item);
-            if (storedId !== "" && entryId !== "") {
-                if (storedId === entryId) return true;
-            } else if (item === entry) {
-                return true;
-            }
+    property int pinRevision: 0
+    property var pinnedList: []
+    property var pinnedMap: ({})
+    property string pinnedFilePath: FileUtils.trimFileProtocol(`${Directories.state}/user/pinned_clipboard.json`)
+
+    function rebuildPinnedMap() {
+        const set = {};
+        for (let i = 0; i < root.pinnedList.length; i++) {
+            const item = String(root.pinnedList[i]);
+            set[item] = true;
+            const id = getEntryId(item);
+            if (id) set[id] = true;
+            const clean = item.replace(/^\d+\t/, "").trim();
+            if (clean) set[clean] = true;
         }
+        root.pinnedMap = set;
+        root.pinRevision++;
+    }
+
+    function isPinned(entry) {
+        if (!entry) return false;
+        const eStr = String(entry);
+        if (root.pinnedMap[eStr]) return true;
+        const id = getEntryId(eStr);
+        if (id && root.pinnedMap[id]) return true;
+        const clean = eStr.replace(/^\d+\t/, "").trim();
+        if (clean && root.pinnedMap[clean]) return true;
         return false;
     }
 
     function togglePin(entry) {
-        if (!entry || !Persistent.ready) return;
-        const entryId = getEntryId(entry);
-        let list = [...(Persistent.states.pinnedClipboard || [])];
+        if (!entry) return;
+        const eStr = String(entry);
+        const id = getEntryId(eStr);
+        const clean = eStr.replace(/^\d+\t/, "").trim();
         let foundIdx = -1;
-        for (let i = 0; i < list.length; i++) {
-            const item = list[i];
+        for (let i = 0; i < root.pinnedList.length; i++) {
+            const item = String(root.pinnedList[i]);
             const storedId = getEntryId(item);
-            if ((storedId !== "" && entryId !== "" && storedId === entryId) || item === entry) {
+            const storedClean = item.replace(/^\d+\t/, "").trim();
+            if ((storedId !== "" && id !== "" && storedId === id) || (storedClean !== "" && clean !== "" && storedClean === clean) || item === eStr) {
                 foundIdx = i;
                 break;
             }
         }
+        const updated = [...root.pinnedList];
         if (foundIdx >= 0) {
-            list.splice(foundIdx, 1);
+            updated.splice(foundIdx, 1);
         } else {
-            list.push(entry);
+            updated.push(eStr);
         }
-        Persistent.states.pinnedClipboard = list;
-        root.refresh();
+        root.pinnedList = updated;
+        root.rebuildPinnedMap();
+
+        if (Persistent.ready && Persistent.states) {
+            Persistent.states.pinnedClipboard = updated;
+        }
+        pinnedFileView.setText(JSON.stringify(updated));
     }
 
     function sortEntries(rawList) {
-        if (!rawList) return [];
-        const pinned = rawList.filter(e => root.isPinned(e));
-        const unpinned = rawList.filter(e => !root.isPinned(e));
-        return [...pinned, ...unpinned];
+        if (!rawList || rawList.length === 0) return [];
+        const pinned = [];
+        const unpinned = [];
+        for (let i = 0; i < rawList.length; i++) {
+            const e = rawList[i];
+            if (root.isPinned(e)) {
+                pinned.push(e);
+            } else {
+                unpinned.push(e);
+            }
+        }
+        return pinned.concat(unpinned);
     }
 
     function fuzzyQuery(search: string): var {
@@ -92,7 +122,8 @@ Singleton {
     }
 
     function entryIsImage(entry) {
-        return !!(/^\d+\t\[\[.*binary data.*\d+x\d+.*\]\]$/.test(entry))
+        if (!entry) return false;
+        return /^\d+\t\[\[\s*binary data/i.test(String(entry));
     }
 
     function refresh() {
@@ -227,6 +258,47 @@ Singleton {
                 root.entries = readProc.buffer
             } else {
                 console.error("[Cliphist] Failed to refresh with code", exitCode, "and status", exitStatus)
+            }
+        }
+    }
+
+    FileView {
+        id: pinnedFileView
+        path: Qt.resolvedUrl(root.pinnedFilePath)
+        onLoaded: {
+            try {
+                const data = JSON.parse(pinnedFileView.text());
+                if (Array.isArray(data) && data.length > 0) {
+                    root.pinnedList = data;
+                    root.rebuildPinnedMap();
+                } else if (Persistent.ready && Persistent.states && Persistent.states.pinnedClipboard && Persistent.states.pinnedClipboard.length > 0) {
+                    root.pinnedList = [...Persistent.states.pinnedClipboard];
+                    root.rebuildPinnedMap();
+                    pinnedFileView.setText(JSON.stringify(root.pinnedList));
+                }
+            } catch (e) {
+                console.error("[Cliphist] Error loading pinned clipboard:", e);
+            }
+        }
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound) {
+                if (Persistent.ready && Persistent.states && Persistent.states.pinnedClipboard && Persistent.states.pinnedClipboard.length > 0) {
+                    root.pinnedList = [...Persistent.states.pinnedClipboard];
+                } else {
+                    root.pinnedList = [];
+                }
+                root.rebuildPinnedMap();
+                pinnedFileView.setText(JSON.stringify(root.pinnedList));
+            }
+        }
+    }
+
+    Connections {
+        target: Persistent
+        function onReadyChanged() {
+            if (Persistent.ready && root.pinnedList.length === 0 && Persistent.states && Persistent.states.pinnedClipboard && Persistent.states.pinnedClipboard.length > 0) {
+                root.pinnedList = [...Persistent.states.pinnedClipboard];
+                root.rebuildPinnedMap();
             }
         }
     }
