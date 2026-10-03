@@ -146,15 +146,28 @@ Singleton {
         if (!entry) return;
         // Pinned items are fully protected — cannot be deleted
         if (isPinned(entry)) return;
+
+        // 1. Immediately update in-memory entries so UI updates with 0ms latency and no index mismatch
+        const updated = [];
+        for (let i = 0; i < root.entries.length; i++) {
+            if (root.entries[i] !== entry) {
+                updated.push(root.entries[i]);
+            }
+        }
+        root.entries = updated;
+
+        // 2. Persistently delete in cliphist DB in background
         Quickshell.execDetached([
             "bash", "-c",
             `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(entry)}' | ${root.cliphistBinary} delete`
         ]);
-        delayedUpdateTimer.restart();
     }
 
     function wipe() {
         const pinnedList = entries.filter(e => isPinned(e));
+        // Immediately update in-memory entries to only pinned items
+        root.entries = pinnedList;
+
         if (pinnedList.length === 0) {
             // No pinned entries — just wipe everything
             Quickshell.execDetached(["bash", "-c", `${root.cliphistBinary} wipe`]);

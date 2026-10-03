@@ -33,6 +33,7 @@ RippleButton {
 
     implicitWidth: ListView.view ? ListView.view.width : 400
     implicitHeight: isImage ? 86 : 56
+    focusPolicy: Qt.NoFocus
 
     buttonRadius: Appearance.rounding.normal
     colBackground: root.isSelected
@@ -202,6 +203,7 @@ RippleButton {
             // Pin button
             RippleButton {
                 id: pinButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 buttonRadius: Appearance.rounding.full
@@ -227,6 +229,7 @@ RippleButton {
             // Copy button
             RippleButton {
                 id: copyButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 buttonRadius: Appearance.rounding.full
@@ -250,6 +253,7 @@ RippleButton {
             // Delete button (Turns red on hover)
             RippleButton {
                 id: deleteButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 buttonRadius: Appearance.rounding.full

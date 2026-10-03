@@ -56,12 +56,26 @@ Item {
 
         if (root.isImage) {
             root.isLoading = true;
+            imageDecodeProc.running = false;
+            imageDecodeProc.command = [
+                "bash", "-c",
+                `mkdir -p '${Directories.cliphistDecode}' && [ -f '${root.imageFilePath}' ] || printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
+            ];
             imageDecodeProc.running = true;
             return;
         }
 
         root.isLoading = true;
+        textDecodeProc.running = false;
+        textDecodeProc.command = [
+            "bash", "-c",
+            `printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode`
+        ];
         textDecodeProc.running = true;
+    }
+
+    Component.onCompleted: {
+        decodeCurrentEntry();
     }
 
     onCurrentEntryChanged: {

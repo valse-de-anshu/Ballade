@@ -52,6 +52,17 @@ Rectangle {
         onTriggered: root.toastMessage = ""
     }
 
+    // Always focus the search field when the clipboard is opened
+    Connections {
+        target: GlobalStates
+        function onClipboardOpenChanged() {
+            if (GlobalStates.clipboardOpen) {
+                root.activeSection = 0;
+                listPane.focusSearch();
+            }
+        }
+    }
+
     // Split Layout
     RowLayout {
         anchors.fill: parent
@@ -77,14 +88,13 @@ Rectangle {
             }
 
             onRequestCopyAndClose: entry => {
+                root.requestClose();
                 Cliphist.copy(entry);
-                root.showToast(Translation.tr("Copied"));
-                closeDelayTimer.restart();
             }
 
             onRequestPasteAndClose: entry => {
-                Cliphist.paste(entry);
                 root.requestClose();
+                Cliphist.paste(entry);
             }
 
             onRequestClose: root.requestClose()
@@ -110,18 +120,12 @@ Rectangle {
 
             onRequestFocusList: {
                 root.activeSection = 0;
-                listPane.focusList();
+                listPane.focusSearch();
             }
 
             onRequestClose: root.requestClose()
             onShowNotification: msg => root.showToast(msg)
         }
-    }
-
-    Timer {
-        id: closeDelayTimer
-        interval: 100
-        onTriggered: root.requestClose()
     }
 
     // Toast Banner
@@ -153,6 +157,6 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        listPane.focusList();
+        listPane.focusSearch();
     }
 }

@@ -29,7 +29,7 @@ Item {
     }
 
     function focusList() {
-        listView.forceActiveFocus();
+        searchField.forceActiveFocus();
     }
 
     function selectPrevious() {
@@ -39,6 +39,7 @@ Item {
         } else {
             root.selectedIndex = root.filteredList.length - 1;
         }
+        listView.currentIndex = root.selectedIndex;
         listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
     }
 
@@ -49,6 +50,7 @@ Item {
         } else {
             root.selectedIndex = 0;
         }
+        listView.currentIndex = root.selectedIndex;
         listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
     }
 
@@ -62,20 +64,20 @@ Item {
             return;
         }
 
-        const deleteIndex = root.selectedIndex;
+        const currIndex = root.selectedIndex;
         Cliphist.deleteEntry(entry);
 
         // Keep view positioned on current item index
-        Qt.callLater(() => {
-            if (root.filteredList.length > 0) {
-                root.selectedIndex = Math.min(deleteIndex, root.filteredList.length - 1);
-                listView.currentIndex = root.selectedIndex;
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-            } else {
-                root.selectedIndex = -1;
-            }
-            listView.forceActiveFocus();
-        });
+        const newLen = root.filteredList.length;
+        if (newLen > 0) {
+            root.selectedIndex = Math.min(currIndex, newLen - 1);
+            listView.currentIndex = root.selectedIndex;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+        } else {
+            root.selectedIndex = -1;
+            listView.currentIndex = -1;
+        }
+        searchField.forceActiveFocus();
     }
 
     onSelectedIndexChanged: {
@@ -93,12 +95,10 @@ Item {
         } else if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
         }
-        Qt.callLater(() => {
-            if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
-                listView.currentIndex = root.selectedIndex;
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-            }
-        });
+        listView.currentIndex = root.selectedIndex;
+        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+        }
     }
 
     ColumnLayout {
@@ -136,24 +136,35 @@ Item {
 
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Down) {
-                        root.focusList();
                         root.selectNext();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Up) {
-                        root.focusList();
                         root.selectPrevious();
                         event.accepted = true;
+                    } else if (event.key === Qt.Key_PageDown) {
+                        for (let i = 0; i < 5; i++) root.selectNext();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_PageUp) {
+                        for (let i = 0; i < 5; i++) root.selectPrevious();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Right) {
+                        if (searchField.text.length === 0 || searchField.cursorPosition === searchField.text.length) {
+                            root.requestFocusEditor();
+                            event.accepted = true;
+                        }
+                    } else if (event.key === Qt.Key_Delete) {
+                        if (searchField.text.length === 0) {
+                            root.deleteCurrent();
+                            event.accepted = true;
+                        }
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        if (root.filteredList.length > 0 && root.selectedIndex >= 0) {
+                        if (root.filteredList.length > 0 && root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
                             if (event.modifiers === Qt.ShiftModifier) {
                                 root.requestPasteAndClose(root.filteredList[root.selectedIndex]);
                             } else {
                                 root.requestCopyAndClose(root.filteredList[root.selectedIndex]);
                             }
                         }
-                        event.accepted = true;
-                    } else if (event.key === Qt.Key_Right) {
-                        root.requestFocusEditor();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Escape) {
                         if (searchField.text.length > 0) {
@@ -169,6 +180,7 @@ Item {
             // Clear Clipboard Button (Instant wipe, no confirmation popup/icon)
             IconToolbarButton {
                 id: clearClipboardButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 36
                 Layout.preferredHeight: 36
                 Layout.fillHeight: false
@@ -188,6 +200,7 @@ Item {
             // Google Lens / Region Search Button
             IconToolbarButton {
                 id: lensButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 36
                 Layout.preferredHeight: 36
                 Layout.fillHeight: false
@@ -206,6 +219,7 @@ Item {
             // Song Recognition Button (With rotating animated MaterialShape)
             IconToolbarButton {
                 id: songRecButton
+                focusPolicy: Qt.NoFocus
                 Layout.preferredWidth: 36
                 Layout.preferredHeight: 36
                 Layout.fillHeight: false
@@ -265,9 +279,9 @@ Item {
             spacing: 4
             model: root.filteredList
             currentIndex: root.selectedIndex
-            focus: root.isListFocused
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 120
+            focusPolicy: Qt.NoFocus
 
             ScrollBar.vertical: StyledScrollBar {}
 
@@ -284,7 +298,7 @@ Item {
 
                 onItemClicked: {
                     root.selectedIndex = index;
-                    root.focusList();
+                    searchField.forceActiveFocus();
                 }
 
                 onPinToggled: {
@@ -296,18 +310,8 @@ Item {
                         root.showNotification(Translation.tr("Pinned items cannot be deleted"));
                         return;
                     }
-                    const delIdx = index;
-                    Cliphist.deleteEntry(modelData);
-                    Qt.callLater(() => {
-                        if (root.filteredList.length > 0) {
-                            root.selectedIndex = Math.min(delIdx, root.filteredList.length - 1);
-                            listView.currentIndex = root.selectedIndex;
-                            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-                        } else {
-                            root.selectedIndex = -1;
-                        }
-                        listView.forceActiveFocus();
-                    });
+                    root.selectedIndex = index;
+                    root.deleteCurrent();
                 }
 
                 onCopyRequested: {
@@ -335,7 +339,7 @@ Item {
                     root.deleteCurrent();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                    if (root.filteredList.length > 0 && root.selectedIndex >= 0) {
+                    if (root.filteredList.length > 0 && root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
                         if (event.modifiers === Qt.ShiftModifier) {
                             root.requestPasteAndClose(root.filteredList[root.selectedIndex]);
                         } else {
