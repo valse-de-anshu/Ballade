@@ -14,7 +14,10 @@ Item {
     readonly property bool isPopupActive: popup.active
     visible: CalendarService.pinnedTargets.length > 0 || isPopupActive
     implicitHeight: visible ? Appearance.sizes.baseBarHeight : 0
-    implicitWidth: visible ? capsulePill.implicitWidth : 0
+    implicitWidth: visible ? Math.min(230, capsulePill.implicitWidth) : 0
+    Layout.fillWidth: false
+    Layout.maximumWidth: 230
+    Layout.minimumWidth: 80
 
     property int currentTargetIndex: 0
     readonly property int clampedIndex: CalendarService.pinnedTargets.length > 0
@@ -109,8 +112,11 @@ Item {
         id: capsulePill
         anchors.centerIn: parent
         implicitHeight: 28
-        implicitWidth: contentRow.implicitWidth + 16
+        implicitWidth: Math.min(230, contentRow.implicitWidth + 16)
+        width: Math.min(parent.width > 0 ? parent.width : implicitWidth, implicitWidth)
+        height: implicitHeight
         radius: Appearance.rounding.full
+        clip: true
 
         // Seamless transparent background; gentle damped highlight only on hover
         color: (mouseArea.containsMouse || root.popupHovered || root.isPopupOpen) ? Appearance.colors.colLayer1Hover : "transparent"
@@ -128,7 +134,8 @@ Item {
         RowLayout {
             id: contentRow
             anchors.centerIn: parent
-            spacing: 8
+            width: Math.max(0, parent.width - 16)
+            spacing: 6
 
             // Countdown Status Text (Pure text, high contrast, zero gray oval badge)
             StyledText {
@@ -150,12 +157,14 @@ Item {
                 font.weight: Font.Medium
                 color: Appearance.colors.colOnLayer0
                 elide: Text.ElideRight
-                Layout.maximumWidth: 220
+                Layout.fillWidth: true
+                Layout.maximumWidth: 120
+                Layout.minimumWidth: 40
             }
 
             // Date Tag Text
             StyledText {
-                visible: root.countdown.dateText.length > 0
+                visible: root.countdown.dateText.length > 0 && capsulePill.width >= 200
                 text: "• " + root.countdown.dateText
                 font.pixelSize: Appearance.font.pixelSize.smaller
                 color: Appearance.colors.colSubtext

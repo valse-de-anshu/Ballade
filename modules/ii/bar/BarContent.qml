@@ -216,8 +216,10 @@ Item { // Bar content region
             top: barBackground.top
             bottom: barBackground.bottom
             left: middleSection.right
+            leftMargin: 8
             right: barBackground.right
         }
+        clip: true
         implicitWidth: rightSectionRowLayout.implicitWidth
         implicitHeight: Appearance.sizes.baseBarHeight
 
@@ -349,17 +351,20 @@ Item { // Bar content region
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.minimumWidth: 4
             }
 
             SatelliteBarCapsule {
                 id: satelliteCapsule
                 Layout.alignment: Qt.AlignVCenter
+                Layout.maximumWidth: 230
                 visible: root.useShortenedForm < 2 && (CalendarService.pinnedTargets.length > 0 || satelliteCapsule.isPopupActive)
             }
 
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.minimumWidth: 4
             }
 
             // Weather
