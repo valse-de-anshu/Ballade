@@ -193,6 +193,13 @@ Item {
         };
     }
 
+    readonly property string targetIcon: {
+        if (!root.countdown.valid) return "satellite_alt";
+        if (root.activeTarget?.type === "festival") return "celebration";
+        if (root.pinnedTargets.length > 0) return "push_pin";
+        return "event_note";
+    }
+
     function cycleNextTarget() {
         if (root.pinnedTargets.length > 1) {
             root.currentTargetIndex = (root.currentTargetIndex + 1) % root.pinnedTargets.length;
@@ -204,21 +211,16 @@ Item {
         id: capsulePill
         anchors.centerIn: parent
         implicitHeight: 28
-        implicitWidth: contentRow.implicitWidth + 18
+        implicitWidth: contentRow.implicitWidth + 20
         radius: Appearance.rounding.full
 
+        // Damped background: blends smoothly with the top bar and gently highlights on hover
         color: mouseArea.containsMouse
             ? Appearance.colors.colLayer1Hover
-            : ColorUtils.transparentize(Appearance.colors.colLayer1, 0.35)
-        border.width: 1
-        border.color: mouseArea.containsMouse
-            ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.45)
-            : ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.16)
+            : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.40)
+        border.width: 0
 
         Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-        }
-        Behavior on border.color {
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
 
@@ -227,36 +229,32 @@ Item {
             anchors.centerIn: parent
             spacing: 8
 
-            // Countdown Status Badge Pill
+            // Dedicated target icon
+            MaterialSymbol {
+                text: root.targetIcon
+                iconSize: 15
+                color: Appearance.colors.colPrimary
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            // Countdown Status Badge Pill (Clean, borderless, high-contrast)
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 implicitHeight: 20
-                implicitWidth: badgeTextLabel.implicitWidth + 10
-                radius: 10
+                implicitWidth: badgeTextLabel.implicitWidth + 12
+                radius: Appearance.rounding.full
+                border.width: 0
                 color: {
                     if (!root.countdown.valid) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.18);
+                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.16);
                     }
                     if (root.countdown.days === 0) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25);
+                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.22);
                     }
                     if (root.countdown.days > 0) {
-                        return ColorUtils.applyAlpha("#38bdf8", 0.18);
+                        return ColorUtils.applyAlpha(Appearance.colors.colSecondary, 0.22);
                     }
-                    return ColorUtils.applyAlpha("#94a3b8", 0.16);
-                }
-                border.width: 1
-                border.color: {
-                    if (!root.countdown.valid) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.40);
-                    }
-                    if (root.countdown.days === 0) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.60);
-                    }
-                    if (root.countdown.days > 0) {
-                        return ColorUtils.applyAlpha("#38bdf8", 0.45);
-                    }
-                    return ColorUtils.applyAlpha("#94a3b8", 0.30);
+                    return ColorUtils.applyAlpha(Appearance.colors.colOnLayer1, 0.12);
                 }
 
                 StyledText {
@@ -264,15 +262,15 @@ Item {
                     anchors.centerIn: parent
                     text: root.countdown.badgeText
                     font.pixelSize: 10
-                    font.weight: Font.Bold
+                    font.weight: Font.DemiBold
                     color: {
                         if (!root.countdown.valid || root.countdown.days === 0) {
                             return Appearance.colors.colPrimary;
                         }
                         if (root.countdown.days > 0) {
-                            return "#38bdf8";
+                            return Appearance.colors.colSecondary;
                         }
-                        return "#94a3b8";
+                        return Appearance.colors.colOnLayer1;
                     }
                 }
             }
@@ -280,41 +278,46 @@ Item {
             // Summary Title & Date Tag
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
-                spacing: 5
+                spacing: 6
 
                 StyledText {
                     text: root.countdown.title
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.Medium
-                    color: Appearance.colors.colOnLayer1
+                    color: Appearance.colors.colOnLayer0
                     elide: Text.ElideRight
-                    Layout.maximumWidth: 160
+                    Layout.maximumWidth: 200
                 }
 
                 StyledText {
                     visible: root.countdown.dateText.length > 0
-                    text: "•  " + root.countdown.dateText
-                    font.pixelSize: 11
+                    text: "• " + root.countdown.dateText
+                    font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
+                    Layout.alignment: Qt.AlignVCenter
                 }
             }
 
             // Multiple targets indicator
-            Rectangle {
+            RowLayout {
                 visible: root.pinnedTargets.length > 1
                 Layout.alignment: Qt.AlignVCenter
-                implicitHeight: 16
-                implicitWidth: countText.implicitWidth + 8
-                radius: 8
-                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.15)
+                spacing: 2
+
+                MaterialSymbol {
+                    text: "unfold_more"
+                    iconSize: 13
+                    color: Appearance.colors.colSubtext
+                    Layout.alignment: Qt.AlignVCenter
+                }
 
                 StyledText {
                     id: countText
-                    anchors.centerIn: parent
                     text: `${root.currentTargetIndex + 1}/${root.pinnedTargets.length}`
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: Font.DemiBold
-                    color: Appearance.colors.colPrimary
+                    color: Appearance.colors.colSubtext
+                    Layout.alignment: Qt.AlignVCenter
                 }
             }
         }
@@ -348,7 +351,7 @@ Item {
         ColumnLayout {
             anchors.centerIn: parent
             spacing: 8
-            implicitWidth: 280
+            implicitWidth: 320
 
             StyledPopupHeaderRow {
                 icon: "satellite_alt"
@@ -358,37 +361,51 @@ Item {
             // Active Countdown Card
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: cardCol.implicitHeight + 16
+                implicitHeight: cardCol.implicitHeight + 20
                 radius: Appearance.rounding.small
                 color: Appearance.colors.colLayer1
-                border.width: 1
-                border.color: Appearance.colors.colLayer0Border
+                border.width: 0
 
                 ColumnLayout {
                     id: cardCol
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 4
+                    anchors.margins: 12
+                    spacing: 6
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: 8
 
                         Rectangle {
-                            implicitHeight: 18
-                            implicitWidth: popupBadgeText.implicitWidth + 10
-                            radius: 9
-                            color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.2)
-                            border.width: 1
-                            border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5)
+                            implicitHeight: 20
+                            implicitWidth: popupBadgeText.implicitWidth + 12
+                            radius: Appearance.rounding.full
+                            color: {
+                                if (!root.countdown.valid || root.countdown.days === 0) {
+                                    return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.20);
+                                }
+                                if (root.countdown.days > 0) {
+                                    return ColorUtils.applyAlpha(Appearance.colors.colSecondary, 0.20);
+                                }
+                                return ColorUtils.applyAlpha(Appearance.colors.colOnLayer1, 0.12);
+                            }
+                            border.width: 0
 
                             StyledText {
                                 id: popupBadgeText
                                 anchors.centerIn: parent
                                 text: root.countdown.badgeText
                                 font.pixelSize: 10
-                                font.weight: Font.Bold
-                                color: Appearance.colors.colPrimary
+                                font.weight: Font.DemiBold
+                                color: {
+                                    if (!root.countdown.valid || root.countdown.days === 0) {
+                                        return Appearance.colors.colPrimary;
+                                    }
+                                    if (root.countdown.days > 0) {
+                                        return Appearance.colors.colSecondary;
+                                    }
+                                    return Appearance.colors.colOnLayer1;
+                                }
                             }
                         }
 
@@ -398,7 +415,7 @@ Item {
                             font.pixelSize: Appearance.font.pixelSize.small
                             font.weight: Font.DemiBold
                             color: Appearance.colors.colOnLayer1
-                            elide: Text.ElideRight
+                            wrapMode: Text.WordWrap
                         }
                     }
 
@@ -452,7 +469,7 @@ Item {
                             text: targetRow.cd.text
                             font.pixelSize: 10
                             font.weight: Font.Bold
-                            color: targetRow.cd.days === 0 ? Appearance.colors.colPrimary : "#38bdf8"
+                            color: targetRow.cd.days === 0 ? Appearance.colors.colPrimary : (targetRow.cd.days > 0 ? Appearance.colors.colSecondary : Appearance.colors.colSubtext)
                         }
 
                         StyledText {
@@ -478,6 +495,7 @@ Item {
                 implicitHeight: 24
                 radius: Appearance.rounding.small
                 color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.08)
+                border.width: 0
 
                 RowLayout {
                     anchors.centerIn: parent

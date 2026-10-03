@@ -182,7 +182,6 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: {
                     Cliphist.wipe();
-                    root.showNotification(Translation.tr("Cleared unpinned clipboard"));
                 }
                 text: "delete_sweep"
                 colText: hovered ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
