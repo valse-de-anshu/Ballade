@@ -32,12 +32,27 @@ Item {
         searchField.forceActiveFocus();
     }
 
+    onSearchQueryChanged: {
+        if (searchField.text !== root.searchQuery) {
+            searchField.text = root.searchQuery;
+        }
+    }
+
+    onSelectedIndexChanged: {
+        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+            listView.currentIndex = root.selectedIndex;
+            if (root.selectedIndex <= 1) {
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Beginning);
+            } else {
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+            }
+        }
+    }
+
     function selectPrevious() {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex > 0) {
             root.selectedIndex--;
-            listView.currentIndex = root.selectedIndex;
-            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
     }
 
@@ -45,8 +60,6 @@ Item {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex < root.filteredList.length - 1) {
             root.selectedIndex++;
-            listView.currentIndex = root.selectedIndex;
-            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
     }
 
@@ -67,11 +80,8 @@ Item {
             const newLen = root.filteredList.length;
             if (newLen > 0) {
                 root.selectedIndex = Math.min(currIndex, newLen - 1);
-                listView.currentIndex = root.selectedIndex;
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
             } else {
                 root.selectedIndex = -1;
-                listView.currentIndex = -1;
             }
             searchField.forceActiveFocus();
         });
@@ -88,7 +98,11 @@ Item {
         Qt.callLater(() => {
             if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
                 listView.currentIndex = root.selectedIndex;
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+                if (root.selectedIndex <= 1) {
+                    listView.positionViewAtIndex(root.selectedIndex, ListView.Beginning);
+                } else {
+                    listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+                }
             }
         });
     }

@@ -39,6 +39,64 @@ Rectangle {
     }
 
     property string selectedEntryId: ""
+    property string lastTopEntryId: ""
+
+    function findCopiedEntryIndex() {
+        if (root.rawFiltered.length === 0) return -1;
+
+        // If actively searching, default to top search result
+        if (root.searchQuery.trim().length > 0) {
+            return 0;
+        }
+
+        // 1. Match newest entry from Cliphist.entries[0] by entry ID
+        if (Cliphist.entries && Cliphist.entries.length > 0) {
+            const newestEntry = Cliphist.entries[0];
+            const newestId = Cliphist.getEntryId(newestEntry);
+            if (newestId !== "") {
+                for (let i = 0; i < root.rawFiltered.length; i++) {
+                    if (Cliphist.getEntryId(root.rawFiltered[i]) === newestId) {
+                        return i;
+                    }
+                }
+            }
+            // Also try matching by cleaned text
+            const newestClean = StringUtils.cleanCliphistEntry(newestEntry).trim();
+            if (newestClean.length > 0) {
+                for (let i = 0; i < root.rawFiltered.length; i++) {
+                    if (StringUtils.cleanCliphistEntry(root.rawFiltered[i]).trim() === newestClean) {
+                        return i;
+                    }
+                }
+            }
+        }
+
+        // 2. Match Quickshell.clipboardText if available
+        if (Quickshell.clipboardText && Quickshell.clipboardText.trim().length > 0) {
+            const clipText = Quickshell.clipboardText.trim();
+            for (let i = 0; i < root.rawFiltered.length; i++) {
+                if (StringUtils.cleanCliphistEntry(root.rawFiltered[i]).trim() === clipText) {
+                    return i;
+                }
+            }
+        }
+
+        // 3. Fallback: if there are unpinned items, the first unpinned item is the newest copied item!
+        for (let i = 0; i < root.rawFiltered.length; i++) {
+            if (!Cliphist.isPinned(root.rawFiltered[i])) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    function focusCopiedEntry() {
+        const idx = findCopiedEntryIndex();
+        if (idx >= 0 && idx < root.rawFiltered.length) {
+            root.selectedIndex = idx;
+        }
+    }
 
     readonly property string selectedEntry: {
         if (root.rawFiltered.length === 0 || root.selectedIndex < 0 || root.selectedIndex >= root.rawFiltered.length) {
@@ -58,6 +116,25 @@ Rectangle {
             root.selectedIndex = -1;
             return;
         }
+
+        // Check if top entry in cliphist changed (new item was copied)
+        const currentTopId = (Cliphist.entries && Cliphist.entries.length > 0) ? Cliphist.getEntryId(Cliphist.entries[0]) : "";
+        if (currentTopId !== "" && currentTopId !== root.lastTopEntryId) {
+            root.lastTopEntryId = currentTopId;
+            const newCopiedIdx = root.findCopiedEntryIndex();
+            if (newCopiedIdx >= 0) {
+                root.selectedIndex = newCopiedIdx;
+                return;
+            }
+        }
+
+        // If actively searching:
+        if (root.searchQuery.trim().length > 0) {
+            root.selectedIndex = 0;
+            return;
+        }
+
+        // Otherwise preserve current selected entry if it still exists
         if (root.selectedEntryId !== "") {
             for (let i = 0; i < root.rawFiltered.length; i++) {
                 if (Cliphist.getEntryId(root.rawFiltered[i]) === root.selectedEntryId) {
@@ -68,31 +145,39 @@ Rectangle {
                 }
             }
         }
-        if (root.selectedIndex >= root.rawFiltered.length) {
-            root.selectedIndex = root.rawFiltered.length - 1;
-        } else if (root.selectedIndex < 0) {
-            root.selectedIndex = 0;
-        }
+
+        // Fallback to copied item
+        const fallbackIdx = root.findCopiedEntryIndex();
+        root.selectedIndex = (fallbackIdx >= 0 && fallbackIdx < root.rawFiltered.length) ? fallbackIdx : 0;
     }
 
-    function showToast(msg) {
-        root.toastMessage = msg;
-        toastTimer.restart();
-    }
-
-    Timer {
-        id: toastTimer
-        interval: 1800
-        onTriggered: root.toastMessage = ""
-    }
-
-    // Always focus the search field when the clipboard is opened
+    // Always focus the search field and newly copied entry when the clipboard is opened
     Connections {
         target: GlobalStates
         function onClipboardOpenChanged() {
             if (GlobalStates.clipboardOpen) {
+                root.searchQuery = "";
+                root.lastTopEntryId = "";
                 root.activeSection = 0;
                 listPane.focusSearch();
+                Cliphist.refresh();
+                Qt.callLater(() => {
+                    root.focusCopiedEntry();
+                });
+            }
+        }
+    }
+
+    Connections {
+        target: Cliphist
+        function onEntriesChanged() {
+            if (Cliphist.entries.length === 0) return;
+            const topId = Cliphist.getEntryId(Cliphist.entries[0]);
+            if (topId !== "" && topId !== root.lastTopEntryId) {
+                root.lastTopEntryId = topId;
+                Qt.callLater(() => {
+                    root.focusCopiedEntry();
+                });
             }
         }
     }
@@ -217,6 +302,8 @@ Rectangle {
     }
 
     Component.onCompleted: {
+        root.lastTopEntryId = (Cliphist.entries && Cliphist.entries.length > 0) ? Cliphist.getEntryId(Cliphist.entries[0]) : "";
+        root.focusCopiedEntry();
         listPane.focusSearch();
     }
 }
