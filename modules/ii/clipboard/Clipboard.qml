@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -13,26 +14,6 @@ import qs.modules.common.functions
 
 Scope {
     id: root
-
-    property bool reallyOpen: false
-
-    Connections {
-        target: GlobalStates
-        function onClipboardOpenChanged() {
-            if (GlobalStates.clipboardOpen) {
-                closeAnimTimer.stop();
-                root.reallyOpen = true;
-            } else {
-                closeAnimTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: closeAnimTimer
-        interval: 220
-        onTriggered: root.reallyOpen = false
-    }
 
     IpcHandler {
         target: "clipboard"
@@ -50,78 +31,77 @@ Scope {
         }
     }
 
-    Loader {
-        id: clipboardLoader
-        active: root.reallyOpen
+    PanelWindow {
+        id: panelWindow
 
-        sourceComponent: PanelWindow {
-            id: panelWindow
+        visible: GlobalStates.clipboardOpen
+        exclusionMode: ExclusionMode.Ignore
+        exclusiveZone: 0
+        WlrLayershell.namespace: "quickshell:clipboard"
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.keyboardFocus: GlobalStates.clipboardOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        color: "transparent"
 
-            exclusionMode: ExclusionMode.Ignore
-            exclusiveZone: 0
-            WlrLayershell.namespace: "quickshell:clipboard"
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: GlobalStates.clipboardOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            color: "transparent"
+        // Mask to only modal item - ensures NO black light, NO compositor dimming, NO dark scrim
+        mask: Region {
+            item: GlobalStates.clipboardOpen ? modal : null
+        }
 
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
+
+        implicitWidth: Screen.width
+        implicitHeight: Screen.height
+
+        Connections {
+            target: GlobalStates
+            function onClipboardOpenChanged() {
+                if (!GlobalStates.clipboardOpen) {
+                    GlobalFocusGrab.dismiss();
+                } else {
+                    GlobalFocusGrab.addDismissable(panelWindow);
+                }
             }
+        }
 
-            implicitWidth: Screen.width
-            implicitHeight: Screen.height
-
-            Component.onCompleted: {
-                GlobalFocusGrab.addDismissable(panelWindow);
+        Connections {
+            target: GlobalFocusGrab
+            function onDismissed() {
+                GlobalStates.clipboardOpen = false;
             }
+        }
 
-            Component.onDestruction: {
-                GlobalFocusGrab.removeDismissable(panelWindow);
+        // Split Clipboard Modal (Positioned below top bar)
+        ClipboardModal {
+            id: modal
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: Appearance.sizes.barHeight + 14
+
+            opacity: GlobalStates.clipboardOpen ? 1.0 : 0.0
+            scale: GlobalStates.clipboardOpen ? 1.0 : 0.98
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
             }
-
-            Connections {
-                target: GlobalFocusGrab
-                function onDismissed() {
-                    GlobalStates.clipboardOpen = false;
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                 }
             }
 
-            // Outer wrapper with fade animation
-            Item {
-                id: fadeWrapper
-                anchors.fill: parent
-                opacity: GlobalStates.clipboardOpen ? 1.0 : 0.0
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                }
-
-                // Dimmed backdrop
-                Rectangle {
-                    anchors.fill: parent
-                    color: ColorUtils.transparentize("#000000", 0.25)
-
-                    // Click backdrop to dismiss
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: GlobalStates.clipboardOpen = false
-                    }
-                }
-
-                // Split Clipboard Modal positioned right under top bar
-                ClipboardModal {
-                    id: modal
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: 56
-
-                    onRequestClose: {
-                        GlobalStates.clipboardOpen = false;
-                    }
-                }
+            onRequestClose: {
+                GlobalStates.clipboardOpen = false;
             }
         }
     }

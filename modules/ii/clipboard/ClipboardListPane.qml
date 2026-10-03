@@ -1,8 +1,10 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -51,16 +53,36 @@ Item {
     }
 
     function deleteCurrent() {
-        if (root.filteredList.length === 0) return;
+        if (root.filteredList.length === 0 || root.selectedIndex < 0) return;
         const entry = root.filteredList[root.selectedIndex];
         if (!entry) return;
 
         if (Cliphist.isPinned(entry)) {
-            root.showNotification("Pinned item is protected");
+            root.showNotification(Translation.tr("Pinned item is protected"));
             return;
         }
 
+        const deleteIndex = root.selectedIndex;
         Cliphist.deleteEntry(entry);
+
+        // Keep view positioned on current item index
+        Qt.callLater(() => {
+            if (root.filteredList.length > 0) {
+                root.selectedIndex = Math.min(deleteIndex, root.filteredList.length - 1);
+                listView.currentIndex = root.selectedIndex;
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+            } else {
+                root.selectedIndex = -1;
+            }
+            listView.forceActiveFocus();
+        });
+    }
+
+    onSelectedIndexChanged: {
+        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+            listView.currentIndex = root.selectedIndex;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+        }
     }
 
     onFilteredListChanged: {
@@ -71,156 +93,186 @@ Item {
         } else if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
         }
+        Qt.callLater(() => {
+            if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+                listView.currentIndex = root.selectedIndex;
+                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+            }
+        });
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        spacing: 6
+        anchors.margins: 10
+        spacing: 8
 
-        // Original style Search Bar
-        Rectangle {
+        // Material Impulse Search Bar with Action Buttons (Wipe, Google Lens, Song Recognition)
+        RowLayout {
             Layout.fillWidth: true
-            implicitHeight: 40
-            color: Appearance.colors.colLayer1
-            radius: Appearance.rounding.normal
-            border.width: searchField.activeFocus ? 1.5 : 0
-            border.color: Appearance.colors.colPrimary
+            Layout.preferredHeight: 44
+            Layout.fillHeight: false
+            spacing: 6
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 8
-                spacing: 8
+            // Clipboard Icon in Material Gem Shape
+            MaterialShapeWrappedMaterialSymbol {
+                Layout.alignment: Qt.AlignVCenter
+                iconSize: Appearance.font.pixelSize.huge
+                shape: MaterialShape.Shape.Gem
+                text: "content_paste_search"
+            }
 
-                MaterialSymbol {
-                    font.pixelSize: 18
-                    text: "content_paste"
-                    color: searchField.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
-                }
+            // Search Text Field
+            ToolbarTextField {
+                id: searchField
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignVCenter
+                font.pixelSize: Appearance.font.pixelSize.small
+                placeholderText: Translation.tr("Search clipboard...")
 
-                TextField {
-                    id: searchField
-                    Layout.fillWidth: true
-                    placeholderText: "Search clipboard..."
-                    placeholderTextColor: Appearance.colors.colSubtext
-                    color: Appearance.colors.colOnLayer1
-                    font.family: Appearance.font.family.main
-                    font.pixelSize: 13
-                    background: null
-                    renderType: Text.NativeRendering
-                    selectByMouse: true
-                    selectedTextColor: Appearance.colors.colOnPrimaryContainer
-                    selectionColor: Appearance.colors.colPrimaryContainer
+                text: root.searchQuery
+                onTextChanged: root.searchQuery = text
 
-                    text: root.searchQuery
-                    onTextChanged: root.searchQuery = text
-
-                    Keys.onPressed: event => {
-                        if (event.key === Qt.Key_Down) {
-                            root.focusList();
-                            root.selectNext();
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Up) {
-                            root.focusList();
-                            root.selectPrevious();
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            if (root.filteredList.length > 0 && root.selectedIndex >= 0) {
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Down) {
+                        root.focusList();
+                        root.selectNext();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Up) {
+                        root.focusList();
+                        root.selectPrevious();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (root.filteredList.length > 0 && root.selectedIndex >= 0) {
+                            if (event.modifiers === Qt.ShiftModifier) {
+                                root.requestPasteAndClose(root.filteredList[root.selectedIndex]);
+                            } else {
                                 root.requestCopyAndClose(root.filteredList[root.selectedIndex]);
                             }
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Right) {
-                            root.requestFocusEditor();
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Escape) {
-                            if (searchField.text.length > 0) {
-                                searchField.text = "";
-                            } else {
-                                root.requestClose();
-                            }
-                            event.accepted = true;
                         }
-                    }
-                }
-
-                // Clear text button
-                RippleButton {
-                    visible: searchField.text.length > 0
-                    implicitWidth: 24
-                    implicitHeight: 24
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: "transparent"
-                    colBackgroundHover: Appearance.colors.colLayer2
-                    onClicked: {
-                        searchField.text = "";
-                        searchField.forceActiveFocus();
-                    }
-
-                    contentItem: MaterialSymbol {
-                        anchors.centerIn: parent
-                        font.pixelSize: 14
-                        text: "close"
-                        color: Appearance.colors.colSubtext
-                    }
-                }
-
-                // Wipe unpinned button
-                RippleButton {
-                    id: wipeBtn
-                    property bool confirmState: false
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: confirmState 
-                        ? ColorUtils.transparentize(Appearance.m3colors.m3error || "#ff5555", 0.3) 
-                        : "transparent"
-                    colBackgroundHover: Appearance.colors.colLayer2
-                    onClicked: {
-                        if (!confirmState) {
-                            confirmState = true;
-                            wipeTimer.restart();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Right) {
+                        root.requestFocusEditor();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Escape) {
+                        if (searchField.text.length > 0) {
+                            searchField.text = "";
                         } else {
-                            Cliphist.wipe();
-                            confirmState = false;
-                            root.showNotification("Cleared unpinned items");
+                            root.requestClose();
+                        }
+                        event.accepted = true;
+                    }
+                }
+            }
+
+            // Clear Clipboard Button (Instant wipe, no confirmation popup/icon)
+            IconToolbarButton {
+                id: clearClipboardButton
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: {
+                    Cliphist.wipe();
+                    root.showNotification(Translation.tr("Cleared unpinned clipboard"));
+                }
+                text: "delete_sweep"
+                colText: hovered ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
+
+                StyledToolTip {
+                    text: Translation.tr("Clear all clipboard history")
+                }
+            }
+
+            // Google Lens / Region Search Button
+            IconToolbarButton {
+                id: lensButton
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: {
+                    GlobalStates.clipboardOpen = false;
+                    Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "region", "search"]);
+                }
+                text: "image_search"
+
+                StyledToolTip {
+                    text: Translation.tr("Google Lens / Circle to Search")
+                }
+            }
+
+            // Song Recognition Button (With rotating animated MaterialShape)
+            IconToolbarButton {
+                id: songRecButton
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignVCenter
+                toggled: SongRec.running
+                onClicked: SongRec.toggleRunning()
+                text: "music_cast"
+
+                StyledToolTip {
+                    text: Translation.tr("Recognize music")
+                }
+
+                colText: toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurfaceVariant
+                background: MaterialShape {
+                    RotationAnimation on rotation {
+                        running: songRecButton.toggled
+                        duration: 12000
+                        easing.type: Easing.Linear
+                        loops: Animation.Infinite
+                        from: 0
+                        to: 360
+                    }
+                    shape: {
+                        if (songRecButton.down) {
+                            return songRecButton.toggled ? MaterialShape.Shape.Circle : MaterialShape.Shape.Square
+                        } else {
+                            return songRecButton.toggled ? MaterialShape.Shape.SoftBurst : MaterialShape.Shape.Circle
                         }
                     }
-
-                    Timer {
-                        id: wipeTimer
-                        interval: 3000
-                        onTriggered: wipeBtn.confirmState = false
+                    color: {
+                        if (songRecButton.toggled) {
+                            return songRecButton.hovered ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimary
+                        } else {
+                            return songRecButton.hovered ? Appearance.colors.colSurfaceContainerHigh : ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHigh)
+                        }
                     }
-
-                    contentItem: MaterialSymbol {
-                        anchors.centerIn: parent
-                        font.pixelSize: 16
-                        text: wipeBtn.confirmState ? "warning" : "delete_sweep"
-                        color: wipeBtn.confirmState ? (Appearance.m3colors.m3error || "#ff5555") : Appearance.colors.colSubtext
-                    }
-
-                    StyledToolTip {
-                        text: wipeBtn.confirmState ? "Click to confirm wipe" : "Clear unpinned items"
+                    Behavior on color {
+                        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                     }
                 }
             }
         }
 
-        // List View
+        // Subtle Separator
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Appearance.colors.colOutlineVariant
+        }
+
+        // List View of Clipboard Cards
         ListView {
             id: listView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
+            spacing: 4
             model: root.filteredList
             currentIndex: root.selectedIndex
             focus: root.isListFocused
             boundsBehavior: Flickable.StopAtBounds
+            highlightMoveDuration: 120
 
             ScrollBar.vertical: StyledScrollBar {}
 
             delegate: ClipboardItemDelegate {
+                id: delegateItem
                 required property string modelData
                 required property int index
 
@@ -241,10 +293,21 @@ Item {
 
                 onDeleteRequested: {
                     if (Cliphist.isPinned(modelData)) {
-                        root.showNotification("Pinned items cannot be deleted");
+                        root.showNotification(Translation.tr("Pinned items cannot be deleted"));
                         return;
                     }
+                    const delIdx = index;
                     Cliphist.deleteEntry(modelData);
+                    Qt.callLater(() => {
+                        if (root.filteredList.length > 0) {
+                            root.selectedIndex = Math.min(delIdx, root.filteredList.length - 1);
+                            listView.currentIndex = root.selectedIndex;
+                            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+                        } else {
+                            root.selectedIndex = -1;
+                        }
+                        listView.forceActiveFocus();
+                    });
                 }
 
                 onCopyRequested: {
@@ -283,7 +346,7 @@ Item {
                 } else if (event.key === Qt.Key_Escape) {
                     root.requestClose();
                     event.accepted = true;
-                } else if (event.text && event.text.length > 0 && !event.modifiers) {
+                } else if (event.text && event.text.length > 0 && !event.modifiers && event.text.charCodeAt(0) >= 0x20) {
                     searchField.forceActiveFocus();
                     searchField.text += event.text;
                     event.accepted = true;
@@ -296,20 +359,19 @@ Item {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: 8
 
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
-                        font.pixelSize: 28
+                        font.pixelSize: 32
                         text: "content_paste_off"
                         color: Appearance.colors.colSubtext
                     }
 
-                    Text {
+                    StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "No clipboard entries"
-                        font.family: Appearance.font.family.main
-                        font.pixelSize: 12
+                        text: Translation.tr("No clipboard entries")
+                        font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.colors.colSubtext
                     }
                 }

@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -19,8 +20,8 @@ Rectangle {
 
     signal requestClose()
 
-    implicitWidth: 840
-    implicitHeight: 480
+    implicitWidth: 890
+    implicitHeight: 540
 
     color: Appearance.colors.colLayer0
     radius: Appearance.rounding.windowRounding
@@ -54,13 +55,13 @@ Rectangle {
     // Split Layout
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 4
+        anchors.margins: 6
         spacing: 0
 
-        // Left Pane: Original Clipboard List
+        // Left Pane: Material Impulse Clipboard List
         ClipboardListPane {
             id: listPane
-            Layout.preferredWidth: 410
+            Layout.preferredWidth: 430
             Layout.fillHeight: true
             searchQuery: root.searchQuery
             filteredList: root.rawFiltered
@@ -77,7 +78,7 @@ Rectangle {
 
             onRequestCopyAndClose: entry => {
                 Cliphist.copy(entry);
-                root.showToast("Copied");
+                root.showToast(Translation.tr("Copied"));
                 closeDelayTimer.restart();
             }
 
@@ -90,13 +91,13 @@ Rectangle {
             onShowNotification: msg => root.showToast(msg)
         }
 
-        // Subtle divider
+        // Divider
         Rectangle {
             Layout.preferredWidth: 1
             Layout.fillHeight: true
-            Layout.topMargin: 8
-            Layout.bottomMargin: 8
-            color: Appearance.colors.colLayer0Border
+            Layout.topMargin: 12
+            Layout.bottomMargin: 12
+            color: Appearance.colors.colOutlineVariant
         }
 
         // Right Pane: Preview & Live Editor
@@ -119,16 +120,16 @@ Rectangle {
 
     Timer {
         id: closeDelayTimer
-        interval: 140
+        interval: 100
         onTriggered: root.requestClose()
     }
 
-    // Minimal Toast Pill
+    // Toast Banner
     Rectangle {
         id: toastBanner
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 14
+        anchors.bottomMargin: 16
         radius: Appearance.rounding.full
         color: Appearance.colors.colPrimary
         implicitHeight: 28
@@ -141,12 +142,11 @@ Rectangle {
             NumberAnimation { duration: 120 }
         }
 
-        Text {
+        StyledText {
             id: toastText
             anchors.centerIn: parent
             text: root.toastMessage
-            font.family: Appearance.font.family.main
-            font.pixelSize: 11
+            font.pixelSize: Appearance.font.pixelSize.smaller
             font.weight: Font.DemiBold
             color: Appearance.colors.colOnPrimary
         }

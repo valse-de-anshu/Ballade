@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -17,6 +18,7 @@ Item {
     property bool isEditorFocused: false
     property string rawDecodedText: ""
     property string editorText: ""
+    property bool _settingText: false
     property bool isModified: (editorText !== rawDecodedText && !isImage)
     property bool isLoading: false
 
@@ -42,9 +44,12 @@ Item {
     }
 
     function decodeCurrentEntry() {
+        if (imageViewer) imageViewer.source = "";
         if (!root.currentEntry) {
+            root._settingText = true;
             root.rawDecodedText = "";
             root.editorText = "";
+            root._settingText = false;
             root.isLoading = false;
             return;
         }
@@ -73,8 +78,13 @@ Item {
         stdout: StdioCollector {
             id: textCollector
             onStreamFinished: {
+                root._settingText = true;
                 root.rawDecodedText = textCollector.text;
                 root.editorText = textCollector.text;
+                if (textArea.text !== textCollector.text) {
+                    textArea.text = textCollector.text;
+                }
+                root._settingText = false;
                 root.isLoading = false;
             }
         }
@@ -99,11 +109,11 @@ Item {
     Rectangle {
         id: editorBox
         anchors.fill: parent
-        anchors.margins: 8
+        anchors.margins: 10
         color: Appearance.colors.colLayer1
         radius: Appearance.rounding.normal
-        border.width: root.isEditorFocused ? 1.5 : 0
-        border.color: Appearance.colors.colPrimary
+        border.width: root.isEditorFocused ? 1.5 : 1
+        border.color: root.isEditorFocused ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
 
         // Empty state
         Item {
@@ -112,20 +122,19 @@ Item {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 10
 
                 MaterialSymbol {
                     Layout.alignment: Qt.AlignHCenter
-                    font.pixelSize: 28
+                    font.pixelSize: 36
                     text: "preview"
                     color: Appearance.colors.colSubtext
                 }
 
-                Text {
+                StyledText {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "Select an item to view or edit"
-                    font.family: Appearance.font.family.main
-                    font.pixelSize: 12
+                    text: Translation.tr("Select an item to preview or edit")
+                    font.pixelSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colSubtext
                 }
             }
@@ -134,7 +143,7 @@ Item {
         // Active Content
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 10
+            anchors.margins: 12
             spacing: 8
             visible: !!root.currentEntry
 
@@ -143,28 +152,36 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Text {
-                    text: root.entryId ? `#${root.entryId}` : "Item"
-                    font.family: Appearance.font.family.main
-                    font.pixelSize: 12
+                StyledText {
+                    text: root.entryId ? `#${root.entryId}` : Translation.tr("Entry")
+                    font.pixelSize: Appearance.font.pixelSize.normal
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colOnLayer1
                 }
 
-                Text {
+                StyledText {
                     visible: !root.isImage
-                    text: `•  ${root.charCount} chars`
-                    font.family: Appearance.font.family.main
-                    font.pixelSize: 11
+                    text: `•  ${root.charCount} chars  •  ${root.lineCount} lines`
+                    font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
                 }
 
-                Text {
+                // Edited pill badge
+                Rectangle {
                     visible: root.isModified
-                    text: "•  Edited"
-                    font.family: Appearance.font.family.main
-                    font.pixelSize: 11
-                    color: Appearance.colors.colPrimary
+                    Layout.preferredHeight: 18
+                    Layout.preferredWidth: editedText.implicitWidth + 12
+                    radius: Appearance.rounding.full
+                    color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.75)
+
+                    StyledText {
+                        id: editedText
+                        anchors.centerIn: parent
+                        text: Translation.tr("Edited")
+                        font.pixelSize: Appearance.font.pixelSize.smallest
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colPrimary
+                    }
                 }
 
                 Item { Layout.fillWidth: true }
@@ -172,58 +189,62 @@ Item {
                 // Actions for Text
                 RowLayout {
                     visible: !root.isImage
-                    spacing: 4
+                    spacing: 6
 
                     // Revert (if modified)
                     RippleButton {
                         visible: root.isModified
-                        implicitHeight: 26
-                        implicitWidth: revertRow.implicitWidth + 12
+                        implicitHeight: 30
+                        implicitWidth: revertRow.implicitWidth + 16
                         buttonRadius: Appearance.rounding.full
                         colBackground: "transparent"
                         colBackgroundHover: Appearance.colors.colLayer2
+                        colRipple: Appearance.colors.colLayer2Active
                         onClicked: {
+                            root._settingText = true;
                             root.editorText = root.rawDecodedText;
                             textArea.text = root.rawDecodedText;
+                            root._settingText = false;
                         }
 
                         contentItem: RowLayout {
                             id: revertRow
                             anchors.centerIn: parent
                             spacing: 4
-                            MaterialSymbol { font.pixelSize: 13; text: "undo"; color: Appearance.colors.colSubtext }
-                            Text { text: "Revert"; font.family: Appearance.font.family.main; font.pixelSize: 11; color: Appearance.colors.colSubtext }
+                            MaterialSymbol { font.pixelSize: 15; text: "undo"; color: Appearance.colors.colSubtext }
+                            StyledText { text: Translation.tr("Revert"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colSubtext }
                         }
                     }
 
                     // Copy
                     RippleButton {
-                        implicitHeight: 26
-                        implicitWidth: copyRow.implicitWidth + 14
+                        implicitHeight: 30
+                        implicitWidth: copyRow.implicitWidth + 18
                         buttonRadius: Appearance.rounding.full
                         colBackground: Appearance.colors.colLayer2
                         colBackgroundHover: Appearance.colors.colLayer2Hover
+                        colRipple: Appearance.colors.colLayer2Active
                         onClicked: {
                             Cliphist.copyText(root.editorText);
-                            root.showNotification("Copied to clipboard");
+                            root.showNotification(Translation.tr("Copied to clipboard"));
                         }
 
                         contentItem: RowLayout {
                             id: copyRow
                             anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 13; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
-                            Text { text: "Copy"; font.family: Appearance.font.family.main; font.pixelSize: 11; color: Appearance.colors.colOnLayer1 }
+                            spacing: 5
+                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
+                            StyledText { text: Translation.tr("Copy"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
                         }
                     }
 
                     // Paste
                     RippleButton {
-                        implicitHeight: 26
-                        implicitWidth: pasteRow.implicitWidth + 14
+                        implicitHeight: 30
+                        implicitWidth: pasteRow.implicitWidth + 18
                         buttonRadius: Appearance.rounding.full
                         colBackground: Appearance.colors.colPrimary
-                        colBackgroundHover: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryHover
                         colRipple: Appearance.colors.colPrimaryContainerActive
                         onClicked: {
                             Cliphist.pasteText(root.editorText);
@@ -233,9 +254,9 @@ Item {
                         contentItem: RowLayout {
                             id: pasteRow
                             anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 13; text: "output"; color: Appearance.colors.colOnPrimary }
-                            Text { text: "Paste"; font.family: Appearance.font.family.main; font.pixelSize: 11; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                            spacing: 5
+                            MaterialSymbol { font.pixelSize: 15; text: "output"; color: Appearance.colors.colOnPrimary }
+                            StyledText { text: Translation.tr("Paste"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
                         }
                     }
                 }
@@ -243,29 +264,36 @@ Item {
                 // Actions for Image
                 RowLayout {
                     visible: root.isImage
-                    spacing: 4
+                    spacing: 6
 
                     RippleButton {
-                        implicitHeight: 26
-                        implicitWidth: copyImgRow.implicitWidth + 14
+                        implicitHeight: 30
+                        implicitWidth: copyImgRow.implicitWidth + 18
                         buttonRadius: Appearance.rounding.full
                         colBackground: Appearance.colors.colPrimary
-                        colBackgroundHover: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryHover
                         colRipple: Appearance.colors.colPrimaryContainerActive
                         onClicked: {
                             Cliphist.copy(root.currentEntry);
-                            root.showNotification("Copied image");
+                            root.showNotification(Translation.tr("Copied image"));
                         }
 
                         contentItem: RowLayout {
                             id: copyImgRow
                             anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 13; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                            Text { text: "Copy Image"; font.family: Appearance.font.family.main; font.pixelSize: 11; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                            spacing: 5
+                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                            StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
                         }
                     }
                 }
+            }
+
+            // Divider
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: Appearance.colors.colOutlineVariant
             }
 
             // Body Area
@@ -282,8 +310,8 @@ Item {
                         id: flickable
                         anchors.fill: parent
                         clip: true
-                        contentWidth: textArea.width
-                        contentHeight: textArea.height
+                        contentWidth: width
+                        contentHeight: Math.max(height, textArea.contentHeight + 24)
                         boundsBehavior: Flickable.StopAtBounds
 
                         ScrollBar.vertical: StyledScrollBar {}
@@ -291,17 +319,41 @@ Item {
                         StyledTextArea {
                             id: textArea
                             width: flickable.width
-                            text: root.editorText
                             wrapMode: TextEdit.Wrap
-                            font.family: Appearance.font.family.main
-                            font.pixelSize: 13
+                            font.pixelSize: Appearance.font.pixelSize.small
                             selectByMouse: true
                             renderType: Text.NativeRendering
                             color: Appearance.colors.colOnLayer1
 
+                            Connections {
+                                target: root
+                                function onEditorTextChanged() {
+                                    if (!root._settingText && textArea.text !== root.editorText) {
+                                        root._settingText = true;
+                                        textArea.text = root.editorText;
+                                        root._settingText = false;
+                                    }
+                                }
+                            }
+
                             onTextChanged: {
-                                if (root.editorText !== text) {
+                                if (!root._settingText && root.editorText !== text) {
+                                    root._settingText = true;
                                     root.editorText = text;
+                                    root._settingText = false;
+                                }
+                            }
+
+                            // Keep viewport smoothly scrolled to cursor when moving up and down
+                            onCursorPositionChanged: {
+                                const cr = textArea.cursorRectangle;
+                                if (cr.y < flickable.contentY) {
+                                    flickable.contentY = Math.max(0, cr.y - 14);
+                                } else if (cr.y + cr.height > flickable.contentY + flickable.height) {
+                                    flickable.contentY = Math.min(
+                                        Math.max(0, flickable.contentHeight - flickable.height),
+                                        cr.y + cr.height - flickable.height + 14
+                                    );
                                 }
                             }
 
@@ -312,7 +364,7 @@ Item {
                                     event.accepted = true;
                                 } else if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_S) {
                                     Cliphist.copyText(root.editorText);
-                                    root.showNotification("Saved to clipboard");
+                                    root.showNotification(Translation.tr("Saved to clipboard"));
                                     event.accepted = true;
                                 } else if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_Left) {
                                     root.requestFocusList();
@@ -324,6 +376,7 @@ Item {
                                     root.requestFocusList();
                                     event.accepted = true;
                                 }
+                                // Keys.Key_Up and Keys.Key_Down naturally navigate lines and trigger onCursorPositionChanged for scrolling!
                             }
                         }
                     }
@@ -337,10 +390,11 @@ Item {
                     Image {
                         id: imageViewer
                         anchors.fill: parent
+                        anchors.margins: 10
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
                         smooth: true
-                        source: (root.isImage && root.imageFilePath) ? ("file://" + root.imageFilePath) : ""
+                        source: ""
                     }
 
                     Keys.onPressed: event => {
@@ -362,7 +416,7 @@ Item {
 
                     ColumnLayout {
                         anchors.centerIn: parent
-                        spacing: 12
+                        spacing: 14
 
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
@@ -374,33 +428,37 @@ Item {
                             border.color: Appearance.colors.colLayer0Border
                         }
 
-                        Text {
+                        StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.detectedColor
                             font.family: Appearance.font.family.monospace
-                            font.pixelSize: 14
+                            font.pixelSize: Appearance.font.pixelSize.normal
                             font.weight: Font.DemiBold
                             color: Appearance.colors.colOnLayer1
                         }
 
                         RippleButton {
                             Layout.alignment: Qt.AlignHCenter
-                            implicitHeight: 28
-                            implicitWidth: 90
+                            implicitHeight: 32
+                            implicitWidth: 110
                             buttonRadius: Appearance.rounding.full
                             colBackground: Appearance.colors.colLayer2
                             colBackgroundHover: Appearance.colors.colLayer2Hover
+                            colRipple: Appearance.colors.colLayer2Active
                             onClicked: {
                                 Cliphist.copyText(root.detectedColor);
-                                root.showNotification("Copied color");
+                                root.showNotification(Translation.tr("Copied color"));
                             }
 
-                            contentItem: Text {
+                            contentItem: RowLayout {
                                 anchors.centerIn: parent
-                                text: "Copy Color"
-                                font.family: Appearance.font.family.main
-                                font.pixelSize: 11
-                                color: Appearance.colors.colOnLayer1
+                                spacing: 4
+                                MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
+                                StyledText {
+                                    text: Translation.tr("Copy Color")
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    color: Appearance.colors.colOnLayer1
+                                }
                             }
                         }
                     }
