@@ -13,11 +13,51 @@ LazyLoader {
     default property Item contentItem
     property real popupBackgroundMargin: 0
 
-    active: hoverTarget && hoverTarget.containsMouse
+    property bool shouldBeOpen: hoverTarget && hoverTarget.containsMouse
+
+    Timer {
+        id: exitTimer
+        interval: 160
+        repeat: false
+    }
+
+    onShouldBeOpenChanged: {
+        if (!shouldBeOpen && active) {
+            exitTimer.restart();
+        } else if (shouldBeOpen) {
+            exitTimer.stop();
+        }
+    }
+
+    active: shouldBeOpen || exitTimer.running
 
     component: PanelWindow {
         id: popupWindow
         color: "transparent"
+
+        property bool isShown: false
+        property real lastValidX: 0
+        property real lastValidY: 0
+
+        Component.onCompleted: {
+            enterTimer.restart();
+        }
+
+        Timer {
+            id: enterTimer
+            interval: 10
+            repeat: false
+            onTriggered: {
+                popupWindow.isShown = root.shouldBeOpen;
+            }
+        }
+
+        Connections {
+            target: root
+            function onShouldBeOpenChanged() {
+                popupWindow.isShown = root.shouldBeOpen;
+            }
+        }
 
         anchors.left: !Config.options.bar.vertical || (Config.options.bar.vertical && !Config.options.bar.bottom)
         anchors.right: Config.options.bar.vertical && Config.options.bar.bottom
@@ -35,18 +75,40 @@ LazyLoader {
         exclusiveZone: 0
         margins {
             left: {
-                if (!Config.options.bar.vertical) return root.QsWindow?.mapFromItem(
+                if (Config.options.bar.vertical) return Appearance.sizes.verticalBarWidth;
+                if (!popupWindow.isShown && popupWindow.lastValidX !== 0) {
+                    return popupWindow.lastValidX;
+                }
+                if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.width <= 0) {
+                    return popupWindow.lastValidX;
+                }
+                const mapped = root.QsWindow?.mapFromItem(
                     root.hoverTarget, 
                     (root.hoverTarget.width - popupBackground.implicitWidth) / 2, 0
-                ).x;
-                return Appearance.sizes.verticalBarWidth
+                );
+                if (mapped && !isNaN(mapped.x)) {
+                    popupWindow.lastValidX = mapped.x;
+                    return mapped.x;
+                }
+                return popupWindow.lastValidX;
             }
             top: {
                 if (!Config.options.bar.vertical) return Appearance.sizes.barHeight;
-                return root.QsWindow?.mapFromItem(
+                if (!popupWindow.isShown && popupWindow.lastValidY !== 0) {
+                    return popupWindow.lastValidY;
+                }
+                if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.height <= 0) {
+                    return popupWindow.lastValidY;
+                }
+                const mapped = root.QsWindow?.mapFromItem(
                     root.hoverTarget, 
                     (root.hoverTarget.height - popupBackground.implicitHeight) / 2, 0
-                ).y;
+                );
+                if (mapped && !isNaN(mapped.y)) {
+                    popupWindow.lastValidY = mapped.y;
+                    return mapped.y;
+                }
+                return popupWindow.lastValidY;
             }
             right: Appearance.sizes.verticalBarWidth
             bottom: Appearance.sizes.barHeight
@@ -56,6 +118,7 @@ LazyLoader {
 
         StyledRectangularShadow {
             target: popupBackground
+            opacity: popupBackground.opacity
         }
 
         Rectangle {
@@ -76,6 +139,26 @@ LazyLoader {
 
             border.width: 1
             border.color: Appearance.colors.colLayer0Border
+
+            transformOrigin: popupWindow.anchors.bottom ? Item.Bottom : Item.Top
+
+            opacity: popupWindow.isShown ? 1 : 0
+            scale: popupWindow.isShown ? 1.0 : 0.94
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: popupWindow.isShown ? 140 : 120
+                    easing.type: popupWindow.isShown ? Easing.OutCubic : Easing.InCubic
+                }
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: popupWindow.isShown ? 150 : 120
+                    easing.type: popupWindow.isShown ? Easing.OutBack : Easing.InCubic
+                    easing.overshoot: 1.05
+                }
+            }
         }
     }
 }

@@ -11,7 +11,8 @@ import qs.modules.common.functions
 Item {
     id: root
 
-    visible: CalendarService.pinnedTargets.length > 0
+    readonly property bool isPopupActive: popup.active
+    visible: CalendarService.pinnedTargets.length > 0 || isPopupActive
     implicitHeight: visible ? Appearance.sizes.baseBarHeight : 0
     implicitWidth: visible ? capsulePill.implicitWidth : 0
 
@@ -115,6 +116,11 @@ Item {
         color: (mouseArea.containsMouse || root.popupHovered || root.isPopupOpen) ? Appearance.colors.colLayer1Hover : "transparent"
         border.width: 0
 
+        opacity: CalendarService.pinnedTargets.length > 0 ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+        }
+
         Behavior on color {
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
@@ -203,7 +209,7 @@ Item {
     StyledPopup {
         id: popup
         hoverTarget: mouseArea
-        active: (root.popupHovered || root.isPopupOpen) && CalendarService.pinnedTargets.length > 0
+        shouldBeOpen: (root.popupHovered || root.isPopupOpen) && CalendarService.pinnedTargets.length > 0
 
         Item {
             id: popupContent

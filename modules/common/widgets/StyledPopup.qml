@@ -11,7 +11,23 @@ LazyLoader {
     property Item hoverTarget
     default property Item contentItem
     property real popupBackgroundMargin: 0
-    active: hoverTarget && hoverTarget.containsMouse
+    property bool shouldBeOpen: hoverTarget && hoverTarget.containsMouse
+
+    Timer {
+        id: exitTimer
+        interval: 160
+        repeat: false
+    }
+
+    onShouldBeOpenChanged: {
+        if (!shouldBeOpen && active) {
+            exitTimer.restart();
+        } else if (shouldBeOpen) {
+            exitTimer.stop();
+        }
+    }
+
+    active: shouldBeOpen || exitTimer.running
 
     readonly property bool barVertical: Config.options.bar.vertical
     readonly property string barEdge: {
@@ -25,6 +41,29 @@ LazyLoader {
 
         // Bring contentItem reference into this scope
         property Item innerContent: root.contentItem
+        property bool isShown: false
+        property real lastValidX: 0
+        property real lastValidY: 0
+
+        Component.onCompleted: {
+            enterTimer.restart();
+        }
+
+        Timer {
+            id: enterTimer
+            interval: 10
+            repeat: false
+            onTriggered: {
+                popupWindow.isShown = root.shouldBeOpen;
+            }
+        }
+
+        Connections {
+            target: root
+            function onShouldBeOpenChanged() {
+                popupWindow.isShown = root.shouldBeOpen;
+            }
+        }
 
         color: "transparent"
         anchors.left: root.barEdge !== "right"
@@ -36,22 +75,45 @@ LazyLoader {
         implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
 
         readonly property real centerOffsetX: {
-            const base = root.QsWindow?.mapFromItem(
+            if (!popupWindow.isShown && popupWindow.lastValidX > 0) {
+                return popupWindow.lastValidX;
+            }
+            if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.width <= 0) {
+                return popupWindow.lastValidX > 0 ? popupWindow.lastValidX : Appearance.sizes.elevationMargin;
+            }
+            const mapped = root.QsWindow?.mapFromItem(
                 root.hoverTarget,
                 (root.hoverTarget.width - popupBackground.implicitWidth) / 2, 0
-            ).x ?? 0
-            const margin = Appearance.sizes.elevationMargin
-            const maxLeft = popupWindow.screen.width - popupBackground.implicitWidth - margin - 10
-            return Math.max(margin, Math.min(base, maxLeft))
+            );
+            if (mapped && !isNaN(mapped.x) && mapped.x > 0) {
+                const margin = Appearance.sizes.elevationMargin;
+                const maxLeft = (popupWindow.screen?.width ?? 1920) - popupBackground.implicitWidth - margin - 10;
+                const val = Math.max(margin, Math.min(mapped.x, maxLeft));
+                popupWindow.lastValidX = val;
+                return val;
+            }
+            return popupWindow.lastValidX > 0 ? popupWindow.lastValidX : Appearance.sizes.elevationMargin;
         }
+
         readonly property real centerOffsetY: {
-            const base = root.QsWindow?.mapFromItem(
+            if (!popupWindow.isShown && popupWindow.lastValidY > 0) {
+                return popupWindow.lastValidY;
+            }
+            if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.height <= 0) {
+                return popupWindow.lastValidY > 0 ? popupWindow.lastValidY : Appearance.sizes.elevationMargin;
+            }
+            const mapped = root.QsWindow?.mapFromItem(
                 root.hoverTarget,
                 0, (root.hoverTarget.height - popupBackground.implicitHeight) / 2
-            ).y ?? 0
-            const margin = Appearance.sizes.elevationMargin
-            const maxTop = popupWindow.screen.height - popupBackground.implicitHeight - margin - 15
-            return Math.max(margin, Math.min(base, maxTop))
+            );
+            if (mapped && !isNaN(mapped.y) && mapped.y > 0) {
+                const margin = Appearance.sizes.elevationMargin;
+                const maxTop = (popupWindow.screen?.height ?? 1080) - popupBackground.implicitHeight - margin - 15;
+                const val = Math.max(margin, Math.min(mapped.y, maxTop));
+                popupWindow.lastValidY = val;
+                return val;
+            }
+            return popupWindow.lastValidY > 0 ? popupWindow.lastValidY : Appearance.sizes.elevationMargin;
         }
 
         mask: Region {
@@ -79,6 +141,7 @@ LazyLoader {
 
         StyledRectangularShadow {
             target: popupBackground
+            opacity: popupBackground.opacity
         }
 
         Rectangle {
@@ -101,6 +164,26 @@ LazyLoader {
             radius: Appearance.rounding.normal + 4
             border.width: 1
             border.color: Appearance.colors.colLayer0Border
+
+            transformOrigin: root.barEdge === "bottom" ? Item.Bottom : Item.Top
+
+            opacity: popupWindow.isShown ? 1 : 0
+            scale: popupWindow.isShown ? 1.0 : 0.94
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: popupWindow.isShown ? 140 : 120
+                    easing.type: popupWindow.isShown ? Easing.OutCubic : Easing.InCubic
+                }
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: popupWindow.isShown ? 150 : 120
+                    easing.type: popupWindow.isShown ? Easing.OutBack : Easing.InCubic
+                    easing.overshoot: 1.05
+                }
+            }
 
             // Reparent content here once the window is ready
             Component.onCompleted: {
