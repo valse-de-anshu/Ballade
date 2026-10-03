@@ -41,7 +41,7 @@ RippleButton {
     readonly property bool isCurrentClipboard: Quickshell.clipboardText !== "" && (root.cleanedText === Quickshell.clipboardText)
 
     implicitWidth: ListView.view ? ListView.view.width : 400
-    implicitHeight: isImage ? 86 : 56
+    implicitHeight: isImage ? 58 : 46
     focusPolicy: Qt.NoFocus
 
     buttonRadius: Appearance.rounding.normal
@@ -62,15 +62,15 @@ RippleButton {
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.rightMargin: 10
-        anchors.topMargin: 6
-        anchors.bottomMargin: 6
+        anchors.topMargin: 4
+        anchors.bottomMargin: 4
         spacing: 10
 
         // Leading indicator: Thumbnail / Color Swatch / Material Symbol
         Item {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: root.isImage ? 56 : 28
-            Layout.preferredHeight: root.isImage ? 44 : 28
+            Layout.preferredWidth: root.isImage ? 52 : 24
+            Layout.preferredHeight: root.isImage ? 40 : 24
 
             // 1. Image Thumbnail
             Loader {
@@ -84,8 +84,8 @@ RippleButton {
                 id: cliphistImgComp
                 CliphistImage {
                     entry: root.entryString
-                    maxWidth: 56
-                    maxHeight: 44
+                    maxWidth: 52
+                    maxHeight: 40
                     radius: Appearance.rounding.small
                 }
             }
@@ -94,8 +94,8 @@ RippleButton {
                 id: fileImgComp
                 Image {
                     source: root.localImagePath !== "" ? ("file://" + root.localImagePath) : ""
-                    width: 56
-                    height: 44
+                    width: 52
+                    height: 40
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     smooth: true
@@ -106,8 +106,8 @@ RippleButton {
             Rectangle {
                 anchors.centerIn: parent
                 visible: !root.isImage && root.hasDetectedColor
-                width: 24
-                height: 24
+                width: 22
+                height: 22
                 radius: Appearance.rounding.small
                 color: root.hasDetectedColor ? root.detectedColor : "transparent"
                 border.width: 1.5
@@ -129,96 +129,24 @@ RippleButton {
                 anchors.centerIn: parent
                 visible: !root.isImage && !root.hasDetectedColor
                 text: root.isPinned ? "push_pin" : "content_paste"
-                iconSize: 22
+                iconSize: 20
                 color: root.isPinned ? Appearance.colors.colPrimary : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)
             }
         }
 
-        // Center Content: Metadata and Text
-        ColumnLayout {
+        // Center Content: Single clean text line
+        StyledText {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: 2
-
-            // Top Row: #ID and badges
-            RowLayout {
-                spacing: 6
-
-                StyledText {
-                    text: root.entryId ? `#${root.entryId}` : ""
-                    font.pixelSize: Appearance.font.pixelSize.smallest
-                    font.weight: Font.DemiBold
-                    color: root.isSelected
-                        ? ColorUtils.transparentize(root.colForeground, 0.25)
-                        : Appearance.colors.colSubtext
-                }
-
-                // Pinned indicator badge
-                Rectangle {
-                    visible: root.isPinned
-                    Layout.preferredHeight: 14
-                    Layout.preferredWidth: pinRow.implicitWidth + 8
-                    radius: Appearance.rounding.full
-                    color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.75)
-
-                    RowLayout {
-                        id: pinRow
-                        anchors.centerIn: parent
-                        spacing: 2
-                        MaterialSymbol {
-                            text: "push_pin"
-                            font.pixelSize: 10
-                            color: Appearance.colors.colPrimary
-                        }
-                        StyledText {
-                            text: "Pinned"
-                            font.pixelSize: 9
-                            font.weight: Font.Medium
-                            color: Appearance.colors.colPrimary
-                        }
-                    }
-                }
-
-                // Current active clipboard badge
-                Rectangle {
-                    visible: root.isCurrentClipboard
-                    Layout.preferredHeight: 14
-                    Layout.preferredWidth: activeRow.implicitWidth + 8
-                    radius: Appearance.rounding.full
-                    color: Appearance.colors.colPrimary
-
-                    RowLayout {
-                        id: activeRow
-                        anchors.centerIn: parent
-                        spacing: 2
-                        MaterialSymbol {
-                            text: "check"
-                            font.pixelSize: 10
-                            color: Appearance.colors.colOnPrimary
-                        }
-                        StyledText {
-                            text: "Active"
-                            font.pixelSize: 9
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnPrimary
-                        }
-                    }
-                }
-            }
-
-            // Main Text snippet or color hex
-            StyledText {
-                Layout.fillWidth: true
-                text: root.hasDetectedColor
-                    ? root.detectedColor
-                    : (root.isImage ? (root.localImagePath !== "" ? root.localImagePath.split("/").pop() : Translation.tr("Image")) : root.cleanedText.replace(/[\r\n\t]+/g, " ").trim())
-                font.pixelSize: Appearance.font.pixelSize.small
-                font.family: root.hasDetectedColor ? Appearance.font.family.monospace : Appearance.font.family.main
-                font.weight: root.isSelected ? Font.Medium : Font.Normal
-                color: root.colForeground
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
+            text: root.hasDetectedColor
+                ? root.detectedColor
+                : (root.isImage ? (root.localImagePath !== "" ? root.localImagePath.split("/").pop() : Translation.tr("Image")) : root.cleanedText.replace(/[\r\n\t]+/g, " ").trim())
+            font.pixelSize: Appearance.font.pixelSize.normal
+            font.family: root.hasDetectedColor ? Appearance.font.family.monospace : Appearance.font.family.main
+            font.weight: root.isSelected ? Font.Medium : Font.Normal
+            color: root.colForeground
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
 
         // Trailing Actions: Pin, Copy, Delete

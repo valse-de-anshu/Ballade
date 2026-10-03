@@ -36,22 +36,18 @@ Item {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex > 0) {
             root.selectedIndex--;
-        } else {
-            root.selectedIndex = root.filteredList.length - 1;
+            listView.currentIndex = root.selectedIndex;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
-        listView.currentIndex = root.selectedIndex;
-        listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
     }
 
     function selectNext() {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex < root.filteredList.length - 1) {
             root.selectedIndex++;
-        } else {
-            root.selectedIndex = 0;
+            listView.currentIndex = root.selectedIndex;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
-        listView.currentIndex = root.selectedIndex;
-        listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
     }
 
     function deleteCurrent() {
@@ -196,6 +192,7 @@ Item {
                 colText: hovered ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
 
                 StyledToolTip {
+                    y: parent.height + 6
                     text: Translation.tr("Clear all clipboard history")
                 }
             }
@@ -215,6 +212,7 @@ Item {
                 text: "image_search"
 
                 StyledToolTip {
+                    y: parent.height + 6
                     text: Translation.tr("Google Lens / Circle to Search")
                 }
             }
@@ -232,6 +230,7 @@ Item {
                 text: "music_cast"
 
                 StyledToolTip {
+                    y: parent.height + 6
                     text: Translation.tr("Recognize music")
                 }
 

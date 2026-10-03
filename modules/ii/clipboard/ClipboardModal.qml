@@ -25,6 +25,7 @@ Rectangle {
 
     color: Appearance.colors.colLayer0
     radius: Appearance.rounding.windowRounding
+    clip: true
     border.width: 1
     border.color: Appearance.colors.colLayer0Border
 
@@ -95,7 +96,8 @@ Rectangle {
         // Left Pane: Material Impulse Clipboard List
         ClipboardListPane {
             id: listPane
-            Layout.preferredWidth: 430
+            Layout.preferredWidth: 410
+            Layout.fillWidth: false
             Layout.fillHeight: true
             searchQuery: root.searchQuery
             filteredList: root.rawFiltered
@@ -128,8 +130,8 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 1
             Layout.fillHeight: true
-            Layout.topMargin: 12
-            Layout.bottomMargin: 12
+            Layout.topMargin: 10
+            Layout.bottomMargin: 10
             color: Appearance.colors.colOutlineVariant
         }
 
@@ -137,7 +139,9 @@ Rectangle {
         ClipboardEditorPane {
             id: editorPane
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.fillHeight: true
+            clip: true
             currentEntry: root.selectedEntry
             isEditorFocused: root.activeSection === 1
 
@@ -156,7 +160,7 @@ Rectangle {
         id: toastBanner
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 16
+        anchors.bottomMargin: 18
         radius: Appearance.rounding.full
         color: Appearance.colors.colPrimary
         implicitHeight: 28

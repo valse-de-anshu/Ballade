@@ -166,108 +166,42 @@ Item {
         }
     }
 
-    Rectangle {
-        id: editorBox
+    // Main Layout aligned with left pane
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
-        color: Appearance.colors.colLayer1
-        radius: Appearance.rounding.normal
-        border.width: root.isEditorFocused ? 1.5 : 1
-        border.color: root.isEditorFocused ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
-        focus: root.isEditorFocused
+        spacing: 8
 
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Left || event.key === Qt.Key_Escape || event.key === Qt.Key_Backtab) {
-                root.requestFocusList();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                if (root.isImage) {
-                    if (root.localImagePath !== "") {
-                        Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
-                    } else {
-                        Cliphist.copy(root.currentEntry);
-                    }
-                    root.requestClose();
-                    event.accepted = true;
-                } else if (root.hasDetectedColor) {
-                    Cliphist.copyText(root.detectedColor);
-                    root.requestClose();
-                    event.accepted = true;
-                } else if (root.isBinary) {
-                    Cliphist.copy(root.currentEntry);
-                    root.requestClose();
-                    event.accepted = true;
-                }
-            }
-        }
-
-        // Empty state
-        Item {
-            anchors.fill: parent
-            visible: !root.currentEntry
-
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 10
-
-                MaterialSymbol {
-                    Layout.alignment: Qt.AlignHCenter
-                    font.pixelSize: 36
-                    text: "preview"
-                    color: Appearance.colors.colSubtext
-                }
-
-                StyledText {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: Translation.tr("Select an item to preview or edit")
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: Appearance.colors.colSubtext
-                }
-            }
-        }
-
-        // Active Content
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 12
+        // Header Bar (aligned vertically with Search Bar on the left)
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            Layout.alignment: Qt.AlignVCenter
             spacing: 8
             visible: !!root.currentEntry
 
-            // Header Bar
+            // Title / Type indicator
             RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
+                spacing: 6
+                Layout.alignment: Qt.AlignVCenter
+
+                MaterialSymbol {
+                    iconSize: 20
+                    text: root.isImage ? "image" : (root.hasDetectedColor ? "palette" : (root.isBinary ? "data_object" : "edit_note"))
+                    color: Appearance.colors.colPrimary
+                }
 
                 StyledText {
-                    text: root.entryId ? `#${root.entryId}` : Translation.tr("Entry")
+                    text: {
+                        if (!root.currentEntry) return Translation.tr("Editor");
+                        if (root.isImage) return Translation.tr("Image");
+                        if (root.hasDetectedColor) return root.detectedColor;
+                        if (root.isBinary) return Translation.tr("Binary Data");
+                        return `${root.charCount} chars • ${root.lineCount} lines`;
+                    }
                     font.pixelSize: Appearance.font.pixelSize.normal
-                    font.weight: Font.DemiBold
+                    font.weight: Font.Medium
                     color: Appearance.colors.colOnLayer1
-                }
-
-                StyledText {
-                    visible: !root.isImage && !root.isBinary
-                    text: `•  ${root.charCount} chars  •  ${root.lineCount} lines`
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colSubtext
-                }
-
-                StyledText {
-                    visible: root.isImage
-                    text: root.localImagePath !== ""
-                        ? `•  ${root.localImagePath.split("/").pop()}`
-                        : `•  ${Translation.tr("Image")}`
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colSubtext
-                    elide: Text.ElideMiddle
-                    Layout.maximumWidth: 180
-                }
-
-                StyledText {
-                    visible: root.isBinary
-                    text: `•  ${Translation.tr("Binary data")} (${root.rawDecodedText.length} B)`
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colSubtext
                 }
 
                 // Edited pill badge
@@ -287,417 +221,491 @@ Item {
                         color: Appearance.colors.colPrimary
                     }
                 }
+            }
 
-                Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true }
 
-                // Actions for Text
-                RowLayout {
-                    visible: !root.isImage && !root.isBinary
-                    spacing: 6
+            // Actions for Text
+            RowLayout {
+                visible: !root.isImage && !root.isBinary && !root.hasDetectedColor
+                spacing: 6
 
-                    // Revert (if modified)
-                    RippleButton {
-                        visible: root.isModified
-                        implicitHeight: 30
-                        implicitWidth: revertRow.implicitWidth + 16
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: "transparent"
-                        colBackgroundHover: Appearance.colors.colLayer2
-                        colRipple: Appearance.colors.colLayer2Active
-                        onClicked: {
-                            root._settingText = true;
-                            root.editorText = root.rawDecodedText;
-                            textArea.text = root.rawDecodedText;
-                            root._settingText = false;
-                        }
-
-                        contentItem: RowLayout {
-                            id: revertRow
-                            anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 15; text: "undo"; color: Appearance.colors.colSubtext }
-                            StyledText { text: Translation.tr("Revert"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colSubtext }
-                        }
+                // Revert
+                RippleButton {
+                    visible: root.isModified
+                    implicitHeight: 32
+                    implicitWidth: revertRow.implicitWidth + 16
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: "transparent"
+                    colBackgroundHover: Appearance.colors.colLayer2
+                    colRipple: Appearance.colors.colLayer2Active
+                    onClicked: {
+                        root._settingText = true;
+                        root.editorText = root.rawDecodedText;
+                        textArea.text = root.rawDecodedText;
+                        root._settingText = false;
                     }
 
-                    // Copy
-                    RippleButton {
-                        implicitHeight: 30
-                        implicitWidth: copyRow.implicitWidth + 18
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colLayer2
-                        colBackgroundHover: Appearance.colors.colLayer2Hover
-                        colRipple: Appearance.colors.colLayer2Active
-                        onClicked: {
-                            Cliphist.copyText(root.editorText);
-                            root.showNotification(Translation.tr("Copied to clipboard"));
-                        }
-
-                        contentItem: RowLayout {
-                            id: copyRow
-                            anchors.centerIn: parent
-                            spacing: 5
-                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
-                            StyledText { text: Translation.tr("Copy"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
-                        }
-                    }
-
-                    // Paste
-                    RippleButton {
-                        implicitHeight: 30
-                        implicitWidth: pasteRow.implicitWidth + 18
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colPrimary
-                        colBackgroundHover: Appearance.colors.colPrimaryHover
-                        colRipple: Appearance.colors.colPrimaryContainerActive
-                        onClicked: {
-                            Cliphist.pasteText(root.editorText);
-                            root.requestClose();
-                        }
-
-                        contentItem: RowLayout {
-                            id: pasteRow
-                            anchors.centerIn: parent
-                            spacing: 5
-                            MaterialSymbol { font.pixelSize: 15; text: "output"; color: Appearance.colors.colOnPrimary }
-                            StyledText { text: Translation.tr("Paste"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
-                        }
+                    contentItem: RowLayout {
+                        id: revertRow
+                        anchors.centerIn: parent
+                        spacing: 4
+                        MaterialSymbol { font.pixelSize: 15; text: "undo"; color: Appearance.colors.colSubtext }
+                        StyledText { text: Translation.tr("Revert"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colSubtext }
                     }
                 }
 
-                // Actions for Image
-                RowLayout {
-                    visible: root.isImage
-                    spacing: 6
-
-                    RippleButton {
-                        visible: root.localImagePath !== ""
-                        implicitHeight: 30
-                        implicitWidth: openImgRow.implicitWidth + 16
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colLayer2
-                        colBackgroundHover: Appearance.colors.colLayer2Hover
-                        colRipple: Appearance.colors.colLayer2Active
-                        onClicked: {
-                            Quickshell.execDetached(["xdg-open", root.localImagePath]);
-                            root.requestClose();
-                        }
-
-                        contentItem: RowLayout {
-                            id: openImgRow
-                            anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colOnLayer1 }
-                            StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
-                        }
+                // Copy
+                RippleButton {
+                    implicitHeight: 32
+                    implicitWidth: copyRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colLayer2
+                    colBackgroundHover: Appearance.colors.colLayer2Hover
+                    colRipple: Appearance.colors.colLayer2Active
+                    onClicked: {
+                        Cliphist.copyText(root.editorText);
+                        root.showNotification(Translation.tr("Copied to clipboard"));
                     }
 
-                    RippleButton {
-                        visible: root.localImagePath !== ""
-                        implicitHeight: 30
-                        implicitWidth: copyPathRow.implicitWidth + 16
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colLayer2
-                        colBackgroundHover: Appearance.colors.colLayer2Hover
-                        colRipple: Appearance.colors.colLayer2Active
-                        onClicked: {
-                            Cliphist.copyText(root.localImagePath);
-                            root.showNotification(Translation.tr("Copied path"));
-                        }
-
-                        contentItem: RowLayout {
-                            id: copyPathRow
-                            anchors.centerIn: parent
-                            spacing: 4
-                            MaterialSymbol { font.pixelSize: 15; text: "link"; color: Appearance.colors.colOnLayer1 }
-                            StyledText { text: Translation.tr("Copy Path"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
-                        }
-                    }
-
-                    RippleButton {
-                        implicitHeight: 30
-                        implicitWidth: copyImgRow.implicitWidth + 18
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colPrimary
-                        colBackgroundHover: Appearance.colors.colPrimaryHover
-                        colRipple: Appearance.colors.colPrimaryContainerActive
-                        onClicked: {
-                            if (root.localImagePath !== "") {
-                                Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
-                            } else {
-                                Cliphist.copy(root.currentEntry);
-                            }
-                            root.showNotification(Translation.tr("Copied image"));
-                        }
-
-                        contentItem: RowLayout {
-                            id: copyImgRow
-                            anchors.centerIn: parent
-                            spacing: 5
-                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                            StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
-                        }
+                    contentItem: RowLayout {
+                        id: copyRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
+                        StyledText { text: Translation.tr("Copy"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
                     }
                 }
 
-                // Actions for Binary Data
-                RowLayout {
-                    visible: root.isBinary
-                    spacing: 6
+                // Paste
+                RippleButton {
+                    implicitHeight: 32
+                    implicitWidth: pasteRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colPrimary
+                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    onClicked: {
+                        Cliphist.pasteText(root.editorText);
+                        root.requestClose();
+                    }
 
-                    RippleButton {
-                        implicitHeight: 30
-                        implicitWidth: copyBinRow.implicitWidth + 18
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colPrimary
-                        colBackgroundHover: Appearance.colors.colPrimaryHover
-                        colRipple: Appearance.colors.colPrimaryContainerActive
-                        onClicked: {
+                    contentItem: RowLayout {
+                        id: pasteRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        MaterialSymbol { font.pixelSize: 15; text: "output"; color: Appearance.colors.colOnPrimary }
+                        StyledText { text: Translation.tr("Paste"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                    }
+                }
+            }
+
+            // Actions for Image
+            RowLayout {
+                visible: root.isImage
+                spacing: 6
+
+                RippleButton {
+                    visible: root.localImagePath !== ""
+                    implicitHeight: 32
+                    implicitWidth: openImgRow.implicitWidth + 16
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colLayer2
+                    colBackgroundHover: Appearance.colors.colLayer2Hover
+                    colRipple: Appearance.colors.colLayer2Active
+                    onClicked: {
+                        Quickshell.execDetached(["xdg-open", root.localImagePath]);
+                        root.requestClose();
+                    }
+
+                    contentItem: RowLayout {
+                        id: openImgRow
+                        anchors.centerIn: parent
+                        spacing: 4
+                        MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colOnLayer1 }
+                        StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
+                    }
+                }
+
+                RippleButton {
+                    implicitHeight: 32
+                    implicitWidth: copyImgRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colPrimary
+                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    onClicked: {
+                        if (root.localImagePath !== "") {
+                            Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
+                        } else {
                             Cliphist.copy(root.currentEntry);
-                            root.showNotification(Translation.tr("Copied binary data"));
                         }
+                        root.showNotification(Translation.tr("Copied image"));
+                    }
 
-                        contentItem: RowLayout {
-                            id: copyBinRow
-                            anchors.centerIn: parent
-                            spacing: 5
-                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                            StyledText { text: Translation.tr("Copy Data"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
-                        }
+                    contentItem: RowLayout {
+                        id: copyImgRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                        StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
                     }
                 }
             }
 
-            // Divider
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Appearance.colors.colOutlineVariant
+            // Actions for Color
+            RowLayout {
+                visible: !root.isImage && root.hasDetectedColor
+                spacing: 6
+
+                RippleButton {
+                    implicitHeight: 32
+                    implicitWidth: copyColorRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colPrimary
+                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    onClicked: {
+                        Cliphist.copyText(root.detectedColor);
+                        root.showNotification(Translation.tr("Copied color"));
+                    }
+
+                    contentItem: RowLayout {
+                        id: copyColorRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                        StyledText { text: Translation.tr("Copy Color"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                    }
+                }
             }
 
-            // Body Area
+            // Actions for Binary Data
+            RowLayout {
+                visible: root.isBinary
+                spacing: 6
+
+                RippleButton {
+                    implicitHeight: 32
+                    implicitWidth: copyBinRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: Appearance.colors.colPrimary
+                    colBackgroundHover: Appearance.colors.colPrimaryHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    onClicked: {
+                        Cliphist.copy(root.currentEntry);
+                        root.showNotification(Translation.tr("Copied binary data"));
+                    }
+
+                    contentItem: RowLayout {
+                        id: copyBinRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                        StyledText { text: Translation.tr("Copy Data"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                    }
+                }
+            }
+        }
+
+        // Horizontal Separator (matches left pane separator)
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Appearance.colors.colOutlineVariant
+        }
+
+        // Content Area Container
+        Rectangle {
+            id: editorBox
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            color: Appearance.colors.colLayer1
+            radius: Appearance.rounding.normal
+            border.width: root.isEditorFocused ? 1.5 : 1
+            border.color: root.isEditorFocused ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+            focus: root.isEditorFocused
+
+            Keys.onPressed: event => {
+                if (event.key === Qt.Key_Left || event.key === Qt.Key_Escape || event.key === Qt.Key_Backtab) {
+                    root.requestFocusList();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    if (root.isImage) {
+                        if (root.localImagePath !== "") {
+                            Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
+                        } else {
+                            Cliphist.copy(root.currentEntry);
+                        }
+                        root.requestClose();
+                        event.accepted = true;
+                    } else if (root.hasDetectedColor) {
+                        Cliphist.copyText(root.detectedColor);
+                        root.requestClose();
+                        event.accepted = true;
+                    } else if (root.isBinary) {
+                        Cliphist.copy(root.currentEntry);
+                        root.requestClose();
+                        event.accepted = true;
+                    }
+                }
+            }
+
+            // Empty state
             Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
+                visible: !root.currentEntry
 
-                // VIEW 1: TEXT EDITING
-                Item {
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 10
+
+                    MaterialSymbol {
+                        Layout.alignment: Qt.AlignHCenter
+                        font.pixelSize: 36
+                        text: "preview"
+                        color: Appearance.colors.colSubtext
+                    }
+
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: Translation.tr("Select an item to preview or edit")
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+
+            // VIEW 1: TEXT EDITING
+            Item {
+                anchors.fill: parent
+                anchors.margins: 10
+                visible: !!root.currentEntry && !root.isImage && !root.hasDetectedColor && !root.isBinary
+
+                Flickable {
+                    id: flickable
                     anchors.fill: parent
-                    visible: !root.isImage && !root.hasDetectedColor && !root.isBinary
+                    clip: true
+                    contentWidth: width
+                    contentHeight: Math.max(height, textArea.contentHeight + 20)
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    Flickable {
-                        id: flickable
-                        anchors.fill: parent
-                        clip: true
-                        contentWidth: width
-                        contentHeight: Math.max(height, textArea.contentHeight + 24)
-                        boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: StyledScrollBar {}
 
-                        ScrollBar.vertical: StyledScrollBar {}
+                    StyledTextArea {
+                        id: textArea
+                        width: flickable.width
+                        wrapMode: TextEdit.Wrap
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        selectByMouse: true
+                        renderType: Text.NativeRendering
+                        color: Appearance.colors.colOnLayer1
 
-                        StyledTextArea {
-                            id: textArea
-                            width: flickable.width
-                            wrapMode: TextEdit.Wrap
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            selectByMouse: true
-                            renderType: Text.NativeRendering
-                            color: Appearance.colors.colOnLayer1
-
-                            Connections {
-                                target: root
-                                function onEditorTextChanged() {
-                                    if (!root._settingText && textArea.text !== root.editorText) {
-                                        root._settingText = true;
-                                        textArea.text = root.editorText;
-                                        root._settingText = false;
-                                    }
-                                }
-                            }
-
-                            onTextChanged: {
-                                if (!root._settingText && root.editorText !== text) {
+                        Connections {
+                            target: root
+                            function onEditorTextChanged() {
+                                if (!root._settingText && textArea.text !== root.editorText) {
                                     root._settingText = true;
-                                    root.editorText = text;
+                                    textArea.text = root.editorText;
                                     root._settingText = false;
                                 }
                             }
+                        }
 
-                            // Keep viewport smoothly scrolled to cursor when moving up and down
-                            onCursorPositionChanged: {
-                                const cr = textArea.cursorRectangle;
-                                if (cr.y < flickable.contentY) {
-                                    flickable.contentY = Math.max(0, cr.y - 14);
-                                } else if (cr.y + cr.height > flickable.contentY + flickable.height) {
-                                    flickable.contentY = Math.min(
-                                        Math.max(0, flickable.contentHeight - flickable.height),
-                                        cr.y + cr.height - flickable.height + 14
-                                    );
-                                }
+                        onTextChanged: {
+                            if (!root._settingText && root.editorText !== text) {
+                                root._settingText = true;
+                                root.editorText = text;
+                                root._settingText = false;
                             }
+                        }
 
-                            Keys.onPressed: event => {
-                                if (event.modifiers === Qt.ControlModifier && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
-                                    Cliphist.copyText(root.editorText);
-                                    root.requestClose();
-                                    event.accepted = true;
-                                } else if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_S) {
-                                    Cliphist.copyText(root.editorText);
-                                    root.showNotification(Translation.tr("Saved to clipboard"));
-                                    event.accepted = true;
-                                } else if ((event.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && event.key === Qt.Key_Left) {
-                                    root.requestFocusList();
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Left && (textArea.cursorPosition === 0 || (textArea.selectionStart === textArea.selectionEnd && textArea.cursorPosition === 0))) {
-                                    root.requestFocusList();
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Escape) {
-                                    root.requestFocusList();
-                                    event.accepted = true;
-                                }
+                        onCursorPositionChanged: {
+                            const cr = textArea.cursorRectangle;
+                            if (cr.y < flickable.contentY) {
+                                flickable.contentY = Math.max(0, cr.y - 14);
+                            } else if (cr.y + cr.height > flickable.contentY + flickable.height) {
+                                flickable.contentY = Math.min(
+                                    Math.max(0, flickable.contentHeight - flickable.height),
+                                    cr.y + cr.height - flickable.height + 14
+                                );
+                            }
+                        }
+
+                        Keys.onPressed: event => {
+                            if (event.modifiers === Qt.ControlModifier && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                                Cliphist.copyText(root.editorText);
+                                root.requestClose();
+                                event.accepted = true;
+                            } else if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_S) {
+                                Cliphist.copyText(root.editorText);
+                                root.showNotification(Translation.tr("Saved to clipboard"));
+                                event.accepted = true;
+                            } else if ((event.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && event.key === Qt.Key_Left) {
+                                root.requestFocusList();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Left && (textArea.cursorPosition === 0 || (textArea.selectionStart === textArea.selectionEnd && textArea.cursorPosition === 0))) {
+                                root.requestFocusList();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Escape) {
+                                root.requestFocusList();
+                                event.accepted = true;
                             }
                         }
                     }
                 }
+            }
 
-                // VIEW 2: IMAGE PREVIEW
-                Item {
-                    anchors.fill: parent
-                    visible: root.isImage
+            // VIEW 2: IMAGE PREVIEW WITH PATH BAR
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 6
+                visible: !!root.currentEntry && root.isImage
 
-                    Image {
-                        id: imageViewer
+                // Image Location Path Bar
+                Rectangle {
+                    visible: root.localImagePath !== ""
+                    Layout.fillWidth: true
+                    implicitHeight: 32
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer2
+                    border.width: 1
+                    border.color: Appearance.colors.colLayer0Border
+
+                    RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 10
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        smooth: true
-                        cache: false
-                        source: ""
-                    }
-                }
-
-                // VIEW 3: COLOR PREVIEW
-                Item {
-                    anchors.fill: parent
-                    visible: !root.isImage && root.hasDetectedColor
-
-                    ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 14
-
-                        Rectangle {
-                            Layout.alignment: Qt.AlignHCenter
-                            width: 140
-                            height: 80
-                            radius: Appearance.rounding.normal
-                            color: root.hasDetectedColor ? root.detectedColor : "transparent"
-                            border.width: 1
-                            border.color: Appearance.colors.colLayer0Border
-                        }
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: root.detectedColor
-                            font.family: Appearance.font.family.monospace
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnLayer1
-                        }
-
-                        RippleButton {
-                            Layout.alignment: Qt.AlignHCenter
-                            implicitHeight: 32
-                            implicitWidth: 110
-                            buttonRadius: Appearance.rounding.full
-                            colBackground: Appearance.colors.colLayer2
-                            colBackgroundHover: Appearance.colors.colLayer2Hover
-                            colRipple: Appearance.colors.colLayer2Active
-                            onClicked: {
-                                Cliphist.copyText(root.detectedColor);
-                                root.showNotification(Translation.tr("Copied color"));
-                            }
-
-                            contentItem: RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 4
-                                MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnLayer1 }
-                                StyledText {
-                                    text: Translation.tr("Copy Color")
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colOnLayer1
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // VIEW 4: BINARY CONTENT PREVIEW
-                Item {
-                    anchors.fill: parent
-                    visible: !root.isImage && !root.hasDetectedColor && root.isBinary
-
-                    ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 12
-                        implicitWidth: 260
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 6
+                        spacing: 6
 
                         MaterialSymbol {
-                            Layout.alignment: Qt.AlignHCenter
-                            iconSize: 42
-                            text: "data_object"
-                            color: Appearance.colors.colSubtext
-                        }
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: Translation.tr("Binary Data")
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnLayer1
-                        }
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: Translation.tr("%1 bytes • Raw binary content").arg(root.rawDecodedText.length)
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
+                            text: "folder_open"
+                            font.pixelSize: 15
+                            color: Appearance.colors.colPrimary
                         }
 
                         StyledText {
                             Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            text: Translation.tr("Direct text preview is disabled to prevent system slowdown.")
+                            text: root.localImagePath
                             font.pixelSize: 11
-                            color: Appearance.colors.colSubtext
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colOnLayer1
+                            elide: Text.ElideMiddle
                         }
 
                         RippleButton {
-                            Layout.alignment: Qt.AlignHCenter
-                            implicitHeight: 32
-                            implicitWidth: 140
+                            implicitHeight: 24
+                            implicitWidth: copyPathSmallRow.implicitWidth + 12
                             buttonRadius: Appearance.rounding.full
-                            colBackground: Appearance.colors.colPrimary
-                            colBackgroundHover: Appearance.colors.colPrimaryHover
-                            colRipple: Appearance.colors.colPrimaryContainerActive
+                            colBackground: "transparent"
+                            colBackgroundHover: Appearance.colors.colLayer1Hover
                             onClicked: {
-                                Cliphist.copy(root.currentEntry);
-                                root.showNotification(Translation.tr("Copied binary data"));
+                                Cliphist.copyText(root.localImagePath);
+                                root.showNotification(Translation.tr("Copied path"));
                             }
 
                             contentItem: RowLayout {
+                                id: copyPathSmallRow
                                 anchors.centerIn: parent
-                                spacing: 6
-                                MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                                StyledText {
-                                    text: Translation.tr("Copy Data")
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    font.weight: Font.DemiBold
-                                    color: Appearance.colors.colOnPrimary
-                                }
+                                spacing: 4
+                                MaterialSymbol { font.pixelSize: 12; text: "content_copy"; color: Appearance.colors.colSubtext }
+                                StyledText { text: Translation.tr("Copy Path"); font.pixelSize: 10; color: Appearance.colors.colSubtext }
                             }
                         }
+                    }
+                }
+
+                // Strictly bounded Image Viewer
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    Image {
+                        id: imageViewer
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        smooth: true
+                        cache: false
+                        clip: true
+                        source: ""
+                    }
+                }
+            }
+
+            // VIEW 3: COLOR PREVIEW
+            Item {
+                anchors.fill: parent
+                visible: !!root.currentEntry && !root.isImage && root.hasDetectedColor
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 14
+
+                    Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        width: 140
+                        height: 80
+                        radius: Appearance.rounding.normal
+                        color: root.hasDetectedColor ? root.detectedColor : "transparent"
+                        border.width: 1
+                        border.color: Appearance.colors.colLayer0Border
+                    }
+
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: root.detectedColor
+                        font.family: Appearance.font.family.monospace
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colOnLayer1
+                    }
+                }
+            }
+
+            // VIEW 4: BINARY CONTENT PREVIEW
+            Item {
+                anchors.fill: parent
+                visible: !!root.currentEntry && !root.isImage && !root.hasDetectedColor && root.isBinary
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 12
+                    implicitWidth: 260
+
+                    MaterialSymbol {
+                        Layout.alignment: Qt.AlignHCenter
+                        iconSize: 42
+                        text: "data_object"
+                        color: Appearance.colors.colSubtext
+                    }
+
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: Translation.tr("Binary Data")
+                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.weight: Font.DemiBold
+                        color: Appearance.colors.colOnLayer1
+                    }
+
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: Translation.tr("%1 bytes • Raw binary content").arg(root.rawDecodedText.length)
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colSubtext
+                    }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        text: Translation.tr("Direct text preview is disabled to prevent system slowdown.")
+                        font.pixelSize: 11
+                        color: Appearance.colors.colSubtext
                     }
                 }
             }
