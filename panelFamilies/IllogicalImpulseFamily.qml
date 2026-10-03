@@ -25,8 +25,10 @@ import qs.modules.ii.wallpaperSelector
 import qs.modules.ii.settings
 import qs.modules.ii.desktopMenu
 import qs.modules.ii.dropover
+import qs.modules.ii.clipboard
 
 Scope {
+    PanelLoader { component: Clipboard {} }
     PanelLoader { extraCondition: !Config.options.bar.vertical; component: Bar {} }
     PanelLoader { component: Background {} }
     PanelLoader { component: DesktopWidgets {} }

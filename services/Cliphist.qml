@@ -118,6 +118,19 @@ Singleton {
         }
     }
 
+    function copyText(text) {
+        if (text === undefined || text === null) return;
+        Quickshell.clipboardText = text;
+        Quickshell.execDetached(["bash", "-c", `printf '%s' '${StringUtils.shellSingleQuoteEscape(text)}' | wl-copy`]);
+        delayedUpdateTimer.restart();
+    }
+
+    function pasteText(text) {
+        if (text === undefined || text === null) return;
+        Quickshell.clipboardText = text;
+        Quickshell.execDetached(["bash", "-c", `printf '%s' '${StringUtils.shellSingleQuoteEscape(text)}' | wl-copy; sleep ${root.pasteDelay}; ${root.pressPasteCommand}`]);
+    }
+
     function superpaste(count, isImage = false) {
         // Find entries
         const targetEntries = entries.filter(entry => {

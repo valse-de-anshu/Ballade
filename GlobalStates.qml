@@ -10,6 +10,7 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
     property bool barOpen: true
+    property bool clipboardOpen: false
     property bool crosshairOpen: false
     property bool sidebarLeftOpen: false
     property bool sidebarRightOpen: false
@@ -48,6 +49,21 @@ Singleton {
         if (GlobalStates.sidebarRightOpen) {
             Notifications.timeoutAll();
             Notifications.markAllRead();
+        }
+    }
+
+    onClipboardOpenChanged: {
+        if (root.clipboardOpen) {
+            root.overviewOpen = false;
+            root.settingsOpen = false;
+            root.sidebarLeftOpen = false;
+            root.sidebarRightOpen = false;
+        }
+    }
+
+    onOverviewOpenChanged: {
+        if (root.overviewOpen) {
+            root.clipboardOpen = false;
         }
     }
 
