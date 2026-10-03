@@ -770,12 +770,7 @@ AbstractBackgroundWidget {
                                             implicitWidth: 24; implicitHeight: 24; radius: 12
                                             readonly property bool isPinned: {
                                                 const list = CalendarService.pinnedTargets;
-                                                const dKey = root.formatDateKey(root.selectedDate);
-                                                const t = modelData.title;
-                                                for (let i = 0; i < list.length; i++) {
-                                                    if (list[i].date === dKey && list[i].title === t) return true;
-                                                }
-                                                return false;
+                                                return CalendarService.isEventPinned(root.formatDateKey(root.selectedDate), modelData.title);
                                             }
                                             color: pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent"
 
@@ -795,7 +790,7 @@ AbstractBackgroundWidget {
                                                 onClicked: mouse => {
                                                     mouse.accepted = true
                                                     let dKey = root.formatDateKey(root.selectedDate)
-                                                    if (parent.isPinned) {
+                                                    if (CalendarService.isEventPinned(dKey, modelData.title)) {
                                                         CalendarService.unpinTarget(dKey, modelData.title)
                                                     } else {
                                                         CalendarService.pinTarget(dKey, modelData.title, modelData.type)

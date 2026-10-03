@@ -391,7 +391,9 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
+                                    propagateComposedEvents: false
+                                    onClicked: mouse => {
+                                        mouse.accepted = true;
                                         if (root.activeTarget && root.activeTarget.date) {
                                             CalendarService.unpinTarget(root.activeTarget.date, root.activeTarget.title);
                                         }

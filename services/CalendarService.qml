@@ -15,6 +15,7 @@ Singleton {
 
     property var pinnedTargets: []
     property var userEvents: []
+    property var metaPayload: ({})
 
     signal targetsChanged()
     signal eventsChanged()
@@ -23,9 +24,7 @@ Singleton {
     FileView {
         id: targetFileView
         path: root.targetFilePath
-        watchChanges: true
         onLoaded: root.loadTargets()
-        onFileChanged: root.loadTargets()
         onLoadFailed: root.loadTargets()
     }
 
@@ -33,9 +32,7 @@ Singleton {
     FileView {
         id: eventsFileView
         path: root.eventsFilePath
-        watchChanges: true
         onLoaded: root.loadEvents()
-        onFileChanged: root.loadEvents()
         onLoadFailed: (error) => {
             if (error === FileViewError.FileNotFound) {
                 root.userEvents = []
@@ -49,6 +46,7 @@ Singleton {
             if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
                 const parsed = JSON.parse(targetFileView.text())
                 if (parsed && typeof parsed === "object") {
+                    root.metaPayload = parsed
                     if (Array.isArray(parsed.targets)) {
                         root.pinnedTargets = parsed.targets
                         root.targetsChanged()
@@ -65,32 +63,44 @@ Singleton {
                 }
             }
         } catch (e) {}
+        root.metaPayload = {}
         root.pinnedTargets = []
         root.targetsChanged()
     }
 
     function saveTargets() {
-        let currentPayload = {}
-        try {
-            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
-                currentPayload = JSON.parse(targetFileView.text()) || {}
-            }
-        } catch (e) {}
-        currentPayload.targets = root.pinnedTargets || []
-        targetFileView.setText(JSON.stringify(currentPayload, null, 2))
+        let payload = Object.assign({}, root.metaPayload || {})
+        payload.targets = (root.pinnedTargets || []).slice(0)
+        delete payload.date
+        delete payload.title
+        delete payload.type
+        root.metaPayload = payload
+        targetFileView.setText(JSON.stringify(payload, null, 2))
     }
 
     function isEventPinned(dateKey, title) {
         if (!root.pinnedTargets || root.pinnedTargets.length === 0) return false
-        return root.pinnedTargets.some(t => t.date === dateKey && t.title === title)
+        let d = (dateKey || "").trim()
+        let t = (title || "").trim()
+        return root.pinnedTargets.some(item => {
+            let itemD = (item.date || "").trim()
+            let itemT = (item.title || "").trim()
+            if (t.length > 0) {
+                return itemD === d && itemT === t
+            } else {
+                return itemD === d
+            }
+        })
     }
 
     function pinTarget(dateKey, title, type) {
-        if (isEventPinned(dateKey, title)) return
+        let d = (dateKey || "").trim()
+        let t = (title || "").trim()
+        if (isEventPinned(d, t)) return
         let list = (root.pinnedTargets || []).slice(0)
         list.push({
-            date: dateKey,
-            title: title || "",
+            date: d,
+            title: t,
             type: type || "festival"
         })
         root.pinnedTargets = list
@@ -100,7 +110,17 @@ Singleton {
 
     function unpinTarget(dateKey, title) {
         if (!root.pinnedTargets || root.pinnedTargets.length === 0) return
-        let list = root.pinnedTargets.filter(t => !(t.date === dateKey && t.title === title))
+        let d = (dateKey || "").trim()
+        let t = (title || "").trim()
+        let list = root.pinnedTargets.filter(item => {
+            let itemD = (item.date || "").trim()
+            let itemT = (item.title || "").trim()
+            if (t.length > 0) {
+                return !(itemD === d && itemT === t)
+            } else {
+                return itemD !== d
+            }
+        })
         root.pinnedTargets = list
         root.targetsChanged()
         saveTargets()
