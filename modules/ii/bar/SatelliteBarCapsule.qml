@@ -24,9 +24,36 @@ Item {
         ? CalendarService.pinnedTargets[root.clampedIndex]
         : null
 
+    property bool popupHovered: false
+    property bool isPopupOpen: false
+
     function cycleNextTarget() {
         if (CalendarService.pinnedTargets.length > 1) {
             root.currentTargetIndex = (root.clampedIndex + 1) % CalendarService.pinnedTargets.length;
+        }
+    }
+
+    function cyclePrevTarget() {
+        if (CalendarService.pinnedTargets.length > 1) {
+            root.currentTargetIndex = (root.clampedIndex - 1 + CalendarService.pinnedTargets.length) % CalendarService.pinnedTargets.length;
+        }
+    }
+
+    Timer {
+        id: closeTimer
+        interval: 350
+        onTriggered: {
+            root.popupHovered = false;
+        }
+    }
+
+    Connections {
+        target: CalendarService
+        function onTargetsChanged() {
+            if (CalendarService.pinnedTargets.length === 0) {
+                root.isPopupOpen = false;
+                root.popupHovered = false;
+            }
         }
     }
 
@@ -85,7 +112,7 @@ Item {
         radius: Appearance.rounding.full
 
         // Seamless transparent background; gentle damped highlight only on hover
-        color: mouseArea.containsMouse ? Appearance.colors.colLayer1Hover : "transparent"
+        color: (mouseArea.containsMouse || root.popupHovered || root.isPopupOpen) ? Appearance.colors.colLayer1Hover : "transparent"
         border.width: 0
 
         Behavior on color {
@@ -145,16 +172,29 @@ Item {
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
 
+            onEntered: {
+                closeTimer.stop();
+                root.popupHovered = true;
+            }
+
+            onExited: {
+                closeTimer.restart();
+            }
+
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
                     root.cycleNextTarget();
                 } else {
-                    popup.open();
+                    root.isPopupOpen = !root.isPopupOpen;
                 }
             }
 
             onWheel: wheel => {
-                root.cycleNextTarget();
+                if (wheel.angleDelta.y < 0) {
+                    root.cycleNextTarget();
+                } else if (wheel.angleDelta.y > 0) {
+                    root.cyclePrevTarget();
+                }
             }
         }
     }
@@ -163,104 +203,198 @@ Item {
     StyledPopup {
         id: popup
         hoverTarget: mouseArea
+        active: (root.popupHovered || root.isPopupOpen) && CalendarService.pinnedTargets.length > 0
 
-        ColumnLayout {
+        Item {
+            id: popupContent
             anchors.centerIn: parent
-            spacing: 12
             implicitWidth: 320
+            implicitHeight: popupCol.implicitHeight
+            width: implicitWidth
+            height: implicitHeight
 
-            // Header: "Summary"
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                StyledText {
-                    text: Translation.tr("Summary")
-                    font.pixelSize: Appearance.font.pixelSize.large
-                    font.weight: Font.Bold
-                    color: Appearance.colors.colOnLayer0
-                }
-
-                Item { Layout.fillWidth: true }
-
-                StyledText {
-                    visible: CalendarService.pinnedTargets.length > 1
-                    text: `${root.clampedIndex + 1} / ${CalendarService.pinnedTargets.length}`
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colSubtext
+            HoverHandler {
+                onHoveredChanged: {
+                    if (hovered) {
+                        closeTimer.stop();
+                        root.popupHovered = true;
+                    } else {
+                        closeTimer.restart();
+                    }
                 }
             }
 
-            // Active Summary Card (Single unified card, zero duplicate list below)
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: cardCol.implicitHeight + 24
-                radius: Appearance.rounding.normal
-                color: Appearance.colors.colLayer1
-                border.width: 0
+            WheelHandler {
+                onWheel: event => {
+                    if (event.angleDelta.y < 0) {
+                        root.cycleNextTarget();
+                    } else if (event.angleDelta.y > 0) {
+                        root.cyclePrevTarget();
+                    }
+                }
+            }
 
-                ColumnLayout {
-                    id: cardCol
-                    anchors.fill: parent
-                    anchors.margins: 16
+            ColumnLayout {
+                id: popupCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                spacing: 12
+
+                // Header: "Summary"
+                RowLayout {
+                    Layout.fillWidth: true
                     spacing: 8
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
+                    StyledText {
+                        text: Translation.tr("Summary")
+                        font.pixelSize: Appearance.font.pixelSize.large
+                        font.weight: Font.Bold
+                        color: Appearance.colors.colOnLayer0
+                    }
 
-                        StyledText {
-                            text: root.countdown.badgeText
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            font.weight: Font.Bold
-                            color: {
-                                if (!root.countdown.valid) return Appearance.colors.colSubtext;
-                                if (root.countdown.days === 0) return Appearance.colors.colPrimary;
-                                if (root.countdown.days > 0) return Appearance.colors.colSecondary;
-                                return Appearance.colors.colSubtext;
+                    Item { Layout.fillWidth: true }
+
+                    RowLayout {
+                        visible: CalendarService.pinnedTargets.length > 1
+                        spacing: 6
+
+                        Rectangle {
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 10
+                            color: prevMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.1) : "transparent"
+
+                            StyledText {
+                                anchors.centerIn: parent
+                                text: "‹"
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.Bold
+                                color: prevMouse.containsMouse ? Appearance.colors.colOnLayer0 : Appearance.colors.colSubtext
+                            }
+
+                            MouseArea {
+                                id: prevMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.cyclePrevTarget()
                             }
                         }
 
                         StyledText {
-                            Layout.fillWidth: true
-                            text: root.countdown.title
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnLayer1
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        visible: root.countdown.dateText.length > 0 || CalendarService.pinnedTargets.length > 0
-
-                        StyledText {
-                            visible: root.countdown.dateText.length > 0
-                            text: Translation.tr("Target Date: ") + root.countdown.dateText
+                            text: `${root.clampedIndex + 1} / ${CalendarService.pinnedTargets.length}`
                             font.pixelSize: Appearance.font.pixelSize.small
+                            font.weight: Font.DemiBold
                             color: Appearance.colors.colSubtext
                         }
 
-                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 10
+                            color: nextMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.1) : "transparent"
 
-                        // Unpin action if currently pinned
-                        StyledText {
-                            visible: CalendarService.pinnedTargets.length > 0
-                            text: Translation.tr("Unpin")
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            font.weight: Font.Medium
-                            color: unpinActiveMouse.containsMouse ? Appearance.colors.colError : Appearance.colors.colSubtext
+                            StyledText {
+                                anchors.centerIn: parent
+                                text: "›"
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.Bold
+                                color: nextMouse.containsMouse ? Appearance.colors.colOnLayer0 : Appearance.colors.colSubtext
+                            }
 
                             MouseArea {
-                                id: unpinActiveMouse
+                                id: nextMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (root.activeTarget && root.activeTarget.date) {
-                                        CalendarService.unpinTarget(root.activeTarget.date, root.activeTarget.title);
+                                onClicked: root.cycleNextTarget()
+                            }
+                        }
+                    }
+                }
+
+                // Active Summary Card (Single unified card, zero duplicate list below)
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: cardCol.implicitHeight + 24
+                    radius: Appearance.rounding.normal
+                    color: Appearance.colors.colLayer1
+                    border.width: 0
+
+                    ColumnLayout {
+                        id: cardCol
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 12
+                        spacing: 10
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            StyledText {
+                                text: root.countdown.badgeText
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                font.weight: Font.Bold
+                                color: {
+                                    if (!root.countdown.valid) return Appearance.colors.colSubtext;
+                                    if (root.countdown.days === 0) return Appearance.colors.colPrimary;
+                                    if (root.countdown.days > 0) return Appearance.colors.colSecondary;
+                                    return Appearance.colors.colSubtext;
+                                }
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: root.countdown.title
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.DemiBold
+                                color: Appearance.colors.colOnLayer1
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: root.countdown.dateText.length > 0 || CalendarService.pinnedTargets.length > 0
+
+                            StyledText {
+                                visible: root.countdown.dateText.length > 0
+                                text: Translation.tr("Target Date: ") + root.countdown.dateText
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colSubtext
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Unpin action if currently pinned
+                            Rectangle {
+                                visible: CalendarService.pinnedTargets.length > 0
+                                implicitWidth: unpinText.implicitWidth + 14
+                                implicitHeight: 24
+                                radius: 12
+                                color: unpinActiveMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colError, 0.15) : "transparent"
+
+                                StyledText {
+                                    id: unpinText
+                                    anchors.centerIn: parent
+                                    text: Translation.tr("Unpin")
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.weight: Font.Medium
+                                    color: unpinActiveMouse.containsMouse ? Appearance.colors.colError : Appearance.colors.colSubtext
+                                }
+
+                                MouseArea {
+                                    id: unpinActiveMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (root.activeTarget && root.activeTarget.date) {
+                                            CalendarService.unpinTarget(root.activeTarget.date, root.activeTarget.title);
+                                        }
                                     }
                                 }
                             }

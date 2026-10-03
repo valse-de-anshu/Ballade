@@ -765,27 +765,40 @@ AbstractBackgroundWidget {
                                     RowLayout {
                                         spacing: 4
 
-                                        // Pin Specific Event to Satellite Companion
+                                        // Pin / Unpin Event (Instant Single Click, Neutral Minimalist Styling)
                                         Rectangle {
                                             implicitWidth: 24; implicitHeight: 24; radius: 12
-                                            readonly property bool isPinned: root.isEventPinned(root.formatDateKey(root.selectedDate), modelData.title)
-                                            color: isPinned ? ColorUtils.applyAlpha("#38bdf8", 0.25) : (pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent")
+                                            readonly property bool isPinned: {
+                                                const list = CalendarService.pinnedTargets;
+                                                const dKey = root.formatDateKey(root.selectedDate);
+                                                const t = modelData.title;
+                                                for (let i = 0; i < list.length; i++) {
+                                                    if (list[i].date === dKey && list[i].title === t) return true;
+                                                }
+                                                return false;
+                                            }
+                                            color: pinMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : "transparent"
 
                                             MaterialSymbol {
-                                                anchors.centerIn: parent; text: "push_pin"; iconSize: 13
-                                                color: parent.isPinned ? "#38bdf8" : (pinMouse.containsMouse ? "#ffffff" : "#64748b")
+                                                anchors.centerIn: parent
+                                                text: parent.isPinned ? "keep_off" : "push_pin"
+                                                iconSize: 13
+                                                color: pinMouse.containsMouse ? "#ffffff" : "#94a3b8"
                                             }
 
                                             MouseArea {
                                                 id: pinMouse
-                                                anchors.fill: parent; hoverEnabled: true
+                                                anchors.fill: parent
+                                                hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
+                                                propagateComposedEvents: false
+                                                onClicked: mouse => {
+                                                    mouse.accepted = true
                                                     let dKey = root.formatDateKey(root.selectedDate)
                                                     if (parent.isPinned) {
-                                                        root.unpinTarget(dKey, modelData.title)
+                                                        CalendarService.unpinTarget(dKey, modelData.title)
                                                     } else {
-                                                        root.pinTarget(dKey, modelData.title, modelData.type)
+                                                        CalendarService.pinTarget(dKey, modelData.title, modelData.type)
                                                     }
                                                 }
                                             }
