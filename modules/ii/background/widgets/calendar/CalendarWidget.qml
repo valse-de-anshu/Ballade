@@ -133,42 +133,34 @@ AbstractBackgroundWidget {
     property bool satelliteVertical: false
     property real satelliteRotation: (root.configEntry && typeof root.configEntry.satelliteRotation === "number") ? root.configEntry.satelliteRotation : 0
 
-    FileView {
-        id: targetFileView
-        path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
-        watchChanges: true
-        onLoaded: {
-            try {
+    function loadPinnedTargets() {
+        try {
+            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
                 const parsed = JSON.parse(targetFileView.text())
                 if (parsed && typeof parsed === "object") {
                     if (Array.isArray(parsed.targets)) {
                         root.pinnedTargets = parsed.targets
+                        return
                     } else if (parsed.date) {
                         root.pinnedTargets = [{
                             date: parsed.date,
                             title: parsed.title || "",
                             type: parsed.type || "festival"
                         }]
-                    }
-                    if (root.configEntry && typeof root.configEntry.satelliteX === "number") {
-                        root.satelliteX = root.configEntry.satelliteX
-                    } else if (typeof parsed.x === "number") {
-                        root.satelliteX = parsed.x
-                    }
-                    if (root.configEntry && typeof root.configEntry.satelliteY === "number") {
-                        root.satelliteY = root.configEntry.satelliteY
-                    } else if (typeof parsed.y === "number") {
-                        root.satelliteY = parsed.y
-                    }
-                    if (typeof parsed.vertical === "boolean") root.satelliteVertical = parsed.vertical
-                    if (root.configEntry && typeof root.configEntry.satelliteRotation === "number") {
-                        root.satelliteRotation = root.configEntry.satelliteRotation
-                    } else if (typeof parsed.rotation === "number") {
-                        root.satelliteRotation = parsed.rotation
+                        return
                     }
                 }
-            } catch (e) {}
-        }
+            }
+        } catch (e) {}
+        root.pinnedTargets = []
+    }
+
+    FileView {
+        id: targetFileView
+        path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
+        watchChanges: true
+        onLoaded: root.loadPinnedTargets()
+        onFileChanged: root.loadPinnedTargets()
     }
 
     function saveSatelliteState() {
@@ -381,21 +373,25 @@ AbstractBackgroundWidget {
         return Goals.goalsList.some(g => (g.calendarDate && g.calendarDate === key))
     }
 
+    function loadUserEvents() {
+        try {
+            if (eventsFileView.loaded && eventsFileView.text().trim().length > 0) {
+                const parsed = JSON.parse(eventsFileView.text())
+                root.userEvents = Array.isArray(parsed) ? parsed : []
+                updateViewingMonth()
+                return
+            }
+        } catch (e) {}
+        root.userEvents = []
+        updateViewingMonth()
+    }
+
     FileView {
         id: eventsFileView
         path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
         watchChanges: true
-        onLoaded: {
-            const fileContents = eventsFileView.text()
-            try {
-                const parsed = JSON.parse(fileContents)
-                root.userEvents = Array.isArray(parsed) ? parsed : []
-                updateViewingMonth()
-            } catch (e) {
-                root.userEvents = []
-                eventsFileView.setText(JSON.stringify([]))
-            }
-        }
+        onLoaded: root.loadUserEvents()
+        onFileChanged: root.loadUserEvents()
         onLoadFailed: (error) => {
             if (error == FileViewError.FileNotFound) {
                 root.userEvents = []
@@ -1419,310 +1415,5 @@ AbstractBackgroundWidget {
         }
     }
 
-    // ====================================================
-    // SATELLITE COMPANION COUNTDOWN MICRO-CAPSULE (MINIMAL & AESTHETIC)
-    // ====================================================
-    Item {
-        id: satelliteWrapper
-        z: 100
-        visible: root.sizeMode === "2x2" || root.sizeMode === "1x2"
-        x: root.satelliteX
-        y: root.satelliteY
-        width: satelliteCard.width
-        height: satelliteCard.height
-
-        readonly property var countdown: root.getTargetCountdown()
-
-        // 360-Degree Smooth Rotation Transform
-        transform: Rotation {
-            origin.x: satelliteCard.width / 2
-            origin.y: satelliteCard.height / 2
-            angle: root.satelliteRotation
-
-            Behavior on angle {
-                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-            }
-        }
-
-        // Minimalist Frosted Glass Capsule / Badge
-        Rectangle {
-            id: satelliteCard
-            implicitWidth: capsuleCol.implicitWidth + 24
-            implicitHeight: Math.max(34, capsuleCol.implicitHeight + 12)
-            radius: 17
-            color: ColorUtils.applyAlpha(
-                ColorUtils.mix(
-                    Appearance.colors.colPrimaryContainer,
-                    Appearance.colors.colPrimary,
-                    0.20
-                ),
-                root.dominantColorIsDark ? 0.32 : 0.50
-            )
-            border.width: 1
-            border.color: root.isSelectingTarget
-                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.7)
-                : ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.55), 0.32)
-            clip: true
-
-            Behavior on implicitWidth { NumberAnimation { duration: 180 } }
-            Behavior on implicitHeight { NumberAnimation { duration: 180 } }
-
-            // Drag Mouse Area with 360° Scroll Wheel Rotation
-            MouseArea {
-                id: satelliteDragArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                drag.target: satelliteWrapper
-                drag.axis: Drag.XAndYAxis
-                onDoubleClicked: {
-                    root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
-                    root.saveSatelliteState()
-                }
-                onWheel: wheel => {
-                    let delta = wheel.angleDelta.y > 0 ? 15 : -15
-                    root.satelliteRotation = (root.satelliteRotation + delta + 360) % 360
-                    root.saveSatelliteState()
-                }
-                onReleased: {
-                    root.satelliteX = satelliteWrapper.x
-                    root.satelliteY = satelliteWrapper.y
-                    root.saveSatelliteState()
-                }
-            }
-
-            ColumnLayout {
-                id: capsuleCol
-                anchors.centerIn: parent
-                spacing: 6
-
-                // Empty / Placeholder state when no targets pinned
-                RowLayout {
-                    visible: root.pinnedTargets.length === 0
-                    spacing: 8
-
-                    // Minimalist Countdown Token Pill
-                    Rectangle {
-                        implicitHeight: 22
-                        implicitWidth: tokenTextEmpty.implicitWidth + 12
-                        radius: 11
-                        color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.18)
-                        border.width: 1
-                        border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.35)
-
-                        StyledText {
-                            id: tokenTextEmpty
-                            anchors.centerIn: parent
-                            text: "PIN"
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            color: Appearance.colors.colPrimary
-                        }
-                    }
-
-                    // Event Title & Subtle Date Tag
-                    RowLayout {
-                        spacing: 6
-                        Layout.maximumWidth: 240
-
-                        StyledText {
-                            Layout.maximumWidth: 160
-                            text: root.isSelectingTarget
-                                ? "Select any date..."
-                                : "Tap + or 📌 to pin any note"
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            font.weight: Font.Medium
-                            color: root.isSelectingTarget ? "#38bdf8" : "#ffffff"
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // 360° Rotate Button
-                    Rectangle {
-                        implicitWidth: 20
-                        implicitHeight: 20
-                        radius: 10
-                        color: orientMouseEmpty.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "rotate_right"
-                            iconSize: 13
-                            color: orientMouseEmpty.containsMouse ? "#ffffff" : "#94a3b8"
-                        }
-
-                        MouseArea {
-                            id: orientMouseEmpty
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
-                                root.saveSatelliteState()
-                            }
-                        }
-                    }
-
-                    // Action Button (Set / Clear)
-                    Rectangle {
-                        implicitWidth: 20
-                        implicitHeight: 20
-                        radius: 10
-                        color: actionMouseEmpty.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: root.isSelectingTarget ? "check" : "add"
-                            iconSize: 13
-                            color: root.isSelectingTarget ? "#38bdf8" : (actionMouseEmpty.containsMouse ? Appearance.colors.colPrimary : "#94a3b8")
-                        }
-
-                        MouseArea {
-                            id: actionMouseEmpty
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.isSelectingTarget = !root.isSelectingTarget
-                        }
-                    }
-                }
-
-                // Pinned Events: a new event goes below
-                Repeater {
-                    model: root.pinnedTargets
-                    delegate: RowLayout {
-                        id: evRow
-                        spacing: 8
-                        readonly property var cd: root.getCountdownFor(modelData)
-
-                        // Minimalist Countdown Token Pill
-                        Rectangle {
-                            implicitHeight: 22
-                            implicitWidth: tokenText.implicitWidth + 12
-                            radius: 11
-                            color: evRow.cd.days === 0
-                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.22)
-                                : ColorUtils.applyAlpha("#38bdf8", 0.18)
-                            border.width: 1
-                            border.color: evRow.cd.days === 0
-                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.50)
-                                : ColorUtils.applyAlpha("#38bdf8", 0.40)
-
-                            StyledText {
-                                id: tokenText
-                                anchors.centerIn: parent
-                                text: !evRow.cd.valid ? "PIN"
-                                    : evRow.cd.days === 0 ? "TODAY"
-                                    : evRow.cd.days === 1 ? "1d left"
-                                    : evRow.cd.days > 1 ? (evRow.cd.days + "d left")
-                                    : (Math.abs(evRow.cd.days) + "d ago")
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: evRow.cd.days === 0
-                                    ? Appearance.colors.colPrimary
-                                    : "#38bdf8"
-                            }
-                        }
-
-                        // Event Title & Subtle Date Tag
-                        RowLayout {
-                            spacing: 6
-                            Layout.maximumWidth: 240
-
-                            StyledText {
-                                Layout.maximumWidth: 160
-                                text: evRow.cd.title || "No event message"
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                font.weight: Font.Medium
-                                color: "#ffffff"
-                                elide: Text.ElideRight
-                            }
-
-                            StyledText {
-                                visible: evRow.cd.dateText !== ""
-                                text: "• " + evRow.cd.dateText
-                                font.pixelSize: 11
-                                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.85)
-                            }
-                        }
-
-                        // Unpin Button (close icon)
-                        Rectangle {
-                            implicitWidth: 20
-                            implicitHeight: 20
-                            radius: 10
-                            color: delEvMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "close"
-                                iconSize: 13
-                                color: delEvMouse.containsMouse ? "#f87171" : "#94a3b8"
-                            }
-
-                            MouseArea {
-                                id: delEvMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.unpinTarget(modelData.date, modelData.title)
-                            }
-                        }
-
-                        // 360° Rotate Button (shown on first event row)
-                        Rectangle {
-                            visible: index === 0
-                            implicitWidth: 20
-                            implicitHeight: 20
-                            radius: 10
-                            color: orientMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "rotate_right"
-                                iconSize: 13
-                                color: orientMouse.containsMouse ? "#ffffff" : "#94a3b8"
-                            }
-
-                            MouseArea {
-                                id: orientMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    root.satelliteRotation = (Math.round((root.satelliteRotation + 90) / 90) * 90) % 360
-                                    root.saveSatelliteState()
-                                }
-                            }
-                        }
-
-                        // Add Button (shown on first event row)
-                        Rectangle {
-                            visible: index === 0
-                            implicitWidth: 20
-                            implicitHeight: 20
-                            radius: 10
-                            color: addEvMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.14) : "transparent"
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: root.isSelectingTarget ? "check" : "add"
-                                iconSize: 13
-                                color: root.isSelectingTarget ? "#38bdf8" : (addEvMouse.containsMouse ? Appearance.colors.colPrimary : "#94a3b8")
-                            }
-
-                            MouseArea {
-                                id: addEvMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.isSelectingTarget = !root.isSelectingTarget
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 

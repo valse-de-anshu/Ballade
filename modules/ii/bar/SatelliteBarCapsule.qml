@@ -26,6 +26,7 @@ Item {
         path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
         watchChanges: true
         onLoaded: root.loadTargets()
+        onFileChanged: root.loadTargets()
         onLoadFailed: root.loadTargets()
     }
 
@@ -35,12 +36,13 @@ Item {
         path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
         watchChanges: true
         onLoaded: root.loadEvents()
+        onFileChanged: root.loadEvents()
         onLoadFailed: root.loadEvents()
     }
 
     Timer {
         id: midnightRefreshTimer
-        interval: 60000 // Refresh every minute to keep countdown and day accurate
+        interval: 60000 // Refresh every minute to keep countdown accurate
         repeat: true
         running: true
         onTriggered: {
@@ -54,10 +56,10 @@ Item {
             if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
                 const parsed = JSON.parse(targetFileView.text());
                 if (parsed && typeof parsed === "object") {
-                    if (Array.isArray(parsed.targets) && parsed.targets.length > 0) {
+                    if (Array.isArray(parsed.targets)) {
                         root.pinnedTargets = parsed.targets;
                         if (root.currentTargetIndex >= parsed.targets.length) {
-                            root.currentTargetIndex = 0;
+                            root.currentTargetIndex = Math.max(0, parsed.targets.length - 1);
                         }
                         return;
                     } else if (parsed.date) {
@@ -300,23 +302,23 @@ Item {
         }
     }
 
-    // Interactive Detailed Popup (Spacious, beautifully padded, zero icons)
+    // Interactive Detailed Popup (Spacious, clean, single summary card, zero icons)
     StyledPopup {
         id: popup
         hoverTarget: mouseArea
 
         ColumnLayout {
             anchors.centerIn: parent
-            spacing: 14
-            implicitWidth: 380
+            spacing: 12
+            implicitWidth: 320
 
-            // Header (Clean typography, zero icons)
+            // Header: "Summary"
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 8
 
                 StyledText {
-                    text: Translation.tr("Satellite Summary")
+                    text: Translation.tr("Summary")
                     font.pixelSize: Appearance.font.pixelSize.large
                     font.weight: Font.Bold
                     color: Appearance.colors.colOnLayer0
@@ -333,7 +335,7 @@ Item {
                 }
             }
 
-            // Active Countdown Card (Generous padding, clean typography, zero icons)
+            // Active Summary Card (Single unified card, zero duplicate list below)
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: cardCol.implicitHeight + 24
@@ -373,130 +375,41 @@ Item {
                         }
                     }
 
-                    StyledText {
-                        visible: root.countdown.dateText.length > 0
-                        text: Translation.tr("Target Date: ") + root.countdown.dateText
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.colors.colSubtext
-                    }
-                }
-            }
-
-            // Pinned Targets List
-            ColumnLayout {
-                visible: root.pinnedTargets.length > 0
-                Layout.fillWidth: true
-                spacing: 8
-
-                StyledText {
-                    text: Translation.tr("Pinned Targets (%1)").arg(root.pinnedTargets.length)
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colSubtext
-                }
-
-                Repeater {
-                    model: root.pinnedTargets
-                    delegate: Rectangle {
-                        id: targetRowDelegate
-                        required property var modelData
-                        required property int index
+                    RowLayout {
                         Layout.fillWidth: true
-                        implicitHeight: targetRow.implicitHeight + 14
-                        radius: Appearance.rounding.small
-                        color: targetRowDelegate.index === root.currentTargetIndex
-                            ? Appearance.colors.colLayer2
-                            : (rowMouse.containsMouse ? Appearance.colors.colLayer1Hover : "transparent")
+                        visible: root.countdown.dateText.length > 0 || root.pinnedTargets.length > 0
 
-                        readonly property var cd: getRowCountdown(targetRowDelegate.modelData)
-
-                        function getRowCountdown(item) {
-                            if (!item || !item.date) return { days: 0, text: "PIN", dateText: "" };
-                            const parts = item.date.split("-");
-                            if (parts.length < 3) return { days: 0, text: "PIN", dateText: "" };
-                            const target = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                            const now = new Date();
-                            const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                            const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-                            const diffDays = Math.round((targetMidnight.getTime() - nowMidnight.getTime()) / (1000 * 60 * 60 * 24));
-                            return {
-                                days: diffDays,
-                                text: diffDays === 0 ? "TODAY" : (diffDays > 0 ? `${diffDays}d` : `${Math.abs(diffDays)}d ago`),
-                                dateText: target.toLocaleDateString(Qt.locale(), "d MMM")
-                            };
+                        StyledText {
+                            visible: root.countdown.dateText.length > 0
+                            text: Translation.tr("Target Date: ") + root.countdown.dateText
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colSubtext
                         }
 
-                        RowLayout {
-                            id: targetRow
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            spacing: 12
+                        Item { Layout.fillWidth: true }
 
-                            StyledText {
-                                text: targetRowDelegate.cd ? targetRowDelegate.cd.text : ""
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                font.weight: Font.Bold
-                                color: (targetRowDelegate.cd && targetRowDelegate.cd.days === 0)
-                                    ? Appearance.colors.colPrimary
-                                    : ((targetRowDelegate.cd && targetRowDelegate.cd.days > 0) ? Appearance.colors.colSecondary : Appearance.colors.colSubtext)
-                            }
+                        // Unpin action if currently pinned
+                        StyledText {
+                            visible: root.pinnedTargets.length > 0
+                            text: Translation.tr("Unpin")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.weight: Font.Medium
+                            color: unpinActiveMouse.containsMouse ? Appearance.colors.colError : Appearance.colors.colSubtext
 
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: targetRowDelegate.modelData ? (targetRowDelegate.modelData.title || targetRowDelegate.modelData.date || "") : ""
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                color: Appearance.colors.colOnLayer1
-                                elide: Text.ElideRight
-                            }
-
-                            StyledText {
-                                text: targetRowDelegate.cd ? targetRowDelegate.cd.dateText : ""
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: Appearance.colors.colSubtext
-                            }
-
-                            // Unpin button (pure text)
-                            StyledText {
-                                text: Translation.tr("Unpin")
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                font.weight: Font.Medium
-                                color: unpinMouse.containsMouse ? Appearance.colors.colError : Appearance.colors.colSubtext
-
-                                MouseArea {
-                                    id: unpinMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (targetRowDelegate.modelData) {
-                                            root.unpinTarget(targetRowDelegate.modelData.date, targetRowDelegate.modelData.title);
-                                        }
+                            MouseArea {
+                                id: unpinActiveMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (root.activeTarget && root.activeTarget.date) {
+                                        root.unpinTarget(root.activeTarget.date, root.activeTarget.title);
                                     }
                                 }
                             }
                         }
-
-                        MouseArea {
-                            id: rowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            z: -1
-                            onClicked: {
-                                root.currentTargetIndex = targetRowDelegate.index;
-                            }
-                        }
                     }
                 }
-            }
-
-            // Quick hint footer (Pure text, zero icons)
-            StyledText {
-                Layout.alignment: Qt.AlignHCenter
-                text: Translation.tr("Click to toggle calendar • Scroll to cycle targets")
-                font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.colors.colSubtext
             }
         }
     }
