@@ -49,6 +49,12 @@ Rectangle {
     property string selectedEntryId: ""
     property string lastTopEntryId: ""
 
+    onSelectedIndexChanged: {
+        if (listPane && listPane.selectedIndex !== root.selectedIndex) {
+            listPane.selectedIndex = root.selectedIndex;
+        }
+    }
+
     function findCopiedEntryIndex() {
         if (root.rawFiltered.length === 0) return -1;
 
@@ -57,7 +63,17 @@ Rectangle {
             return 0;
         }
 
-        // 1. Match newest entry from Cliphist.entries[0] by entry ID
+        // 1. Match Quickshell.clipboardText if available (the exact fresh clipboard content)
+        if (Quickshell.clipboardText && Quickshell.clipboardText.trim().length > 0) {
+            const clipText = Quickshell.clipboardText.trim();
+            for (let i = 0; i < root.rawFiltered.length; i++) {
+                if (StringUtils.cleanCliphistEntry(root.rawFiltered[i]).trim() === clipText) {
+                    return i;
+                }
+            }
+        }
+
+        // 2. Match newest entry from Cliphist.entries[0]
         if (Cliphist.entries && Cliphist.entries.length > 0) {
             const newestEntry = Cliphist.entries[0];
             const newestId = Cliphist.getEntryId(newestEntry);
@@ -68,7 +84,6 @@ Rectangle {
                     }
                 }
             }
-            // Also try matching by cleaned text
             const newestClean = StringUtils.cleanCliphistEntry(newestEntry).trim();
             if (newestClean.length > 0) {
                 for (let i = 0; i < root.rawFiltered.length; i++) {
@@ -79,37 +94,23 @@ Rectangle {
             }
         }
 
-        // 2. Match Quickshell.clipboardText if available
-        if (Quickshell.clipboardText && Quickshell.clipboardText.trim().length > 0) {
-            const clipText = Quickshell.clipboardText.trim();
-            for (let i = 0; i < root.rawFiltered.length; i++) {
-                if (StringUtils.cleanCliphistEntry(root.rawFiltered[i]).trim() === clipText) {
-                    return i;
-                }
-            }
-        }
-
-        // 3. Fallback: if there are unpinned items, the first unpinned item is the newest copied item!
-        for (let i = 0; i < root.rawFiltered.length; i++) {
-            if (!Cliphist.isPinned(root.rawFiltered[i])) {
-                return i;
-            }
-        }
-
+        // 3. Fallback: Always top entry (0)
         return 0;
     }
 
     function focusCopiedEntry() {
         const idx = findCopiedEntryIndex();
-        if (idx >= 0 && idx < root.rawFiltered.length) {
-            root.selectedIndex = idx;
-            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[idx]);
-            Qt.callLater(() => {
-                listPane.scrollSelectedIntoView();
-            });
-        } else if (root.rawFiltered.length > 0) {
-            root.selectedIndex = 0;
-            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[0]);
+        const targetIdx = (idx >= 0 && idx < root.rawFiltered.length) ? idx : 0;
+        root.selectedIndex = targetIdx;
+        if (listPane) {
+            listPane.selectedIndex = targetIdx;
+        }
+        if (root.rawFiltered.length > 0) {
+            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[targetIdx]);
+        }
+        if (targetIdx === 0) {
+            listPane.resetToTop();
+        } else {
             Qt.callLater(() => {
                 listPane.scrollSelectedIntoView();
             });
@@ -142,10 +143,15 @@ Rectangle {
             const newCopiedIdx = root.findCopiedEntryIndex();
             if (newCopiedIdx >= 0) {
                 root.selectedIndex = newCopiedIdx;
+                if (listPane) listPane.selectedIndex = newCopiedIdx;
                 root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[newCopiedIdx]);
-                Qt.callLater(() => {
-                    listPane.scrollSelectedIntoView();
-                });
+                if (newCopiedIdx === 0) {
+                    listPane.resetToTop();
+                } else {
+                    Qt.callLater(() => {
+                        listPane.scrollSelectedIntoView();
+                    });
+                }
                 return;
             }
         }
@@ -153,15 +159,17 @@ Rectangle {
         // If actively searching:
         if (root.searchQuery.trim().length > 0) {
             root.selectedIndex = 0;
+            if (listPane) listPane.selectedIndex = 0;
             return;
         }
 
-        // Otherwise preserve current selected entry if it still exists
-        if (root.selectedEntryId !== "") {
+        // Otherwise preserve current selected entry if it still exists AND modal is open
+        if (GlobalStates.clipboardOpen && root.selectedEntryId !== "") {
             for (let i = 0; i < root.rawFiltered.length; i++) {
                 if (Cliphist.getEntryId(root.rawFiltered[i]) === root.selectedEntryId) {
                     if (root.selectedIndex !== i) {
                         root.selectedIndex = i;
+                        if (listPane) listPane.selectedIndex = i;
                     }
                     return;
                 }
@@ -170,11 +178,12 @@ Rectangle {
 
         // Fallback to copied item
         const fallbackIdx = root.findCopiedEntryIndex();
-        if (fallbackIdx >= 0 && fallbackIdx < root.rawFiltered.length) {
-            root.selectedIndex = fallbackIdx;
-            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[fallbackIdx]);
-        } else {
-            root.selectedIndex = 0;
+        const targetFallback = (fallbackIdx >= 0 && fallbackIdx < root.rawFiltered.length) ? fallbackIdx : 0;
+        root.selectedIndex = targetFallback;
+        if (listPane) listPane.selectedIndex = targetFallback;
+        root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[targetFallback]);
+        if (targetFallback === 0) {
+            listPane.resetToTop();
         }
     }
 
@@ -189,14 +198,19 @@ Rectangle {
                 root.selectedEntryId = "";
                 root.selectedIndex = 0;
                 root.activeSection = 0;
-                listPane.focusSearch();
+                listPane.resetToTop();
                 Cliphist.refresh();
-                if (root.rawFiltered.length > 0) {
-                    root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[0]);
-                }
                 Qt.callLater(() => {
                     root.focusCopiedEntry();
                 });
+            } else {
+                root.searchQuery = "";
+                root.filterPinnedOnly = false;
+                root.lastTopEntryId = "";
+                root.selectedEntryId = "";
+                root.selectedIndex = 0;
+                root.activeSection = 0;
+                listPane.resetToTop();
             }
         }
     }
@@ -268,7 +282,11 @@ Rectangle {
 
             onFilterPinnedOnlyChanged: root.filterPinnedOnly = filterPinnedOnly
             onSearchQueryChanged: root.searchQuery = searchQuery
-            onSelectedIndexChanged: root.selectedIndex = selectedIndex
+            onSelectedIndexChanged: {
+                if (root.selectedIndex !== selectedIndex) {
+                    root.selectedIndex = selectedIndex;
+                }
+            }
 
             onRequestFocusEditor: {
                 root.activeSection = 1;

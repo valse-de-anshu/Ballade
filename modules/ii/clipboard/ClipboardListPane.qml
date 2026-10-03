@@ -25,6 +25,16 @@ Item {
     signal requestClose()
     signal showNotification(string text)
 
+    function resetToTop() {
+        root.selectedIndex = 0;
+        listView.currentIndex = 0;
+        listView.positionViewAtBeginning();
+        if (searchField.text !== "") {
+            searchField.text = "";
+        }
+        searchField.forceActiveFocus();
+    }
+
     function focusSearch() {
         searchField.forceActiveFocus();
     }
