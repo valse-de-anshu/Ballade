@@ -33,9 +33,15 @@ Rectangle {
         target: root
     }
 
+    property bool filterPinnedOnly: false
+
     readonly property var rawFiltered: {
         const _ = Cliphist.pinRevision;
-        return Cliphist.fuzzyQuery(root.searchQuery);
+        const list = Cliphist.fuzzyQuery(root.searchQuery);
+        if (root.filterPinnedOnly) {
+            return list.filter(e => Cliphist.isPinned(e));
+        }
+        return list;
     }
 
     property string selectedEntryId: ""
@@ -170,6 +176,7 @@ Rectangle {
         function onClipboardOpenChanged() {
             if (GlobalStates.clipboardOpen) {
                 root.searchQuery = "";
+                root.filterPinnedOnly = false;
                 root.lastTopEntryId = "";
                 root.selectedEntryId = "";
                 root.activeSection = 0;
@@ -235,7 +242,9 @@ Rectangle {
             filteredList: root.rawFiltered
             selectedIndex: root.selectedIndex
             isListFocused: root.activeSection === 0
+            filterPinnedOnly: root.filterPinnedOnly
 
+            onFilterPinnedOnlyChanged: root.filterPinnedOnly = filterPinnedOnly
             onSearchQueryChanged: root.searchQuery = searchQuery
             onSelectedIndexChanged: root.selectedIndex = selectedIndex
 

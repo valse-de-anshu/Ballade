@@ -17,6 +17,7 @@ Item {
     property var filteredList: []
     property int selectedIndex: 0
     property bool isListFocused: true
+    property bool filterPinnedOnly: false
 
     signal requestFocusEditor()
     signal requestCopyAndClose(string entry)
@@ -177,6 +178,24 @@ Item {
                         }
                         event.accepted = true;
                     }
+                }
+            }
+
+            // Filter Pinned Items Button
+            IconToolbarButton {
+                id: pinnedFilterButton
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignVCenter
+                toggled: root.filterPinnedOnly
+                onClicked: root.filterPinnedOnly = !root.filterPinnedOnly
+                text: root.filterPinnedOnly ? "keep" : "push_pin"
+
+                StyledToolTip {
+                    y: parent.height + 6
+                    text: root.filterPinnedOnly ? Translation.tr("Show all clipboard history") : Translation.tr("Filter pinned items")
                 }
             }
 

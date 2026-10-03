@@ -118,7 +118,7 @@ Singleton {
                 key: "name"
             }).map(r => r.obj.entry);
         }
-        return sortEntries(rawResults);
+        return rawResults;
     }
 
     function entryIsImage(entry) {
