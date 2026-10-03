@@ -37,6 +37,29 @@ RippleButton {
     readonly property bool isImage: isCliphistImage || localImagePath !== ""
     readonly property string detectedColor: !isImage ? ColorUtils.detectColor(cleanedText) : ""
     readonly property bool hasDetectedColor: detectedColor !== ""
+    readonly property string detectedUrl: {
+        if (root.isImage || !root.cleanedText) return "";
+        const text = root.cleanedText.trim();
+        // 1. Direct match for http(s) or www
+        const urlRegex = /(?:https?:\/\/|www\.)[^\s<>"{}|\\^`[\]]+/i;
+        const match = text.match(urlRegex);
+        if (match) {
+            let u = match[0];
+            return u.toLowerCase().startsWith("http") ? u : ("https://" + u);
+        }
+        // 2. Standalone domain or domain with path: e.g. github.com, reddit.com/r/all
+        const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,6}(?::\d+)?(?:\/[^\s<>"{}|\\^`[\]]*)?$/i;
+        if (domainRegex.test(text)) {
+            const lower = text.toLowerCase();
+            const excludedExts = [".txt", ".json", ".py", ".cpp", ".c", ".h", ".hpp", ".js", ".ts", ".md", ".sh", ".conf", ".css", ".html", ".log"];
+            for (let i = 0; i < excludedExts.length; i++) {
+                if (lower.endsWith(excludedExts[i])) return "";
+            }
+            return "https://" + text;
+        }
+        return "";
+    }
+    readonly property bool isUrl: detectedUrl !== "" && !hasDetectedColor
     readonly property bool isPinned: {
         const _ = Cliphist.pinRevision;
         return Cliphist.isPinned(entryString);
@@ -126,10 +149,21 @@ RippleButton {
                 }
             }
 
-            // 3. Material Symbol for regular text
+            // 3. Website Favicon
+            Loader {
+                anchors.centerIn: parent
+                active: !root.isImage && !root.hasDetectedColor && root.isUrl
+                visible: active
+                sourceComponent: Favicon {
+                    url: root.detectedUrl
+                    size: 20
+                }
+            }
+
+            // 4. Material Symbol for regular text
             MaterialSymbol {
                 anchors.centerIn: parent
-                visible: !root.isImage && !root.hasDetectedColor
+                visible: !root.isImage && !root.hasDetectedColor && !root.isUrl
                 text: root.isPinned ? "push_pin" : "content_paste"
                 iconSize: 20
                 color: root.isPinned ? Appearance.colors.colPrimary : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)

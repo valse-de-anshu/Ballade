@@ -40,6 +40,30 @@ Item {
     readonly property bool isImage: isCliphistImage || localImagePath !== ""
     readonly property string detectedColor: !isImage ? ColorUtils.detectColor(editorText || StringUtils.cleanCliphistEntry(currentEntry)) : ""
     readonly property bool hasDetectedColor: detectedColor !== ""
+    readonly property string detectedUrl: {
+        if (root.isImage || !root.currentEntry) return "";
+        const text = (root.editorText || StringUtils.cleanCliphistEntry(root.currentEntry)).trim();
+        // 1. Direct match for http(s) or www
+        const urlRegex = /(?:https?:\/\/|www\.)[^\s<>"{}|\\^`[\]]+/i;
+        const match = text.match(urlRegex);
+        if (match) {
+            let u = match[0];
+            return u.toLowerCase().startsWith("http") ? u : ("https://" + u);
+        }
+        // 2. Standalone domain or domain with path: e.g. github.com, reddit.com/r/all
+        const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,6}(?::\d+)?(?:\/[^\s<>"{}|\\^`[\]]*)?$/i;
+        if (domainRegex.test(text)) {
+            const lower = text.toLowerCase();
+            const excludedExts = [".txt", ".json", ".py", ".cpp", ".c", ".h", ".hpp", ".js", ".ts", ".md", ".sh", ".conf", ".css", ".html", ".log"];
+            for (let i = 0; i < excludedExts.length; i++) {
+                if (lower.endsWith(excludedExts[i])) return "";
+            }
+            return "https://" + text;
+        }
+        return "";
+    }
+    readonly property bool isUrl: detectedUrl !== "" && !hasDetectedColor
+    readonly property string detectedDomain: isUrl ? StringUtils.getDomain(detectedUrl) : ""
     readonly property string imageFilePath: `${Directories.cliphistDecode}/${entryId}.png`
 
     readonly property int charCount: editorText.length
@@ -204,7 +228,19 @@ Item {
                 spacing: 6
                 Layout.alignment: Qt.AlignVCenter
 
+                Loader {
+                    Layout.preferredWidth: 20
+                    Layout.preferredHeight: 20
+                    active: root.isUrl
+                    visible: root.isUrl
+                    sourceComponent: Favicon {
+                        url: root.detectedUrl
+                        size: 20
+                    }
+                }
+
                 MaterialSymbol {
+                    visible: !root.isUrl
                     iconSize: 20
                     text: root.isImage ? "image" : (root.hasDetectedColor ? "palette" : "edit_note")
                     color: Appearance.colors.colPrimary
@@ -215,6 +251,7 @@ Item {
                         if (!root.currentEntry) return Translation.tr("Editor");
                         if (root.isImage) return Translation.tr("Image");
                         if (root.hasDetectedColor) return root.detectedColor;
+                        if (root.isUrl && root.detectedDomain) return `${root.detectedDomain} • ${root.charCount} chars`;
                         return `${root.charCount} chars • ${root.lineCount} lines`;
                     }
                     font.pixelSize: Appearance.font.pixelSize.normal
@@ -247,6 +284,29 @@ Item {
             RowLayout {
                 visible: !root.isImage && !root.hasDetectedColor
                 spacing: 6
+
+                // Open URL
+                RippleButton {
+                    visible: root.isUrl
+                    implicitHeight: 32
+                    implicitWidth: openUrlRow.implicitWidth + 18
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: "transparent"
+                    colBackgroundHover: Appearance.colors.colLayer2
+                    colRipple: Appearance.colors.colLayer2Active
+                    onClicked: {
+                        Qt.openUrlExternally(root.detectedUrl);
+                        root.requestClose();
+                    }
+
+                    contentItem: RowLayout {
+                        id: openUrlRow
+                        anchors.centerIn: parent
+                        spacing: 4
+                        MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colPrimary }
+                        StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colPrimary }
+                    }
+                }
 
                 // Revert
                 RippleButton {
