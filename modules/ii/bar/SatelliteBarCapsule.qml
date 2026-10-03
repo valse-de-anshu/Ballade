@@ -56,6 +56,9 @@ Item {
                 if (parsed && typeof parsed === "object") {
                     if (Array.isArray(parsed.targets) && parsed.targets.length > 0) {
                         root.pinnedTargets = parsed.targets;
+                        if (root.currentTargetIndex >= parsed.targets.length) {
+                            root.currentTargetIndex = 0;
+                        }
                         return;
                     } else if (parsed.date) {
                         root.pinnedTargets = [{
@@ -84,19 +87,41 @@ Item {
         root.userEvents = [];
     }
 
-    // Determine the active item to display
+    function unpinTarget(dateKey, title) {
+        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return;
+        let list = root.pinnedTargets.filter(t => !(t.date === dateKey && t.title === title));
+        root.pinnedTargets = list;
+        if (root.currentTargetIndex >= list.length) {
+            root.currentTargetIndex = Math.max(0, list.length - 1);
+        }
+        saveTargets();
+    }
+
+    function saveTargets() {
+        try {
+            let currentPayload = {};
+            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
+                currentPayload = JSON.parse(targetFileView.text()) || {};
+            }
+            currentPayload.targets = root.pinnedTargets || [];
+            targetFileView.setText(JSON.stringify(currentPayload, null, 2));
+        } catch(e) {
+            targetFileView.setText(JSON.stringify({ targets: root.pinnedTargets || [] }, null, 2));
+        }
+    }
+
+    // Determine the active item to display (Strictly synchronized with Calendar)
     readonly property var activeTarget: {
-        // 1. Pinned targets take top priority
+        // 1. Pinned targets from calendar take top priority
         if (root.pinnedTargets.length > 0) {
             const idx = Math.min(root.currentTargetIndex, root.pinnedTargets.length - 1);
             return root.pinnedTargets[idx];
         }
 
-        // 2. Nearest upcoming user event from calendar_events.json
+        // 2. Upcoming user event from calendar_events.json (TODAY or FUTURE only, NEVER ancient past notes)
         const now = new Date();
         const nowKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
         if (root.userEvents.length > 0) {
-            // Find events today or in future
             const futureEvents = root.userEvents.filter(ev => ev.date >= nowKey);
             if (futureEvents.length > 0) {
                 futureEvents.sort((a, b) => a.date.localeCompare(b.date));
@@ -106,16 +131,9 @@ Item {
                     type: "user"
                 };
             }
-            // If only past events, take the most recent
-            const sorted = [...root.userEvents].sort((a, b) => b.date.localeCompare(a.date));
-            return {
-                date: sorted[0].date,
-                title: sorted[0].text || "Note",
-                type: "user"
-            };
         }
 
-        // 3. Nearest upcoming festival / holiday from IndianCalendar
+        // 3. Nearest upcoming festival / holiday from IndianCalendar (TODAY or FUTURE only)
         try {
             const y = now.getFullYear();
             const yearMap = IndianCalendar._getYearCached ? IndianCalendar._getYearCached(y) : IndianCalendar.getYearEvents(y);
@@ -135,7 +153,7 @@ Item {
             }
         } catch(e) {}
 
-        // 4. Default placeholder
+        // 4. Default placeholder when nothing is pinned
         return {
             date: "",
             title: Translation.tr("Tap to pin note"),
@@ -193,31 +211,22 @@ Item {
         };
     }
 
-    readonly property string targetIcon: {
-        if (!root.countdown.valid) return "satellite_alt";
-        if (root.activeTarget?.type === "festival") return "celebration";
-        if (root.pinnedTargets.length > 0) return "push_pin";
-        return "event_note";
-    }
-
     function cycleNextTarget() {
         if (root.pinnedTargets.length > 1) {
             root.currentTargetIndex = (root.currentTargetIndex + 1) % root.pinnedTargets.length;
         }
     }
 
-    // Satellite Capsule Pill
+    // Satellite Top Bar Area: Pure, clean text (NO icons, NO gray pill covering)
     Rectangle {
         id: capsulePill
         anchors.centerIn: parent
         implicitHeight: 28
-        implicitWidth: contentRow.implicitWidth + 20
+        implicitWidth: contentRow.implicitWidth + 16
         radius: Appearance.rounding.full
 
-        // Damped background: blends smoothly with the top bar and gently highlights on hover
-        color: mouseArea.containsMouse
-            ? Appearance.colors.colLayer1Hover
-            : ColorUtils.applyAlpha(Appearance.colors.colLayer1, 0.40)
+        // Seamless transparent background; gentle damped highlight only on hover
+        color: mouseArea.containsMouse ? Appearance.colors.colLayer1Hover : "transparent"
         border.width: 0
 
         Behavior on color {
@@ -229,96 +238,44 @@ Item {
             anchors.centerIn: parent
             spacing: 8
 
-            // Dedicated target icon
-            MaterialSymbol {
-                text: root.targetIcon
-                iconSize: 15
-                color: Appearance.colors.colPrimary
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            // Countdown Status Badge Pill (Clean, borderless, high-contrast)
-            Rectangle {
-                Layout.alignment: Qt.AlignVCenter
-                implicitHeight: 20
-                implicitWidth: badgeTextLabel.implicitWidth + 12
-                radius: Appearance.rounding.full
-                border.width: 0
+            // Countdown Status Text (Pure text, high contrast, zero gray oval badge)
+            StyledText {
+                text: root.countdown.badgeText
+                font.pixelSize: Appearance.font.pixelSize.small
+                font.weight: Font.Bold
                 color: {
-                    if (!root.countdown.valid) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.16);
-                    }
-                    if (root.countdown.days === 0) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.22);
-                    }
-                    if (root.countdown.days > 0) {
-                        return ColorUtils.applyAlpha(Appearance.colors.colSecondary, 0.22);
-                    }
-                    return ColorUtils.applyAlpha(Appearance.colors.colOnLayer1, 0.12);
-                }
-
-                StyledText {
-                    id: badgeTextLabel
-                    anchors.centerIn: parent
-                    text: root.countdown.badgeText
-                    font.pixelSize: 10
-                    font.weight: Font.DemiBold
-                    color: {
-                        if (!root.countdown.valid || root.countdown.days === 0) {
-                            return Appearance.colors.colPrimary;
-                        }
-                        if (root.countdown.days > 0) {
-                            return Appearance.colors.colSecondary;
-                        }
-                        return Appearance.colors.colOnLayer1;
-                    }
+                    if (!root.countdown.valid) return Appearance.colors.colSubtext;
+                    if (root.countdown.days === 0) return Appearance.colors.colPrimary;
+                    if (root.countdown.days > 0) return Appearance.colors.colSecondary;
+                    return Appearance.colors.colSubtext;
                 }
             }
 
-            // Summary Title & Date Tag
-            RowLayout {
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 6
-
-                StyledText {
-                    text: root.countdown.title
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    font.weight: Font.Medium
-                    color: Appearance.colors.colOnLayer0
-                    elide: Text.ElideRight
-                    Layout.maximumWidth: 200
-                }
-
-                StyledText {
-                    visible: root.countdown.dateText.length > 0
-                    text: "• " + root.countdown.dateText
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colSubtext
-                    Layout.alignment: Qt.AlignVCenter
-                }
+            // Summary Title Text
+            StyledText {
+                text: root.countdown.title
+                font.pixelSize: Appearance.font.pixelSize.small
+                font.weight: Font.Medium
+                color: Appearance.colors.colOnLayer0
+                elide: Text.ElideRight
+                Layout.maximumWidth: 220
             }
 
-            // Multiple targets indicator
-            RowLayout {
+            // Date Tag Text
+            StyledText {
+                visible: root.countdown.dateText.length > 0
+                text: "• " + root.countdown.dateText
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.colors.colSubtext
+            }
+
+            // Target Index Indicator (Pure text)
+            StyledText {
                 visible: root.pinnedTargets.length > 1
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 2
-
-                MaterialSymbol {
-                    text: "unfold_more"
-                    iconSize: 13
-                    color: Appearance.colors.colSubtext
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                StyledText {
-                    id: countText
-                    text: `${root.currentTargetIndex + 1}/${root.pinnedTargets.length}`
-                    font.pixelSize: 10
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colSubtext
-                    Layout.alignment: Qt.AlignVCenter
-                }
+                text: `(${root.currentTargetIndex + 1}/${root.pinnedTargets.length})`
+                font.pixelSize: Appearance.font.pixelSize.smallest
+                font.weight: Font.DemiBold
+                color: Appearance.colors.colSubtext
             }
         }
 
@@ -343,76 +300,73 @@ Item {
         }
     }
 
-    // Interactive Detailed Popup
+    // Interactive Detailed Popup (Spacious, beautifully padded, zero icons)
     StyledPopup {
         id: popup
         hoverTarget: mouseArea
 
         ColumnLayout {
             anchors.centerIn: parent
-            spacing: 8
-            implicitWidth: 320
+            spacing: 14
+            implicitWidth: 380
 
-            StyledPopupHeaderRow {
-                icon: "satellite_alt"
-                label: Translation.tr("Satellite Summary")
+            // Header (Clean typography, zero icons)
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                StyledText {
+                    text: Translation.tr("Satellite Summary")
+                    font.pixelSize: Appearance.font.pixelSize.large
+                    font.weight: Font.Bold
+                    color: Appearance.colors.colOnLayer0
+                }
+
+                Item { Layout.fillWidth: true }
+
+                StyledText {
+                    visible: root.pinnedTargets.length > 1
+                    text: `${root.currentTargetIndex + 1} / ${root.pinnedTargets.length}`
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colSubtext
+                }
             }
 
-            // Active Countdown Card
+            // Active Countdown Card (Generous padding, clean typography, zero icons)
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: cardCol.implicitHeight + 20
-                radius: Appearance.rounding.small
+                implicitHeight: cardCol.implicitHeight + 24
+                radius: Appearance.rounding.normal
                 color: Appearance.colors.colLayer1
                 border.width: 0
 
                 ColumnLayout {
                     id: cardCol
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 6
+                    anchors.margins: 16
+                    spacing: 8
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: 10
 
-                        Rectangle {
-                            implicitHeight: 20
-                            implicitWidth: popupBadgeText.implicitWidth + 12
-                            radius: Appearance.rounding.full
+                        StyledText {
+                            text: root.countdown.badgeText
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.weight: Font.Bold
                             color: {
-                                if (!root.countdown.valid || root.countdown.days === 0) {
-                                    return ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.20);
-                                }
-                                if (root.countdown.days > 0) {
-                                    return ColorUtils.applyAlpha(Appearance.colors.colSecondary, 0.20);
-                                }
-                                return ColorUtils.applyAlpha(Appearance.colors.colOnLayer1, 0.12);
-                            }
-                            border.width: 0
-
-                            StyledText {
-                                id: popupBadgeText
-                                anchors.centerIn: parent
-                                text: root.countdown.badgeText
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                color: {
-                                    if (!root.countdown.valid || root.countdown.days === 0) {
-                                        return Appearance.colors.colPrimary;
-                                    }
-                                    if (root.countdown.days > 0) {
-                                        return Appearance.colors.colSecondary;
-                                    }
-                                    return Appearance.colors.colOnLayer1;
-                                }
+                                if (!root.countdown.valid) return Appearance.colors.colSubtext;
+                                if (root.countdown.days === 0) return Appearance.colors.colPrimary;
+                                if (root.countdown.days > 0) return Appearance.colors.colSecondary;
+                                return Appearance.colors.colSubtext;
                             }
                         }
 
                         StyledText {
                             Layout.fillWidth: true
                             text: root.countdown.title
-                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.pixelSize: Appearance.font.pixelSize.normal
                             font.weight: Font.DemiBold
                             color: Appearance.colors.colOnLayer1
                             wrapMode: Text.WordWrap
@@ -422,7 +376,7 @@ Item {
                     StyledText {
                         visible: root.countdown.dateText.length > 0
                         text: Translation.tr("Target Date: ") + root.countdown.dateText
-                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.colors.colSubtext
                     }
                 }
@@ -432,22 +386,29 @@ Item {
             ColumnLayout {
                 visible: root.pinnedTargets.length > 0
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: 8
 
                 StyledText {
-                    text: Translation.tr("Pinned Targets (%1):").arg(root.pinnedTargets.length)
-                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    text: Translation.tr("Pinned Targets (%1)").arg(root.pinnedTargets.length)
+                    font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colSubtext
                 }
 
                 Repeater {
                     model: root.pinnedTargets
-                    delegate: RowLayout {
-                        id: targetRow
+                    delegate: Rectangle {
+                        id: targetRowDelegate
+                        required property var modelData
+                        required property int index
                         Layout.fillWidth: true
-                        spacing: 6
-                        readonly property var cd: getRowCountdown(modelData)
+                        implicitHeight: targetRow.implicitHeight + 14
+                        radius: Appearance.rounding.small
+                        color: targetRowDelegate.index === root.currentTargetIndex
+                            ? Appearance.colors.colLayer2
+                            : (rowMouse.containsMouse ? Appearance.colors.colLayer1Hover : "transparent")
+
+                        readonly property var cd: getRowCountdown(targetRowDelegate.modelData)
 
                         function getRowCountdown(item) {
                             if (!item || !item.date) return { days: 0, text: "PIN", dateText: "" };
@@ -465,52 +426,77 @@ Item {
                             };
                         }
 
-                        StyledText {
-                            text: targetRow.cd.text
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
-                            color: targetRow.cd.days === 0 ? Appearance.colors.colPrimary : (targetRow.cd.days > 0 ? Appearance.colors.colSecondary : Appearance.colors.colSubtext)
+                        RowLayout {
+                            id: targetRow
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
+
+                            StyledText {
+                                text: targetRowDelegate.cd ? targetRowDelegate.cd.text : ""
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                font.weight: Font.Bold
+                                color: (targetRowDelegate.cd && targetRowDelegate.cd.days === 0)
+                                    ? Appearance.colors.colPrimary
+                                    : ((targetRowDelegate.cd && targetRowDelegate.cd.days > 0) ? Appearance.colors.colSecondary : Appearance.colors.colSubtext)
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: targetRowDelegate.modelData ? (targetRowDelegate.modelData.title || targetRowDelegate.modelData.date || "") : ""
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colOnLayer1
+                                elide: Text.ElideRight
+                            }
+
+                            StyledText {
+                                text: targetRowDelegate.cd ? targetRowDelegate.cd.dateText : ""
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                            }
+
+                            // Unpin button (pure text)
+                            StyledText {
+                                text: Translation.tr("Unpin")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: Font.Medium
+                                color: unpinMouse.containsMouse ? Appearance.colors.colError : Appearance.colors.colSubtext
+
+                                MouseArea {
+                                    id: unpinMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (targetRowDelegate.modelData) {
+                                            root.unpinTarget(targetRowDelegate.modelData.date, targetRowDelegate.modelData.title);
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: modelData.title || modelData.date
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colOnLayer1
-                            elide: Text.ElideRight
-                        }
-
-                        StyledText {
-                            text: targetRow.cd.dateText
-                            font.pixelSize: 10
-                            color: Appearance.colors.colSubtext
+                        MouseArea {
+                            id: rowMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            z: -1
+                            onClicked: {
+                                root.currentTargetIndex = targetRowDelegate.index;
+                            }
                         }
                     }
                 }
             }
 
-            // Quick hint footer
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 24
-                radius: Appearance.rounding.small
-                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.08)
-                border.width: 0
-
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 6
-                    MaterialSymbol {
-                        text: "touch_app"
-                        iconSize: 13
-                        color: Appearance.colors.colPrimary
-                    }
-                    StyledText {
-                        text: Translation.tr("Click for calendar • Scroll to cycle")
-                        font.pixelSize: 10
-                        color: Appearance.colors.colSubtext
-                    }
-                }
+            // Quick hint footer (Pure text, zero icons)
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: Translation.tr("Click to toggle calendar • Scroll to cycle targets")
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.colors.colSubtext
             }
         }
     }

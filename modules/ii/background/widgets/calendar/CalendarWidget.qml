@@ -136,6 +136,7 @@ AbstractBackgroundWidget {
     FileView {
         id: targetFileView
         path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
+        watchChanges: true
         onLoaded: {
             try {
                 const parsed = JSON.parse(targetFileView.text())
@@ -383,6 +384,7 @@ AbstractBackgroundWidget {
     FileView {
         id: eventsFileView
         path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
+        watchChanges: true
         onLoaded: {
             const fileContents = eventsFileView.text()
             try {
