@@ -19,7 +19,6 @@ Item {
     property string rawDecodedText: ""
     property string editorText: ""
     property bool _settingText: false
-    property bool isModified: (editorText !== rawDecodedText && !isImage)
     property bool isLoading: false
 
     signal requestFocusList()
@@ -243,7 +242,7 @@ Item {
                     visible: !root.isUrl
                     iconSize: 20
                     text: root.isImage ? "image" : (root.hasDetectedColor ? "palette" : "edit_note")
-                    color: Appearance.colors.colPrimary
+                    color: Appearance.colors.colOnSecondaryContainer
                 }
 
                 StyledText {
@@ -257,24 +256,6 @@ Item {
                     font.pixelSize: Appearance.font.pixelSize.normal
                     font.weight: Font.Medium
                     color: Appearance.colors.colOnLayer1
-                }
-
-                // Edited pill badge
-                Rectangle {
-                    visible: root.isModified
-                    Layout.preferredHeight: 18
-                    Layout.preferredWidth: editedText.implicitWidth + 12
-                    radius: Appearance.rounding.full
-                    color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.75)
-
-                    StyledText {
-                        id: editedText
-                        anchors.centerIn: parent
-                        text: Translation.tr("Edited")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.weight: Font.DemiBold
-                        color: Appearance.colors.colPrimary
-                    }
                 }
             }
 
@@ -291,9 +272,9 @@ Item {
                     implicitHeight: 32
                     implicitWidth: openUrlRow.implicitWidth + 18
                     buttonRadius: Appearance.rounding.full
-                    colBackground: "transparent"
-                    colBackgroundHover: Appearance.colors.colLayer2
-                    colRipple: Appearance.colors.colLayer2Active
+                    colBackground: Appearance.colors.colSecondaryContainer
+                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                    colRipple: Appearance.colors.colSecondaryContainerActive
                     onClicked: {
                         Qt.openUrlExternally(root.detectedUrl);
                         root.requestClose();
@@ -303,33 +284,8 @@ Item {
                         id: openUrlRow
                         anchors.centerIn: parent
                         spacing: 4
-                        MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colPrimary }
-                        StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colPrimary }
-                    }
-                }
-
-                // Revert
-                RippleButton {
-                    visible: root.isModified
-                    implicitHeight: 32
-                    implicitWidth: revertRow.implicitWidth + 16
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: "transparent"
-                    colBackgroundHover: Appearance.colors.colLayer2
-                    colRipple: Appearance.colors.colLayer2Active
-                    onClicked: {
-                        root._settingText = true;
-                        root.editorText = root.rawDecodedText;
-                        textArea.text = root.rawDecodedText;
-                        root._settingText = false;
-                    }
-
-                    contentItem: RowLayout {
-                        id: revertRow
-                        anchors.centerIn: parent
-                        spacing: 4
-                        MaterialSymbol { font.pixelSize: 15; text: "undo"; color: Appearance.colors.colSubtext }
-                        StyledText { text: Translation.tr("Revert"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colSubtext }
+                        MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colOnSecondaryContainer }
+                        StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnSecondaryContainer }
                     }
                 }
 
@@ -360,9 +316,9 @@ Item {
                     implicitHeight: 32
                     implicitWidth: pasteRow.implicitWidth + 18
                     buttonRadius: Appearance.rounding.full
-                    colBackground: Appearance.colors.colPrimary
-                    colBackgroundHover: Appearance.colors.colPrimaryHover
-                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    colBackground: Appearance.colors.colSecondaryContainer
+                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                    colRipple: Appearance.colors.colSecondaryContainerActive
                     onClicked: {
                         Cliphist.pasteText(root.editorText);
                         root.requestClose();
@@ -372,8 +328,8 @@ Item {
                         id: pasteRow
                         anchors.centerIn: parent
                         spacing: 5
-                        MaterialSymbol { font.pixelSize: 15; text: "output"; color: Appearance.colors.colOnPrimary }
-                        StyledText { text: Translation.tr("Paste"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                        MaterialSymbol { font.pixelSize: 15; text: "output"; color: Appearance.colors.colOnSecondaryContainer }
+                        StyledText { text: Translation.tr("Paste"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnSecondaryContainer }
                     }
                 }
             }
@@ -409,9 +365,9 @@ Item {
                     implicitHeight: 32
                     implicitWidth: copyImgRow.implicitWidth + 18
                     buttonRadius: Appearance.rounding.full
-                    colBackground: Appearance.colors.colPrimary
-                    colBackgroundHover: Appearance.colors.colPrimaryHover
-                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    colBackground: Appearance.colors.colSecondaryContainer
+                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                    colRipple: Appearance.colors.colSecondaryContainerActive
                     onClicked: {
                         if (root.localImagePath !== "") {
                             Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
@@ -425,8 +381,8 @@ Item {
                         id: copyImgRow
                         anchors.centerIn: parent
                         spacing: 5
-                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                        StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnSecondaryContainer }
+                        StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnSecondaryContainer }
                     }
                 }
             }
@@ -440,9 +396,9 @@ Item {
                     implicitHeight: 32
                     implicitWidth: copyColorRow.implicitWidth + 18
                     buttonRadius: Appearance.rounding.full
-                    colBackground: Appearance.colors.colPrimary
-                    colBackgroundHover: Appearance.colors.colPrimaryHover
-                    colRipple: Appearance.colors.colPrimaryContainerActive
+                    colBackground: Appearance.colors.colSecondaryContainer
+                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                    colRipple: Appearance.colors.colSecondaryContainerActive
                     onClicked: {
                         Cliphist.copyText(root.detectedColor);
                         root.showNotification(Translation.tr("Copied color"));
@@ -452,8 +408,8 @@ Item {
                         id: copyColorRow
                         anchors.centerIn: parent
                         spacing: 5
-                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
-                        StyledText { text: Translation.tr("Copy Color"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                        MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnSecondaryContainer }
+                        StyledText { text: Translation.tr("Copy Color"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnSecondaryContainer }
                     }
                 }
             }
@@ -475,7 +431,7 @@ Item {
             color: Appearance.colors.colLayer1
             radius: Appearance.rounding.normal
             border.width: root.isEditorFocused ? 1.5 : 1
-            border.color: root.isEditorFocused ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+            border.color: root.isEditorFocused ? Appearance.colors.colOutline : Appearance.colors.colLayer0Border
             focus: root.isEditorFocused
 
             Keys.onPressed: event => {
@@ -630,7 +586,7 @@ Item {
                         MaterialSymbol {
                             text: "folder_open"
                             font.pixelSize: 15
-                            color: Appearance.colors.colPrimary
+                            color: Appearance.colors.colOnSecondaryContainer
                         }
 
                         StyledText {

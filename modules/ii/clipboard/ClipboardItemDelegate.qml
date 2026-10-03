@@ -71,13 +71,13 @@ RippleButton {
 
     buttonRadius: Appearance.rounding.normal
     colBackground: root.isSelected
-        ? (root.isListFocused ? Appearance.colors.colPrimaryContainer : ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 0.45))
+        ? (root.isListFocused ? Appearance.colors.colSecondaryContainer : ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 0.45))
         : (root.hovered ? Appearance.colors.colLayer1Hover : Appearance.colors.colLayer1)
-    colBackgroundHover: Appearance.colors.colPrimaryContainer
-    colRipple: Appearance.colors.colPrimaryContainerActive
+    colBackgroundHover: Appearance.colors.colSecondaryContainer
+    colRipple: Appearance.colors.colSecondaryContainerActive
 
     property color colForeground: root.isSelected
-        ? Appearance.colors.colOnPrimaryContainer
+        ? Appearance.colors.colOnSecondaryContainer
         : Appearance.m3colors.m3onSurface
 
     onClicked: root.itemClicked()
@@ -166,7 +166,7 @@ RippleButton {
                 visible: !root.isImage && !root.hasDetectedColor && !root.isUrl
                 text: root.isPinned ? "push_pin" : "content_paste"
                 iconSize: 20
-                color: root.isPinned ? Appearance.colors.colPrimary : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)
+                color: root.isPinned ? Appearance.colors.colOnSecondaryContainer : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)
             }
         }
 
@@ -197,7 +197,7 @@ RippleButton {
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
                 buttonRadius: Appearance.rounding.full
-                colBackground: root.isPinned ? ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85) : "transparent"
+                colBackground: "transparent"
                 colBackgroundHover: Appearance.colors.colLayer2
                 colRipple: Appearance.colors.colLayer2Active
                 onClicked: root.pinToggled()
@@ -207,7 +207,7 @@ RippleButton {
                     iconSize: 17
                     text: root.isPinned ? "keep_off" : "push_pin"
                     color: root.isPinned
-                        ? Appearance.colors.colPrimary
+                        ? Appearance.colors.colOnSecondaryContainer
                         : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)
                 }
 

@@ -41,11 +41,13 @@ Item {
     onSelectedIndexChanged: {
         if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
             listView.currentIndex = root.selectedIndex;
-            if (root.selectedIndex <= 1) {
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Beginning);
-            } else {
-                listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-            }
+        }
+    }
+
+    function scrollSelectedIntoView() {
+        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+            listView.currentIndex = root.selectedIndex;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
     }
 
@@ -53,6 +55,7 @@ Item {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex > 0) {
             root.selectedIndex--;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
     }
 
@@ -60,6 +63,7 @@ Item {
         if (root.filteredList.length === 0) return;
         if (root.selectedIndex < root.filteredList.length - 1) {
             root.selectedIndex++;
+            listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
         }
     }
 
@@ -95,16 +99,6 @@ Item {
         } else if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
         }
-        Qt.callLater(() => {
-            if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
-                listView.currentIndex = root.selectedIndex;
-                if (root.selectedIndex <= 1) {
-                    listView.positionViewAtIndex(root.selectedIndex, ListView.Beginning);
-                } else {
-                    listView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
-                }
-            }
-        });
     }
 
     ColumnLayout {
@@ -243,7 +237,7 @@ Item {
                     text: Translation.tr("Recognize music")
                 }
 
-                colText: toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSurfaceVariant
+                colText: toggled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnSurfaceVariant
                 background: MaterialShape {
                     RotationAnimation on rotation {
                         running: songRecButton.toggled
@@ -262,7 +256,7 @@ Item {
                     }
                     color: {
                         if (songRecButton.toggled) {
-                            return songRecButton.hovered ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimary
+                            return songRecButton.hovered ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer
                         } else {
                             return songRecButton.hovered ? Appearance.colors.colSurfaceContainerHigh : ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHigh)
                         }
@@ -293,12 +287,6 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 120
             focusPolicy: Qt.NoFocus
-
-            onCurrentIndexChanged: {
-                if (currentIndex >= 0 && currentIndex < count) {
-                    listView.positionViewAtIndex(currentIndex, ListView.Contain);
-                }
-            }
 
             ScrollBar.vertical: StyledScrollBar {}
 

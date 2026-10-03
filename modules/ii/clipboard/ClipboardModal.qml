@@ -95,6 +95,10 @@ Rectangle {
         const idx = findCopiedEntryIndex();
         if (idx >= 0 && idx < root.rawFiltered.length) {
             root.selectedIndex = idx;
+            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[idx]);
+            Qt.callLater(() => {
+                listPane.scrollSelectedIntoView();
+            });
         }
     }
 
@@ -124,6 +128,10 @@ Rectangle {
             const newCopiedIdx = root.findCopiedEntryIndex();
             if (newCopiedIdx >= 0) {
                 root.selectedIndex = newCopiedIdx;
+                root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[newCopiedIdx]);
+                Qt.callLater(() => {
+                    listPane.scrollSelectedIntoView();
+                });
                 return;
             }
         }
@@ -148,7 +156,12 @@ Rectangle {
 
         // Fallback to copied item
         const fallbackIdx = root.findCopiedEntryIndex();
-        root.selectedIndex = (fallbackIdx >= 0 && fallbackIdx < root.rawFiltered.length) ? fallbackIdx : 0;
+        if (fallbackIdx >= 0 && fallbackIdx < root.rawFiltered.length) {
+            root.selectedIndex = fallbackIdx;
+            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[fallbackIdx]);
+        } else {
+            root.selectedIndex = 0;
+        }
     }
 
     // Always focus the search field and newly copied entry when the clipboard is opened
@@ -158,6 +171,7 @@ Rectangle {
             if (GlobalStates.clipboardOpen) {
                 root.searchQuery = "";
                 root.lastTopEntryId = "";
+                root.selectedEntryId = "";
                 root.activeSection = 0;
                 listPane.focusSearch();
                 Cliphist.refresh();
@@ -280,7 +294,9 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 18
         radius: Appearance.rounding.full
-        color: Appearance.colors.colPrimary
+        color: Appearance.colors.colSecondaryContainer
+        border.width: 1
+        border.color: Appearance.colors.colOutlineVariant
         implicitHeight: 28
         implicitWidth: toastText.implicitWidth + 24
         visible: root.toastMessage.length > 0
@@ -297,7 +313,7 @@ Rectangle {
             text: root.toastMessage
             font.pixelSize: Appearance.font.pixelSize.smaller
             font.weight: Font.DemiBold
-            color: Appearance.colors.colOnPrimary
+            color: Appearance.colors.colOnSecondaryContainer
         }
     }
 
