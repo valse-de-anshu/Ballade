@@ -114,103 +114,42 @@ AbstractBackgroundWidget {
     }
 
     // ----------------------------------------------------
-    // User Events / Scratchpad Persistent Storage
+    // User Events & Pinned Targets via CalendarService Singleton
     // ----------------------------------------------------
-    property var userEvents: []
+    readonly property var userEvents: CalendarService.userEvents
     property bool isAddingEvent: false
     property string newEventText: ""
 
-    // ----------------------------------------------------
-    // External Satellite Companion & Target Countdown
-    // ----------------------------------------------------
-    property var pinnedTargets: []
+    readonly property var pinnedTargets: CalendarService.pinnedTargets
     readonly property var targetData: (pinnedTargets && pinnedTargets.length > 0)
         ? pinnedTargets[0]
         : ({ date: "", title: "", type: "festival" })
     property bool isSelectingTarget: false
-    property real satelliteX: (root.configEntry && typeof root.configEntry.satelliteX === "number") ? root.configEntry.satelliteX : 16
-    property real satelliteY: (root.configEntry && typeof root.configEntry.satelliteY === "number") ? root.configEntry.satelliteY : -58
-    property bool satelliteVertical: false
-    property real satelliteRotation: (root.configEntry && typeof root.configEntry.satelliteRotation === "number") ? root.configEntry.satelliteRotation : 0
 
-    function loadPinnedTargets() {
-        try {
-            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
-                const parsed = JSON.parse(targetFileView.text())
-                if (parsed && typeof parsed === "object") {
-                    if (Array.isArray(parsed.targets)) {
-                        root.pinnedTargets = parsed.targets
-                        return
-                    } else if (parsed.date) {
-                        root.pinnedTargets = [{
-                            date: parsed.date,
-                            title: parsed.title || "",
-                            type: parsed.type || "festival"
-                        }]
-                        return
-                    }
-                }
-            }
-        } catch (e) {}
-        root.pinnedTargets = []
-    }
-
-    FileView {
-        id: targetFileView
-        path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
-        watchChanges: true
-        onLoaded: root.loadPinnedTargets()
-        onFileChanged: root.loadPinnedTargets()
-    }
-
-    function saveSatelliteState() {
-        if (root.configEntry) {
-            root.configEntry.satelliteX = root.satelliteX
-            root.configEntry.satelliteY = root.satelliteY
-            root.configEntry.satelliteRotation = root.satelliteRotation
+    Connections {
+        target: CalendarService
+        function onTargetsChanged() {
+            // Instantly react to pin/unpin changes
         }
-        let payload = {
-            targets: root.pinnedTargets || [],
-            x: root.satelliteX,
-            y: root.satelliteY,
-            vertical: root.satelliteVertical,
-            rotation: root.satelliteRotation
+        function onEventsChanged() {
+            root.updateViewingMonth()
         }
-        targetFileView.setText(JSON.stringify(payload, null, 2))
     }
 
     function isEventPinned(dateKey, title) {
-        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return false
-        return root.pinnedTargets.some(t => t.date === dateKey && t.title === title)
+        return CalendarService.isEventPinned(dateKey, title)
     }
 
     function pinTarget(dateKey, title, type) {
-        if (isEventPinned(dateKey, title)) return
-        var item = {
-            date: dateKey,
-            title: title || "",
-            type: type || "festival"
-        }
-        var list = (root.pinnedTargets || []).slice(0)
-        list.push(item)
-        root.pinnedTargets = list
-        saveSatelliteState()
+        CalendarService.pinTarget(dateKey, title, type)
     }
 
     function unpinTarget(dateKey, title) {
-        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return
-        var list = root.pinnedTargets.filter(t => !(t.date === dateKey && t.title === title))
-        root.pinnedTargets = list
-        saveSatelliteState()
+        CalendarService.unpinTarget(dateKey, title)
     }
 
     function clearTarget() {
-        if (root.pinnedTargets && root.pinnedTargets.length > 0) {
-            var list = root.pinnedTargets.slice(0)
-            list.pop()
-            root.pinnedTargets = list
-            saveSatelliteState()
-        }
+        CalendarService.clearTargets()
     }
 
     function saveTarget(dateKey, title, type) {
@@ -283,19 +222,10 @@ AbstractBackgroundWidget {
 
     function addEvent(dateKey, text) {
         if (!text || text.trim() === "") return
-        var item = {
-            id: Date.now().toString() + "-" + Math.floor(Math.random() * 10000),
-            date: dateKey,
-            text: text.trim(),
-            createdAt: Date.now()
-        }
-        var updated = userEvents.slice(0)
-        updated.push(item)
-        root.userEvents = updated
-        eventsFileView.setText(JSON.stringify(root.userEvents))
-        updateViewingMonth()
+        CalendarService.addEvent(dateKey, text)
         root.isAddingEvent = false
         root.newEventText = ""
+        root.updateViewingMonth()
 
         // If target date matches the date where user wrote note, auto-sync message!
         if (root.targetData && root.targetData.date === dateKey) {
@@ -304,22 +234,20 @@ AbstractBackgroundWidget {
     }
 
     function deleteEvent(id) {
-        var updated = userEvents.filter(e => e.id !== id)
-        root.userEvents = updated
-        eventsFileView.setText(JSON.stringify(root.userEvents))
-        updateViewingMonth()
+        CalendarService.deleteEvent(id)
+        root.updateViewingMonth()
     }
 
     function getEventsForDate(date) {
         var key = formatDateKey(date)
-        return userEvents.filter(e => e.date === key)
+        return CalendarService.getEventsForDate(key)
     }
 
     function hasUserEventOnDate(year, month, day) {
         var mm = month < 10 ? "0" + month : "" + month
         var dd = day < 10 ? "0" + day : "" + day
         var key = year + "-" + mm + "-" + dd
-        return userEvents.some(e => e.date === key)
+        return CalendarService.hasUserEventOnDate(key)
     }
 
     function getFirstHoliday(y, m, d) {
@@ -338,8 +266,8 @@ AbstractBackgroundWidget {
         var mm = m < 10 ? "0" + m : "" + m
         var dd = d < 10 ? "0" + d : "" + d
         var key = y + "-" + mm + "-" + dd
-        var found = root.userEvents.find(e => e.date === key)
-        return found ? found.text : ""
+        var evs = CalendarService.getEventsForDate(key)
+        return (evs && evs.length > 0) ? evs[0].text : ""
     }
 
     // ----------------------------------------------------
@@ -371,33 +299,6 @@ AbstractBackgroundWidget {
         var dd = day < 10 ? "0" + day : "" + day
         var key = year + "-" + mm + "-" + dd
         return Goals.goalsList.some(g => (g.calendarDate && g.calendarDate === key))
-    }
-
-    function loadUserEvents() {
-        try {
-            if (eventsFileView.loaded && eventsFileView.text().trim().length > 0) {
-                const parsed = JSON.parse(eventsFileView.text())
-                root.userEvents = Array.isArray(parsed) ? parsed : []
-                updateViewingMonth()
-                return
-            }
-        } catch (e) {}
-        root.userEvents = []
-        updateViewingMonth()
-    }
-
-    FileView {
-        id: eventsFileView
-        path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
-        watchChanges: true
-        onLoaded: root.loadUserEvents()
-        onFileChanged: root.loadUserEvents()
-        onLoadFailed: (error) => {
-            if (error == FileViewError.FileNotFound) {
-                root.userEvents = []
-                eventsFileView.setText(JSON.stringify([]))
-            }
-        }
     }
 
     function getMonthMatrix(date) {
@@ -660,9 +561,9 @@ AbstractBackgroundWidget {
                     Layout.preferredWidth: 220
                     Layout.fillHeight: true
                     radius: (Appearance.rounding?.verylarge ?? 30) - 10
-                    color: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.25)
+                    color: ColorUtils.applyAlpha("#ffffff", 0.04)
                     border.width: 1
-                    border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.5), 0.15)
+                    border.color: ColorUtils.applyAlpha("#ffffff", 0.08)
 
                     ColumnLayout {
                         anchors { fill: parent; margins: 14 }
@@ -677,7 +578,7 @@ AbstractBackgroundWidget {
                                 text: root.selectedDate.getDate()
                                 font.pixelSize: 34
                                 font.weight: Font.Bold
-                                color: Appearance.colors.colOnPrimaryContainer
+                                color: "#ffffff"
                             }
 
                             ColumnLayout {
@@ -688,7 +589,7 @@ AbstractBackgroundWidget {
                                     text: root.selectedDate.toLocaleDateString(Qt.locale(), "dddd")
                                     font.pixelSize: Appearance.font.pixelSize.normal
                                     font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: "#ffffff"
                                 }
 
                                 RowLayout {
@@ -696,18 +597,18 @@ AbstractBackgroundWidget {
                                     StyledText {
                                         text: root.selectedDate.toLocaleDateString(Qt.locale(), "MMM yyyy")
                                         font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colSubtext
+                                        color: "#888892"
                                     }
                                     StyledText {
                                         text: "•"
                                         font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colSubtext
+                                        color: "#55555c"
                                     }
                                     StyledText {
                                         text: "W" + root.getWeekNumber(root.selectedDate)
                                         font.pixelSize: Appearance.font.pixelSize.smaller
                                         font.weight: Font.Bold
-                                        color: Appearance.colors.colPrimary
+                                        color: "#e2e8f0"
                                     }
                                 }
                             }
@@ -717,7 +618,7 @@ AbstractBackgroundWidget {
                         Rectangle {
                             Layout.fillWidth: true
                             height: 1
-                            color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.15)
+                            color: ColorUtils.applyAlpha("#ffffff", 0.08)
                         }
 
                         // Agenda / Events Scroll Area
@@ -1121,18 +1022,18 @@ AbstractBackgroundWidget {
                             Layout.fillWidth: true
                             font.pixelSize: Appearance.font.pixelSize.large
                             font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimaryContainer
+                            color: "#ffffff"
                             text: root.viewingDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
                         }
 
-                        // Aesthetic Neutral "Today" Button
+                        // Aesthetic Solid Neutral "Today" Button
                         Rectangle {
                             implicitWidth: 74
                             implicitHeight: 28
                             radius: 14
-                            color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
+                            color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
                             border.width: 1
-                            border.color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
+                            border.color: todayBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -1141,14 +1042,14 @@ AbstractBackgroundWidget {
                                 MaterialSymbol {
                                     text: "today"
                                     iconSize: 13
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: "#e2e8f0"
                                 }
 
                                 StyledText {
                                     text: "Today"
                                     font.pixelSize: Appearance.font.pixelSize.smaller
                                     font.weight: Font.Bold
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: "#e2e8f0"
                                 }
                             }
 
@@ -1164,18 +1065,18 @@ AbstractBackgroundWidget {
                             }
                         }
 
-                        // Aesthetic Neutral Previous Month Button
+                        // Aesthetic Solid Neutral Previous Month Button
                         Rectangle {
                             implicitWidth: 28; implicitHeight: 28; radius: 14
-                            color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
+                            color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
                             border.width: 1
-                            border.color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
+                            border.color: prevBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "chevron_left"
                                 iconSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnPrimaryContainer
+                                color: "#e2e8f0"
                             }
                             MouseArea {
                                 id: prevBtnMouse
@@ -1186,18 +1087,18 @@ AbstractBackgroundWidget {
                             }
                         }
 
-                        // Aesthetic Neutral Next Month Button
+                        // Aesthetic Solid Neutral Next Month Button
                         Rectangle {
                             implicitWidth: 28; implicitHeight: 28; radius: 14
-                            color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
+                            color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.15) : ColorUtils.applyAlpha("#ffffff", 0.08)
                             border.width: 1
-                            border.color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.5) : ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
+                            border.color: nextBtnMouse.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.3) : ColorUtils.applyAlpha("#ffffff", 0.15)
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "chevron_right"
                                 iconSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnPrimaryContainer
+                                color: "#e2e8f0"
                             }
                             MouseArea {
                                 id: nextBtnMouse
@@ -1225,7 +1126,7 @@ AbstractBackgroundWidget {
                                     text: modelData
                                     font.pixelSize: Appearance.font.pixelSize.smaller
                                     font.weight: Font.Bold
-                                    color: (index >= 5) ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                    color: (index >= 5) ? "#e2e8f0" : "#71717a"
                                 }
                             }
                         }
@@ -1265,10 +1166,10 @@ AbstractBackgroundWidget {
                                             anchors.margins: 1
                                             radius: 8
                                             color: cellItem.isSelected
-                                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
-                                                : (cellMouseArea.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.10) : "transparent")
+                                                ? ColorUtils.applyAlpha("#ffffff", 0.12)
+                                                : (cellMouseArea.containsMouse ? ColorUtils.applyAlpha("#ffffff", 0.05) : "transparent")
                                             border.width: cellItem.isSelected ? 1 : 0
-                                            border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.50)
+                                            border.color: ColorUtils.applyAlpha("#ffffff", 0.25)
 
                                              ColumnLayout {
                                                 anchors.fill: parent
@@ -1286,7 +1187,7 @@ AbstractBackgroundWidget {
                                                         width: 22
                                                         height: 22
                                                         radius: 11
-                                                        color: modelData.isToday ? Appearance.colors.colPrimary : "transparent"
+                                                        color: modelData.isToday ? "#ffffff" : "transparent"
                                                     }
 
                                                     StyledText {
@@ -1294,7 +1195,7 @@ AbstractBackgroundWidget {
                                                         text: modelData.day
                                                         font.pixelSize: 11
                                                         font.weight: modelData.isToday || cellItem.isSelected ? Font.Bold : Font.Normal
-                                                        color: modelData.isToday ? Appearance.colors.colOnPrimary : Appearance.colors.colOnPrimaryContainer
+                                                        color: modelData.isToday ? "#000000" : "#ffffff"
                                                         opacity: modelData.currentMonth ? 1.0 : 0.25
                                                     }
                                                 }

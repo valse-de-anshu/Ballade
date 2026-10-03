@@ -353,7 +353,7 @@ Item { // Bar content region
 
             SatelliteBarCapsule {
                 Layout.alignment: Qt.AlignVCenter
-                visible: root.useShortenedForm < 2
+                visible: root.useShortenedForm < 2 && CalendarService.pinnedTargets.length > 0
             }
 
             Item {

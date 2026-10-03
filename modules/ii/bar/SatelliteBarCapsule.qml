@@ -2,169 +2,32 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
 import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
-import "../background/widgets/calendar/IndianCalendar.js" as IndianCalendar
 
 Item {
     id: root
 
-    implicitHeight: Appearance.sizes.baseBarHeight
-    implicitWidth: capsulePill.implicitWidth
+    visible: CalendarService.pinnedTargets.length > 0
+    implicitHeight: visible ? Appearance.sizes.baseBarHeight : 0
+    implicitWidth: visible ? capsulePill.implicitWidth : 0
 
-    property var pinnedTargets: []
-    property var userEvents: []
     property int currentTargetIndex: 0
+    readonly property int clampedIndex: CalendarService.pinnedTargets.length > 0
+        ? Math.max(0, Math.min(root.currentTargetIndex, CalendarService.pinnedTargets.length - 1))
+        : 0
 
-    // Load custom pinned targets from calendar_target.json
-    FileView {
-        id: targetFileView
-        path: Qt.resolvedUrl(Directories.config + "/calendar_target.json")
-        watchChanges: true
-        onLoaded: root.loadTargets()
-        onFileChanged: root.loadTargets()
-        onLoadFailed: root.loadTargets()
-    }
+    readonly property var activeTarget: CalendarService.pinnedTargets.length > 0
+        ? CalendarService.pinnedTargets[root.clampedIndex]
+        : null
 
-    // Load calendar notes/events from calendar_events.json
-    FileView {
-        id: eventsFileView
-        path: Qt.resolvedUrl(Directories.config + "/calendar_events.json")
-        watchChanges: true
-        onLoaded: root.loadEvents()
-        onFileChanged: root.loadEvents()
-        onLoadFailed: root.loadEvents()
-    }
-
-    Timer {
-        id: midnightRefreshTimer
-        interval: 60000 // Refresh every minute to keep countdown accurate
-        repeat: true
-        running: true
-        onTriggered: {
-            root.loadTargets();
-            root.loadEvents();
+    function cycleNextTarget() {
+        if (CalendarService.pinnedTargets.length > 1) {
+            root.currentTargetIndex = (root.clampedIndex + 1) % CalendarService.pinnedTargets.length;
         }
-    }
-
-    function loadTargets() {
-        try {
-            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
-                const parsed = JSON.parse(targetFileView.text());
-                if (parsed && typeof parsed === "object") {
-                    if (Array.isArray(parsed.targets)) {
-                        root.pinnedTargets = parsed.targets;
-                        if (root.currentTargetIndex >= parsed.targets.length) {
-                            root.currentTargetIndex = Math.max(0, parsed.targets.length - 1);
-                        }
-                        return;
-                    } else if (parsed.date) {
-                        root.pinnedTargets = [{
-                            date: parsed.date,
-                            title: parsed.title || "",
-                            type: parsed.type || "festival"
-                        }];
-                        return;
-                    }
-                }
-            }
-        } catch(e) {}
-        root.pinnedTargets = [];
-    }
-
-    function loadEvents() {
-        try {
-            if (eventsFileView.loaded && eventsFileView.text().trim().length > 0) {
-                const parsed = JSON.parse(eventsFileView.text());
-                if (Array.isArray(parsed)) {
-                    root.userEvents = parsed;
-                    return;
-                }
-            }
-        } catch(e) {}
-        root.userEvents = [];
-    }
-
-    function unpinTarget(dateKey, title) {
-        if (!root.pinnedTargets || root.pinnedTargets.length === 0) return;
-        let list = root.pinnedTargets.filter(t => !(t.date === dateKey && t.title === title));
-        root.pinnedTargets = list;
-        if (root.currentTargetIndex >= list.length) {
-            root.currentTargetIndex = Math.max(0, list.length - 1);
-        }
-        saveTargets();
-    }
-
-    function saveTargets() {
-        try {
-            let currentPayload = {};
-            if (targetFileView.loaded && targetFileView.text().trim().length > 0) {
-                currentPayload = JSON.parse(targetFileView.text()) || {};
-            }
-            currentPayload.targets = root.pinnedTargets || [];
-            targetFileView.setText(JSON.stringify(currentPayload, null, 2));
-        } catch(e) {
-            targetFileView.setText(JSON.stringify({ targets: root.pinnedTargets || [] }, null, 2));
-        }
-    }
-
-    // Determine the active item to display (Strictly synchronized with Calendar)
-    readonly property var activeTarget: {
-        // 1. Pinned targets from calendar take top priority
-        if (root.pinnedTargets.length > 0) {
-            const idx = Math.min(root.currentTargetIndex, root.pinnedTargets.length - 1);
-            return root.pinnedTargets[idx];
-        }
-
-        // 2. Upcoming user event from calendar_events.json (TODAY or FUTURE only, NEVER ancient past notes)
-        const now = new Date();
-        const nowKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
-        if (root.userEvents.length > 0) {
-            const futureEvents = root.userEvents.filter(ev => ev.date >= nowKey);
-            if (futureEvents.length > 0) {
-                futureEvents.sort((a, b) => a.date.localeCompare(b.date));
-                return {
-                    date: futureEvents[0].date,
-                    title: futureEvents[0].text || "Note",
-                    type: "user"
-                };
-            }
-        }
-
-        // 3. Nearest upcoming festival / holiday from IndianCalendar (TODAY or FUTURE only)
-        try {
-            const y = now.getFullYear();
-            const yearMap = IndianCalendar._getYearCached ? IndianCalendar._getYearCached(y) : IndianCalendar.getYearEvents(y);
-            if (yearMap && typeof yearMap === "object") {
-                const keys = Object.keys(yearMap).filter(k => k >= nowKey).sort();
-                if (keys.length > 0) {
-                    const firstKey = keys[0];
-                    const list = yearMap[firstKey];
-                    if (Array.isArray(list) && list.length > 0) {
-                        return {
-                            date: firstKey,
-                            title: list[0].title || "Holiday",
-                            type: list[0].type || "festival"
-                        };
-                    }
-                }
-            }
-        } catch(e) {}
-
-        // 4. Default placeholder when nothing is pinned
-        return {
-            date: "",
-            title: Translation.tr("Tap to pin note"),
-            type: "festival"
-        };
-    }
-
-    function formatDateKey(y, m, d) {
-        return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d);
     }
 
     readonly property var countdown: {
@@ -172,8 +35,8 @@ Item {
         if (!item || !item.date) {
             return {
                 days: 0,
-                badgeText: "PIN",
-                title: item ? item.title : Translation.tr("Tap to pin note"),
+                badgeText: "",
+                title: "",
                 dateText: "",
                 valid: false
             };
@@ -183,8 +46,8 @@ Item {
         if (parts.length < 3) {
             return {
                 days: 0,
-                badgeText: "PIN",
-                title: item.title,
+                badgeText: "",
+                title: item.title || "",
                 dateText: "",
                 valid: false
             };
@@ -211,12 +74,6 @@ Item {
             dateText: target.toLocaleDateString(Qt.locale(), "d MMM"),
             valid: true
         };
-    }
-
-    function cycleNextTarget() {
-        if (root.pinnedTargets.length > 1) {
-            root.currentTargetIndex = (root.currentTargetIndex + 1) % root.pinnedTargets.length;
-        }
     }
 
     // Satellite Top Bar Area: Pure, clean text (NO icons, NO gray pill covering)
@@ -273,8 +130,8 @@ Item {
 
             // Target Index Indicator (Pure text)
             StyledText {
-                visible: root.pinnedTargets.length > 1
-                text: `(${root.currentTargetIndex + 1}/${root.pinnedTargets.length})`
+                visible: CalendarService.pinnedTargets.length > 1
+                text: `(${root.clampedIndex + 1}/${CalendarService.pinnedTargets.length})`
                 font.pixelSize: Appearance.font.pixelSize.smallest
                 font.weight: Font.DemiBold
                 color: Appearance.colors.colSubtext
@@ -292,7 +149,7 @@ Item {
                 if (mouse.button === Qt.RightButton) {
                     root.cycleNextTarget();
                 } else {
-                    GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
+                    popup.open();
                 }
             }
 
@@ -327,8 +184,8 @@ Item {
                 Item { Layout.fillWidth: true }
 
                 StyledText {
-                    visible: root.pinnedTargets.length > 1
-                    text: `${root.currentTargetIndex + 1} / ${root.pinnedTargets.length}`
+                    visible: CalendarService.pinnedTargets.length > 1
+                    text: `${root.clampedIndex + 1} / ${CalendarService.pinnedTargets.length}`
                     font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colSubtext
@@ -377,7 +234,7 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        visible: root.countdown.dateText.length > 0 || root.pinnedTargets.length > 0
+                        visible: root.countdown.dateText.length > 0 || CalendarService.pinnedTargets.length > 0
 
                         StyledText {
                             visible: root.countdown.dateText.length > 0
@@ -390,7 +247,7 @@ Item {
 
                         // Unpin action if currently pinned
                         StyledText {
-                            visible: root.pinnedTargets.length > 0
+                            visible: CalendarService.pinnedTargets.length > 0
                             text: Translation.tr("Unpin")
                             font.pixelSize: Appearance.font.pixelSize.small
                             font.weight: Font.Medium
@@ -403,7 +260,7 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     if (root.activeTarget && root.activeTarget.date) {
-                                        root.unpinTarget(root.activeTarget.date, root.activeTarget.title);
+                                        CalendarService.unpinTarget(root.activeTarget.date, root.activeTarget.title);
                                     }
                                 }
                             }
