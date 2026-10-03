@@ -351,6 +351,16 @@ Item { // Bar content region
                 Layout.fillHeight: true
             }
 
+            SatelliteBarCapsule {
+                Layout.alignment: Qt.AlignVCenter
+                visible: root.useShortenedForm < 2
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
+
             // Weather
             Loader {
                 Layout.leftMargin: 4
