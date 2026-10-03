@@ -37,6 +37,8 @@ Rectangle {
 
     readonly property var rawFiltered: {
         const _ = Cliphist.pinRevision;
+        const _entries = Cliphist.entries;
+        const _clip = Quickshell.clipboardText;
         const list = Cliphist.fuzzyQuery(root.searchQuery);
         if (root.filterPinnedOnly) {
             return list.filter(e => Cliphist.isPinned(e));
@@ -102,6 +104,12 @@ Rectangle {
         if (idx >= 0 && idx < root.rawFiltered.length) {
             root.selectedIndex = idx;
             root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[idx]);
+            Qt.callLater(() => {
+                listPane.scrollSelectedIntoView();
+            });
+        } else if (root.rawFiltered.length > 0) {
+            root.selectedIndex = 0;
+            root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[0]);
             Qt.callLater(() => {
                 listPane.scrollSelectedIntoView();
             });
@@ -179,13 +187,27 @@ Rectangle {
                 root.filterPinnedOnly = false;
                 root.lastTopEntryId = "";
                 root.selectedEntryId = "";
+                root.selectedIndex = 0;
                 root.activeSection = 0;
                 listPane.focusSearch();
                 Cliphist.refresh();
+                if (root.rawFiltered.length > 0) {
+                    root.selectedEntryId = Cliphist.getEntryId(root.rawFiltered[0]);
+                }
                 Qt.callLater(() => {
                     root.focusCopiedEntry();
                 });
             }
+        }
+    }
+
+    Connections {
+        target: Quickshell
+        function onClipboardTextChanged() {
+            root.lastTopEntryId = "";
+            Qt.callLater(() => {
+                root.focusCopiedEntry();
+            });
         }
     }
 

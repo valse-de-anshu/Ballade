@@ -64,14 +64,22 @@ RippleButton {
         const _ = Cliphist.pinRevision;
         return Cliphist.isPinned(entryString);
     }
+    readonly property bool isCurrentClipboard: {
+        if (!Quickshell.clipboardText) return false;
+        const cur = Quickshell.clipboardText.trim();
+        return cur.length > 0 && root.cleanedText.trim() === cur;
+    }
 
     implicitWidth: ListView.view ? ListView.view.width : 400
     implicitHeight: isImage ? 58 : 46
     focusPolicy: Qt.NoFocus
 
     buttonRadius: Appearance.rounding.normal
+    border: root.isSelected || root.isCurrentClipboard
+    borderWidth: 1.5
+    colBorder: root.isSelected ? Appearance.colors.colOutline : ColorUtils.applyAlpha(Appearance.colors.colOutline, 0.45)
     colBackground: root.isSelected
-        ? (root.isListFocused ? Appearance.colors.colSecondaryContainer : ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 0.45))
+        ? (root.isListFocused ? Appearance.colors.colSecondaryContainer : ColorUtils.transparentize(Appearance.colors.colSecondaryContainer, 0.25))
         : (root.hovered ? Appearance.colors.colLayer1Hover : Appearance.colors.colLayer1)
     colBackgroundHover: Appearance.colors.colSecondaryContainer
     colRipple: Appearance.colors.colSecondaryContainerActive
@@ -167,6 +175,25 @@ RippleButton {
                 text: root.isPinned ? "push_pin" : "content_paste"
                 iconSize: 20
                 color: root.isPinned ? Appearance.colors.colOnSecondaryContainer : (root.isSelected ? root.colForeground : Appearance.colors.colSubtext)
+            }
+        }
+
+        // Checkmark indicator for currently active clipboard entry (from old clipboard)
+        Rectangle {
+            visible: root.isCurrentClipboard
+            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: 18
+            implicitHeight: 18
+            radius: Appearance.rounding.full
+            color: Appearance.colors.colSecondaryContainer
+            border.width: 1
+            border.color: Appearance.colors.colOutlineVariant
+
+            MaterialSymbol {
+                anchors.centerIn: parent
+                text: "check"
+                iconSize: 13
+                color: Appearance.colors.colOnSecondaryContainer
             }
         }
 

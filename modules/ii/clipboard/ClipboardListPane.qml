@@ -100,6 +100,9 @@ Item {
         } else if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
         }
+        if (root.selectedIndex >= 0 && root.selectedIndex < root.filteredList.length) {
+            listView.currentIndex = root.selectedIndex;
+        }
     }
 
     ColumnLayout {
