@@ -348,7 +348,7 @@ Item {
         ColumnLayout {
             anchors.centerIn: parent
             spacing: 8
-            implicitWidth: 260
+            implicitWidth: 280
 
             StyledPopupHeaderRow {
                 icon: "satellite_alt"
@@ -488,7 +488,7 @@ Item {
                         color: Appearance.colors.colPrimary
                     }
                     StyledText {
-                        text: Translation.tr("Click capsule for calendar • Scroll to cycle targets")
+                        text: Translation.tr("Click for calendar • Scroll to cycle")
                         font.pixelSize: 10
                         color: Appearance.colors.colSubtext
                     }

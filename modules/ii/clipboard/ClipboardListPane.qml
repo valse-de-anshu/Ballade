@@ -148,10 +148,13 @@ Item {
                         for (let i = 0; i < 5; i++) root.selectPrevious();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Right) {
-                        if (searchField.text.length === 0 || searchField.cursorPosition === searchField.text.length) {
+                        if (searchField.text.length === 0 || searchField.cursorPosition === searchField.text.length || (event.modifiers & (Qt.AltModifier | Qt.ControlModifier))) {
                             root.requestFocusEditor();
                             event.accepted = true;
                         }
+                    } else if (event.key === Qt.Key_Tab) {
+                        root.requestFocusEditor();
+                        event.accepted = true;
                     } else if (event.key === Qt.Key_Delete) {
                         if (searchField.text.length === 0) {
                             root.deleteCurrent();
@@ -332,7 +335,7 @@ Item {
                 } else if (event.key === Qt.Key_PageUp) {
                     for (let i = 0; i < 5; i++) root.selectPrevious();
                     event.accepted = true;
-                } else if (event.key === Qt.Key_Right) {
+                } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab) {
                     root.requestFocusEditor();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Delete) {

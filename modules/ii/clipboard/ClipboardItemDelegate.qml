@@ -24,8 +24,17 @@ RippleButton {
 
     readonly property string entryString: root.entry
     readonly property string entryId: Cliphist.getEntryId(entryString)
-    readonly property bool isImage: Cliphist.entryIsImage(entryString)
     readonly property string cleanedText: StringUtils.cleanCliphistEntry(entryString)
+    readonly property bool isCliphistImage: Cliphist.entryIsImage(entryString)
+    readonly property string localImagePath: {
+        let clean = root.cleanedText.trim();
+        if (clean.startsWith("file://")) clean = clean.substring(7);
+        if (/^\/.*\.(png|jpe?g|webp|gif|svg|bmp|ico|avif)$/i.test(clean)) {
+            return clean;
+        }
+        return "";
+    }
+    readonly property bool isImage: isCliphistImage || localImagePath !== ""
     readonly property string detectedColor: !isImage ? ColorUtils.detectColor(cleanedText) : ""
     readonly property bool hasDetectedColor: detectedColor !== ""
     readonly property bool isPinned: Cliphist.isPinned(entryString)
@@ -68,11 +77,28 @@ RippleButton {
                 anchors.centerIn: parent
                 active: root.isImage
                 visible: root.isImage
-                sourceComponent: CliphistImage {
+                sourceComponent: root.isCliphistImage ? cliphistImgComp : fileImgComp
+            }
+
+            Component {
+                id: cliphistImgComp
+                CliphistImage {
                     entry: root.entryString
                     maxWidth: 56
                     maxHeight: 44
                     radius: Appearance.rounding.small
+                }
+            }
+
+            Component {
+                id: fileImgComp
+                Image {
+                    source: root.localImagePath !== "" ? ("file://" + root.localImagePath) : ""
+                    width: 56
+                    height: 44
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    smooth: true
                 }
             }
 
@@ -185,7 +211,7 @@ RippleButton {
                 Layout.fillWidth: true
                 text: root.hasDetectedColor
                     ? root.detectedColor
-                    : (root.isImage ? "Image" : root.cleanedText.replace(/[\r\n\t]+/g, " ").trim())
+                    : (root.isImage ? (root.localImagePath !== "" ? root.localImagePath.split("/").pop() : Translation.tr("Image")) : root.cleanedText.replace(/[\r\n\t]+/g, " ").trim())
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.family: root.hasDetectedColor ? Appearance.font.family.monospace : Appearance.font.family.main
                 font.weight: root.isSelected ? Font.Medium : Font.Normal

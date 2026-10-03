@@ -63,6 +63,29 @@ Rectangle {
         }
     }
 
+    focus: true
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Tab) {
+            if (root.activeSection === 0) {
+                root.activeSection = 1;
+                editorPane.focusEditor();
+            } else {
+                root.activeSection = 0;
+                listPane.focusSearch();
+            }
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Backtab) {
+            if (root.activeSection === 1) {
+                root.activeSection = 0;
+                listPane.focusSearch();
+            } else {
+                root.activeSection = 1;
+                editorPane.focusEditor();
+            }
+            event.accepted = true;
+        }
+    }
+
     // Split Layout
     RowLayout {
         anchors.fill: parent

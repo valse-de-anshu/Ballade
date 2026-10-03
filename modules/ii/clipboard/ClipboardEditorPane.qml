@@ -27,16 +27,39 @@ Item {
     signal showNotification(string text)
 
     readonly property string entryId: Cliphist.getEntryId(currentEntry)
-    readonly property bool isImage: Cliphist.entryIsImage(currentEntry)
+    readonly property bool isCliphistImage: Cliphist.entryIsImage(currentEntry)
+    readonly property string localImagePath: {
+        if (!currentEntry) return "";
+        let clean = StringUtils.cleanCliphistEntry(currentEntry).trim();
+        if (clean.startsWith("file://")) clean = clean.substring(7);
+        if (/^\/.*\.(png|jpe?g|webp|gif|svg|bmp|ico|avif)$/i.test(clean)) {
+            return clean;
+        }
+        return "";
+    }
+    readonly property bool isImage: isCliphistImage || localImagePath !== ""
     readonly property string detectedColor: !isImage ? ColorUtils.detectColor(editorText || StringUtils.cleanCliphistEntry(currentEntry)) : ""
     readonly property bool hasDetectedColor: detectedColor !== ""
     readonly property string imageFilePath: `${Directories.cliphistDecode}/${entryId}.png`
+
+    function checkIsBinary(text) {
+        if (!text || text.length === 0) return false;
+        const checkLen = Math.min(text.length, 512);
+        for (let i = 0; i < checkLen; i++) {
+            const code = text.charCodeAt(i);
+            if (code === 0) return true;
+            if (code < 32 && code !== 9 && code !== 10 && code !== 13) return true;
+        }
+        return false;
+    }
+
+    readonly property bool isBinary: !isImage && checkIsBinary(rawDecodedText)
 
     readonly property int charCount: editorText.length
     readonly property int lineCount: editorText === "" ? 0 : editorText.split(/\r\n|\r|\n/).length
 
     function focusEditor() {
-        if (!isImage && !hasDetectedColor) {
+        if (!isImage && !hasDetectedColor && !isBinary) {
             textArea.forceActiveFocus();
         } else {
             editorBox.forceActiveFocus();
@@ -54,17 +77,28 @@ Item {
             return;
         }
 
-        if (root.isImage) {
+        // 1. Direct local image file
+        if (root.localImagePath !== "") {
+            root.isLoading = false;
+            if (imageViewer) {
+                imageViewer.source = "file://" + root.localImagePath;
+            }
+            return;
+        }
+
+        // 2. Cliphist binary image
+        if (root.isCliphistImage) {
             root.isLoading = true;
             imageDecodeProc.running = false;
             imageDecodeProc.command = [
                 "bash", "-c",
-                `mkdir -p '${Directories.cliphistDecode}' && [ -f '${root.imageFilePath}' ] || printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
+                `mkdir -p '${Directories.cliphistDecode}' && rm -f '${root.imageFilePath}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
             ];
             imageDecodeProc.running = true;
             return;
         }
 
+        // 3. Text decode
         root.isLoading = true;
         textDecodeProc.running = false;
         textDecodeProc.command = [
@@ -92,11 +126,21 @@ Item {
         stdout: StdioCollector {
             id: textCollector
             onStreamFinished: {
+                const fullText = textCollector.text;
                 root._settingText = true;
-                root.rawDecodedText = textCollector.text;
-                root.editorText = textCollector.text;
-                if (textArea.text !== textCollector.text) {
-                    textArea.text = textCollector.text;
+                root.rawDecodedText = fullText;
+
+                if (root.checkIsBinary(fullText)) {
+                    root.editorText = "";
+                    textArea.text = "";
+                } else if (fullText.length > 35000) {
+                    root.editorText = fullText.substring(0, 35000);
+                    textArea.text = root.editorText;
+                } else {
+                    root.editorText = fullText;
+                    if (textArea.text !== fullText) {
+                        textArea.text = fullText;
+                    }
                 }
                 root._settingText = false;
                 root.isLoading = false;
@@ -109,13 +153,15 @@ Item {
         id: imageDecodeProc
         command: [
             "bash", "-c",
-            `mkdir -p '${Directories.cliphistDecode}' && [ -f '${root.imageFilePath}' ] || printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
+            `mkdir -p '${Directories.cliphistDecode}' && rm -f '${root.imageFilePath}' && printf '%s\\n' '${StringUtils.shellSingleQuoteEscape(root.currentEntry)}' | ${Cliphist.cliphistBinary} decode > '${root.imageFilePath}'`
         ]
         onExited: (exitCode, exitStatus) => {
             root.isLoading = false;
             if (exitCode === 0) {
-                imageViewer.source = "";
-                imageViewer.source = "file://" + root.imageFilePath;
+                if (imageViewer) {
+                    imageViewer.source = "";
+                    imageViewer.source = "file://" + root.imageFilePath;
+                }
             }
         }
     }
@@ -128,6 +174,32 @@ Item {
         radius: Appearance.rounding.normal
         border.width: root.isEditorFocused ? 1.5 : 1
         border.color: root.isEditorFocused ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+        focus: root.isEditorFocused
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Escape || event.key === Qt.Key_Backtab) {
+                root.requestFocusList();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                if (root.isImage) {
+                    if (root.localImagePath !== "") {
+                        Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
+                    } else {
+                        Cliphist.copy(root.currentEntry);
+                    }
+                    root.requestClose();
+                    event.accepted = true;
+                } else if (root.hasDetectedColor) {
+                    Cliphist.copyText(root.detectedColor);
+                    root.requestClose();
+                    event.accepted = true;
+                } else if (root.isBinary) {
+                    Cliphist.copy(root.currentEntry);
+                    root.requestClose();
+                    event.accepted = true;
+                }
+            }
+        }
 
         // Empty state
         Item {
@@ -174,8 +246,26 @@ Item {
                 }
 
                 StyledText {
-                    visible: !root.isImage
+                    visible: !root.isImage && !root.isBinary
                     text: `•  ${root.charCount} chars  •  ${root.lineCount} lines`
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: Appearance.colors.colSubtext
+                }
+
+                StyledText {
+                    visible: root.isImage
+                    text: root.localImagePath !== ""
+                        ? `•  ${root.localImagePath.split("/").pop()}`
+                        : `•  ${Translation.tr("Image")}`
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: Appearance.colors.colSubtext
+                    elide: Text.ElideMiddle
+                    Layout.maximumWidth: 180
+                }
+
+                StyledText {
+                    visible: root.isBinary
+                    text: `•  ${Translation.tr("Binary data")} (${root.rawDecodedText.length} B)`
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
                 }
@@ -202,7 +292,7 @@ Item {
 
                 // Actions for Text
                 RowLayout {
-                    visible: !root.isImage
+                    visible: !root.isImage && !root.isBinary
                     spacing: 6
 
                     // Revert (if modified)
@@ -281,6 +371,50 @@ Item {
                     spacing: 6
 
                     RippleButton {
+                        visible: root.localImagePath !== ""
+                        implicitHeight: 30
+                        implicitWidth: openImgRow.implicitWidth + 16
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        colRipple: Appearance.colors.colLayer2Active
+                        onClicked: {
+                            Quickshell.execDetached(["xdg-open", root.localImagePath]);
+                            root.requestClose();
+                        }
+
+                        contentItem: RowLayout {
+                            id: openImgRow
+                            anchors.centerIn: parent
+                            spacing: 4
+                            MaterialSymbol { font.pixelSize: 15; text: "open_in_new"; color: Appearance.colors.colOnLayer1 }
+                            StyledText { text: Translation.tr("Open"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
+                        }
+                    }
+
+                    RippleButton {
+                        visible: root.localImagePath !== ""
+                        implicitHeight: 30
+                        implicitWidth: copyPathRow.implicitWidth + 16
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        colRipple: Appearance.colors.colLayer2Active
+                        onClicked: {
+                            Cliphist.copyText(root.localImagePath);
+                            root.showNotification(Translation.tr("Copied path"));
+                        }
+
+                        contentItem: RowLayout {
+                            id: copyPathRow
+                            anchors.centerIn: parent
+                            spacing: 4
+                            MaterialSymbol { font.pixelSize: 15; text: "link"; color: Appearance.colors.colOnLayer1 }
+                            StyledText { text: Translation.tr("Copy Path"); font.pixelSize: Appearance.font.pixelSize.smaller; color: Appearance.colors.colOnLayer1 }
+                        }
+                    }
+
+                    RippleButton {
                         implicitHeight: 30
                         implicitWidth: copyImgRow.implicitWidth + 18
                         buttonRadius: Appearance.rounding.full
@@ -288,7 +422,11 @@ Item {
                         colBackgroundHover: Appearance.colors.colPrimaryHover
                         colRipple: Appearance.colors.colPrimaryContainerActive
                         onClicked: {
-                            Cliphist.copy(root.currentEntry);
+                            if (root.localImagePath !== "") {
+                                Quickshell.execDetached(["bash", "-c", `wl-copy < '${root.localImagePath}'`]);
+                            } else {
+                                Cliphist.copy(root.currentEntry);
+                            }
                             root.showNotification(Translation.tr("Copied image"));
                         }
 
@@ -298,6 +436,33 @@ Item {
                             spacing: 5
                             MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
                             StyledText { text: Translation.tr("Copy Image"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
+                        }
+                    }
+                }
+
+                // Actions for Binary Data
+                RowLayout {
+                    visible: root.isBinary
+                    spacing: 6
+
+                    RippleButton {
+                        implicitHeight: 30
+                        implicitWidth: copyBinRow.implicitWidth + 18
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colPrimary
+                        colBackgroundHover: Appearance.colors.colPrimaryHover
+                        colRipple: Appearance.colors.colPrimaryContainerActive
+                        onClicked: {
+                            Cliphist.copy(root.currentEntry);
+                            root.showNotification(Translation.tr("Copied binary data"));
+                        }
+
+                        contentItem: RowLayout {
+                            id: copyBinRow
+                            anchors.centerIn: parent
+                            spacing: 5
+                            MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                            StyledText { text: Translation.tr("Copy Data"); font.pixelSize: Appearance.font.pixelSize.smaller; font.weight: Font.DemiBold; color: Appearance.colors.colOnPrimary }
                         }
                     }
                 }
@@ -318,7 +483,7 @@ Item {
                 // VIEW 1: TEXT EDITING
                 Item {
                     anchors.fill: parent
-                    visible: !root.isImage && !root.hasDetectedColor
+                    visible: !root.isImage && !root.hasDetectedColor && !root.isBinary
 
                     Flickable {
                         id: flickable
@@ -380,17 +545,16 @@ Item {
                                     Cliphist.copyText(root.editorText);
                                     root.showNotification(Translation.tr("Saved to clipboard"));
                                     event.accepted = true;
-                                } else if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_Left) {
+                                } else if ((event.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && event.key === Qt.Key_Left) {
                                     root.requestFocusList();
                                     event.accepted = true;
-                                } else if (event.key === Qt.Key_Left && textArea.cursorPosition === 0) {
+                                } else if (event.key === Qt.Key_Left && (textArea.cursorPosition === 0 || (textArea.selectionStart === textArea.selectionEnd && textArea.cursorPosition === 0))) {
                                     root.requestFocusList();
                                     event.accepted = true;
                                 } else if (event.key === Qt.Key_Escape) {
                                     root.requestFocusList();
                                     event.accepted = true;
                                 }
-                                // Keys.Key_Up and Keys.Key_Down naturally navigate lines and trigger onCursorPositionChanged for scrolling!
                             }
                         }
                     }
@@ -408,18 +572,8 @@ Item {
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
                         smooth: true
+                        cache: false
                         source: ""
-                    }
-
-                    Keys.onPressed: event => {
-                        if (event.key === Qt.Key_Left || event.key === Qt.Key_Escape) {
-                            root.requestFocusList();
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            Cliphist.copy(root.currentEntry);
-                            root.requestClose();
-                            event.accepted = true;
-                        }
                     }
                 }
 
@@ -476,11 +630,73 @@ Item {
                             }
                         }
                     }
+                }
 
-                    Keys.onPressed: event => {
-                        if (event.key === Qt.Key_Left || event.key === Qt.Key_Escape) {
-                            root.requestFocusList();
-                            event.accepted = true;
+                // VIEW 4: BINARY CONTENT PREVIEW
+                Item {
+                    anchors.fill: parent
+                    visible: !root.isImage && !root.hasDetectedColor && root.isBinary
+
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 12
+                        implicitWidth: 260
+
+                        MaterialSymbol {
+                            Layout.alignment: Qt.AlignHCenter
+                            iconSize: 42
+                            text: "data_object"
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledText {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: Translation.tr("Binary Data")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnLayer1
+                        }
+
+                        StyledText {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: Translation.tr("%1 bytes • Raw binary content").arg(root.rawDecodedText.length)
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: Translation.tr("Direct text preview is disabled to prevent system slowdown.")
+                            font.pixelSize: 11
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        RippleButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            implicitHeight: 32
+                            implicitWidth: 140
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colPrimary
+                            colBackgroundHover: Appearance.colors.colPrimaryHover
+                            colRipple: Appearance.colors.colPrimaryContainerActive
+                            onClicked: {
+                                Cliphist.copy(root.currentEntry);
+                                root.showNotification(Translation.tr("Copied binary data"));
+                            }
+
+                            contentItem: RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 6
+                                MaterialSymbol { font.pixelSize: 15; text: "content_copy"; color: Appearance.colors.colOnPrimary }
+                                StyledText {
+                                    text: Translation.tr("Copy Data")
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.weight: Font.DemiBold
+                                    color: Appearance.colors.colOnPrimary
+                                }
+                            }
                         }
                     }
                 }
