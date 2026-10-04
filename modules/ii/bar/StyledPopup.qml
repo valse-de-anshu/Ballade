@@ -39,6 +39,8 @@ LazyLoader {
         property real lastValidX: 0
         property real lastValidY: 0
 
+        visible: root.shouldBeOpen || exitTimer.running
+
         Component.onCompleted: {
             enterTimer.restart();
         }
@@ -55,7 +57,11 @@ LazyLoader {
         Connections {
             target: root
             function onShouldBeOpenChanged() {
-                popupWindow.isShown = root.shouldBeOpen;
+                if (root.shouldBeOpen) {
+                    enterTimer.restart();
+                } else {
+                    popupWindow.isShown = false;
+                }
             }
         }
 
@@ -68,7 +74,7 @@ LazyLoader {
         implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
 
         mask: Region {
-            item: popupBackground
+            item: (popupWindow.isShown && popupBackground.opacity > 0) ? popupBackground : null
         }
 
         exclusionMode: ExclusionMode.Ignore

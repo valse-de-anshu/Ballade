@@ -42,6 +42,11 @@ Scope {
 			implicitWidth: rect.width + shadow.radius * 2
 			implicitHeight: rect.height + shadow.radius * 2
 
+			visible: popupLoader.active
+			mask: Region {
+				item: popupLoader.active ? rect : null
+			}
+
 			WlrLayershell.namespace: "quickshell:reloadPopup"
 
 			// color blending is a bit odd as detailed in the type reference.
