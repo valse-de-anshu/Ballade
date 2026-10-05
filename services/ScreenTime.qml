@@ -46,10 +46,10 @@ Singleton {
         }
     }
 
-    // Reload data from daemon-written JSON every 3 seconds
+    // Reload data from daemon-written JSON every 10 seconds (matches daemon save cycle)
     Timer {
         id: reloadTimer
-        interval: 3000
+        interval: 10000
         repeat: true
         running: root.isLoaded
         onTriggered: screenTimeFileView.reload()

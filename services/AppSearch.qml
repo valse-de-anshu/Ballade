@@ -120,9 +120,18 @@ Singleton {
         return str.toLowerCase().replace(/_/g, "-");
     }
 
+    property var iconCache: ({})
+
     function guessIcon(str) {
         if (!str || str.length == 0) return "image-missing";
+        if (root.iconCache[str]) return root.iconCache[str];
 
+        let icon = _resolveIcon(str);
+        root.iconCache[str] = icon;
+        return icon;
+    }
+
+    function _resolveIcon(str) {
         // Quickshell's desktop entry lookup
         const entry = DesktopEntries.byId(str);
         if (entry) return entry.icon;

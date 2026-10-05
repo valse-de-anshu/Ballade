@@ -9,6 +9,7 @@ import Quickshell.Hyprland
 
 /**
  * Provides access to some Hyprland data not available in Quickshell.Hyprland.
+ * Optimized with event-specific debouncing to prevent IPC bursts and frame drops during window open/close.
  */
 Singleton {
     id: root
@@ -44,30 +45,48 @@ Singleton {
         return root.windowByAddress[address];
     }
 
-    // Internals
+    // Debounced Internals
+
+    Timer {
+        id: debounceWindowTimer
+        interval: 60
+        repeat: false
+        onTriggered: {
+            if (!getClients.running) getClients.running = true;
+        }
+    }
+
+    Timer {
+        id: debounceWorkspaceTimer
+        interval: 60
+        repeat: false
+        onTriggered: {
+            if (!getWorkspaces.running) getWorkspaces.running = true;
+            if (!getActiveWorkspace.running) getActiveWorkspace.running = true;
+        }
+    }
 
     function updateWindowList() {
-        getClients.running = true;
+        debounceWindowTimer.restart();
     }
 
     function updateLayers() {
-        getLayers.running = true;
+        if (!getLayers.running) getLayers.running = true;
     }
 
     function updateMonitors() {
-        getMonitors.running = true;
+        if (!getMonitors.running) getMonitors.running = true;
     }
 
     function updateWorkspaces() {
-        getWorkspaces.running = true;
-        getActiveWorkspace.running = true;
+        debounceWorkspaceTimer.restart();
     }
 
     function updateAll() {
-        updateWindowList();
+        debounceWindowTimer.restart();
+        debounceWorkspaceTimer.restart();
         updateMonitors();
         updateLayers();
-        updateWorkspaces();
     }
 
     function biggestWindowForWorkspace(workspaceId) {
@@ -87,9 +106,31 @@ Singleton {
         target: Hyprland
 
         function onRawEvent(event) {
-            // console.log("Hyprland raw event:", event.name);
-            if (["openlayer", "closelayer", "screencast"].includes(event.name)) return;
-            updateAll()
+            const ev = event.name;
+            // Ignore events that don't need any updates
+            if (["openlayer", "closelayer", "screencast", "submap", "keybind", "mouse"].includes(ev)) return;
+
+            // Window-specific events
+            if (["openwindow", "closewindow", "movewindow", "windowtitle", "windowtitlev2", "activewindow", "activewindowv2", "fullscreen", "changefloatingmode", "pin"].includes(ev)) {
+                debounceWindowTimer.restart();
+                return;
+            }
+
+            // Workspace-specific events
+            if (["workspace", "workspacev2", "focusedmon", "createworkspace", "destroyworkspace", "moveworkspace"].includes(ev)) {
+                debounceWorkspaceTimer.restart();
+                return;
+            }
+
+            // Monitor configuration events
+            if (["monitoradded", "monitorremoved"].includes(ev)) {
+                root.updateMonitors();
+                return;
+            }
+
+            // General fallback
+            debounceWindowTimer.restart();
+            debounceWorkspaceTimer.restart();
         }
     }
 
@@ -99,14 +140,18 @@ Singleton {
         stdout: StdioCollector {
             id: clientsCollector
             onStreamFinished: {
-                root.windowList = JSON.parse(clientsCollector.text)
-                let tempWinByAddress = {};
-                for (var i = 0; i < root.windowList.length; ++i) {
-                    var win = root.windowList[i];
-                    tempWinByAddress[win.address] = win;
+                try {
+                    root.windowList = JSON.parse(clientsCollector.text);
+                    let tempWinByAddress = {};
+                    for (var i = 0; i < root.windowList.length; ++i) {
+                        var win = root.windowList[i];
+                        tempWinByAddress[win.address] = win;
+                    }
+                    root.windowByAddress = tempWinByAddress;
+                    root.addresses = root.windowList.map(win => win.address);
+                } catch (e) {
+                    // Safe handling of transient JSON parse errors
                 }
-                root.windowByAddress = tempWinByAddress;
-                root.addresses = root.windowList.map(win => win.address);
             }
         }
     }
@@ -117,7 +162,11 @@ Singleton {
         stdout: StdioCollector {
             id: monitorsCollector
             onStreamFinished: {
-                root.monitors = JSON.parse(monitorsCollector.text);
+                try {
+                    root.monitors = JSON.parse(monitorsCollector.text);
+                } catch (e) {
+                    // Safe handling
+                }
             }
         }
     }
@@ -128,7 +177,11 @@ Singleton {
         stdout: StdioCollector {
             id: layersCollector
             onStreamFinished: {
-                root.layers = JSON.parse(layersCollector.text);
+                try {
+                    root.layers = JSON.parse(layersCollector.text);
+                } catch (e) {
+                    // Safe handling
+                }
             }
         }
     }
@@ -139,16 +192,19 @@ Singleton {
         stdout: StdioCollector {
             id: workspacesCollector
             onStreamFinished: {
-                var rawWorkspaces = JSON.parse(workspacesCollector.text);
-                // Filter out invalid workspace ids (e.g. lock-screen temp workspace 2147483647 - N)
-                root.workspaces = rawWorkspaces.filter(ws => ws.id >= 1 && ws.id <= 100);
-                let tempWorkspaceById = {};
-                for (var i = 0; i < root.workspaces.length; ++i) {
-                    var ws = root.workspaces[i];
-                    tempWorkspaceById[ws.id] = ws;
+                try {
+                    var rawWorkspaces = JSON.parse(workspacesCollector.text);
+                    root.workspaces = rawWorkspaces.filter(ws => ws.id >= 1 && ws.id <= 100);
+                    let tempWorkspaceById = {};
+                    for (var i = 0; i < root.workspaces.length; ++i) {
+                        var ws = root.workspaces[i];
+                        tempWorkspaceById[ws.id] = ws;
+                    }
+                    root.workspaceById = tempWorkspaceById;
+                    root.workspaceIds = root.workspaces.map(ws => ws.id);
+                } catch (e) {
+                    // Safe handling
                 }
-                root.workspaceById = tempWorkspaceById;
-                root.workspaceIds = root.workspaces.map(ws => ws.id);
             }
         }
     }
@@ -159,7 +215,11 @@ Singleton {
         stdout: StdioCollector {
             id: activeWorkspaceCollector
             onStreamFinished: {
-                root.activeWorkspace = JSON.parse(activeWorkspaceCollector.text);
+                try {
+                    root.activeWorkspace = JSON.parse(activeWorkspaceCollector.text);
+                } catch (e) {
+                    // Safe handling
+                }
             }
         }
     }

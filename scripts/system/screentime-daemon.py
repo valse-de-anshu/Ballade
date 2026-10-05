@@ -132,33 +132,31 @@ def get_socket2_path() -> str | None:
     return None
 
 
-def is_screen_locked() -> bool:
+_last_lock_check = 0.0
+_is_locked_cached = False
+
+def is_screen_locked(daemon_dpms_on: bool = True) -> bool:
     """Check if lockscreen is active or all monitors are DPMS off."""
-    # 1. Lockscreen binary check
+    global _last_lock_check, _is_locked_cached
+
+    if not daemon_dpms_on:
+        return True
+
+    now = time.monotonic()
+    if now - _last_lock_check < 4.0:
+        return _is_locked_cached
+
+    _last_lock_check = now
     try:
         res = subprocess.run(
             ["pidof", "hyprlock", "swaylock", "gtklock", "waylock"],
             capture_output=True, timeout=1
         )
-        if res.returncode == 0:
-            return True
+        _is_locked_cached = (res.returncode == 0)
     except Exception:
-        pass
+        _is_locked_cached = False
 
-    # 2. Monitors DPMS off check
-    try:
-        res = subprocess.run(
-            ["hyprctl", "monitors", "-j"],
-            capture_output=True, text=True, timeout=2
-        )
-        if res.stdout:
-            monitors = json.loads(res.stdout)
-            if monitors and all(m.get("dpmsStatus") is False for m in monitors):
-                return True
-    except Exception:
-        pass
-
-    return False
+    return _is_locked_cached
 
 
 def get_active_window() -> tuple[str, str]:
@@ -198,6 +196,8 @@ class ScreenTimeDaemon:
         self.today_str: str = ""
         self.current_app: str = "desktop"
         self.current_title: str = "Desktop"
+        self.dpms_on: bool = True
+        self._last_active_poll: float = 0.0
         self._lock = threading.Lock()
         self._running = True
         self._dirty = False
@@ -278,7 +278,7 @@ class ScreenTimeDaemon:
 
     def save_if_needed(self, force: bool = False) -> None:
         now = time.monotonic()
-        if (self._dirty and (now - self._last_save) >= 3.0) or (force and self._dirty):
+        if (self._dirty and (now - self._last_save) >= 10.0) or (force and self._dirty):
             with self._lock:
                 if not self._dirty:
                     return
@@ -295,6 +295,7 @@ class ScreenTimeDaemon:
         cls, title = get_active_window()
         self.current_app = cls
         self.current_title = title
+        self._last_active_poll = time.monotonic()
 
     def socket_listener(self) -> None:
         """Hyprland socket2 real-time event listener."""
@@ -319,9 +320,28 @@ class ScreenTimeDaemon:
                                 line, buf = buf.split("\n", 1)
                                 line = line.strip()
                                 if ">>" in line:
-                                    event_name = line.split(">>")[0]
-                                    if event_name in FOCUS_EVENTS:
-                                        self.update_active_window()
+                                    parts = line.split(">>", 1)
+                                    event_name = parts[0]
+                                    event_data = parts[1] if len(parts) > 1 else ""
+
+                                    if event_name == "dpms":
+                                        self.dpms_on = (event_data.strip() == "1")
+                                    elif event_name == "activewindow":
+                                        if "," in event_data:
+                                            cls, title = event_data.split(",", 1)
+                                            cls, title = cls.strip(), title.strip()
+                                        else:
+                                            cls, title = event_data.strip(), event_data.strip()
+                                        if cls:
+                                            self.current_app = cls
+                                            self.current_title = title if title else cls
+                                        else:
+                                            self.current_app = "desktop"
+                                            self.current_title = "Desktop"
+                                        self._last_active_poll = time.monotonic()
+                                    elif event_name in ("openwindow", "closewindow", "workspace", "focusedmon"):
+                                        if time.monotonic() - self._last_active_poll > 2.0:
+                                            self.update_active_window()
                         except socket.timeout:
                             continue
                         except Exception:
@@ -336,13 +356,16 @@ class ScreenTimeDaemon:
         while self._running:
             start = time.monotonic()
 
-            if is_screen_locked():
+            if is_screen_locked(self.dpms_on):
                 self.save_if_needed()
                 time.sleep(1)
                 continue
 
-            # Periodic active window refresh
-            self.update_active_window()
+            # Fallback refresh only every 10 seconds if needed
+            now = time.monotonic()
+            if now - self._last_active_poll > 10.0:
+                self.update_active_window()
+
             self.record_second()
             self.save_if_needed()
 

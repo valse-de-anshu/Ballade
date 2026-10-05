@@ -53,20 +53,9 @@ Singleton {
         var values = [];
 
         for (const [key, value] of map) {
-            values.push(appEntryComp.createObject(null, { appId: key, toplevels: value.toplevels, pinned: value.pinned }));
+            values.push({ appId: key, toplevels: value.toplevels, pinned: value.pinned });
         }
 
         return values;
-    }
-
-    component TaskbarAppEntry: QtObject {
-        id: wrapper
-        required property string appId
-        required property list<var> toplevels
-        required property bool pinned
-    }
-    Component {
-        id: appEntryComp
-        TaskbarAppEntry {}
     }
 }

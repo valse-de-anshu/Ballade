@@ -90,7 +90,7 @@ Ballade ships a configured **micro** terminal editor setup in `dotfiles/micro/`:
   - Runs in the background on Hyprland startup via `hyprland-custom/execs.lua`.
   - Monitors paired mobile devices and triggers network discovery every 30 seconds if a device disconnects, ensuring automatic re-pairing without manual reconnects.
 * **Quick Keybindings**:
-  - `SUPER + I` / `CTRL + I`: Toggle QuickShell Settings Hub.
+  - `SUPER + I`: Toggle QuickShell Settings Hub.
   - `SUPER + ALT + Space`: Compact centered window focus mode.
   - `ALT + S`: Gwenview Snip & Annotate.
   - `SUPER + SHIFT + X`: Fast OCR (English + Hindi) to clipboard.

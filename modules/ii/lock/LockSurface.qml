@@ -195,12 +195,6 @@ MouseArea {
                         item.draggable = false;
                         item.x = 0;
                         item.y = 0;
-                        if (item.restoreXYBinding) {
-                            item.restoreXYBinding = () => {
-                                item.x = 0;
-                                item.y = 0;
-                            };
-                        }
                     }
                 }
             }

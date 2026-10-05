@@ -13,21 +13,20 @@ LazyLoader {
     property real popupBackgroundMargin: 0
     property bool shouldBeOpen: hoverTarget && hoverTarget.containsMouse
 
-    Timer {
-        id: exitTimer
+    property Timer exitTimer: Timer {
         interval: 160
         repeat: false
     }
 
     onShouldBeOpenChanged: {
         if (!shouldBeOpen && active) {
-            exitTimer.restart();
+            root.exitTimer.restart();
         } else if (shouldBeOpen) {
-            exitTimer.stop();
+            root.exitTimer.stop();
         }
     }
 
-    active: shouldBeOpen || exitTimer.running
+    active: shouldBeOpen || root.exitTimer.running
 
     readonly property bool barVertical: Config.options.bar.vertical
     readonly property string barEdge: {
@@ -42,12 +41,13 @@ LazyLoader {
         // Bring contentItem reference into this scope
         property Item innerContent: root.contentItem
         property bool isShown: false
-        property real lastValidX: 0
-        property real lastValidY: 0
+        property real lastValidX: Appearance.sizes.elevationMargin
+        property real lastValidY: Appearance.sizes.elevationMargin
 
-        visible: root.shouldBeOpen || exitTimer.running
+        visible: root.shouldBeOpen || root.exitTimer.running
 
         Component.onCompleted: {
+            updateOffsets();
             enterTimer.restart();
         }
 
@@ -56,6 +56,7 @@ LazyLoader {
             interval: 10
             repeat: false
             onTriggered: {
+                popupWindow.updateOffsets();
                 popupWindow.isShown = root.shouldBeOpen;
             }
         }
@@ -64,10 +65,33 @@ LazyLoader {
             target: root
             function onShouldBeOpenChanged() {
                 if (root.shouldBeOpen) {
+                    popupWindow.updateOffsets();
                     enterTimer.restart();
                 } else {
                     popupWindow.isShown = false;
                 }
+            }
+        }
+
+        function updateOffsets() {
+            if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.width <= 0) return;
+            const mappedX = root.QsWindow?.mapFromItem(
+                root.hoverTarget,
+                (root.hoverTarget.width - popupBackground.implicitWidth) / 2, 0
+            );
+            if (mappedX && !isNaN(mappedX.x) && mappedX.x > 0) {
+                const margin = Appearance.sizes.elevationMargin;
+                const maxLeft = (popupWindow.screen?.width ?? 1920) - popupBackground.implicitWidth - margin - 10;
+                popupWindow.lastValidX = Math.max(margin, Math.min(mappedX.x, maxLeft));
+            }
+            const mappedY = root.QsWindow?.mapFromItem(
+                root.hoverTarget,
+                0, (root.hoverTarget.height - popupBackground.implicitHeight) / 2
+            );
+            if (mappedY && !isNaN(mappedY.y) && mappedY.y > 0) {
+                const margin = Appearance.sizes.elevationMargin;
+                const maxTop = (popupWindow.screen?.height ?? 1080) - popupBackground.implicitHeight - margin - 15;
+                popupWindow.lastValidY = Math.max(margin, Math.min(mappedY.y, maxTop));
             }
         }
 
@@ -80,47 +104,8 @@ LazyLoader {
         implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
         implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
 
-        readonly property real centerOffsetX: {
-            if (!popupWindow.isShown && popupWindow.lastValidX > 0) {
-                return popupWindow.lastValidX;
-            }
-            if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.width <= 0) {
-                return popupWindow.lastValidX > 0 ? popupWindow.lastValidX : Appearance.sizes.elevationMargin;
-            }
-            const mapped = root.QsWindow?.mapFromItem(
-                root.hoverTarget,
-                (root.hoverTarget.width - popupBackground.implicitWidth) / 2, 0
-            );
-            if (mapped && !isNaN(mapped.x) && mapped.x > 0) {
-                const margin = Appearance.sizes.elevationMargin;
-                const maxLeft = (popupWindow.screen?.width ?? 1920) - popupBackground.implicitWidth - margin - 10;
-                const val = Math.max(margin, Math.min(mapped.x, maxLeft));
-                popupWindow.lastValidX = val;
-                return val;
-            }
-            return popupWindow.lastValidX > 0 ? popupWindow.lastValidX : Appearance.sizes.elevationMargin;
-        }
-
-        readonly property real centerOffsetY: {
-            if (!popupWindow.isShown && popupWindow.lastValidY > 0) {
-                return popupWindow.lastValidY;
-            }
-            if (!root.hoverTarget || !root.hoverTarget.visible || root.hoverTarget.height <= 0) {
-                return popupWindow.lastValidY > 0 ? popupWindow.lastValidY : Appearance.sizes.elevationMargin;
-            }
-            const mapped = root.QsWindow?.mapFromItem(
-                root.hoverTarget,
-                0, (root.hoverTarget.height - popupBackground.implicitHeight) / 2
-            );
-            if (mapped && !isNaN(mapped.y) && mapped.y > 0) {
-                const margin = Appearance.sizes.elevationMargin;
-                const maxTop = (popupWindow.screen?.height ?? 1080) - popupBackground.implicitHeight - margin - 15;
-                const val = Math.max(margin, Math.min(mapped.y, maxTop));
-                popupWindow.lastValidY = val;
-                return val;
-            }
-            return popupWindow.lastValidY > 0 ? popupWindow.lastValidY : Appearance.sizes.elevationMargin;
-        }
+        readonly property real centerOffsetX: popupWindow.lastValidX
+        readonly property real centerOffsetY: popupWindow.lastValidY
 
         mask: Region {
             item: (popupWindow.isShown && popupBackground.opacity > 0) ? popupBackground : null

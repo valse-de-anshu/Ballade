@@ -33,7 +33,7 @@ hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, xray = true
 hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, ignore_alpha = 0.05 })
 hl.layer_rule({ match = { namespace = "quickshell:desktopWidgets" }, no_anim = true })
 
--- Frosted glass blur for Settings panel (CTRL+I / SUPER+I)
+-- Frosted glass blur for Settings panel (SUPER+I)
 hl.layer_rule({ match = { namespace = "quickshell:settings" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:settings" }, xray = true })
 hl.layer_rule({ match = { namespace = "quickshell:settings" }, ignore_alpha = 0.05 })

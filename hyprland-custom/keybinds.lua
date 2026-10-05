@@ -6,11 +6,9 @@ hl.bind("SUPER+ALT+Space", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/c
 -- Disable panel family cycling (prevents UI corruption on CTRL+SUPER+P)
 hl.unbind("CTRL + SUPER + P")
 
--- Bind SUPER+I and CTRL+I to Ballade's Settings widget
+-- Bind SUPER+I to Ballade's Settings widget
 hl.unbind("SUPER + I")
 hl.bind("SUPER + I", hl.dsp.exec_cmd("qs -c ballade ipc call settings toggle"), {description = "Shell: Toggle Settings"} )
-hl.unbind("CTRL + I")
-hl.bind("CTRL + I", hl.dsp.exec_cmd("qs -c ballade ipc call settings toggle"), {description = "Shell: Toggle Settings"} )
 
 -- Bind ALT+S to Snip and Annotate with Gwenview
 local qsConfig = os.getenv("qsConfig") or "ballade"

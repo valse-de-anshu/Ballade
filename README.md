@@ -271,7 +271,7 @@ flatpak install flathub io.missioncenter.MissionCenter
 | `SUPER + N` | **Right Sidebar** | Notifications, Quick Toggles, Volume Mixer, Calendar |
 | `SUPER + Tab` / `SUPER + W` | **Overview** | Fullscreen workspace window switcher & app launcher |
 | `CTRL + SUPER + T` | **Wallpaper Picker** | 3D Panoramic cover-flow wallpaper carousel |
-| `SUPER + I` / `CTRL + I` / `SUPER + ESC` | **Settings Hub** | Graphical configuration overlay |
+| `SUPER + I` / `SUPER + ESC` | **Settings Hub** | Graphical configuration overlay |
 | `SUPER + ALT + Space` | **Window Centering** | Toggle centered compact window focus mode |
 | `super + /` | **keybingings** | toggle keybinging cheat sheet | 
 ### Terminal & Script IPC Triggers:

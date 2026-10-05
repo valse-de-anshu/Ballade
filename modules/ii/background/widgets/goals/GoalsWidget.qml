@@ -30,12 +30,9 @@ AbstractBackgroundWidget {
         }
     }
 
-    implicitWidth: root.sectionMode === "wellbeing" ? 340 : 260
-    implicitHeight: isCompact ? 250 : (root.sectionMode === "wellbeing" ? 540 : 500)
+    implicitWidth: 340
+    implicitHeight: isCompact ? 250 : 540
 
-    Behavior on implicitWidth {
-        animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
-    }
     Behavior on implicitHeight {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
@@ -782,6 +779,7 @@ AbstractBackgroundWidget {
                     visible: root.sectionMode === "wellbeing"
 
                     readonly property var currentStats: {
+                        if (root.sectionMode !== "wellbeing") return { totalSeconds: 0, apps: [], averageDaily: 0, averageMonthly: 0 }
                         let _react = (typeof ScreenTime !== "undefined" && ScreenTime) ? ScreenTime.screenTimeData : null
                         return root.getScreenTimeStats()
                     }
@@ -3973,7 +3971,7 @@ AbstractBackgroundWidget {
             currentHeight: root.implicitHeight
             resizeMode: "vertical"
             onResized: newHeight => {
-                let threshold = (root.sectionMode === "wellbeing") ? 395 : 375
+                let threshold = 395
                 root.sizeMode = (newHeight < threshold) ? "compact" : "full"
             }
             onResizeFinished: {

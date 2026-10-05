@@ -85,7 +85,7 @@ Scope {
             }
 
             Keys.onPressed: (event) => {
-                if (event.key === Qt.Key_Escape || (event.key === Qt.Key_I && (event.modifiers & Qt.ControlModifier))) {
+                if (event.key === Qt.Key_Escape) {
                     panelWindow.hide();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Up) {
