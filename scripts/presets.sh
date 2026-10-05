@@ -32,8 +32,23 @@ case "$action" in
             existing_meta=""
         fi
 
-        # Base snapshot without meta
-        jq 'del(._presetMeta)' "$CONFIG_FILE" > "$PRESETS_DIR/${name}.json"
+        # Extract ONLY theme, background widgets, wallpaper, and wallpaperSelector
+        jq '
+            {
+                theme: (if .theme.activePreset then {activePreset: .theme.activePreset} else {} end),
+                background: {
+                    widgets: .background.widgets,
+                    wallpaperPath: .background.wallpaperPath
+                },
+                wallpaperSelector: (
+                    {}
+                    | if .wallpaperSelector.userPath then .userPath = .wallpaperSelector.userPath else . end
+                    | if .wallpaperSelector.liveWallpapersPath then .liveWallpapersPath = .wallpaperSelector.liveWallpapersPath else . end
+                )
+            }
+            | if .wallpaperSelector == {} then del(.wallpaperSelector) else . end
+            | if .theme == {} then del(.theme) else . end
+        ' "$CONFIG_FILE" > "$PRESETS_DIR/${name}.json"
         
         # Restore meta and optionally update description
         if [ -n "$existing_meta" ] && [ "$existing_meta" != "{}" ]; then
@@ -117,11 +132,16 @@ case "$action" in
             fi
         fi
 
-        # Merge preset with config: replace background.widgets fully so no stale/conflicting widgets persist
+        # Merge preset with config: ONLY update widgets, wallpaper, and preset theme
+        # DO NOT touch bar, appearance, apps, audio, shortcuts, or any other system settings!
         jq -s '
-            .[0] as $base | .[1] as $preset
-            | ($base * $preset)
+            .[0] as $base | .[1] as $preset |
+            $base
             | if $preset.background.widgets then .background.widgets = $preset.background.widgets else . end
+            | if ($preset.background.wallpaperPath and $preset.background.wallpaperPath != "") then .background.wallpaperPath = $preset.background.wallpaperPath else . end
+            | if ($preset.wallpaperSelector.userPath and $preset.wallpaperSelector.userPath != "") then .wallpaperSelector.userPath = $preset.wallpaperSelector.userPath else . end
+            | if ($preset.wallpaperSelector.liveWallpapersPath and $preset.wallpaperSelector.liveWallpapersPath != "") then .wallpaperSelector.liveWallpapersPath = $preset.wallpaperSelector.liveWallpapersPath else . end
+            | if ($preset.theme.activePreset and $preset.theme.activePreset != "") then .theme.activePreset = $preset.theme.activePreset else . end
             | del(._presetMeta)
         ' "$CONFIG_FILE" "$preset_file" > "${CONFIG_FILE}.tmp" \
             && cat "${CONFIG_FILE}.tmp" > "$CONFIG_FILE" \
@@ -129,6 +149,16 @@ case "$action" in
 
         # If the preset declares a theme, run the full orchestrator
         theme_key=$(jq -r '._presetMeta.theme // empty' "$preset_file")
+        if [ -z "$theme_key" ]; then
+            theme_key=$(jq -r '.theme.activePreset // empty' "$preset_file")
+        fi
+        if [ -z "$theme_key" ]; then
+            case "$name" in
+                green|pink|red|purple|blue|golden|orange|grayscale|catppuccin)
+                    theme_key="$name"
+                    ;;
+            esac
+        fi
         if [ -n "$theme_key" ]; then
             "$SCRIPT_DIR/theming/apply-theme-preset.sh" "$theme_key"
         else

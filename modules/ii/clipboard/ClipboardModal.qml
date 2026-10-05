@@ -23,7 +23,12 @@ Rectangle {
     implicitWidth: 890
     implicitHeight: 540
 
-    color: Appearance.colors.colLayer0
+    color: Qt.rgba(
+        Appearance.colors.colLayer0Base.r,
+        Appearance.colors.colLayer0Base.g,
+        Appearance.colors.colLayer0Base.b,
+        0.28
+    )
     radius: Appearance.rounding.windowRounding
     clip: true
     border.width: 1

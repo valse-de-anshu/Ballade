@@ -80,7 +80,14 @@ Item {
         implicitWidth: workspaceGrid.implicitWidth + padding * 2
         implicitHeight: workspaceGrid.implicitHeight + padding * 2
         radius: root.largeWorkspaceRadius + padding
-        color: Appearance.colors.colBackgroundSurfaceContainer
+        color: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.22
+        )
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Border
 
         Grid { // Workspaces
             id: workspaceGrid
@@ -100,7 +107,12 @@ Item {
                     property int rowIndex: Math.floor(index / Config.options.overview.columns)
                     property int colIndex: index % Config.options.overview.columns
                     property int workspaceValue: root.workspaceGroup * root.workspacesShown + getWsInCell(rowIndex, colIndex)
-                    property color defaultWorkspaceColor: Appearance.colors.colSurfaceContainerLow
+                    property color defaultWorkspaceColor: Qt.rgba(
+                        Appearance.colors.colSurfaceContainerLow.r,
+                        Appearance.colors.colSurfaceContainerLow.g,
+                        Appearance.colors.colSurfaceContainerLow.b,
+                        0.40
+                    )
                     property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
                     property color hoveredBorderColor: Appearance.colors.colLayer2Hover
                     property bool hoveredWhileDragging: false
