@@ -62,9 +62,23 @@ Scope {
             Item {
                 id: fadeItem
                 anchors.fill: parent
+
                 opacity: GlobalStates.wallpaperSelectorOpen ? 1.0 : 0.0
+                scale: GlobalStates.wallpaperSelectorOpen ? 1.0 : 0.94
+                transformOrigin: Item.Center
+
                 Behavior on opacity {
-                    NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+                    NumberAnimation {
+                        duration: GlobalStates.wallpaperSelectorOpen ? 220 : 160
+                        easing.type: GlobalStates.wallpaperSelectorOpen ? Easing.OutCubic : Easing.InCubic
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: GlobalStates.wallpaperSelectorOpen ? 280 : 180
+                        easing.type: GlobalStates.wallpaperSelectorOpen ? Easing.OutBack : Easing.InCubic
+                        easing.overshoot: 1.06
+                    }
                 }
 
                 HyprPickerContent {

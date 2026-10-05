@@ -38,7 +38,7 @@ Item {
             case "orange":     return "#FF9248"
             case "pink":       return "#D4659A"
             case "red":        return "#BF3F43"
-            case "grayscale":  return "#88C0D0"
+            case "grayscale":  return "#888899"
             case "catppuccin":
             case "catpuchin":  return "#CBA6F7"
             default:           return Appearance.colors.colPrimary
@@ -107,7 +107,7 @@ Item {
         sortField: FolderListModel.Name
     }
 
-    // --- Backdrop scrim & click-to-dismiss ---
+    // --- Backdrop scrim ---
     Rectangle {
         anchors.fill: parent
         color: Config.options.wallpaperSelector?.showBlurBackground ? "#80000000" : "transparent"
@@ -115,56 +115,59 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: root.dismissed()
+            // Absorb clicks so they don't hit underlying apps,
+            // but do NOT dismiss. Per requirement: only Esc or choosing a wallpaper will close the UI.
         }
     }
 
-    // --- Header Navigation Bar (Section Switcher & Category Pills) ---
-    ColumnLayout {
+    // --- Unified Floating Header Glass Island ---
+    Rectangle {
         id: headerNav
         anchors.top: parent.top
         anchors.topMargin: Math.round(parent.height * 0.05)
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: 12
+        height: 48
+        width: headerContentRow.implicitWidth + 24
+        radius: 24
+        color: "#E614161F" // Frosted obsidian glass
+        border.width: 1
+        border.color: "#28FFFFFF"
         z: 200
 
-        // Main Section Switcher (Wallpapers vs Live Wallpapers)
-        Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            width: sectionRow.implicitWidth + 8
-            height: 46
-            radius: 23
-            color: Appearance.colors.colLayer0
-            border.width: 1
-            border.color: Appearance.colors.colOutlineVariant
+        Row {
+            id: headerContentRow
+            anchors.centerIn: parent
+            spacing: 12
 
+            // Mode Switcher (Wallpapers vs Live)
             Row {
-                id: sectionRow
-                anchors.centerIn: parent
-                spacing: 4
+                spacing: 3
+                anchors.verticalCenter: parent.verticalCenter
 
                 // Static Wallpapers Tab
                 Rectangle {
-                    width: staticTabRow.implicitWidth + 24
-                    height: 38
-                    radius: 19
+                    width: staticTabRow.implicitWidth + 20
+                    height: 34
+                    radius: 17
                     color: root.activeSection === "static" ? Appearance.colors.colPrimary : "transparent"
                     Behavior on color { ColorAnimation { duration: 150 } }
 
                     Row {
                         id: staticTabRow
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 6
                         MaterialSymbol {
                             text: "image"
-                            iconSize: 18
-                            color: root.activeSection === "static" ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
+                            iconSize: 16
+                            color: root.activeSection === "static" ? Appearance.colors.colOnPrimary : "#A6ADC8"
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                         Text {
                             text: Translation.tr("Wallpapers")
-                            color: root.activeSection === "static" ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
-                            font.pixelSize: 13
+                            color: root.activeSection === "static" ? Appearance.colors.colOnPrimary : "#A6ADC8"
+                            font.pixelSize: 12
                             font.weight: root.activeSection === "static" ? Font.DemiBold : Font.Normal
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                     }
 
@@ -172,34 +175,38 @@ Item {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.activeSection = "static"
-                            root.syncDirectory()
+                            if (root.activeSection !== "static") {
+                                root.activeSection = "static"
+                                root.syncDirectory()
+                            }
                         }
                     }
                 }
 
                 // Live Wallpapers Tab
                 Rectangle {
-                    width: liveTabRow.implicitWidth + 24
-                    height: 38
-                    radius: 19
+                    width: liveTabRow.implicitWidth + 20
+                    height: 34
+                    radius: 17
                     color: root.activeSection === "live" ? Appearance.colors.colPrimary : "transparent"
                     Behavior on color { ColorAnimation { duration: 150 } }
 
                     Row {
                         id: liveTabRow
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 6
                         MaterialSymbol {
-                            text: "video_library"
-                            iconSize: 18
-                            color: root.activeSection === "live" ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
+                            text: "movie"
+                            iconSize: 16
+                            color: root.activeSection === "live" ? Appearance.colors.colOnPrimary : "#A6ADC8"
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                         Text {
-                            text: Translation.tr("Live Wallpapers")
-                            color: root.activeSection === "live" ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer0
-                            font.pixelSize: 13
+                            text: Translation.tr("Live")
+                            color: root.activeSection === "live" ? Appearance.colors.colOnPrimary : "#A6ADC8"
+                            font.pixelSize: 12
                             font.weight: root.activeSection === "live" ? Font.DemiBold : Font.Normal
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                     }
 
@@ -207,78 +214,122 @@ Item {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.activeSection = "live"
-                            root.syncDirectory()
+                            if (root.activeSection !== "live") {
+                                root.activeSection = "live"
+                                root.syncDirectory()
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Category / Folder Theme Pills
-        Row {
-            id: folderPillsRow
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            // Elegant vertical divider
+            Rectangle {
+                width: 1
+                height: 18
+                color: "#28FFFFFF"
+                anchors.verticalCenter: parent.verticalCenter
+            }
 
-            Repeater {
-                model: root.activeSection === "live" ? root.liveFolders : root.staticFolders
+            // Theme Color Jewels (Circular Glowing Beads)
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 7
 
-                Rectangle {
-                    id: pill
-                    required property string modelData
-                    required property int index
+                Repeater {
+                    model: root.activeSection === "live" ? root.liveFolders : root.staticFolders
 
-                    readonly property bool isCurrentFolder: root.activeSection === "live" 
-                        ? (root.activeLiveFolder === modelData)
-                        : (root.activeStaticFolder === modelData)
+                    Item {
+                        id: jewelItem
+                        required property string modelData
+                        required property int index
 
-                    width: pillRow.implicitWidth + 20
-                    height: 30
-                    radius: 15
-                    color: isCurrentFolder 
-                        ? Appearance.colors.colSecondaryContainer 
-                        : (pillMouse.containsMouse ? Appearance.colors.colLayer2 : Appearance.colors.colLayer0)
-                    border.width: 1
-                    border.color: isCurrentFolder ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
+                        readonly property bool isCurrentFolder: root.activeSection === "live" 
+                            ? (root.activeLiveFolder === modelData)
+                            : (root.activeStaticFolder === modelData)
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                        readonly property color beadColor: root.colorForFolder(modelData)
 
-                    Row {
-                        id: pillRow
-                        anchors.centerIn: parent
-                        spacing: 6
+                        width: 28
+                        height: 28
+                        anchors.verticalCenter: parent.verticalCenter
 
-                        // Color dot for theme color
+                        // Outer Selection Halo
                         Rectangle {
-                            width: 10
-                            height: 10
-                            radius: 5
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: root.colorForFolder(pill.modelData)
-                            visible: pill.modelData !== "CozyPixels"
+                            anchors.fill: parent
+                            radius: 14
+                            color: "transparent"
+                            border.width: 2
+                            border.color: jewelItem.beadColor
+                            opacity: jewelItem.isCurrentFolder ? 1.0 : (jewelMouse.containsMouse ? 0.45 : 0.0)
+                            scale: jewelItem.isCurrentFolder ? 1.0 : (jewelMouse.containsMouse ? 0.92 : 0.7)
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
                         }
 
-                        Text {
-                            text: pill.modelData.charAt(0).toUpperCase() + pill.modelData.slice(1)
-                            color: pill.isCurrentFolder ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnLayer0
-                            font.pixelSize: 11
-                            font.weight: pill.isCurrentFolder ? Font.DemiBold : Font.Normal
-                        }
-                    }
+                        // Inner Color Bead
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: jewelItem.isCurrentFolder ? 15 : 18
+                            height: width
+                            radius: width / 2
+                            color: jewelItem.beadColor
+                            scale: jewelMouse.containsMouse && !jewelItem.isCurrentFolder ? 1.15 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 120 } }
+                            Behavior on width { NumberAnimation { duration: 150 } }
 
-                    MouseArea {
-                        id: pillMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.activeSection === "live") {
-                                root.activeLiveFolder = pill.modelData
-                            } else {
-                                root.activeStaticFolder = pill.modelData
+                            // Center core highlight on active
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 4
+                                height: 4
+                                radius: 2
+                                color: "#FFFFFF"
+                                opacity: jewelItem.isCurrentFolder ? 0.95 : 0.0
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
                             }
-                            root.syncDirectory()
+                        }
+
+                        // Elegant floating tooltip on hover
+                        Rectangle {
+                            id: jewelTooltip
+                            z: 300
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: jewelTooltipText.implicitWidth + 14
+                            height: 22
+                            radius: 11
+                            color: "#F0161822"
+                            border.width: 1
+                            border.color: "#35FFFFFF"
+                            opacity: jewelMouse.containsMouse ? 1.0 : 0.0
+                            visible: opacity > 0.01
+                            Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                            Text {
+                                id: jewelTooltipText
+                                anchors.centerIn: parent
+                                text: jewelItem.modelData.charAt(0).toUpperCase() + jewelItem.modelData.slice(1)
+                                color: "#FFFFFF"
+                                font.pixelSize: 10
+                                font.weight: Font.Medium
+                            }
+                        }
+
+                        MouseArea {
+                            id: jewelMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (root.activeSection === "live") {
+                                    root.activeLiveFolder = jewelItem.modelData
+                                } else {
+                                    root.activeStaticFolder = jewelItem.modelData
+                                }
+                                root.syncDirectory()
+                            }
                         }
                     }
                 }
@@ -286,37 +337,34 @@ Item {
         }
     }
 
-    // --- Main Wallpaper Carousel ---
+    // --- Main Wallpaper Curved Carousel ---
     ListView {
         id: list
         anchors.centerIn: parent
         width: parent.width
-        height: Math.min(480, Math.round(parent.height * 0.44))
+        height: Math.min(460, Math.round(parent.height * 0.46))
         focus: true
 
         model: folderModel
         orientation: ListView.Horizontal
-        spacing: root.isPanoramic ? 6 : 14
+        spacing: 10
         clip: false
-        cacheBuffer: 3000
+        cacheBuffer: 50000
 
         property int selectedIndex: 0
+        property bool wheelCooldown: false
 
-        // Dynamically adapted to settings:
-        // 1. Selector layout behavior:
-        //    - "panoramic": squeezed down vertical lines (32px) on left/right, 1 expanded box in middle
-        //    - "standard": rounded cards (180px) on left/right, expanded center card
-        // 2. Card Shape:
-        //    - "cyberpunk": angled shear geometry
-        //    - "card": clean rectangular geometry
-        readonly property real expandedWidth: root.isPanoramic
-            ? Math.min(Math.round(height * 1.60), Math.round(width * 0.55))
-            : Math.min(Math.round(height * 1.50), Math.round(width * 0.50))
+        Timer {
+            id: wheelCooldownTimer
+            interval: 70
+            onTriggered: list.wheelCooldown = false
+        }
 
-        readonly property real collapsedWidth: root.isPanoramic
-            ? 32
-            : Math.max(160, Math.round(expandedWidth * 0.28))
+        // Expanded hero width (middle horizontal card)
+        readonly property real expandedWidth: Math.min(Math.round(height * 1.55), Math.round(width * 0.48))
 
+        // Vertical card slot width (92px wide, elegant portrait shape)
+        readonly property real collapsedWidth: 92
         readonly property real step: collapsedWidth + spacing
 
         leftMargin: Math.max(0, (width - expandedWidth) / 2)
@@ -351,7 +399,7 @@ Item {
         }
 
         Behavior on contentX {
-            NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 260; easing.type: Easing.OutQuart }
         }
 
         Connections {
@@ -380,31 +428,61 @@ Item {
 
         delegate: Item {
             id: tile
-            readonly property bool active: index === list.selectedIndex
-            width: active ? list.expandedWidth : list.collapsedWidth
-            height: list.height
-            z: active ? 100 : 1
-
-            Behavior on width {
-                NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+            readonly property int dist: Math.abs(index - list.selectedIndex)
+            readonly property bool active: dist === 0
+            readonly property string currentFilePath: {
+                if (!filePath) return ""
+                return FileUtils.trimFileProtocol(filePath)
+            }
+            readonly property bool isVideo: Boolean(currentFilePath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(currentFilePath)
+            readonly property string thumbUri: {
+                if (!currentFilePath) return ""
+                const encoded = currentFilePath.split("/").map(part => encodeURIComponent(part)).join("/")
+                const uri = "file://" + encoded
+                const md5Hash = Qt.md5(uri)
+                const cacheDir = FileUtils.trimFileProtocol(Directories.genericCache)
+                return "file://" + cacheDir + "/thumbnails/x-large/" + md5Hash + ".png"
             }
 
-            property bool isVideo: Boolean(filePath) && /\.(mp4|webm|mkv|avi|mov)$/i.test(filePath)
+            width: active ? list.expandedWidth : list.collapsedWidth
+            height: list.height
+            z: active ? 100 : (60 - Math.min(dist, 40))
+
+            Behavior on width {
+                NumberAnimation { duration: 260; easing.type: Easing.OutQuart }
+            }
 
             Item {
                 id: content
-                anchors.fill: parent
+                anchors.centerIn: parent
 
-                // Card Shape setting: "cyberpunk" shears the cards; "card" keeps them straight
-                transform: Shear {
-                    xFactor: root.isCyberpunk ? (tile.active ? -0.04 : -0.08) : 0.0
-                    Behavior on xFactor { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                // Smooth vertical curved coverflow silhouette:
+                // Height curves down symmetrically on left and right, center is full hero height
+                height: {
+                    if (dist === 0) return list.height;
+                    if (dist === 1) return Math.round(list.height * 0.90);
+                    if (dist === 2) return Math.round(list.height * 0.80);
+                    if (dist === 3) return Math.round(list.height * 0.70);
+                    return Math.round(list.height * 0.60);
+                }
+                width: parent.width
+                scale: active ? 1.0 : Math.max(0.92, 1.0 - dist * 0.02)
+                opacity: active ? 1.0 : Math.max(0.48, 1.0 - dist * 0.12)
+
+                Behavior on height {
+                    NumberAnimation { duration: 260; easing.type: Easing.OutQuart }
+                }
+                Behavior on scale {
+                    NumberAnimation { duration: 260; easing.type: Easing.OutQuart }
+                }
+                Behavior on opacity {
+                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
                 }
 
+                // Card container with rounded corners and instant image rendering
                 Item {
                     id: imageContainer
                     anchors.fill: parent
-                    opacity: 1.0 // 100% opaque
 
                     layer.enabled: true
                     layer.smooth: true
@@ -412,54 +490,44 @@ Item {
                         maskSource: Rectangle {
                             width: imageContainer.width
                             height: imageContainer.height
-                            radius: root.isCyberpunk
-                                ? (root.isPanoramic ? (tile.active ? 14 : 4) : (tile.active ? 16 : 10))
-                                : (root.isPanoramic ? (tile.active ? 20 : 6) : (tile.active ? 24 : 18))
+                            radius: tile.active ? 20 : 12
+                            color: "white"
                         }
                     }
 
-                    Loader {
+                    // Frosted dark background so cards never flash transparent
+                    Rectangle {
                         anchors.fill: parent
-                        sourceComponent: tile.isVideo ? videoComponent : imageComponent
+                        color: "#181A24"
                     }
 
-                    Component {
-                        id: imageComponent
-                        Image {
-                            id: img
-                            anchors.fill: parent
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: false
-                            smooth: true
-                            mipmap: false
-                            opacity: status === Image.Ready ? 1.0 : 0.0
-                            Behavior on opacity {
-                                NumberAnimation { duration: 100 }
-                            }
-
-                            source: "file://" + FileUtils.trimFileProtocol(filePath)
-                            sourceSize: Qt.size(800, 480)
-
-                            Timer {
-                                id: retryTimer
-                                interval: 800; repeat: false
-                                onTriggered: { const s = img.source; img.source = ""; img.source = s }
-                            }
-                            onStatusChanged: {
-                                if (status === Image.Error) retryTimer.start()
+                    // High-speed cached image display for rapid spawn
+                    Image {
+                        id: img
+                        anchors.fill: parent
+                        visible: !tile.isVideo
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        smooth: true
+                        mipmap: false
+                        retainWhileLoading: true
+                        source: tile.thumbUri || (tile.currentFilePath ? ("file://" + tile.currentFilePath) : "")
+                        sourceSize: Qt.size(800, 500)
+                        onStatusChanged: {
+                            if (status === Image.Error && source === tile.thumbUri && tile.currentFilePath) {
+                                source = "file://" + tile.currentFilePath
                             }
                         }
                     }
 
-                    Component {
-                        id: videoComponent
-                        ThumbnailImage {
-                            anchors.fill: parent
-                            fillMode: Image.PreserveAspectCrop
-                            sourcePath: FileUtils.trimFileProtocol(filePath)
-                            sourceSize: Qt.size(800, 480)
-                        }
+                    // Video thumbnail for live wallpapers
+                    ThumbnailImage {
+                        anchors.fill: parent
+                        visible: tile.isVideo
+                        fillMode: Image.PreserveAspectCrop
+                        sourcePath: tile.currentFilePath
+                        sourceSize: Qt.size(800, 500)
                     }
                 }
 
@@ -468,7 +536,7 @@ Item {
                     z: 11
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    anchors.margins: tile.active ? 12 : 4
+                    anchors.margins: tile.active ? 12 : 6
                     width: tile.active ? (liveBadgeRow.implicitWidth + 14) : 12
                     height: tile.active ? 22 : 12
                     radius: tile.active ? 11 : 6
@@ -497,70 +565,49 @@ Item {
                     }
                 }
 
-                // Active Border Highlighter for the expanded box
+                // Active Border Highlighter for the hero card
                 Rectangle {
                     id: activeHighlight
                     z: 10
                     anchors.fill: parent
-                    radius: root.isCyberpunk
-                        ? (root.isPanoramic ? 14 : 16)
-                        : (root.isPanoramic ? 20 : 24)
+                    radius: 20
                     visible: tile.active
                     color: "transparent"
-                    border.width: 3.5
+                    border.width: 3
                     border.color: Appearance.colors.colPrimary
                 }
 
-                // Filename & Apply chip at bottom — only on expanded box
+                // Minimalist Apply Pill — clean, no raw filenames or clutter!
                 Rectangle {
                     z: 12
                     anchors.bottom: parent.bottom
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottomMargin: 14
-                    width: Math.min(parent.width - 24, infoRow.implicitWidth + 28)
-                    height: 32
-                    radius: 16
+                    width: applyRow.implicitWidth + 20
+                    height: 28
+                    radius: 14
                     color: "#E6101016"
                     border.width: 1
-                    border.color: "#40FFFFFF"
+                    border.color: "#35FFFFFF"
                     opacity: tile.active ? 1.0 : 0.0
+                    visible: opacity > 0.01
                     Behavior on opacity { NumberAnimation { duration: 150 } }
 
                     Row {
-                        id: infoRow
+                        id: applyRow
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 5
 
                         MaterialSymbol {
-                            text: tile.isVideo ? "movie" : "wallpaper"
-                            iconSize: 15
+                            text: "check"
+                            iconSize: 14
                             color: Appearance.colors.colPrimary
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Text {
-                            id: nameLabel
-                            text: fileName
+                            text: Translation.tr("Apply")
                             color: "#FFFFFF"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                            font.letterSpacing: 0.3
-                            elide: Text.ElideMiddle
-                            maximumLineCount: 1
-                            anchors.verticalCenter: parent.verticalCenter
-                            transform: Shear { xFactor: root.isCyberpunk ? 0.04 : 0.0 }
-                        }
-
-                        Rectangle {
-                            width: 1
-                            height: 14
-                            color: "#30FFFFFF"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        Text {
-                            text: Translation.tr("↵ Apply")
-                            color: Appearance.colors.colPrimary
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             anchors.verticalCenter: parent.verticalCenter
@@ -582,8 +629,12 @@ Item {
                     }
                 }
                 onWheel: function(wheel) {
-                    list.moveSelection(wheel.angleDelta.y < 0 ? 1 : -1)
-                    wheel.accepted = true
+                    if (!list.wheelCooldown) {
+                        list.wheelCooldown = true;
+                        wheelCooldownTimer.restart();
+                        list.moveSelection(wheel.angleDelta.y < 0 ? 1 : -1);
+                    }
+                    wheel.accepted = true;
                 }
             }
         }
