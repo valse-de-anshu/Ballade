@@ -46,7 +46,12 @@ for ((i=0;i<${#ARGS[@]};i++)); do
     fi
 done
 
-ENC_FLAGS=(-c libx264 --pixel-format yuv420p -p crf=18 -p preset=ultrafast -p "x264-params=colorprim=bt709:transfer=bt709:colormatrix=bt709:fullrange=on" -F "scale=in_range=full:out_range=full:in_color_matrix=bt709:out_color_matrix=bt709")
+# Use NVIDIA NVENC hardware acceleration if available (0% CPU impact, smooth 144/60fps)
+if ffmpeg -encoders 2>/dev/null | grep -q "h264_nvenc"; then
+    ENC_FLAGS=(-c h264_nvenc -p qp=20 -p preset=p4 --pixel-format yuv420p)
+else
+    ENC_FLAGS=(-c libx264 --pixel-format yuv420p -p crf=18 -p preset=ultrafast -p "x264-params=colorprim=bt709:transfer=bt709:colormatrix=bt709:fullrange=on" -F "scale=in_range=full:out_range=full:in_color_matrix=bt709:out_color_matrix=bt709")
+fi
 
 if pgrep wf-recorder > /dev/null; then
     notify-send "Recording Stopped" "Stopped" -a 'Recorder' &
