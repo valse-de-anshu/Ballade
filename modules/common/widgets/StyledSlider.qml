@@ -56,11 +56,8 @@ Slider {
     property real trackDotSize: 3
     property bool usePercentTooltip: true
     property string tooltipContent: usePercentTooltip ? `${Math.round(((value - from) / (to - from)) * 100)}%` : `${Math.round(value)}`
-    property bool wavy: configuration === StyledSlider.Configuration.Wavy // If true, the progress bar will have a wavy fill effect
-    property bool animateWave: true
-    property real waveAmplitudeMultiplier: wavy ? 0.5 : 0
-    property real waveFrequency: 6
-    property real waveFps: 60
+    property bool wavy: false
+    property bool animateWave: false
 
     leftPadding: circleHandle ? (handleWidth / 2) : handleMargins
     rightPadding: circleHandle ? (handleWidth / 2) : handleMargins
@@ -126,49 +123,13 @@ Slider {
                 x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
                 width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
                 height: root.trackWidth
-                active: !root.wavy
+                active: true
                 sourceComponent: Rectangle {
                     color: root.highlightColor
                     topLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
                     bottomLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
                     topRightRadius: root.unsharpenRadius
                     bottomRightRadius: root.unsharpenRadius
-                }
-            }
-        }
-
-        Repeater {
-            model: background.leftWidths.length
-
-            Loader {
-                required property int index
-                anchors.verticalCenter: background.verticalCenter
-                property real leftMargin: index > 0 ? root.dividerMargins : 0
-                property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : (root.circleHandle ? 0 : root.handleMargins)
-                x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
-                width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === 0 ? leftPadding : 0)
-                height: root.trackWidth * 6
-                active: root.wavy
-                sourceComponent: WavyLine {
-                    id: wavyFill
-                    frequency: root.waveFrequency
-                    fullLength: root.width
-                    color: root.highlightColor
-                    amplitudeMultiplier: root.wavy ? 1.0 : 0
-                    width: parent.width
-                    height: parent.height
-                    lineWidth: 3.5
-                    Connections {
-                        target: root
-                        function onValueChanged() { wavyFill.requestPaint(); }
-                        function onHighlightColorChanged() { wavyFill.requestPaint(); }
-                    }
-                    FrameAnimation {
-                        running: root.animateWave
-                        onTriggered: {
-                            wavyFill.requestPaint()
-                        }
-                    }
                 }
             }
         }

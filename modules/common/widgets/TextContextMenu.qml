@@ -55,6 +55,7 @@ Popup {
             id: menuBg
             anchors.fill: parent
             radius: Appearance.rounding.normal
+            clip: true
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
@@ -67,21 +68,6 @@ Popup {
             }
             border.width: 1
             border.color: ColorUtils.applyAlpha(Appearance.m3colors.m3outlineVariant, 0.35)
-
-            // Inner subtle glass highlight at top
-            Rectangle {
-                anchors {
-                    top: parent.top
-                    left: parent.left
-                    right: parent.right
-                    topMargin: 1
-                    leftMargin: 2
-                    rightMargin: 2
-                }
-                height: 1
-                radius: parent.radius
-                color: Appearance.m3colors.darkmode ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.4)
-            }
         }
     }
 

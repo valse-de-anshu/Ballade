@@ -46,13 +46,23 @@ Scope {
             if (visible) {
                 settingsWindow.userMoved = false;
                 settingsWindow.forceActiveFocus();
+                GlobalFocusGrab.addDismissable(panelWindow);
+            } else {
+                GlobalFocusGrab.removeDismissable(panelWindow);
             }
         }
 
-        StyledRectangularShadow {
-            target: settingsWindow
-            radius: settingsWindow.radius
-            visible: settingsWindow.opacity > 0
+        Connections {
+            target: GlobalFocusGrab
+            function onDismissed() {
+                panelWindow.hide();
+            }
+        }
+
+        // Dismiss when clicking outside the settings window
+        MouseArea {
+            anchors.fill: parent
+            onClicked: panelWindow.hide()
         }
 
         Rectangle {
@@ -65,8 +75,8 @@ Scope {
                 Appearance.colors.colLayer0Base.b,
                 0.22
             )
-            border.width: 0
-            border.color: "transparent"
+            border.width: 1
+            border.color: Appearance.colors.colLayer0Border
             radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 8
             z: 1
             focus: true
@@ -75,13 +85,9 @@ Scope {
             anchors.centerIn: userMoved ? undefined : parent
 
             opacity: GlobalStates.settingsOpen ? 1 : 0
-            scale: GlobalStates.settingsOpen ? 1 : 0.95
 
             Behavior on opacity {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-            }
-            Behavior on scale {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
             }
 
             Keys.onPressed: (event) => {

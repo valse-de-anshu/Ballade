@@ -83,20 +83,11 @@ Scope {
             anchors.topMargin: Appearance.sizes.barHeight + 14
 
             opacity: GlobalStates.clipboardOpen ? 1.0 : 0.0
-            scale: GlobalStates.clipboardOpen ? 1.0 : 0.98
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 180
-                    easing.type: Appearance.animation.elementMoveFast.type
-                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-                }
-            }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 180
-                    easing.type: Appearance.animation.elementMoveFast.type
-                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    duration: 100
+                    easing.type: Easing.OutQuad
                 }
             }
 

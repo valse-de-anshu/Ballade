@@ -182,7 +182,17 @@ Singleton {
                 "notification": notification,
                 "time": Date.now(),
             });
-			root.list = [...root.list, newNotifObject];
+            let updatedList = [...root.list, newNotifObject];
+            const maxStoredNotifs = 50;
+            if (updatedList.length > maxStoredNotifs) {
+                const excess = updatedList.length - maxStoredNotifs;
+                for (let i = 0; i < excess; i++) {
+                    const oldNotif = updatedList[i];
+                    if (oldNotif && oldNotif.timer) oldNotif.timer.destroy();
+                }
+                updatedList = updatedList.slice(excess);
+            }
+            root.list = updatedList;
 
             // Popup
             if (!root.popupInhibited) {
@@ -288,8 +298,11 @@ Singleton {
         id: notifFileView
         path: Qt.resolvedUrl(filePath)
         onLoaded: {
-            const fileContents = notifFileView.text()
-            root.list = JSON.parse(fileContents).map((notif) => {
+            let rawParsed = JSON.parse(fileContents);
+            if (Array.isArray(rawParsed) && rawParsed.length > 50) {
+                rawParsed = rawParsed.slice(rawParsed.length - 50);
+            }
+            root.list = (rawParsed || []).map((notif) => {
                 return notifComponent.createObject(root, {
                     "notificationId": notif.notificationId,
                     "actions": [], // Notification actions are meaningless if they're not tracked by the server or the sender is dead

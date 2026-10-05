@@ -299,7 +299,6 @@ Item {
                         }
                         active: !(root.player?.canSeek ?? false)  
                         sourceComponent: StyledProgressBar {
-                            wavy: root.player?.isPlaying ?? false  
                             highlightColor: blendedColors.colPrimary
                             trackColor: blendedColors.colSecondaryContainer
                             value: (root.player?.position ?? 0) / (root.player?.length ?? 1)

@@ -18,15 +18,6 @@ Item {
         anchors.bottomMargin: 5
 
         clip: true
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: listview.width
-                height: listview.height
-                radius: Appearance.rounding.normal
-            }
-        }
-
         popup: false
     }
 

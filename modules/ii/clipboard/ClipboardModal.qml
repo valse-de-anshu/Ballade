@@ -34,10 +34,6 @@ Rectangle {
     border.width: 1
     border.color: Appearance.colors.colLayer0Border
 
-    StyledRectangularShadow {
-        target: root
-    }
-
     property bool filterPinnedOnly: false
 
     readonly property var rawFiltered: {

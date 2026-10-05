@@ -428,7 +428,12 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            color: Appearance.colors.colLayer1
+            color: Qt.rgba(
+                Appearance.colors.colLayer1Base.r,
+                Appearance.colors.colLayer1Base.g,
+                Appearance.colors.colLayer1Base.b,
+                0.35
+            )
             radius: Appearance.rounding.normal
             border.width: root.isEditorFocused ? 1.5 : 1
             border.color: root.isEditorFocused ? Appearance.colors.colOutline : Appearance.colors.colLayer0Border

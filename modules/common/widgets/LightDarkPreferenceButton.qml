@@ -72,8 +72,6 @@ RippleButton {
                         Layout.bottomMargin: 5
                         Layout.fillWidth: true
                         value: 0.7
-                        wavy: true
-                        animateWave: lightDarkButtonRoot.toggled
                         highlightColor: lightDarkButtonRoot.toggled ? Appearance.m3colors.m3primary : lightDarkButtonRoot.previewFg
                         trackColor: ColorUtils.mix(lightDarkButtonRoot.previewBg, lightDarkButtonRoot.previewFg, 0.5)
                     }
