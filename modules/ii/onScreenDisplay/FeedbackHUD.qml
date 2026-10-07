@@ -33,13 +33,14 @@ Scope {
         var hz = String(rate).trim();
         var is60 = hz.indexOf("60") !== -1;
         triggerHud("desktop_windows", is60 ? "60 Hz" : "144 Hz");
-        Audio.playSystemSound("audio-volume-change");
+        Audio.playSystemSound("bell");
+        HyprlandData.updateMonitors();
     }
 
     function showCamera(enabled) {
         var isEn = (enabled === true || enabled === "true" || enabled === "1" || enabled === "on");
         triggerHud(isEn ? "videocam" : "videocam_off", isEn ? Translation.tr("Camera On") : Translation.tr("Camera Off"));
-        Audio.playSystemSound(isEn ? "device-added" : "device-removed");
+        Notifications.playNotificationSound();
     }
 
     Loader {

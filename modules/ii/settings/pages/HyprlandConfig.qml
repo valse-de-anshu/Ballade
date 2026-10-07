@@ -60,6 +60,7 @@ ContentPage {
             "input:touchpad:clickfinger_behavior":  h.input.touchpad.clickfingerBehavior ? 1 : 0,
             "input:touchpad:scroll_factor":         h.input.touchpad.scrollFactor
         })
+        monitorConfig.reload()
     }
     MonitorConfigOption { id: monitorConfig }
 

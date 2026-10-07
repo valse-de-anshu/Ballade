@@ -12,6 +12,17 @@ NestableObject {
 
     Component.onCompleted: fetchProc.running = true
 
+    function reload() {
+        if (!fetchProc.running) fetchProc.running = true
+    }
+
+    Connections {
+        target: HyprlandData
+        function onMonitorsChanged() {
+            root.reload()
+        }
+    }
+
     function updateMonitor(index, changes) {
         let m = root.monitors.slice()
         m[index] = Object.assign({}, m[index], changes)
@@ -53,13 +64,16 @@ NestableObject {
     function applyMonitor(m) {
         if (!m.name) return
 
-        const base = `${m.name},${m.currentMode},${m.x}x${m.y},${m.scale}`
-        applyProc.command = ["hyprctl", "keyword", "monitor",
-            m.disabled
-                ? `${m.name},disable`
-                : (m.transform && m.transform !== 0)
-                    ? `${base},transform,${m.transform}`
-                    : base]
+        if (m.disabled) {
+            applyProc.command = ["hyprctl", "eval", `hl.monitor({ output = "${m.name}", mode = "disabled" })`]
+        } else {
+            const pos = `${m.x}x${m.y}`
+            let code = `hl.monitor({ output = "${m.name}", mode = "${m.currentMode}", position = "${pos}", scale = ${m.scale}`
+            if (m.transform && m.transform !== 0)
+                code += `, transform = ${m.transform}`
+            code += ` })`
+            applyProc.command = ["hyprctl", "eval", code]
+        }
         applyProc.running = true
     }
 
