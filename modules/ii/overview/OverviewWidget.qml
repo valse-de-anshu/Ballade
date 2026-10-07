@@ -274,7 +274,10 @@ Item {
                             window.Drag.active = false
                             root.draggingFromWorkspace = -1
                             if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                                Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "address:${window.windowData?.address}" })`)
+                                const winAddr = `address:${window.windowData?.address}`
+                                Hyprland.dispatch(`hl.dsp.window.fullscreen({ action = "unset", window = "${winAddr}" })`)
+                                Hyprland.dispatch(`hl.dsp.window.float({ action = "unset", window = "${winAddr}" })`)
+                                Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "${winAddr}" })`)
                                 updateWindowPosition.restart()
                             }
                             else {

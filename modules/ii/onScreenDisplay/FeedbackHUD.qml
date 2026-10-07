@@ -16,21 +16,12 @@ Scope {
 
     property bool hudVisible: false
     property string hudIcon: "desktop_windows"
-    property string hudTitle: "Display Refresh Rate"
-    property string hudValue: "144 Hz"
-    property string hudSubtext: "Ultra Smooth Mode"
-    property color hudAccentColor: Appearance.colors.colPrimary
-    property string hudStatusBadge: "144 Hz"
-
+    property string hudText: "144 Hz"
     property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
 
-    function triggerHud(icon, title, value, subtext, accentColor, badge) {
+    function triggerHud(icon, text) {
         root.hudIcon = icon;
-        root.hudTitle = title;
-        root.hudValue = value;
-        root.hudSubtext = subtext;
-        root.hudAccentColor = accentColor;
-        root.hudStatusBadge = badge;
+        root.hudText = text;
 
         if (hudLoader.item) {
             hudLoader.item.resetTimer();
@@ -40,48 +31,15 @@ Scope {
 
     function showRefreshRate(rate) {
         var hz = String(rate).trim();
-        if (hz.indexOf("60") !== -1) {
-            triggerHud(
-                "desktop_windows",
-                Translation.tr("Display Mode"),
-                "60 Hz",
-                Translation.tr("Standard • Power Saving"),
-                Appearance.colors.colSecondary,
-                "60 Hz"
-            );
-        } else {
-            triggerHud(
-                "desktop_windows",
-                Translation.tr("Display Mode"),
-                "144 Hz",
-                Translation.tr("Ultra Smooth • High Refresh"),
-                Appearance.colors.colPrimary,
-                "144 Hz"
-            );
-        }
+        var is60 = hz.indexOf("60") !== -1;
+        triggerHud("desktop_windows", is60 ? "60 Hz" : "144 Hz");
+        Audio.playSystemSound("audio-volume-change");
     }
 
     function showCamera(enabled) {
         var isEn = (enabled === true || enabled === "true" || enabled === "1" || enabled === "on");
-        if (isEn) {
-            triggerHud(
-                "videocam",
-                Translation.tr("Camera Privacy"),
-                Translation.tr("Camera Enabled"),
-                Translation.tr("Hardware switch is ON"),
-                "#4CAF50",
-                "ACTIVE"
-            );
-        } else {
-            triggerHud(
-                "videocam_off",
-                Translation.tr("Camera Privacy"),
-                Translation.tr("Camera Disabled"),
-                Translation.tr("Hardware switch is OFF"),
-                "#F44336",
-                "MUTED"
-            );
-        }
+        triggerHud(isEn ? "videocam" : "videocam_off", isEn ? Translation.tr("Camera On") : Translation.tr("Camera Off"));
+        Audio.playSystemSound(isEn ? "device-added" : "device-removed");
     }
 
     Loader {
@@ -110,11 +68,11 @@ Scope {
             }
 
             margins {
-                bottom: 60
+                bottom: 45
             }
 
-            implicitWidth: hudContent.implicitWidth + 30
-            implicitHeight: hudContent.implicitHeight + 30
+            implicitWidth: hudContent.implicitWidth + 20
+            implicitHeight: hudContent.implicitHeight + 20
             visible: true
 
             function resetTimer() {
@@ -125,7 +83,7 @@ Scope {
 
             Timer {
                 id: hideTimer
-                interval: 2200
+                interval: 1800
                 repeat: false
                 running: true
                 onTriggered: {
@@ -138,7 +96,7 @@ Scope {
                 target: hudContent
                 property: "opacity"
                 to: 0.0
-                duration: 220
+                duration: 180
                 easing.type: Easing.InCubic
                 onFinished: {
                     root.hudVisible = false;
@@ -153,7 +111,7 @@ Scope {
 
                 Component.onCompleted: {
                     hudContent.opacity = 0;
-                    hudContent.scale = 0.88;
+                    hudContent.scale = 0.92;
                     popInAnim.start();
                 }
 
@@ -164,17 +122,17 @@ Scope {
                         property: "opacity"
                         from: 0.0
                         to: 1.0
-                        duration: 180
+                        duration: 160
                         easing.type: Easing.OutCubic
                     }
                     NumberAnimation {
                         target: hudContent
                         property: "scale"
-                        from: 0.88
+                        from: 0.92
                         to: 1.0
-                        duration: 220
+                        duration: 200
                         easing.type: Easing.OutBack
-                        easing.overshoot: 1.2
+                        easing.overshoot: 1.15
                     }
                 }
 
@@ -185,76 +143,31 @@ Scope {
                 Rectangle {
                     id: capsuleBg
                     radius: Appearance.rounding.full
-                    color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.94)
+                    color: ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.92)
                     border.width: 1
-                    border.color: ColorUtils.applyAlpha(root.hudAccentColor, 0.4)
+                    border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.28)
 
-                    implicitWidth: innerRow.implicitWidth + 36
-                    implicitHeight: innerRow.implicitHeight + 20
+                    implicitHeight: 38
+                    implicitWidth: contentRow.implicitWidth + 28
 
                     RowLayout {
-                        id: innerRow
+                        id: contentRow
                         anchors.centerIn: parent
-                        spacing: 14
+                        spacing: 9
 
-                        Rectangle {
-                            implicitWidth: 44
-                            implicitHeight: 44
-                            radius: 22
-                            color: ColorUtils.applyAlpha(root.hudAccentColor, 0.16)
-                            border.width: 1
-                            border.color: ColorUtils.applyAlpha(root.hudAccentColor, 0.3)
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: root.hudIcon
-                                iconSize: 24
-                                color: root.hudAccentColor
-                            }
+                        MaterialSymbol {
+                            text: root.hudIcon
+                            iconSize: 19
+                            color: Appearance.colors.colPrimary
+                            Layout.alignment: Qt.AlignVCenter
                         }
 
-                        ColumnLayout {
-                            spacing: 1
+                        StyledText {
+                            text: root.hudText
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnLayer0
                             Layout.alignment: Qt.AlignVCenter
-
-                            StyledText {
-                                text: root.hudTitle
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: Appearance.colors.colSubtext
-                                font.weight: Font.DemiBold
-                            }
-
-                            StyledText {
-                                text: root.hudValue
-                                font.pixelSize: Appearance.font.pixelSize.large
-                                color: Appearance.colors.colOnLayer0
-                                font.weight: Font.Bold
-                            }
-
-                            StyledText {
-                                visible: root.hudSubtext !== ""
-                                text: root.hudSubtext
-                                font.pixelSize: Appearance.font.pixelSize.smaller - 1
-                                color: ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.65)
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.leftMargin: 8
-                            Layout.alignment: Qt.AlignVCenter
-                            radius: Appearance.rounding.full
-                            color: root.hudAccentColor
-                            implicitHeight: 26
-                            implicitWidth: badgeLabel.implicitWidth + 18
-
-                            StyledText {
-                                id: badgeLabel
-                                anchors.centerIn: parent
-                                text: root.hudStatusBadge
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: Appearance.colors.colOnPrimary ?? "#ffffff"
-                            }
                         }
                     }
                 }
@@ -264,10 +177,6 @@ Scope {
 
     IpcHandler {
         target: "feedbackHud"
-
-        function show(icon: string, title: string, value: string, badge: string): void {
-            root.triggerHud(icon, title, value, "", Appearance.colors.colPrimary, badge);
-        }
 
         function showRefreshRate(rate: string): void {
             root.showRefreshRate(rate);
