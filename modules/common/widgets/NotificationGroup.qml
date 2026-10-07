@@ -19,7 +19,15 @@ MouseArea { // Notification group area
     property bool expanded: false
     property bool popup: false
     property real padding: 10
-    implicitHeight: background.implicitHeight
+    implicitHeight: root.notificationCount > 0 ? background.implicitHeight : 0
+    height: root.notificationCount > 0 ? implicitHeight : 0
+    visible: root.notificationCount > 0
+
+    onNotificationCountChanged: {
+        if (notificationCount <= 1) {
+            root.expanded = false;
+        }
+    }
 
     property real dragConfirmThreshold: 70 // Drag further to discard notification
     property real dismissOvershoot: 20 // Account for gaps and bouncy animations
@@ -213,6 +221,7 @@ MouseArea { // Notification group area
                     }
                     NotificationGroupExpandButton {
                         id: expandButton
+                        visible: root.multipleNotifications
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         count: root.notificationCount

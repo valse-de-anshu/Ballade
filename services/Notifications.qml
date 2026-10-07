@@ -135,8 +135,8 @@ Singleton {
 
     property var groupsByAppName: groupsForList(root.list)
     property var popupGroupsByAppName: groupsForList(root.popupList)
-    property list<string> appNameList: appNameListForGroups(root.groupsByAppName)
-    property list<string> popupAppNameList: appNameListForGroups(root.popupGroupsByAppName)
+    property var appNameList: appNameListForGroups(root.groupsByAppName)
+    property var popupAppNameList: appNameListForGroups(root.popupGroupsByAppName)
 
     // Quickshell's notification IDs starts at 1 on each run, while saved notifications
     // can already contain higher IDs. This is for avoiding id collisions
@@ -224,9 +224,12 @@ Singleton {
         const index = root.list.findIndex((notif) => notif.notificationId === id);
         const notifServerIndex = notifServer.trackedNotifications.values.findIndex((notif) => notif.id + root.idOffset === id);
         if (index !== -1) {
-            root.list.splice(index, 1);
+            const notifObj = root.list[index];
+            if (notifObj && notifObj.timer) {
+                notifObj.timer.destroy();
+            }
+            root.list = root.list.filter((notif) => notif.notificationId !== id);
             notifFileView.setText(stringifyList(root.list));
-            triggerListChange()
         }
         if (notifServerIndex !== -1) {
             notifServer.trackedNotifications.values[notifServerIndex].dismiss()
