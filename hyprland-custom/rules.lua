@@ -116,5 +116,119 @@ hl.window_rule({
     size = { 900, 600 },
 })
 
+-- ============================================================
+-- Dialogs, File Choosers, Modals & Popup Rules
+-- Fixes: Prevents popups from taking over full screen or getting hidden behind main window
+-- ============================================================
+
+-- 1. Prevent windows & popups from forcefully taking over the full screen
+hl.window_rule({
+    match = { class = ".*" },
+    suppress_event = "maximize",
+})
+
+-- 2. Every Wayland/X11 modal window MUST float, be centered, and stay focused on top
+hl.window_rule({
+    match = { modal = true },
+    float = true,
+    center = true,
+    stay_focused = true,
+})
+
+-- 3. File Choosers, Portals & System Dialogs
+local dialog_classes = {
+    ".*portal.*",
+    "xdg-desktop-portal-.*",
+    "org.freedesktop.impl.portal.desktop.kde",
+    "org.freedesktop.impl.portal.desktop.gtk",
+    "org.freedesktop.impl.portal.desktop.gnome",
+    "org.freedesktop.impl.portal.desktop.hyprland",
+    "org.kde.polkit-kde-authentication-agent-1",
+    "polkit-.*",
+    "zenity",
+    "kdialog",
+    "org.kde.kdialog",
+    "pinentry.*",
+    "file-roller",
+    "org.gnome.FileRoller",
+    "ark",
+    "org.kde.ark",
+    "nm-connection-editor",
+    "pavucontrol",
+    "org.pulseaudio.pavucontrol",
+    "blueberry.py",
+}
+
+for _, cls in ipairs(dialog_classes) do
+    hl.window_rule({
+        match = { class = "^(" .. cls .. ")$" },
+        float = true,
+        center = true,
+        stay_focused = true,
+    })
+end
+
+-- 4. Common Dialog Titles across all browsers, editors, and desktop apps
+local dialog_titles = {
+    "Open.*",
+    "Save.*",
+    "Select.*",
+    "Choose.*",
+    "File Upload.*",
+    "Library.*",
+    "All Files.*",
+    "Confirm.*",
+    "File Conflict.*",
+    "Overwrite.*",
+    "Rename.*",
+    "Delete.*",
+    "Properties.*",
+    "Preferences.*",
+    "Settings.*",
+    "Options.*",
+    "Enter name of file to save to.*",
+    ".*wants to save.*",
+    ".*wants to open.*",
+    "Authentication.*",
+    "PolicyKit.*",
+    "Extract.*",
+    "Compress.*",
+}
+
+for _, ttl in ipairs(dialog_titles) do
+    hl.window_rule({
+        match = { title = "^(" .. ttl .. ")$" },
+        float = true,
+        center = true,
+        stay_focused = true,
+    })
+end
+
+-- Sizing for file choosers so they never balloon across the entire screen
+hl.window_rule({
+    match = { class = "org.freedesktop.impl.portal.desktop.kde" },
+    size = { 1000, 650 },
+    center = true,
+    stay_focused = true,
+})
+hl.window_rule({
+    match = { class = "xdg-desktop-portal-gtk" },
+    size = { 960, 620 },
+    center = true,
+    stay_focused = true,
+})
+hl.window_rule({
+    match = { class = "org.kde.kdialog" },
+    size = { 900, 580 },
+    center = true,
+    stay_focused = true,
+})
+hl.window_rule({
+    match = { class = "zenity" },
+    size = { 850, 550 },
+    center = true,
+    stay_focused = true,
+})
+
 
 

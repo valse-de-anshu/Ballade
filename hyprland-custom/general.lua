@@ -20,6 +20,7 @@ hl.config({
     misc = {
         initial_workspace_tracking = 1, -- Properly track & focus newly launched windows on the active workspace
         focus_on_activate = true,
+        on_focus_under_fullscreen = 2, -- Automatically unfullscreen background window when child popup/dialog opens
         vrr = 0, -- Locked refresh rate (no fullscreen VRR drops/stutter)
         animate_manual_resizes = false,
         animate_mouse_windowdragging = false,
