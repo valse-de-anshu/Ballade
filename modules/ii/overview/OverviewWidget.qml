@@ -146,33 +146,33 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                            MouseArea {
-                                id: workspaceArea
-                                anchors.fill: parent
-                                acceptedButtons: Qt.LeftButton
-                                onPressed: {
-                                    if (root.draggingTargetWorkspace === -1) {
-                                        GlobalStates.overviewOpen = false
-                                        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${workspace.workspaceValue} })`)
-                                    }
-                                }
-                            }
-
-                            DropArea {
-                                anchors.fill: parent
-                                onEntered: {
-                                    root.draggingTargetWorkspace = workspace.workspaceValue
-                                    if (root.draggingFromWorkspace == root.draggingTargetWorkspace) return;
-                                    hoveredWhileDragging = true
-                                }
-                                onExited: {
-                                    hoveredWhileDragging = false
-                                    if (root.draggingTargetWorkspace == workspace.workspaceValue) root.draggingTargetWorkspace = -1
-                                }
+                    MouseArea {
+                        id: workspaceArea
+                        anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton
+                        onPressed: {
+                            if (root.draggingTargetWorkspace === -1) {
+                                GlobalStates.overviewOpen = false
+                                Hyprland.dispatch(`hl.dsp.focus({ workspace = ${workspace.workspaceValue} })`)
                             }
                         }
                     }
+
+                    DropArea {
+                        anchors.fill: parent
+                        onEntered: {
+                            root.draggingTargetWorkspace = workspace.workspaceValue
+                            if (root.draggingFromWorkspace == root.draggingTargetWorkspace) return;
+                            hoveredWhileDragging = true
+                        }
+                        onExited: {
+                            hoveredWhileDragging = false
+                            if (root.draggingTargetWorkspace == workspace.workspaceValue) root.draggingTargetWorkspace = -1
+                        }
+                    }
                 }
+            }
+        }
 
         Item { // Windows & focused workspace indicator
             id: windowSpace
@@ -183,7 +183,6 @@ Item {
             Repeater { // Window repeater
                 model: ScriptModel {
                     values: {
-                        // console.log(JSON.stringify(ToplevelManager.toplevels.values.map(t => t), null, 2))
                         return ToplevelManager.toplevels.values.filter((toplevel) => {
                             const address = `0x${toplevel.HyprlandToplevel?.address}`
                             var win = windowByAddress[address]
@@ -203,16 +202,20 @@ Item {
                     scale: root.scale
                     widgetMonitor: HyprlandData.monitors.find(m => m.id == root.monitor.id)
                     windowData: windowByAddress[address]
+                    workspaceWidth: root.workspaceImplicitWidth
+                    workspaceHeight: root.workspaceImplicitHeight
 
                     property bool atInitPosition: (initX == x && initY == y)
+                    property real dragStartX: 0
+                    property real dragStartY: 0
 
                     // Offset on the canvas
                     property int workspaceColIndex: getWsColumn(windowData?.workspace.id)
                     property int workspaceRowIndex: getWsRow(windowData?.workspace.id)
                     xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
                     yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
-                    property real xWithinWorkspaceWidget: Math.max((windowData?.at[0] - (monitor?.x ?? 0) - monitorData?.reserved[0]) * root.scale, 0)
-                    property real yWithinWorkspaceWidget: Math.max((windowData?.at[1] - (monitor?.y ?? 0) - monitorData?.reserved[1]) * root.scale, 0)
+                    property real xWithinWorkspaceWidget: singleTiled ? 0 : Math.max((windowData?.at[0] - (monitor?.x ?? 0) - (monitorData?.reserved?.[0] ?? 0)) * root.scale, 0)
+                    property real yWithinWorkspaceWidget: singleTiled ? 0 : Math.max((windowData?.at[1] - (monitor?.y ?? 0) - (monitorData?.reserved?.[1] ?? 0)) * root.scale, 0)
 
                     // Radius
                     property real minRadius: Appearance.rounding.small
@@ -243,8 +246,8 @@ Item {
                         repeat: false
                         running: false
                         onTriggered: {
-                            window.x = Math.round(xWithinWorkspaceWidget + xOffset)
-                            window.y = Math.round(yWithinWorkspaceWidget + yOffset)
+                            window.x = Qt.binding(() => window.initX)
+                            window.y = Qt.binding(() => window.initY)
                         }
                     }
 
@@ -262,27 +265,69 @@ Item {
                         onPressed: (mouse) => {
                             root.draggingFromWorkspace = windowData?.workspace.id
                             window.pressed = true
+                            window.dragging = true
+                            // Stop any lingering Behavior animation from previous release
+                            window.x = window.x
+                            window.y = window.y
+                            window.dragStartX = window.x
+                            window.dragStartY = window.y
                             window.Drag.active = true
                             window.Drag.source = window
                             window.Drag.hotSpot.x = mouse.x
                             window.Drag.hotSpot.y = mouse.y
-                            // console.log(`[OverviewWindow] Dragging window ${windowData?.address} from position (${window.x}, ${window.y})`)
                         }
                         onReleased: {
                             const targetWorkspace = root.draggingTargetWorkspace
                             window.pressed = false
+                            window.dragging = false
                             window.Drag.active = false
                             root.draggingFromWorkspace = -1
                             if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
                                 const winAddr = `address:${window.windowData?.address}`
-                                Hyprland.dispatch(`hl.dsp.window.fullscreen({ action = "unset", window = "${winAddr}" })`)
-                                Hyprland.dispatch(`hl.dsp.window.float({ action = "unset", window = "${winAddr}" })`)
+                                if (window.windowData?.fullscreen) {
+                                    Hyprland.dispatch(`hl.dsp.window.fullscreen({ action = "unset", window = "${winAddr}" })`)
+                                }
                                 Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "${winAddr}" })`)
-                                updateWindowPosition.restart()
+
+                                if (!window.windowData.floating) {
+                                    const targetColIndex = getWsColumn(targetWorkspace)
+                                    const targetRowIndex = getWsRow(targetWorkspace)
+                                    const targetXOffset = (root.workspaceImplicitWidth + workspaceSpacing) * targetColIndex
+                                    const targetYOffset = (root.workspaceImplicitHeight + workspaceSpacing) * targetRowIndex
+                                    
+                                    var otherWinCount = 0
+                                    var toplevels = ToplevelManager.toplevels.values
+                                    for (var i = 0; i < toplevels.length; i++) {
+                                        var t = toplevels[i]
+                                        var h = t.HyprlandToplevel
+                                        if (!h) continue
+                                        var addr = `0x${h.address}`
+                                        if (addr === window.windowData?.address) continue
+                                        var w = windowByAddress[addr]
+                                        if (w && !w.floating && w.workspace?.id === targetWorkspace) otherWinCount++
+                                    }
+                                    
+                                    var finalW = otherWinCount === 0 ? root.workspaceImplicitWidth : (root.workspaceImplicitWidth / 2)
+                                    var finalH = root.workspaceImplicitHeight
+                                    window.width = finalW
+                                    window.height = finalH
+                                    window.x = targetXOffset + (otherWinCount === 0 ? 0 : (root.workspaceImplicitWidth - finalW))
+                                    window.y = targetYOffset + (root.workspaceImplicitHeight - finalH) / 2
+                                } else {
+                                    const percentageX = (window.dragStartX - xOffset) / root.workspaceImplicitWidth
+                                    const percentageY = (window.dragStartY - yOffset) / root.workspaceImplicitHeight
+                                    const targetColIndex = getWsColumn(targetWorkspace)
+                                    const targetRowIndex = getWsRow(targetWorkspace)
+                                    const targetXOffset = (root.workspaceImplicitWidth + workspaceSpacing) * targetColIndex
+                                    const targetYOffset = (root.workspaceImplicitHeight + workspaceSpacing) * targetRowIndex
+                                    window.x = targetXOffset + percentageX * root.workspaceImplicitWidth
+                                    window.y = targetYOffset + percentageY * root.workspaceImplicitHeight
+                                }
                             }
                             else {
                                 if (!window.windowData.floating) {
-                                    updateWindowPosition.restart()
+                                    window.x = Qt.binding(() => window.initX)
+                                    window.y = Qt.binding(() => window.initY)
                                     return
                                 }
                                 const percentageX = (window.x - xOffset) / root.workspaceImplicitWidth

@@ -127,12 +127,11 @@ hl.window_rule({
     suppress_event = "maximize",
 })
 
--- 2. Every Wayland/X11 modal window MUST float, be centered, and stay focused on top
+-- 2. Every Wayland/X11 modal window MUST float and be centered
 hl.window_rule({
     match = { modal = true },
     float = true,
     center = true,
-    stay_focused = true,
 })
 
 -- 3. File Choosers, Portals & System Dialogs
@@ -164,35 +163,25 @@ for _, cls in ipairs(dialog_classes) do
         match = { class = "^(" .. cls .. ")$" },
         float = true,
         center = true,
-        stay_focused = true,
     })
 end
 
--- 4. Common Dialog Titles across all browsers, editors, and desktop apps
+-- 4. File Picker and System Confirmation Dialog Titles
 local dialog_titles = {
-    "Open.*",
-    "Save.*",
-    "Select.*",
-    "Choose.*",
+    "Open File.*",
+    "Select a File.*",
+    "Choose [Ww]allpaper.*",
+    "Open Folder.*",
+    "Save As.*",
     "File Upload.*",
-    "Library.*",
-    "All Files.*",
+    ".*wants to save.*",
+    ".*wants to open.*",
     "Confirm.*",
     "File Conflict.*",
     "Overwrite.*",
-    "Rename.*",
-    "Delete.*",
-    "Properties.*",
-    "Preferences.*",
-    "Settings.*",
-    "Options.*",
-    "Enter name of file to save to.*",
-    ".*wants to save.*",
-    ".*wants to open.*",
     "Authentication.*",
     "PolicyKit.*",
-    "Extract.*",
-    "Compress.*",
+    "Enter name of file to save to.*",
 }
 
 for _, ttl in ipairs(dialog_titles) do
@@ -200,7 +189,6 @@ for _, ttl in ipairs(dialog_titles) do
         match = { title = "^(" .. ttl .. ")$" },
         float = true,
         center = true,
-        stay_focused = true,
     })
 end
 
@@ -209,25 +197,21 @@ hl.window_rule({
     match = { class = "org.freedesktop.impl.portal.desktop.kde" },
     size = { 1000, 650 },
     center = true,
-    stay_focused = true,
 })
 hl.window_rule({
     match = { class = "xdg-desktop-portal-gtk" },
     size = { 960, 620 },
     center = true,
-    stay_focused = true,
 })
 hl.window_rule({
     match = { class = "org.kde.kdialog" },
     size = { 900, 580 },
     center = true,
-    stay_focused = true,
 })
 hl.window_rule({
     match = { class = "zenity" },
     size = { 850, 550 },
     center = true,
-    stay_focused = true,
 })
 
 

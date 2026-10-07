@@ -13,6 +13,8 @@ import Quickshell.Wayland
 Item { // Window
     id: root
     property var toplevel
+    property var windowAddresses: HyprlandData.addresses
+    property var windowByAddress: HyprlandData.windowByAddress
     property var windowData
     property var monitorData
     property var scale
@@ -24,25 +26,54 @@ Item { // Window
     }
     property real heightRatio: {
         const widgetHeight = (widgetMonitor?.transform ?? 0) & 1 ? (widgetMonitor?.width ?? 1) : (widgetMonitor?.height ?? 1);
-        const monitorHeight = (monitorData?.transform ?? 0) & 1 ? (monitorData?.width ?? 1) : (monitorData?.height ?? 1);
+        const monitorHeight = (monitorData?.transform ?? 0) & 1 ? (monitorData?.height ?? 1) : (monitorData?.width ?? 1);
         return (widgetHeight * (monitorData?.scale ?? 1)) / (monitorHeight * (widgetMonitor?.scale ?? 1));
-    }
-    property real initX: {
-        return Math.max((windowData?.at[0] - (monitorData?.x ?? 0) - (monitorData?.reserved?.[0] ?? 0)) * widthRatio * root.scale, 0) + xOffset;
-    }
-
-    property real initY: {
-        return Math.max((windowData?.at[1] - (monitorData?.y ?? 0) - (monitorData?.reserved?.[1] ?? 0)) * heightRatio * root.scale, 0) + yOffset;
     }
     property real xOffset: 0
     property real yOffset: 0
     property var widgetMonitor
     property int widgetMonitorId: widgetMonitor?.id ?? 0
+    property real workspaceWidth: 0
+    property real workspaceHeight: 0
 
-    property var targetWindowWidth: windowData?.size[0] * scale * widthRatio
-    property var targetWindowHeight: windowData?.size[1] * scale * heightRatio
+    property real tiledCount: {
+        if (!windowData || windowData.floating || windowData.fullscreen) return 0;
+        const wsId = windowData.workspace?.id;
+        if (!wsId) return 0;
+        let count = 0;
+        for (const addr of root.windowAddresses) {
+            const w = root.windowByAddress[addr];
+            if (w && w.workspace?.id === wsId && !w.floating && !w.fullscreen) count++;
+        }
+        return count;
+    }
+    property bool singleTiled: tiledCount === 1
+
+    property var targetWindowWidth: {
+        if (singleTiled && root.workspaceWidth > 0) {
+            return root.workspaceWidth;
+        }
+        return windowData?.size[0] * scale * widthRatio;
+    }
+    property var targetWindowHeight: {
+        if (singleTiled && root.workspaceHeight > 0) {
+            return root.workspaceHeight;
+        }
+        return windowData?.size[1] * scale * heightRatio;
+    }
+
+    property real initX: {
+        if (singleTiled) return xOffset;
+        return Math.max((windowData?.at[0] - (monitorData?.x ?? 0) - (monitorData?.reserved?.[0] ?? 0)) * widthRatio * root.scale, 0) + xOffset;
+    }
+
+    property real initY: {
+        if (singleTiled) return yOffset;
+        return Math.max((windowData?.at[1] - (monitorData?.y ?? 0) - (monitorData?.reserved?.[1] ?? 0)) * heightRatio * root.scale, 0) + yOffset;
+    }
     property bool hovered: false
     property bool pressed: false
+    property bool dragging: false
 
     property bool centerIcons: Config.options.overview.centerIcons
     property real iconGapRatio: 0.06
@@ -59,6 +90,18 @@ Item { // Window
     width: targetWindowWidth
     height: targetWindowHeight
     opacity: windowData.monitor == widgetMonitorId ? 1 : 0.4
+
+    Connections {
+        target: HyprlandData
+        function onWindowByAddressChanged() {
+            if (!window.Drag.active && !window.dragging) {
+                window.x = Qt.binding(() => window.initX);
+                window.y = Qt.binding(() => window.initY);
+                window.width = Qt.binding(() => window.targetWindowWidth);
+                window.height = Qt.binding(() => window.targetWindowHeight);
+            }
+        }
+    }
 
     property real topLeftRadius
     property real topRightRadius
@@ -78,9 +121,11 @@ Item { // Window
     }
 
     Behavior on x {
+        enabled: !window.Drag.active && !window.dragging
         animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
     }
     Behavior on y {
+        enabled: !window.Drag.active && !window.dragging
         animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
     }
     Behavior on width {
@@ -120,11 +165,6 @@ Item { // Window
                 margins: baseSize * root.iconGapRatio
             }
             property var iconSize: {
-                // console.log("-=-=-", root.toplevel.title, "-=-=-")
-                // console.log("Target window size:", targetWindowWidth, targetWindowHeight)
-                // console.log("Icon ratio:", root.compactMode ? root.iconToWindowRatioCompact : root.iconToWindowRatio)
-                // console.log("Scale:", root.monitorData.scale)
-                // console.log("Final:", Math.min(targetWindowWidth, targetWindowHeight) * (root.compactMode ? root.iconToWindowRatioCompact : root.iconToWindowRatio) / root.monitorData.scale)
                 return baseSize * (root.compactMode ? root.iconToWindowRatioCompact : root.iconToWindowRatio);
             }
             mipmap: true
