@@ -234,4 +234,8 @@ Scope {
             GlobalStates.osdVolumeOpen = false;
         }
     }
+
+    FeedbackHUD {
+        id: feedbackHud
+    }
 }
