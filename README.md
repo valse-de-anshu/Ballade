@@ -125,9 +125,9 @@ It combines frosted-glass aesthetics with automatic **Material Design 3** color 
 <summary><b>🖼️ Dynamic Wallpaper System & Desktop HUD</b></summary>
 <br/>
 
-| 🌅 3D Coverflow Wallpaper Selector | 🖼️ Centered Dynamic Wallpaper Mode |
+| 🌅 3D Coverflow Wallpaper Selector (New Interface) | 🖼️ Centered Dynamic Wallpaper Mode |
 | :---: | :---: |
-| <img src="assets/screenshots/GENRAL%20STUFF/wallpaper%20selector%20.png" width="460" alt="Wallpaper Selector" /> | <img src="assets/screenshots/GENRAL%20STUFF/CENTRED%20WALLPAPER.png" width="460" alt="Centered Wallpaper" /> |
+| <img src="assets/screenshots/GENRAL%20STUFF/wallpaper%20selector%20.png" width="460" alt="3D Coverflow Wallpaper Selector" /> | <img src="assets/screenshots/GENRAL%20STUFF/CENTRED%20WALLPAPER.png" width="460" alt="Centered Wallpaper" /> |
 
 | 💬 Interactive Home Screen Popups & Actions |
 | :---: |
