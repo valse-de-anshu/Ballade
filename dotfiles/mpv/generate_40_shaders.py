@@ -112,7 +112,7 @@ for fid, title, logic, cat in anime2d_grades:
     shaders.append((fid, title, logic, cat))
 
 menu_lines = ["\n# --- Custom Shaders Menu ---"]
-menu_lines.append('ctrl+1 no-osd change-list glsl-shaders set "~~/shaders/anime4k/Anime4K_Clamp_Highlights.glsl:~~/shaders/anime4k/Anime4K_Restore_CNN_M.glsl:~~/shaders/anime4k/Anime4K_Upscale_CNN_x2_M.glsl:~~/shaders/anime4k/Anime4K_AutoDownscalePre_x2.glsl:~~/shaders/anime4k/Anime4K_AutoDownscalePre_x4.glsl:~~/shaders/anime4k/Anime4K_Upscale_CNN_x2_S.glsl" ; show-text "Anime4K: Mode A (Fast) Activated!" #! Shaders > Activate Anime4K Upscaling')
+menu_lines.append('ctrl+1 no-osd change-list glsl-shaders set "~~/shaders/anime4k/Anime4K_Clamp_Highlights.glsl:~~/shaders/anime4k/Anime4K_Restore_CNN_S.glsl:~~/shaders/anime4k/Anime4K_Upscale_CNN_x2_S.glsl" ; show-text "Anime4K: Mode A (Fast) Activated!" #! Shaders > Activate Anime4K Upscaling')
 
 for fid, title, logic, category in shaders:
     path = os.path.join(SHADERS_DIR, f"{fid}.glsl")
