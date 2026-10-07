@@ -24,4 +24,9 @@ hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(
     " || pidof slurp || (grim -g \"$(slurp $SLURP_ARGS)\" \"/tmp/ocr_image.png\" && text=$(tesseract \"/tmp/ocr_image.png\" stdout -l eng+hin 2>/dev/null) && if [ -n \"$text\" ]; then printf '%s' \"$text\" | wl-copy && notify-send -a 'OCR' -i 'edit-paste' 'Text Copied to Clipboard' \"$text\"; else notify-send -a 'OCR' -i 'dialog-warning' 'OCR' 'No text recognized'; fi; rm -f \"/tmp/ocr_image.png\")"
 ))
 
+-- Refresh rate toggle: Fn+R on Lenovo laptops emits XF86RefreshRateToggle (or XF86Display), plus Super+F10 / Super+Alt+R shortcuts
+hl.bind("XF86RefreshRateToggle", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (144Hz / 60Hz)" })
+hl.bind("XF86Display", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (Fn Display key)" })
+hl.bind("SUPER + F10", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (Super+F10)" })
+hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (Super+Alt+R)" })
 

@@ -1,8 +1,4 @@
 {
-  "_presetMeta": {
-    "description": "Sakura Pink \u2014 cherry blossom & neon vibes",
-    "theme": "pink"
-  },
   "theme": {
     "activePreset": "pink"
   },
@@ -13,8 +9,11 @@
       "calendar": {
         "enable": true,
         "placementStrategy": "free",
+        "satelliteRotation": 0,
+        "satelliteX": 389.69140625,
+        "satelliteY": -187.171875,
         "sizeMode": "2x2",
-        "x": 24,
+        "x": 360,
         "y": 720
       },
       "clock": {
@@ -46,7 +45,7 @@
           "showDate": true,
           "vertical": true
         },
-        "enable": true,
+        "enable": false,
         "pixel": {
           "font": {
             "family": "Google Sans Flex",
@@ -86,8 +85,8 @@
         "enable": true,
         "placementStrategy": "free",
         "sizeMode": "full",
-        "x": 1644,
-        "y": 264
+        "x": 12,
+        "y": 528
       },
       "images": {
         "enable": false,
@@ -97,14 +96,14 @@
       },
       "media": {
         "backgroundShape": "Cookie4Sided",
-        "enable": true,
+        "enable": false,
         "placementStrategy": "free",
         "showControls": true,
         "showLyrics": false,
         "showTitles": true,
-        "sizeMode": "2x2",
-        "x": 24,
-        "y": 456
+        "sizeMode": "1x1",
+        "x": 240,
+        "y": 228
       },
       "notes": {
         "enable": true,
@@ -128,7 +127,7 @@
       "shadow": true,
       "userCard": {
         "customText": "Trust the pain and process",
-        "enable": true,
+        "enable": false,
         "placementStrategy": "free",
         "sizeMode": "2x3",
         "x": 1476,
@@ -139,22 +138,22 @@
         "enable": true,
         "height": 12,
         "placementStrategy": "free",
-        "ringSize": 470,
+        "ringSize": 427,
         "sensitivity": 1.03,
-        "style": "aurora",
-        "x": 0,
-        "y": 840,
+        "style": "ring",
+        "x": 312,
+        "y": 360,
         "z": -1000
       },
       "weather": {
-        "enable": true,
+        "enable": false,
         "placementStrategy": "free",
         "sizeMode": "1x3",
         "x": 24,
         "y": 192
       },
       "worldClock": {
-        "enable": true,
+        "enable": false,
         "placementStrategy": "free",
         "sizeMode": "4x1",
         "timezones": [
@@ -167,10 +166,10 @@
         "y": 324
       }
     },
-    "wallpaperPath": "__HOME__/Pictures/Wallpapers/live Wallpapers/pink/3.mp4"
+    "wallpaperPath": "__HOME__/Pictures/Wallpapers/pink/preview_egpg4de1i1gg1.webp"
   },
-  "wallpaperSelector": {
-    "userPath": "__HOME__/Pictures/Wallpapers/pink",
-    "liveWallpapersPath": "__HOME__/Pictures/Wallpapers/live Wallpapers/pink"
+  "_presetMeta": {
+    "description": "Sakura Pink — cherry blossom & neon vibes",
+    "theme": "pink"
   }
 }
