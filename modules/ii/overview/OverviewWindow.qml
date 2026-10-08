@@ -26,7 +26,7 @@ Item { // Window
     }
     property real heightRatio: {
         const widgetHeight = (widgetMonitor?.transform ?? 0) & 1 ? (widgetMonitor?.width ?? 1) : (widgetMonitor?.height ?? 1);
-        const monitorHeight = (monitorData?.transform ?? 0) & 1 ? (monitorData?.height ?? 1) : (monitorData?.width ?? 1);
+        const monitorHeight = (monitorData?.transform ?? 0) & 1 ? (monitorData?.width ?? 1) : (monitorData?.height ?? 1);
         return (widgetHeight * (monitorData?.scale ?? 1)) / (monitorHeight * (widgetMonitor?.scale ?? 1));
     }
     property real xOffset: 0
@@ -94,11 +94,11 @@ Item { // Window
     Connections {
         target: HyprlandData
         function onWindowByAddressChanged() {
-            if (!window.Drag.active && !window.dragging) {
-                window.x = Qt.binding(() => window.initX);
-                window.y = Qt.binding(() => window.initY);
-                window.width = Qt.binding(() => window.targetWindowWidth);
-                window.height = Qt.binding(() => window.targetWindowHeight);
+            if (!root.Drag.active && !root.dragging) {
+                root.x = Qt.binding(() => root.initX);
+                root.y = Qt.binding(() => root.initY);
+                root.width = Qt.binding(() => root.targetWindowWidth);
+                root.height = Qt.binding(() => root.targetWindowHeight);
             }
         }
     }
@@ -121,11 +121,11 @@ Item { // Window
     }
 
     Behavior on x {
-        enabled: !window.Drag.active && !window.dragging
+        enabled: !root.Drag.active && !root.dragging
         animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
     }
     Behavior on y {
-        enabled: !window.Drag.active && !window.dragging
+        enabled: !root.Drag.active && !root.dragging
         animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
     }
     Behavior on width {

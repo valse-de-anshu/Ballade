@@ -214,8 +214,8 @@ Item {
                     property int workspaceRowIndex: getWsRow(windowData?.workspace.id)
                     xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
                     yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
-                    property real xWithinWorkspaceWidget: singleTiled ? 0 : Math.max((windowData?.at[0] - (monitor?.x ?? 0) - (monitorData?.reserved?.[0] ?? 0)) * root.scale, 0)
-                    property real yWithinWorkspaceWidget: singleTiled ? 0 : Math.max((windowData?.at[1] - (monitor?.y ?? 0) - (monitorData?.reserved?.[1] ?? 0)) * root.scale, 0)
+                    property real xWithinWorkspaceWidget: initX - xOffset
+                    property real yWithinWorkspaceWidget: initY - yOffset
 
                     // Radius
                     property real minRadius: Appearance.rounding.small
@@ -242,12 +242,14 @@ Item {
 
                     Timer {
                         id: updateWindowPosition
-                        interval: Config.options.hacks.arbitraryRaceConditionDelay
+                        interval: Math.max(100, Config.options.hacks.arbitraryRaceConditionDelay)
                         repeat: false
                         running: false
                         onTriggered: {
                             window.x = Qt.binding(() => window.initX)
                             window.y = Qt.binding(() => window.initY)
+                            window.width = Qt.binding(() => window.targetWindowWidth)
+                            window.height = Qt.binding(() => window.targetWindowHeight)
                         }
                     }
 
@@ -309,10 +311,9 @@ Item {
                                     
                                     var finalW = otherWinCount === 0 ? root.workspaceImplicitWidth : (root.workspaceImplicitWidth / 2)
                                     var finalH = root.workspaceImplicitHeight
-                                    window.width = finalW
-                                    window.height = finalH
                                     window.x = targetXOffset + (otherWinCount === 0 ? 0 : (root.workspaceImplicitWidth - finalW))
                                     window.y = targetYOffset + (root.workspaceImplicitHeight - finalH) / 2
+                                    updateWindowPosition.restart()
                                 } else {
                                     const percentageX = (window.dragStartX - xOffset) / root.workspaceImplicitWidth
                                     const percentageY = (window.dragStartY - yOffset) / root.workspaceImplicitHeight
@@ -322,17 +323,18 @@ Item {
                                     const targetYOffset = (root.workspaceImplicitHeight + workspaceSpacing) * targetRowIndex
                                     window.x = targetXOffset + percentageX * root.workspaceImplicitWidth
                                     window.y = targetYOffset + percentageY * root.workspaceImplicitHeight
+                                    updateWindowPosition.restart()
                                 }
                             }
                             else {
                                 if (!window.windowData.floating) {
-                                    window.x = Qt.binding(() => window.initX)
-                                    window.y = Qt.binding(() => window.initY)
+                                    updateWindowPosition.restart()
                                     return
                                 }
                                 const percentageX = (window.x - xOffset) / root.workspaceImplicitWidth
                                 const percentageY = (window.y - yOffset) / root.workspaceImplicitHeight
                                 Hyprland.dispatch(`hl.dsp.window.move({ x = "${percentageX * root.screen.width}", y = "${percentageY * root.screen.height}", window = "address:${window.windowData?.address}" })`)
+                                updateWindowPosition.restart()
                             }
                         }
                         onClicked: (event) => {
