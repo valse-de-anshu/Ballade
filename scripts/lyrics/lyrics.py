@@ -24,6 +24,11 @@ import json
 import hashlib
 import urllib.request
 import urllib.parse
+import shutil
+import subprocess
+import tempfile
+
+YTDLP_OK = shutil.which("yt-dlp") is not None
 
 try:
     import mutagen
@@ -323,7 +328,7 @@ def _parse_lrc(lrc_text: str) -> list:
                 continue
     return sorted(lines, key=lambda x: x["time"])
 
-def _http_get(url: str, timeout: int = 8, headers: dict = None) -> bytes:
+def _http_get(url: str, timeout: int = 4, headers: dict = None) -> bytes:
     hdrs = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
     if headers:
         hdrs.update(headers)
@@ -366,7 +371,7 @@ def _from_embedded(file_url: str) -> list:
                 val = audio[key]
                 if isinstance(val, list):
                     val = val[0] if val else ""
-                if val and "[" in val:
+                if val and "[" in raw:
                     parsed = _parse_lrc(val)
                     if parsed: return parsed
     except Exception:
@@ -413,30 +418,22 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
                  alt_title: str = "", raw_context: str = "") -> list:
     base = "https://lrclib.net/api"
     urls = []
+    art = primary_artist or artist
 
-    # Priority 1: Exact variant lookup if requested (e.g. worry (ultra slowed))
-    if variant and (primary_artist or artist):
-        art = primary_artist or artist
-        urls.append(f"{base}/get?track_name={urllib.parse.quote(f'{title} ({variant})')}&artist_name={urllib.parse.quote(art)}")
+    # 1. Direct GET if both title and artist are known (and not a variant)
+    if art and title and not variant:
+        urls.append(f"{base}/get?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(art)}")
 
-    # Priority 2: Direct lookup with primary artist & duration
-    if primary_artist and title:
-        if duration > 10:
-            urls.append(f"{base}/get?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(primary_artist)}&duration={int(duration)}")
-        urls.append(f"{base}/get?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(primary_artist)}")
+    # 2. Combined fuzzy search (returns up to 20 candidates scored in one shot)
+    if art and title:
+        if variant:
+            urls.append(f"{base}/search?q={urllib.parse.quote(f'{art} {title} {variant}')}")
+        urls.append(f"{base}/search?q={urllib.parse.quote(f'{art} {title}')}")
+    elif title:
+        urls.append(f"{base}/search?q={urllib.parse.quote(title)}")
 
-    # Priority 3: Search endpoint with track & artist
-    if primary_artist and title:
-        urls.append(f"{base}/search?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(primary_artist)}")
-    if artist and artist != primary_artist and title:
-        urls.append(f"{base}/search?track_name={urllib.parse.quote(title)}&artist_name={urllib.parse.quote(artist)}")
-
-    # Priority 4: Search query combined
-    query_artist = primary_artist or artist
-    if query_artist and title:
-        urls.append(f"{base}/search?q={urllib.parse.quote(f'{query_artist} {title}')}")
-    urls.append(f"{base}/search?q={urllib.parse.quote(title)}")
-    if alt_title and alt_title != title:
+    # 3. Fallback search on alternative title if distinct
+    if alt_title and alt_title.lower() != title.lower():
         urls.append(f"{base}/search?q={urllib.parse.quote(alt_title)}")
 
     best_match = None
@@ -444,13 +441,9 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
 
     for url in urls:
         try:
-            raw = _http_get(url)
+            raw = _http_get(url, timeout=3)
             data = json.loads(raw)
-            candidates = []
-            if isinstance(data, dict):
-                candidates = [data]
-            elif isinstance(data, list):
-                candidates = data
+            candidates = [data] if isinstance(data, dict) else (data if isinstance(data, list) else [])
 
             for item in candidates:
                 synced = item.get("syncedLyrics")
@@ -480,6 +473,10 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
         except Exception:
             continue
 
+        # If this query found a strong match (>= 0.85), don't do subsequent searches
+        if best_match and best_score >= 0.85:
+            return _parse_lrc(best_match)
+
     if best_match and best_score >= 0.70:
         return _parse_lrc(best_match)
 
@@ -491,9 +488,9 @@ def _from_netease(title: str, artist: str, primary_artist: str, duration: float,
                   alt_title: str = "", raw_context: str = "") -> list:
     query_artist = primary_artist or artist
     query = f"{query_artist} {title}".strip() if query_artist else title
-    url = f"https://music.163.com/api/search/get/web?csrf_token=&s={urllib.parse.quote(query)}&type=1&offset=0&limit=8"
+    url = f"https://music.163.com/api/search/get/web?csrf_token=&s={urllib.parse.quote(query)}&type=1&offset=0&limit=6"
     try:
-        data = json.loads(_http_get(url, headers={"Referer": "https://music.163.com/"}))
+        data = json.loads(_http_get(url, timeout=2, headers={"Referer": "https://music.163.com/"}))
         songs = data.get("result", {}).get("songs", [])
         best_id = None
         best_score = 0.0
@@ -523,7 +520,7 @@ def _from_netease(title: str, artist: str, primary_artist: str, duration: float,
 
         if best_id:
             lyric_url = f"https://music.163.com/api/song/lyric?os=pc&id={best_id}&lv=1&kv=1&tv=-1"
-            lyric_data = json.loads(_http_get(lyric_url, headers={"Referer": "https://music.163.com/"}))
+            lyric_data = json.loads(_http_get(lyric_url, timeout=2, headers={"Referer": "https://music.163.com/"}))
             for key in ("klyric", "lrc"):
                 lrc_text = lyric_data.get(key, {}).get("lyric", "")
                 if lrc_text:
@@ -541,7 +538,7 @@ def _from_megalobiz(title: str, artist: str, primary_artist: str, duration: floa
     query = f"{query_artist} {title}".strip() if query_artist else title
     search_url = f"https://www.megalobiz.com/search/all?qry={urllib.parse.quote(query)}&searchButton=Search"
     try:
-        html = _http_get(search_url, timeout=8).decode("utf-8", errors="ignore")
+        html = _http_get(search_url, timeout=3).decode("utf-8", errors="ignore")
         # Extract result links and titles
         matches = re.findall(r'href="(/lrc/maker/[^"]+)"[^>]*title="([^"]+)"', html)
         for link, link_title in matches:
@@ -558,7 +555,7 @@ def _from_megalobiz(title: str, artist: str, primary_artist: str, duration: floa
             )
             if score >= 0.70:
                 lrc_url = "https://www.megalobiz.com" + link
-                lrc_html = _http_get(lrc_url, timeout=8).decode("utf-8", errors="ignore")
+                lrc_html = _http_get(lrc_url, timeout=3).decode("utf-8", errors="ignore")
                 lrc_match = re.search(r'<div[^>]*id="entity_lyric_text"[^>]*>(.*?)</div>', lrc_html, re.DOTALL)
                 if lrc_match:
                     raw = lrc_match.group(1)
@@ -572,6 +569,19 @@ def _from_megalobiz(title: str, artist: str, primary_artist: str, duration: floa
 
 # ─── Source 6: YouTube Closed Captions (yt-dlp) ───────────────────────────────
 
+def _clean_youtube_url(url: str) -> str:
+    if not url:
+        return ""
+    if "youtube.com/watch" in url:
+        m = re.search(r'[?&]v=([a-zA-Z0-9_-]{11})', url)
+        if m:
+            return f"https://www.youtube.com/watch?v={m.group(1)}"
+    elif "youtu.be/" in url:
+        m = re.search(r'youtu\.be/([a-zA-Z0-9_-]{11})', url)
+        if m:
+            return f"https://www.youtube.com/watch?v={m.group(1)}"
+    return url
+
 def _parse_vtt(vtt_text: str) -> list:
     lines = []
     blocks = vtt_text.split("\n\n")
@@ -579,56 +589,71 @@ def _parse_vtt(vtt_text: str) -> list:
         block = block.strip()
         if not block or block.startswith("WEBVTT") or block.startswith("Kind:") or block.startswith("Language:"):
             continue
-        ts_match = re.search(r"(\d{2}):(\d{2}):(\d{2}\.\d+)\s*-->", block)
+        ts_match = re.search(r"(\d{2}):(\d{2}):(\d{2}[.,]\d+)\s*-->", block)
         if not ts_match:
-            ts_match = re.search(r"(\d{2}):(\d{2}\.\d+)\s*-->", block)
+            ts_match = re.search(r"(\d{2}):(\d{2}[.,]\d+)\s*-->", block)
             if ts_match:
                 mins = int(ts_match.group(1))
-                secs = float(ts_match.group(2))
+                secs = float(ts_match.group(2).replace(",", "."))
                 timestamp = mins * 60 + secs
             else:
                 continue
         else:
             hrs = int(ts_match.group(1))
             mins = int(ts_match.group(2))
-            secs = float(ts_match.group(3))
+            secs = float(ts_match.group(3).replace(",", "."))
             timestamp = hrs * 3600 + mins * 60 + secs
 
         text_lines = [line.strip() for line in block.splitlines() if "-->" not in line and not line.isdigit()]
+        text_lines = [re.sub(r"<[^>]+>", "", l).strip() for l in text_lines if l.strip()]
+        if not text_lines:
+            continue
+
+        # Handle YouTube rolling auto-sub duplicates (skip previous repeated line)
+        if lines and len(text_lines) > 1 and text_lines[0].lower() == lines[-1]["text"].lower():
+            text_lines = text_lines[1:]
+
         text = " ".join(text_lines).strip()
-        text = re.sub(r"<[^>]+>", "", text)
         text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
         text = re.sub(r"^♪\s*|\s*♪$", "", text).strip()
-        if text and (not lines or lines[-1]["text"] != text):
+        if text:
+            # If same text as previous, skip duplicate
+            if lines and lines[-1]["text"].lower() == text.lower():
+                continue
             lines.append({"time": timestamp, "text": text})
     return sorted(lines, key=lambda x: x["time"])
 
 def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
+    if not YTDLP_OK:
+        return []
+
+    clean_url = _clean_youtube_url(file_url)
     query = ""
-    if "youtube.com" in file_url or "youtu.be" in file_url:
-        query = file_url
+    if clean_url:
+        query = clean_url
     elif title and ("youtube" in artist.lower() or not artist or artist.lower() in ("unknown", "play")):
         query = f"ytsearch1:{title}"
     elif title:
-        query = f"ytsearch1:{title} {artist}"
+        query = f"ytsearch1:{title} {artist}".strip()
     else:
         return []
 
-    import subprocess, tempfile
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_tmpl = os.path.join(tmpdir, "sub.%(ext)s")
             cmd = [
                 "yt-dlp",
                 "--no-warnings", "--quiet", "--no-playlist",
+                "--socket-timeout", "4",
+                "--extractor-retries", "1",
                 "--write-auto-sub", "--write-sub",
                 "--sub-format", "vtt/lrc/best",
-                "--sub-langs", "en,en.*,en-orig,en-US,en-GB,hi,hi.*,hin,hi-orig,all",
+                "--sub-langs", "en.*,hi.*,ja.*,ko.*,orig.*,best",
                 "--skip-download",
                 "-o", out_tmpl,
                 query
             ]
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=25)
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
 
             def _sub_priority(f):
                 f_lower = f.lower()
@@ -703,8 +728,8 @@ def fetch_lyrics(raw_title: str, raw_artist: str, duration: float, file_url: str
     if not lines:
         lines = _from_megalobiz(title, artist, primary_artist, duration, variant, alt_title=alt_title, raw_context=raw_context)
 
-    # 9. Fallback: YouTube CC for YouTube tracks when external lyric servers find nothing
-    if not lines and ("youtube.com" in file_url or "youtu.be" in file_url or "- youtube" in raw_title.lower()):
+    # 9. Fallback: YouTube CC for YouTube tracks only when external lyric servers find nothing
+    if not lines and ("youtube.com" in file_url or "youtu.be" in file_url):
         lines = _from_youtube_cc(title, artist, file_url)
 
     # Save to disk cache if verified lines were found

@@ -64,31 +64,36 @@ Singleton {
         return result
     }
 
+    function syncPosition() {
+        if (root.status !== "ok" || root.lyricsLines.length === 0) return
+        const lead = root.ccMode ? 0.35 : 0.25
+        const pos = (root.activePlayer?.position ?? 0) + lead
+        let idx = -1
+        for (let i = 0; i < root.lyricsLines.length; i++) {
+            if (root.lyricsLines[i].time <= pos) idx = i
+            else break
+        }
+        if (idx !== root.activeIndex) {
+            root.activeIndex = idx
+            root.slots = root.buildSlots(idx)
+        }
+    }
+
     // ── Sync timer: updates activeIndex every 100ms with lead compensation ─────────────
     Timer {
         id: syncTimer
         interval: 100
         repeat: true
         running: root.status === "ok" && root.lyricsLines.length > 0
-        onTriggered: {
-            const lead = root.ccMode ? 0.75 : 0.35
-            const pos = (root.activePlayer?.position ?? 0) + lead
-            let idx = -1
-            for (let i = 0; i < root.lyricsLines.length; i++) {
-                if (root.lyricsLines[i].time <= pos) idx = i
-                else break
-            }
-            if (idx !== root.activeIndex) {
-                root.activeIndex = idx
-                root.slots = root.buildSlots(idx)
-            }
-        }
+        onTriggered: root.syncPosition()
     }
 
-    // ── Auto-retry: if not_found, retry once after 8s (network may have been slow)
+    property int _retryCount: 0
+
+    // ── Auto-retry: if not_found, retry at most once after 5s ──────────────────
     Timer {
         id: retryTimer
-        interval: 8000
+        interval: 5000
         repeat: false
         running: false
         onTriggered: {
@@ -108,7 +113,12 @@ Singleton {
                 const trimmed = data.trim()
                 if (trimmed === "not_found") {
                     root.status = "not_found"
-                    retryTimer.restart()   // auto-retry once
+                    if (root._retryCount < 1) {
+                        root._retryCount++
+                        retryTimer.restart()
+                    } else {
+                        retryTimer.stop()
+                    }
                     return
                 }
                 if (trimmed === "no_info") { root.status = "no_info"; return }
@@ -126,15 +136,22 @@ Singleton {
 
                 if (lines.length === 0) {
                     root.status = "not_found"
-                    retryTimer.restart()
+                    if (root._retryCount < 1) {
+                        root._retryCount++
+                        retryTimer.restart()
+                    } else {
+                        retryTimer.stop()
+                    }
                     return
                 }
 
                 retryTimer.stop()
+                root._retryCount = 0
                 root.lyricsLines = lines
                 root.activeIndex = -1
                 root.slots = root.buildSlots(-1)
                 root.status = "ok"
+                root.syncPosition()
                 // Store result into the in-memory cache
                 const fetchedMode = root.ccMode ? "cc" : "lyrics"
                 root._storeCurrent(fetchedMode, lines)
@@ -180,6 +197,7 @@ Singleton {
     // ── Public: restart for a new track ──────────────────────────────────────
     function restartLyrics() {
         retryTimer.stop()
+        root._retryCount = 0
         lyricsProc.running = false
         root.lyricsLines = []
         root.activeIndex = -1
@@ -205,6 +223,12 @@ Singleton {
 
     // ── Public: manual reload from UI (force bypass cache would need --no-cache flag)
     function reloadLyrics() {
+        root.restartLyrics()
+    }
+
+    onActivePlayerChanged: {
+        root.ccMode = false
+        root._trackCache = {}
         root.restartLyrics()
     }
 

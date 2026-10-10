@@ -282,10 +282,17 @@ Item {
                             highlightColor: blendedColors.colPrimary
                             trackColor: blendedColors.colSecondaryContainer
                             handleColor: blendedColors.colPrimary
-                            value: (root.player?.position ?? 0) / (root.player?.length ?? 1)
+                            value: {
+                                if (pressed) return value
+                                const len = root.player?.length ?? 1
+                                const pos = root.player?.position ?? 0
+                                return len > 0 ? Math.max(0, Math.min(1, pos / len)) : 0
+                            }
                             onMoved: {
-                                if (root.player) root.player.position = value * root.player.length
-                                LyricsService.restartLyrics()
+                                if (root.player && root.player.length > 0) {
+                                    root.player.position = value * root.player.length
+                                }
+                                LyricsService.syncPosition()
                             }
                         }
                     }
