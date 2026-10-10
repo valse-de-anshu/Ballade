@@ -82,7 +82,7 @@ Singleton {
             }
 
             property JsonObject idle: JsonObject {
-                property bool inhibit: false
+                property bool inhibit: true
             }
 
             property JsonObject record: JsonObject {

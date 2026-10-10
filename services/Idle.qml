@@ -2,25 +2,43 @@ pragma Singleton
 import qs.modules.common
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 /**
- * A nice wrapper for date and time strings.
+ * Service to manage system idle and sleep inhibition.
  */
 Singleton {
     id: root
 
-    property alias inhibit: idleInhibitor.enabled
-    inhibit: false
+    property bool inhibit: true
+
+    function load() {}
+
+    function syncFromPersistent() {
+        if (!Persistent.ready) return;
+        if (!Persistent.isNewHyprlandInstance) {
+            root.inhibit = Persistent.states.idle.inhibit ?? true;
+        } else {
+            root.inhibit = true;
+            Persistent.states.idle.inhibit = true;
+        }
+    }
+
+    Component.onCompleted: {
+        syncFromPersistent();
+    }
 
     Connections {
         target: Persistent
         function onReadyChanged() {
-            if (!Persistent.isNewHyprlandInstance) {
-                root.inhibit = Persistent.states.idle.inhibit;
-            } else {
-                Persistent.states.idle.inhibit = root.inhibit;
-            }
+            root.syncFromPersistent();
+        }
+    }
+
+    onInhibitChanged: {
+        if (Persistent.ready) {
+            Persistent.states.idle.inhibit = root.inhibit;
         }
     }
 
@@ -30,26 +48,51 @@ Singleton {
         } else {
             root.inhibit = !root.inhibit;
         }
-        Persistent.states.idle.inhibit = root.inhibit;
+        if (Persistent.ready) {
+            Persistent.states.idle.inhibit = root.inhibit;
+        }
     }
 
+    // System-level inhibitor via systemd-inhibit.
+    // Blocks idle timeouts in hypridle and prevents automatic sleep/suspend on battery or AC.
+    Process {
+        id: systemdInhibitProcess
+        command: ["systemd-inhibit", "--what=idle:sleep", "--who=ballade", "--why=Keep system awake", "sleep", "infinity"]
+        running: root.inhibit
+        onExited: (exitCode, exitStatus) => {
+            if (root.inhibit) {
+                systemdInhibitProcess.running = true;
+            }
+        }
+    }
+
+    // Wayland protocol inhibitor fallback
     IdleInhibitor {
         id: idleInhibitor
+        enabled: root.inhibit
         window: PanelWindow {
-            // Inhibitor requires a "visible" surface
-            // Actually not lol
-            implicitWidth: 0
-            implicitHeight: 0
+            implicitWidth: 1
+            implicitHeight: 1
             color: "transparent"
-            // Just in case...
             anchors {
                 right: true
                 bottom: true
             }
-            // Make it not interactable
             mask: Region {
                 item: null
             }
+        }
+    }
+
+    IpcHandler {
+        target: "idle"
+
+        function toggle(): void {
+            root.toggleInhibit();
+        }
+
+        function setInhibit(active: bool): void {
+            root.toggleInhibit(active);
         }
     }
 }

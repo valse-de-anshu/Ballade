@@ -32,6 +32,7 @@ ShellRoot {
         Wallpapers.load()
         Updates.load()
         ScreenTime.load()
+        Idle.load()
 
         if (Config.options.sounds.enableStartupSound ?? true) {
             let startPath = Config.options.sounds.startupSoundPath || "";
