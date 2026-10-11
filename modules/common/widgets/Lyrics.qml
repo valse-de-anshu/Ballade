@@ -4,6 +4,7 @@ import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.common.widgets
 import qs.services
+import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,12 +12,11 @@ import QtQuick.Layouts
 Item {
     id: root
 
-    property color textColor: Qt.rgba(1, 1, 1, 0.70)
+    property color textColor: Qt.rgba(1, 1, 1, 0.55)
     property color activeColor: "#ffffff"
-    property color dimColor: Qt.rgba(1, 1, 1, 0.38)
+    property color dimColor: Qt.rgba(1, 1, 1, 0.32)
     property color indicatorColor: Appearance.colors.colPrimaryContainer
     property color indicatorShapeColor: Appearance.colors.colOnPrimaryContainer
-    property color fadeColor: Appearance.colors.colLayer0Base
     property int textAlignment: isWide ? Text.AlignLeft : Text.AlignHCenter
     readonly property bool isWide: width >= 360
 
@@ -27,7 +27,7 @@ Item {
         LyricsService.restartLyrics();
     }
 
-    // ── 1. ACTIVE LYRICS LIST VIEW (Apple Music Style) ──────────────────────
+    // ── 1. ACTIVE LYRICS LIST VIEW (Pure Alpha Mask Dissolve) ────────────────
     Item {
         anchors.fill: parent
         visible: LyricsService.status === "ok" && LyricsService.lyricsLines.length > 0
@@ -36,17 +36,32 @@ Item {
         ListView {
             id: lyricsList
             anchors.fill: parent
-            anchors.leftMargin: root.isWide ? 20 : 12
-            anchors.rightMargin: root.isWide ? 20 : 12
+            anchors.leftMargin: root.isWide ? 16 : 8
+            anchors.rightMargin: root.isWide ? 16 : 8
             clip: true
             model: LyricsService.lyricsLines
             currentIndex: LyricsService.activeIndex
-            highlightMoveDuration: 400
+            highlightMoveDuration: 450
             preferredHighlightBegin: height * 0.36
             preferredHighlightEnd: height * 0.44
             highlightRangeMode: ListView.ApplyRange
             boundsBehavior: Flickable.StopAtBounds
             flickDeceleration: 1800
+
+            // Pure Alpha OpacityMask: lyrics fade to absolute transparency at edges without dark blocks!
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: lyricsList.width
+                    height: lyricsList.height
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.14; color: "#ffffffff" }
+                        GradientStop { position: 0.86; color: "#ffffffff" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+            }
 
             Connections {
                 target: LyricsService
@@ -57,13 +72,13 @@ Item {
                 }
             }
 
-            // Top spacer so the first line can be comfortably centered
+            // Top spacer
             header: Item {
                 width: lyricsList.width
                 height: lyricsList.height * 0.32
             }
 
-            // Bottom spacer so the last line can be comfortably centered
+            // Bottom spacer
             footer: Item {
                 width: lyricsList.width
                 height: lyricsList.height * 0.45
@@ -90,10 +105,10 @@ Item {
                     text: delegateItem.modelData.text || "♪"
 
                     font.pixelSize: {
-                        if (delegateItem.isCurrent) return root.isWide ? 24 : 18.5
-                        if (delegateItem.dist === 1) return root.isWide ? 18 : 15
-                        if (delegateItem.dist === 2) return root.isWide ? 16 : 13.5
-                        return root.isWide ? 14.5 : 12
+                        if (delegateItem.isCurrent) return root.isWide ? 23 : 18
+                        if (delegateItem.dist === 1) return root.isWide ? 17 : 14.5
+                        if (delegateItem.dist === 2) return root.isWide ? 15 : 13
+                        return root.isWide ? 13.5 : 11.5
                     }
                     font.weight: delegateItem.isCurrent ? Font.Bold : (delegateItem.dist <= 1 ? Font.DemiBold : Font.Normal)
 
@@ -101,9 +116,10 @@ Item {
 
                     opacity: {
                         if (delegateItem.isCurrent) return 1.0
-                        if (delegateItem.dist === 1) return delegateItem.isPast ? 0.42 : 0.72
-                        if (delegateItem.dist === 2) return delegateItem.isPast ? 0.20 : 0.42
-                        return delegateItem.isPast ? 0.08 : 0.22
+                        if (delegateItem.dist === 1) return delegateItem.isPast ? 0.34 : 0.62
+                        if (delegateItem.dist === 2) return delegateItem.isPast ? 0.16 : 0.34
+                        if (delegateItem.dist === 3) return delegateItem.isPast ? 0.05 : 0.16
+                        return 0.03
                     }
 
                     scale: delegateItem.isCurrent ? 1.02 : 1.0
@@ -124,28 +140,6 @@ Item {
                 }
             }
         }
-
-        // Top soft edge dissolve
-        Rectangle {
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: root.isWide ? 56 : 38
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: ColorUtils.transparentize(root.fadeColor, 0.05) }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-            z: 3
-        }
-
-        // Bottom soft edge dissolve
-        Rectangle {
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
-            height: root.isWide ? 56 : 38
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 1.0; color: ColorUtils.transparentize(root.fadeColor, 0.05) }
-            }
-            z: 3
-        }
     }
 
     // ── 2. MINIMALIST STATUS / FALLBACK STAGE ─────────────────────────────────
@@ -155,26 +149,26 @@ Item {
 
         ColumnLayout {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: 10
 
             Item {
                 Layout.alignment: Qt.AlignHCenter
-                implicitWidth: 44
-                implicitHeight: 44
+                implicitWidth: 36
+                implicitHeight: 36
 
                 MaterialLoadingIndicator {
                     anchors.fill: parent
                     loading: LyricsService.status === "loading"
                     colBg: root.indicatorColor
                     colShape: root.indicatorShapeColor
-                    implicitSize: 44
+                    implicitSize: 36
                     visible: LyricsService.status === "loading"
                 }
 
                 MaterialSymbol {
                     anchors.centerIn: parent
                     text: "music_note"
-                    iconSize: 32
+                    iconSize: 26
                     color: root.dimColor
                     visible: LyricsService.status !== "loading"
                 }
@@ -194,10 +188,10 @@ Item {
                     } else if (LyricsService.status === "no_info") {
                         return Translation.tr("No media playing")
                     } else {
-                        return LyricsService.ccMode ? Translation.tr("No captions available") : Translation.tr("Lyrics not available")
+                        return LyricsService.ccMode ? Translation.tr("No captions found") : Translation.tr("Lyrics unavailable")
                     }
                 }
-                font.pixelSize: Appearance.font.pixelSize.normal
+                font.pixelSize: Appearance.font.pixelSize.small
                 color: root.dimColor
             }
 
@@ -205,26 +199,26 @@ Item {
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 visible: LyricsService.status === "not_found" && !LyricsService.ccMode
-                implicitWidth: 140
-                implicitHeight: 30
-                radius: 15
-                color: tryCcMa.containsMouse ? ColorUtils.transparentize(root.activeColor, 0.8) : ColorUtils.transparentize(root.activeColor, 0.9)
+                implicitWidth: 120
+                implicitHeight: 26
+                radius: 13
+                color: tryCcMa.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
                 border.width: 1
-                border.color: ColorUtils.transparentize(root.activeColor, 0.75)
+                border.color: Qt.rgba(255, 255, 255, 0.12)
 
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: 5
                     MaterialSymbol {
                         text: "closed_caption"
-                        iconSize: 15
-                        color: root.activeColor
+                        iconSize: 13
+                        color: "#ffffff"
                     }
                     StyledText {
                         text: "Try Captions"
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         font.weight: Font.DemiBold
-                        color: root.activeColor
+                        color: "#ffffff"
                     }
                 }
 

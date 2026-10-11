@@ -42,13 +42,14 @@ except ImportError:
 
 CACHE_DIR = os.path.expanduser("~/.cache/qs-lyrics")
 
-def _cache_key(title: str, artist: str) -> str:
-    raw = f"{title.lower().strip()}|{artist.lower().strip()}"
+def _cache_key(title: str, artist: str, duration: float = 0.0) -> str:
+    dur_bucket = f"_{int(round(duration / 10.0))}" if duration > 30 else ""
+    raw = f"{title.lower().strip()}|{artist.lower().strip()}{dur_bucket}"
     return hashlib.md5(raw.encode()).hexdigest()
 
-def _load_cache(title: str, artist: str):
+def _load_cache(title: str, artist: str, duration: float = 0.0):
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = os.path.join(CACHE_DIR, _cache_key(title, artist) + ".json")
+    path = os.path.join(CACHE_DIR, _cache_key(title, artist, duration) + ".json")
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -59,9 +60,9 @@ def _load_cache(title: str, artist: str):
             pass
     return None
 
-def _save_cache(title: str, artist: str, lines: list):
+def _save_cache(title: str, artist: str, lines: list, duration: float = 0.0):
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = os.path.join(CACHE_DIR, _cache_key(title, artist) + ".json")
+    path = os.path.join(CACHE_DIR, _cache_key(title, artist, duration) + ".json")
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(lines, f, ensure_ascii=False)
@@ -336,6 +337,37 @@ def _parse_lrc(lrc_text: str) -> list:
                 continue
     return sorted(lines, key=lambda x: x["time"])
 
+def _scale_lyrics_if_needed(lines: list, target_duration: float, cand_duration: float = 0.0, variant: str = "") -> list:
+    """
+    Intelligently time-stretches synced lyrics when playback duration differs from the original catalog track
+    (e.g. slowed + reverb, sped up, nightcore, daycore).
+    Eliminates lyrics rushing ahead or lagging behind on edited/remixed audio!
+    """
+    if not lines or target_duration <= 20:
+        return lines
+
+    effective_cand_dur = cand_duration
+    if effective_cand_dur <= 20 and len(lines) >= 3:
+        max_ts = max(l["time"] for l in lines)
+        if max_ts > 20:
+            effective_cand_dur = max_ts / 0.88
+
+    if effective_cand_dur <= 20:
+        return lines
+
+    scale = target_duration / effective_cand_dur
+
+    is_variant = any(v in (variant or "").lower() for v in ["slow", "speed", "sped", "nightcore", "daycore", "reverb"])
+    diff = abs(target_duration - effective_cand_dur)
+
+    if (is_variant and diff > 5 and 0.55 <= scale <= 1.85) or (diff > 12 and 0.65 <= scale <= 1.60):
+        scaled = []
+        for l in lines:
+            new_t = round(l["time"] * scale, 2)
+            scaled.append({"time": new_t, "text": l["text"]})
+        return scaled
+    return lines
+
 def _http_get(url: str, timeout: int = 4, headers: dict = None) -> bytes:
     hdrs = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
     if headers:
@@ -446,6 +478,7 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
         urls.append(f"{base}/search?q={urllib.parse.quote(alt_title)}")
 
     best_match = None
+    best_cand_dur = 0.0
     best_score = 0.0
 
     for url in urls:
@@ -477,17 +510,18 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
                 if score > best_score and score >= 0.70:
                     best_score = score
                     best_match = synced
+                    best_cand_dur = cand_dur
                     if score >= 0.95:
-                        return _parse_lrc(best_match)
+                        return _scale_lyrics_if_needed(_parse_lrc(best_match), duration, best_cand_dur, variant)
         except Exception:
             continue
 
         # If this query found a strong match (>= 0.85), don't do subsequent searches
         if best_match and best_score >= 0.85:
-            return _parse_lrc(best_match)
+            return _scale_lyrics_if_needed(_parse_lrc(best_match), duration, best_cand_dur, variant)
 
     if best_match and best_score >= 0.70:
-        return _parse_lrc(best_match)
+        return _scale_lyrics_if_needed(_parse_lrc(best_match), duration, best_cand_dur, variant)
 
     return []
 
@@ -524,6 +558,7 @@ def _from_netease(title: str, artist: str, primary_artist: str, duration: float,
             if score > best_score and score >= 0.70:
                 best_score = score
                 best_id = song.get("id")
+                best_cand_dur = cand_dur
                 if score >= 0.95:
                     break
 
@@ -534,7 +569,8 @@ def _from_netease(title: str, artist: str, primary_artist: str, duration: float,
                 lrc_text = lyric_data.get(key, {}).get("lyric", "")
                 if lrc_text:
                     parsed = _parse_lrc(lrc_text)
-                    if parsed: return parsed
+                    if parsed:
+                        return _scale_lyrics_if_needed(parsed, duration, best_cand_dur, variant)
     except Exception:
         pass
     return []
@@ -632,12 +668,12 @@ def _parse_vtt(vtt_text: str) -> list:
             lines.append({"time": timestamp, "text": text})
     return sorted(lines, key=lambda x: x["time"])
 
-def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
+def _from_youtube_cc(title: str, artist: str, file_url: str, duration: float = 0.0) -> list:
     if not YTDLP_OK:
         return []
 
     # Check disk cache first for fast/instant CC response
-    cached = _load_cache(title + "__cc", artist)
+    cached = _load_cache(title + "__cc", artist, duration)
     if cached:
         return cached
 
@@ -694,7 +730,7 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
                     elif fname.endswith(".vtt"):
                         parsed = _parse_vtt(content)
                     if parsed:
-                        _save_cache(title + "__cc", artist, parsed)
+                        _save_cache(title + "__cc", artist, parsed, duration)
                         return parsed
     except Exception:
         pass
@@ -717,10 +753,10 @@ def fetch_lyrics(raw_title: str, raw_artist: str, duration: float, file_url: str
 
     # 2. Check CC mode explicitly
     if mode == "cc":
-        return _from_youtube_cc(title, artist, file_url)
+        return _from_youtube_cc(title, artist, file_url, duration)
 
     # 3. Check disk cache
-    cached = _load_cache(title, artist)
+    cached = _load_cache(title, artist, duration)
     if cached:
         return cached
 
@@ -748,11 +784,11 @@ def fetch_lyrics(raw_title: str, raw_artist: str, duration: float, file_url: str
 
     # 9. Fallback: YouTube CC for YouTube tracks only when external lyric servers find nothing
     if not lines and ("youtube.com" in file_url or "youtu.be" in file_url):
-        lines = _from_youtube_cc(title, artist, file_url)
+        lines = _from_youtube_cc(title, artist, file_url, duration)
 
     # Save to disk cache if verified lines were found
     if lines:
-        _save_cache(title, artist, lines)
+        _save_cache(title, artist, lines, duration)
 
     return lines
 

@@ -66,7 +66,7 @@ Singleton {
 
     function syncPosition() {
         if (root.status !== "ok" || root.lyricsLines.length === 0) return
-        const lead = root.ccMode ? 0.35 : 0.25
+        const lead = 0.0
         const pos = (root.activePlayer?.position ?? 0) + lead
         let idx = -1
         for (let i = 0; i < root.lyricsLines.length; i++) {

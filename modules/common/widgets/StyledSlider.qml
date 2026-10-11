@@ -56,8 +56,9 @@ Slider {
     property real trackDotSize: 3
     property bool usePercentTooltip: true
     property string tooltipContent: usePercentTooltip ? `${Math.round(((value - from) / (to - from)) * 100)}%` : `${Math.round(value)}`
-    property bool wavy: false
+    property bool wavy: (configuration === StyledSlider.Configuration.Wavy)
     property bool animateWave: false
+    readonly property bool isWavy: wavy || (configuration === StyledSlider.Configuration.Wavy)
 
     leftPadding: circleHandle ? (handleWidth / 2) : handleMargins
     rightPadding: circleHandle ? (handleWidth / 2) : handleMargins
@@ -111,6 +112,71 @@ Slider {
         property var leftWidths: leftValues.map((v, i, a) => a[i + 1] - v).slice(0, -1)
         property var rightWidths: rightValues.map((v, i, a) => a[i + 1] - v).slice(0, -1)
 
+        Component {
+            id: standardLeftRectComp
+            Rectangle {
+                color: root.highlightColor
+                topLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
+                bottomLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
+                topRightRadius: root.unsharpenRadius
+                bottomRightRadius: root.unsharpenRadius
+            }
+        }
+
+        Component {
+            id: wavyLeftCanvasComp
+            Canvas {
+                id: wCanvas
+                anchors.verticalCenter: parent.verticalCenter
+                property real currentPhase: 0
+
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    if (width <= 2) return;
+
+                    var centerY = height / 2;
+                    var amplitude = 3.2;
+                    var wavelength = 24.0;
+
+                    ctx.strokeStyle = root.highlightColor;
+                    ctx.lineWidth = 3.2;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+
+                    ctx.moveTo(0, centerY);
+                    for (var px = 0; px <= width; px += 1.5) {
+                        var taper = 1.0;
+                        var distFromEnd = width - px;
+                        if (distFromEnd < 12) {
+                            taper = Math.max(0, distFromEnd / 12.0);
+                        }
+                        var py = centerY + amplitude * taper * Math.sin((px / wavelength) * 2 * Math.PI + currentPhase);
+                        ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                }
+
+                Connections {
+                    target: root
+                    function onVisualPositionChanged() { wCanvas.requestPaint() }
+                    function onHighlightColorChanged() { wCanvas.requestPaint() }
+                }
+
+                Timer {
+                    interval: 40
+                    repeat: true
+                    running: root.animateWave && wCanvas.visible && width > 4
+                    onTriggered: {
+                        wCanvas.currentPhase += 0.22;
+                        if (wCanvas.currentPhase > 6.28) wCanvas.currentPhase -= 6.28;
+                        wCanvas.requestPaint();
+                    }
+                }
+            }
+        }
+
         // Fill left
         Repeater {
             model: background.leftWidths.length
@@ -122,15 +188,9 @@ Slider {
                 property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : root.handleMargins
                 x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
                 width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
-                height: root.trackWidth
+                height: root.isWavy ? 18 : root.trackWidth
                 active: true
-                sourceComponent: Rectangle {
-                    color: root.highlightColor
-                    topLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
-                    bottomLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
-                    topRightRadius: root.unsharpenRadius
-                    bottomRightRadius: root.unsharpenRadius
-                }
+                sourceComponent: root.isWavy ? wavyLeftCanvasComp : standardLeftRectComp
             }
         }
 
@@ -144,13 +204,10 @@ Slider {
                 property real leftMargin: index > 0 ? root.dividerMargins : (root.circleHandle ? 0 : root.handleMargins)
                 property real rightMargin: index < background.rightWidths.length - 1 ? root.dividerMargins : 0
                 x: background.rightValues[index] * root.effectiveDraggingWidth + leftMargin + (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + leftPadding
-                width: background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0)
-                height: trackWidth
+                width: Math.max(0, background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0))
+                height: root.isWavy ? 3.5 : trackWidth
                 color: root.trackColor
-                topRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
-                bottomRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
-                topLeftRadius: (index === 0 && root.circleHandle) ? root.trackRadius : root.unsharpenRadius
-                bottomLeftRadius: (index === 0 && root.circleHandle) ? root.trackRadius : root.unsharpenRadius
+                radius: height / 2
             }
         }
 
