@@ -108,6 +108,7 @@ Singleton {
      * @returns {Qt.rgba} The resulting color.
      */
     function transparentize(color, percentage = 1) {
+        if (!color || color === "") return Qt.rgba(0, 0, 0, 0);
         var c = Qt.color(color);
         return Qt.rgba(c.r, c.g, c.b, c.a * (1 - percentage));
     }

@@ -99,7 +99,8 @@ Singleton {
         onTriggered: {
             if (root.status === "not_found" || root.status === "error") {
                 root._runFetch(root._lastTitle, root._lastArtist,
-                               root._lastDuration, root._lastUrl)
+                               root._lastDuration, root._lastUrl,
+                               root.ccMode ? "cc" : "lyrics")
             }
         }
     }
@@ -232,10 +233,22 @@ Singleton {
         root.restartLyrics()
     }
 
+    function seekTo(timestamp) {
+        if (root.activePlayer && root.activePlayer.canSeek) {
+            root.activePlayer.position = timestamp
+            root.syncPosition()
+        }
+    }
+
     // ── React to track changes ────────────────────────────────────────────────
     Connections {
         target: root.activePlayer
         function onTrackTitleChanged() {
+            const newTitle = root.activePlayer?.trackTitle ?? ""
+            if (newTitle && newTitle === root._lastTitle && (root.status === "ok" || root.status === "loading")) {
+                // Spurious title update on seek/pause/buffer, ignore!
+                return
+            }
             root.ccMode = false  // Always reset CC mode on new track/video
             root._trackCache = {} // Clear ALL in-memory cache on track change
             root.restartLyrics()

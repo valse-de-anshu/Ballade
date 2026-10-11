@@ -70,6 +70,21 @@ def _save_cache(title: str, artist: str, lines: list):
 
 # ─── Metadata Harmonizer ──────────────────────────────────────────────────────
 
+KNOWN_CHANNELS = {
+    "youtube", "youtube music", "spotify", "unknown", "play", "music", "vevo",
+    "trap nation", "trap city", "monstercat", "spinnin' records", "selected.",
+    "ncs", "nocopyrightsounds", "chilledcow", "lofi girl", "mrsuicidesheep",
+    "t-series", "zee music company", "sony music india", "tips official", "yrf",
+    "speed records", "saregama music", "saregama", "white hill music", "geet mp3",
+    "t-series apna punjab", "eros now", "desi music factory", "sonymusicindiavevo",
+    "raider.", "raider", "cloudkid", "proximity", "xclusivmusic",
+    # Common browsers, web players and desktop player identities
+    "zen browser", "zen", "mozilla firefox", "firefox", "google chrome", "chrome",
+    "chromium", "brave", "vivaldi", "edge", "browser", "mpv", "vlc",
+    "plasma-browser-integration", "unknown artist", "various artists"
+}
+known_channels = KNOWN_CHANNELS
+
 def harmonize_metadata(raw_title: str, raw_artist: str = "") -> dict:
     """
     Intelligently harmonizes title and artist from raw MPRIS/browser/YouTube metadata.
@@ -85,17 +100,6 @@ def harmonize_metadata(raw_title: str, raw_artist: str = "") -> dict:
     title = re.sub(r'\s*\|\s*Spotify$', '', title, flags=re.IGNORECASE)
     title = re.sub(r'\s*\|\s*SoundCloud$', '', title, flags=re.IGNORECASE)
 
-    # 2. Known music channels / aggregators that are NOT the song artist
-    known_channels = {
-        "youtube", "youtube music", "spotify", "unknown", "play", "music", "vevo",
-        "trap nation", "trap city", "monstercat", "spinnin' records", "selected.",
-        "ncs", "nocopyrightsounds", "chilledcow", "lofi girl", "mrsuicidesheep",
-        "t-series", "zee music company", "sony music india", "tips official", "yrf",
-        "speed records", "saregama music", "saregama", "white hill music", "geet mp3",
-        "t-series apna punjab", "eros now", "desi music factory", "sonymusicindiavevo",
-        "raider.", "raider", "cloudkid", "proximity", "xclusivmusic"
-    }
-
     # Strip channel suffixes from title
     title = re.sub(
         r'\s*-\s*(?:T-Series|Zee Music Company|Sony Music India|Tips Official|YRF|Speed Records|'
@@ -105,7 +109,7 @@ def harmonize_metadata(raw_title: str, raw_artist: str = "") -> dict:
         '', title, flags=re.IGNORECASE
     )
 
-    if artist.lower() in known_channels:
+    if artist.lower() in KNOWN_CHANNELS:
         artist = ""
 
     # Detect variant tags before stripping fluff (e.g. slowed, ultra slowed, remix)
@@ -120,8 +124,8 @@ def harmonize_metadata(raw_title: str, raw_artist: str = "") -> dict:
     alt_title = ""
 
     # Check pipe separators first (common on YouTube for segmenting track / movie / credits)
-    if " | " in title:
-        pipe_parts = [p.strip() for p in title.split("|") if p.strip()]
+    if " | " in title or " || " in title:
+        pipe_parts = [p.strip() for p in re.split(r'\s*\|{1,2}\s*', title) if p.strip()]
         if len(pipe_parts) >= 2:
             first_seg = pipe_parts[0]
             if " - " in first_seg:
@@ -177,6 +181,7 @@ def harmonize_metadata(raw_title: str, raw_artist: str = "") -> dict:
             s = bracket_fluff.sub('', s)
 
         s = re.sub(r'\s*[\(\[]?(?:feat|ft|featuring)\.?\s+[^\)\]]+[\)\]]?', '', s, flags=re.IGNORECASE)
+        s = re.sub(rf'\s*(?:\|{{1,2}}|//|[\-–—])\s*(?:{fluff_keywords}).*$', '', s, flags=re.IGNORECASE)
         s = re.sub(r'\s*[\-|]\s*(?:Official|Lyrics?|Audio|Video|HD|4K|MV).*$', '', s, flags=re.IGNORECASE)
         s = re.sub(r'^["\']|["\']$', '', s.strip())
         return s.strip()
@@ -262,7 +267,7 @@ def _score_candidate(target_title: str, target_artist: str, target_duration: flo
     c_art = _norm_str(cand_artist)
     raw_norm = _norm_str(raw_context)
 
-    if t_art and t_art not in ("unknown", "", "youtube"):
+    if t_art and t_art not in ("unknown", "", "youtube") and t_art not in known_channels:
         if t_art == c_art or t_art in c_art or c_art in t_art:
             artist_score = 1.0
         else:
@@ -283,11 +288,14 @@ def _score_candidate(target_title: str, target_artist: str, target_duration: flo
         if any(w in raw_norm for w in c_tokens):
             artist_score = 0.95
         else:
-            if len(t_title) <= 8:
+            if title_score >= 0.85:
+                artist_score = 0.8
+            elif len(t_title) <= 8:
                 return 0.0  # Reject ambiguous short titles with unverified artist
-            artist_score = 0.4
+            else:
+                artist_score = 0.5
     else:
-        artist_score = 0.5
+        artist_score = 0.75 if title_score >= 0.85 else 0.5
 
     # Variant match bonus (e.g. slowed, ultra slowed, remix)
     variant_bonus = 0.0
@@ -429,6 +437,7 @@ def _from_lrclib(title: str, artist: str, primary_artist: str, duration: float, 
         if variant:
             urls.append(f"{base}/search?q={urllib.parse.quote(f'{art} {title} {variant}')}")
         urls.append(f"{base}/search?q={urllib.parse.quote(f'{art} {title}')}")
+        urls.append(f"{base}/search?q={urllib.parse.quote(title)}")
     elif title:
         urls.append(f"{base}/search?q={urllib.parse.quote(title)}")
 
@@ -627,11 +636,16 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
     if not YTDLP_OK:
         return []
 
+    # Check disk cache first for fast/instant CC response
+    cached = _load_cache(title + "__cc", artist)
+    if cached:
+        return cached
+
     clean_url = _clean_youtube_url(file_url)
     query = ""
     if clean_url:
         query = clean_url
-    elif title and ("youtube" in artist.lower() or not artist or artist.lower() in ("unknown", "play")):
+    elif title and ("youtube" in artist.lower() or not artist or artist.lower() in known_channels):
         query = f"ytsearch1:{title}"
     elif title:
         query = f"ytsearch1:{title} {artist}".strip()
@@ -644,26 +658,28 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
             cmd = [
                 "yt-dlp",
                 "--no-warnings", "--quiet", "--no-playlist",
-                "--socket-timeout", "4",
-                "--extractor-retries", "1",
-                "--write-auto-sub", "--write-sub",
+                "--extractor-args", "youtube:player_client=android",
+                "--no-abort-on-error",
+                "--ignore-errors",
+                "--socket-timeout", "6",
+                "--write-sub", "--write-auto-sub",
                 "--sub-format", "vtt/lrc/best",
-                "--sub-langs", "en.*,hi.*,ja.*,ko.*,orig.*,best",
+                "--sub-langs", "en,en-orig,en-US,hi,hi-orig,ja,ko,es,best",
                 "--skip-download",
                 "-o", out_tmpl,
                 query
             ]
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=22)
 
             def _sub_priority(f):
                 f_lower = f.lower()
                 if f_lower.endswith(".en.vtt") or f_lower.endswith(".en.lrc"):
                     return 0
-                if ".en-orig" in f_lower or ".en" in f_lower or "english" in f_lower:
+                if ".en-orig" in f_lower or ".en-us" in f_lower or ".en" in f_lower or "english" in f_lower:
                     return 1
                 if f_lower.endswith(".hi.vtt") or f_lower.endswith(".hi.lrc"):
                     return 2
-                if ".hi-orig" in f_lower or ".hi" in f_lower or "hindi" in f_lower or "hin" in f_lower:
+                if ".hi-orig" in f_lower or ".hi" in f_lower or "hindi" in f_lower:
                     return 3
                 return 4
 
@@ -672,12 +688,14 @@ def _from_youtube_cc(title: str, artist: str, file_url: str) -> list:
                 fpath = os.path.join(tmpdir, fname)
                 with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
+                    parsed = []
                     if fname.endswith(".lrc"):
                         parsed = _parse_lrc(content)
-                        if parsed: return parsed
                     elif fname.endswith(".vtt"):
                         parsed = _parse_vtt(content)
-                        if parsed: return parsed
+                    if parsed:
+                        _save_cache(title + "__cc", artist, parsed)
+                        return parsed
     except Exception:
         pass
     return []

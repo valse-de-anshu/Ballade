@@ -29,6 +29,12 @@ Item {
         swipeView.currentItem.forceActiveFocus()
     }
 
+    function setTab(idx) {
+        if (idx >= 0 && idx < swipeView.count) {
+            swipeView.currentIndex = idx
+        }
+    }
+
     Keys.onPressed: (event) => {
         if (event.modifiers === Qt.ControlModifier) {
             if (event.key === Qt.Key_PageDown) {

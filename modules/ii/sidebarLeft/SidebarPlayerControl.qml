@@ -26,18 +26,15 @@ Item {
           )
         : Appearance.colors.colPrimaryContainer
 
-    property list<real> visualizerPoints: []
-    property real maxVisualizerValue: 1000
-    property int visualizerSmoothing: 2
-    property real radius
+    readonly property bool isWide: width >= 560
+    readonly property bool hasMedia: root.player !== null && Boolean(root.player.trackTitle || root.player.isPlaying)
 
     Timer {
         running: root.player?.playbackState == MprisPlaybackState.Playing
         interval: Config.options.resources.updateInterval
         repeat: true
-        onTriggered: root.player?.positionChanged()  
+        onTriggered: root.player?.positionChanged()
     }
-
 
     ColorQuantizer {
         id: colorQuantizer
@@ -50,15 +47,13 @@ Item {
         color: artDominantColor
     }
 
+    // ── Background Ambient Art Blur & Tint ──
     Rectangle {
         id: background
         anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
-        anchors.topMargin: -1
-        anchors.bottomMargin: 4
-        color: ColorUtils.transparentize(artDominantColor, 0.9)
-        radius: Appearance.rounding.normal
+        anchors.margins: 4
+        color: ColorUtils.transparentize(artDominantColor, 0.90)
+        radius: Appearance.rounding.large
 
         layer.enabled: true
         layer.effect: OpacityMask {
@@ -79,7 +74,7 @@ Item {
             cache: false
             antialiasing: true
             asynchronous: true
-            visible: root.displayedArtFilePath !== ""
+            visible: Boolean(root.displayedArtFilePath)
 
             layer.enabled: true
             layer.effect: StyledBlurEffect {
@@ -88,24 +83,499 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.45)
-                radius: Appearance.rounding.normal
+                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.48)
+                radius: background.radius
             }
         }
 
+        // Fallback ambient gradient if no cover art is present
+        Rectangle {
+            anchors.fill: parent
+            visible: !root.displayedArtFilePath
+            color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.25)
+            radius: background.radius
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ── RESPONSIVE CONTENT AREA ───────────────────────────────────
+        // ══════════════════════════════════════════════════════════════
+        Item {
+            anchors.fill: parent
+            anchors.margins: root.isWide ? 14 : 10
+
+            Loader {
+                anchors.fill: parent
+                sourceComponent: root.isWide ? wideLayoutComponent : compactLayoutComponent
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── 1. WIDE / HORIZONTAL SPLIT LAYOUT (Detached or Extended) ──────
+    // ══════════════════════════════════════════════════════════════════
+    Component {
+        id: wideLayoutComponent
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 16
+
+            // ── LEFT COLUMN: Playback Card (Art + Info + Transport + Volume) ──
+            Rectangle {
+                Layout.preferredWidth: Math.min(350, Math.max(280, parent.width * 0.38))
+                Layout.fillHeight: true
+                radius: Appearance.rounding.large
+                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.50)
+                border.width: 1
+                border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.82)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 10
+
+                    // 1. Player Selector or Identity Header
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledComboBox {
+                            id: playerSelector
+                            visible: MprisController.players.length > 1
+                            Layout.fillWidth: true
+                            model: MprisController.players.map(p => {
+                                let name = p.identity ?? p.desktopEntry ?? "Unknown"
+                                if (name === "Mozilla Firefox") return "Zen Browser"
+                                return name
+                            })
+                            currentIndex: Math.max(0, MprisController.players.indexOf(MprisController.activePlayer))
+                            onActivated: (index) => {
+                                if (index >= 0 && index < MprisController.players.length) {
+                                    MprisController.setActivePlayer(MprisController.players[index])
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            visible: MprisController.players.length <= 1
+                            Layout.fillWidth: true
+                            spacing: 6
+                            MaterialSymbol {
+                                text: "graphic_eq"
+                                iconSize: 16
+                                color: root.blendedColors.colPrimary
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: root.player ? (root.player.identity ?? root.player.desktopEntry ?? "Media Player") : "No Active Player"
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: Font.DemiBold
+                                color: root.blendedColors.colOnLayer0
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+
+                    // 2. Cover Art with Vinyl Placeholder
+                    Item {
+                        id: wideArtContainer
+                        Layout.alignment: Qt.AlignHCenter
+                        implicitWidth: Math.min(190, Math.min(parent.width - 20, parent.height * 0.36))
+                        implicitHeight: implicitWidth
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Appearance.rounding.large
+                            color: ColorUtils.transparentize(root.blendedColors.colLayer2, 0.40)
+                            border.width: 1
+                            border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.75)
+                            clip: true
+
+                            Image {
+                                anchors.fill: parent
+                                source: root.displayedArtFilePath
+                                fillMode: Image.PreserveAspectCrop
+                                cache: false
+                                antialiasing: true
+                                asynchronous: true
+                                visible: Boolean(root.displayedArtFilePath)
+                            }
+
+                            // Vinyl Record Placeholder when no art is loaded
+                            Item {
+                                anchors.fill: parent
+                                visible: !root.displayedArtFilePath
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: ColorUtils.transparentize(root.blendedColors.colPrimaryContainer, 0.25)
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: parent.width * 0.74; height: width; radius: width / 2
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: ColorUtils.transparentize(root.blendedColors.colOnPrimaryContainer, 0.70)
+                                    }
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: parent.width * 0.46; height: width; radius: width / 2
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: ColorUtils.transparentize(root.blendedColors.colOnPrimaryContainer, 0.70)
+                                    }
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 36; height: 36; radius: 18
+                                        color: root.blendedColors.colPrimary
+                                        MaterialSymbol {
+                                            anchors.centerIn: parent
+                                            text: (root.player?.isPlaying ?? false) ? "equalizer" : "music_note"
+                                            iconSize: 20
+                                            color: root.blendedColors.colOnPrimary
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Track Title & Artist
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            font.pixelSize: Appearance.font.pixelSize.large
+                            font.weight: Font.Bold
+                            color: root.blendedColors.colOnLayer0
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            text: root.player?.trackTitle || "No media playing"
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: root.blendedColors.colSubtext
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            text: root.player?.trackArtist || (root.player ? "Unknown Artist" : "Play something to get started")
+                        }
+                    }
+
+                    // 4. Progress Bar & Times
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: root.blendedColors.colSubtext
+                            font.features: { "tnum": 1 }
+                            text: StringUtils.friendlyTimeForSeconds(root.player?.position ?? 0)
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                            implicitHeight: Math.max(wideSlider.implicitHeight, wideBar.implicitHeight)
+
+                            Loader {
+                                id: wideSlider
+                                anchors.fill: parent
+                                active: root.player?.canSeek ?? false
+                                sourceComponent: StyledSlider {
+                                    configuration: StyledSlider.Configuration.Wavy
+                                    highlightColor: root.blendedColors.colPrimary
+                                    trackColor: root.blendedColors.colSecondaryContainer
+                                    handleColor: root.blendedColors.colPrimary
+                                    value: {
+                                        if (pressed) return value
+                                        const len = root.player?.length ?? 1
+                                        const pos = root.player?.position ?? 0
+                                        return len > 0 ? Math.max(0, Math.min(1, pos / len)) : 0
+                                    }
+                                    onMoved: {
+                                        if (root.player && root.player.length > 0) {
+                                            root.player.position = value * root.player.length
+                                        }
+                                        LyricsService.syncPosition()
+                                    }
+                                }
+                            }
+
+                            Loader {
+                                id: wideBar
+                                anchors { verticalCenter: parent.verticalCenter; left: parent.left; right: parent.right }
+                                active: !(root.player?.canSeek ?? false)
+                                sourceComponent: StyledProgressBar {
+                                    highlightColor: root.blendedColors.colPrimary
+                                    trackColor: root.blendedColors.colSecondaryContainer
+                                    value: (root.player?.position ?? 0) / (root.player?.length ?? 1)
+                                }
+                            }
+                        }
+
+                        StyledText {
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: root.blendedColors.colSubtext
+                            font.features: { "tnum": 1 }
+                            text: StringUtils.friendlyTimeForSeconds(root.player?.length ?? 0)
+                        }
+                    }
+
+                    // 5. Centered Transport Controls
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 16
+
+                        RippleButton {
+                            implicitWidth: 38; implicitHeight: 38
+                            buttonRadius: 19
+                            colBackground: ColorUtils.transparentize(root.blendedColors.colSecondaryContainer, 0.6)
+                            colBackgroundHover: root.blendedColors.colSecondaryContainerHover
+                            colRipple: root.blendedColors.colSecondaryContainerActive
+                            downAction: () => MprisController.previous()
+                            contentItem: MaterialSymbol {
+                                iconSize: 22
+                                fill: 1
+                                horizontalAlignment: Text.AlignHCenter
+                                color: root.blendedColors.colOnSecondaryContainer
+                                text: "skip_previous"
+                            }
+                        }
+
+                        // Play / Pause Button (Fixed 52x52 Round Button)
+                        RippleButton {
+                            implicitWidth: 52; implicitHeight: 52
+                            buttonRadius: 26
+                            colBackground: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimary : root.blendedColors.colSecondaryContainer
+                            colBackgroundHover: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimaryHover : root.blendedColors.colSecondaryContainerHover
+                            colRipple: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimaryActive : root.blendedColors.colSecondaryContainerActive
+                            downAction: () => MprisController.togglePlaying()
+                            contentItem: MaterialSymbol {
+                                iconSize: 30
+                                fill: 1
+                                horizontalAlignment: Text.AlignHCenter
+                                color: (root.player?.isPlaying ?? false) ? root.blendedColors.colOnPrimary : root.blendedColors.colOnSecondaryContainer
+                                text: (root.player?.isPlaying ?? false) ? "pause" : "play_arrow"
+                            }
+                        }
+
+                        RippleButton {
+                            implicitWidth: 38; implicitHeight: 38
+                            buttonRadius: 19
+                            colBackground: ColorUtils.transparentize(root.blendedColors.colSecondaryContainer, 0.6)
+                            colBackgroundHover: root.blendedColors.colSecondaryContainerHover
+                            colRipple: root.blendedColors.colSecondaryContainerActive
+                            downAction: () => MprisController.next()
+                            contentItem: MaterialSymbol {
+                                iconSize: 22
+                                fill: 1
+                                horizontalAlignment: Text.AlignHCenter
+                                color: root.blendedColors.colOnSecondaryContainer
+                                text: "skip_next"
+                            }
+                        }
+                    }
+
+                    // 6. Volume Slider Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        MaterialSymbol {
+                            iconSize: 18
+                            color: root.blendedColors.colSubtext
+                            text: (Audio.sink?.audio?.muted || Audio.volume <= 0) ? "volume_off"
+                                : (Audio.volume < 0.5) ? "volume_down"
+                                : "volume_up"
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    Audio.toggleMute()
+                                    GlobalStates.osdVolumeOpen = true
+                                }
+                            }
+                        }
+
+                        StyledSlider {
+                            Layout.fillWidth: true
+                            configuration: StyledSlider.Configuration.XS
+                            from: 0
+                            to: 1
+                            value: root.player?.volume ?? Audio.volume
+                            highlightColor: root.blendedColors.colPrimary
+                            trackColor: root.blendedColors.colSecondaryContainer
+                            handleColor: root.blendedColors.colPrimary
+                            onMoved: {
+                                Audio.volume = value
+                                if (root.player && root.player.volumeSupported) {
+                                    root.player.volume = value
+                                }
+                                GlobalStates.osdVolumeOpen = true
+                            }
+                        }
+
+                        StyledText {
+                            text: `${Math.round((root.player?.volume ?? Audio.volume) * 100)}%`
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: root.blendedColors.colSubtext
+                            Layout.preferredWidth: 34
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+                }
+            }
+
+            // ── RIGHT COLUMN: Dedicated Lyrics & Subtitles Stage ──
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: Appearance.rounding.large
+                color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.55)
+                border.width: 1
+                border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.85)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 10
+
+                    // Lyrics Header: Title + CC Toggle Chip + Reload Button
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        RowLayout {
+                            spacing: 6
+                            MaterialSymbol {
+                                text: LyricsService.ccMode ? "closed_caption" : "lyrics"
+                                iconSize: 18
+                                color: root.blendedColors.colPrimary
+                            }
+                            StyledText {
+                                text: LyricsService.ccMode ? Translation.tr("Subtitles / Captions") : Translation.tr("Synchronized Lyrics")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.Bold
+                                color: root.blendedColors.colOnLayer0
+                            }
+                            StyledText {
+                                visible: LyricsService.status === "ok"
+                                text: LyricsService.ccMode ? "• YouTube CC" : "• Synced LRC"
+                                font.pixelSize: Appearance.font.pixelSize.smallest
+                                color: root.blendedColors.colSubtext
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        // CC Toggle Chip
+                        Rectangle {
+                            implicitWidth: 62; implicitHeight: 28; radius: 14
+                            color: LyricsService.ccMode
+                                ? root.blendedColors.colPrimary
+                                : (wideCcMa.containsMouse ? ColorUtils.transparentize(root.blendedColors.colLayer3, 0.3) : ColorUtils.transparentize(root.blendedColors.colLayer3, 0.6))
+                            border.width: 1
+                            border.color: LyricsService.ccMode ? root.blendedColors.colPrimary : ColorUtils.transparentize(root.blendedColors.colOutlineVariant, 0.5)
+
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "closed_caption"
+                                    iconSize: 15
+                                    fill: LyricsService.ccMode ? 1 : 0
+                                    color: LyricsService.ccMode ? root.blendedColors.colOnPrimary : root.blendedColors.colOnLayer0
+                                }
+                                StyledText {
+                                    text: "CC"
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    color: LyricsService.ccMode ? root.blendedColors.colOnPrimary : root.blendedColors.colOnLayer0
+                                }
+                            }
+
+                            MouseArea {
+                                id: wideCcMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: LyricsService.toggleCC()
+                            }
+                        }
+
+                        // Reload Button
+                        Rectangle {
+                            implicitWidth: 28; implicitHeight: 28; radius: 14
+                            color: wideRefMa.containsMouse ? ColorUtils.transparentize(root.blendedColors.colLayer3, 0.4) : "transparent"
+                            border.width: wideRefMa.containsMouse ? 1 : 0
+                            border.color: ColorUtils.transparentize(root.blendedColors.colOutlineVariant, 0.6)
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "refresh"
+                                iconSize: 16
+                                color: root.blendedColors.colSubtext
+                            }
+
+                            MouseArea {
+                                id: wideRefMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: LyricsService.reloadLyrics()
+                            }
+                        }
+                    }
+
+                    // Lyrics Component
+                    Lyrics {
+                        id: wideLyricsComp
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        textAlignment: Text.AlignHCenter
+                        textColor: Appearance.colors.colOnPrimaryContainer
+                        activeColor: root.blendedColors.colPrimary
+                        dimColor: root.blendedColors.colSubtext
+                        indicatorColor: {
+                            let c = root.blendedColors.colPrimaryContainer
+                            return (c && c != "#000000" && c != "transparent") ? c : root.artDominantColor
+                        }
+                        indicatorShapeColor: {
+                            let c = root.blendedColors.colOnPrimaryContainer
+                            if (c && c != "#000000" && c != "#ffffff" && c != "transparent") return c
+                            return root.blendedColors.colPrimary || Appearance.colors.colPrimary
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── 2. COMPACT / VERTICAL SINGLE-COLUMN LAYOUT (Docked Sidebar) ───
+    // ══════════════════════════════════════════════════════════════════
+    Component {
+        id: compactLayoutComponent
+
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: parent.height * 0.04
-            spacing: 0
+            spacing: 8
 
-            // ── Player selector & CC Toggle ──
+            // 1. Top Bar: Player Selector + CC Toggle + Refresh
             RowLayout {
                 Layout.fillWidth: true
-                Layout.bottomMargin: 8
-                spacing: 8
+                spacing: 6
 
                 StyledComboBox {
-                    id: playerSelector
+                    id: compactPlayerSelector
                     visible: MprisController.players.length > 1
                     Layout.fillWidth: true
                     model: MprisController.players.map(p => {
@@ -121,128 +591,188 @@ Item {
                     }
                 }
 
-                RippleButton {
-                    implicitWidth: 34
-                    implicitHeight: 34
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: LyricsService.ccMode
-                        ? blendedColors.colPrimary
-                        : ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colPrimaryHover
-                    colRipple: blendedColors.colPrimaryActive
-                    downAction: () => LyricsService.toggleCC()
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: LyricsService.ccMode ? 1 : 0
-                        horizontalAlignment: Text.AlignHCenter
-                        color: LyricsService.ccMode
-                            ? blendedColors.colOnPrimary
-                            : blendedColors.colOnSecondaryContainer
-                        text: "closed_caption"
+                RowLayout {
+                    visible: MprisController.players.length <= 1
+                    Layout.fillWidth: true
+                    spacing: 6
+                    MaterialSymbol {
+                        text: "graphic_eq"
+                        iconSize: 15
+                        color: root.blendedColors.colPrimary
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: root.player ? (root.player.identity ?? root.player.desktopEntry ?? "Media Player") : "No Active Player"
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.DemiBold
+                        color: root.blendedColors.colOnLayer0
+                        elide: Text.ElideRight
+                    }
+                }
+
+                // CC Toggle Button
+                Rectangle {
+                    implicitWidth: 50; implicitHeight: 26; radius: 13
+                    color: LyricsService.ccMode
+                        ? root.blendedColors.colPrimary
+                        : (compCcMa.containsMouse ? ColorUtils.transparentize(root.blendedColors.colLayer3, 0.4) : ColorUtils.transparentize(root.blendedColors.colLayer3, 0.6))
+                    border.width: 1
+                    border.color: LyricsService.ccMode ? root.blendedColors.colPrimary : ColorUtils.transparentize(root.blendedColors.colOutlineVariant, 0.5)
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 3
+                        MaterialSymbol {
+                            text: "closed_caption"
+                            iconSize: 13
+                            fill: LyricsService.ccMode ? 1 : 0
+                            color: LyricsService.ccMode ? root.blendedColors.colOnPrimary : root.blendedColors.colOnLayer0
+                        }
+                        StyledText {
+                            text: "CC"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            color: LyricsService.ccMode ? root.blendedColors.colOnPrimary : root.blendedColors.colOnLayer0
+                        }
+                    }
+
+                    MouseArea {
+                        id: compCcMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: LyricsService.toggleCC()
+                    }
+                }
+
+                // Refresh Button
+                Rectangle {
+                    implicitWidth: 26; implicitHeight: 26; radius: 13
+                    color: compRefMa.containsMouse ? ColorUtils.transparentize(root.blendedColors.colLayer3, 0.4) : "transparent"
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "refresh"
+                        iconSize: 15
+                        color: root.blendedColors.colSubtext
+                    }
+
+                    MouseArea {
+                        id: compRefMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: LyricsService.reloadLyrics()
                     }
                 }
             }
 
-            // ── Album art ──
+            // 2. Centered Album Art
             Item {
-                id: artContainer
                 Layout.alignment: Qt.AlignHCenter
-                implicitWidth: Math.min(parent.width * 0.35, parent.height * 0.35)
+                implicitWidth: Math.min(150, Math.min(parent.width * 0.45, parent.height * 0.25))
                 implicitHeight: implicitWidth
-                Layout.bottomMargin: 10
 
-                Image {
-                    id: coverArt
+                Rectangle {
                     anchors.fill: parent
-                    source: root.displayedArtFilePath
-                    fillMode: Image.PreserveAspectCrop
-                    cache: false
-                    antialiasing: true
-                    asynchronous: true
-
-                    layer.enabled: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: artContainer.implicitWidth
-                            height: artContainer.implicitHeight
-                            radius: Appearance.rounding.normal
-                        }
-                    }
-                }
-            }
-
-            // ── Track info ──
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-
-                StyledText {
-                    id: titleText
-                    Layout.fillWidth: true
-                    font.pixelSize: Appearance.font.pixelSize.huge 
-                    font.bold: true
-                    color: blendedColors.colOnLayer0
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                    text: root.player?.trackTitle || "No media playing"
-
-                    Behavior on text {
-                        SequentialAnimation {
-                            NumberAnimation { target: titleText; property: "x"; to: -titleText.width; duration: 150; easing.type: Easing.InQuad }
-                            PropertyAction { target: titleText; property: "text" }
-                            NumberAnimation { target: titleText; property: "x"; from: titleText.width; to: 0; duration: 150; easing.type: Easing.OutQuad }
-                        }
-                    }
-                }
-
-                Item {
-                    id: artistTextContainer
-                    Layout.fillWidth: true
-                    implicitHeight: artistText.implicitHeight
+                    radius: Appearance.rounding.large
+                    color: ColorUtils.transparentize(root.blendedColors.colLayer2, 0.40)
+                    border.width: 1
+                    border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.75)
                     clip: true
 
-                    StyledText {
-                        id: artistText
+                    Image {
                         anchors.fill: parent
-                        font.pixelSize: Appearance.font.pixelSize.large 
-                        color: blendedColors.colSubtext
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                        text: root.player?.trackArtist || "Something"
+                        source: root.displayedArtFilePath
+                        fillMode: Image.PreserveAspectCrop
+                        cache: false
+                        antialiasing: true
+                        asynchronous: true
+                        visible: Boolean(root.displayedArtFilePath)
+                    }
 
-                        Behavior on text {
-                            SequentialAnimation {
-                                NumberAnimation { target: artistText; property: "x"; to: -artistText.width; duration: 150; easing.type: Easing.InQuad }
-                                PropertyAction { target: artistText; property: "text" }
-                                NumberAnimation { target: artistText; property: "x"; from: artistText.width; to: 0; duration: 150; easing.type: Easing.OutQuad }
+                    Item {
+                        anchors.fill: parent
+                        visible: !root.displayedArtFilePath
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: ColorUtils.transparentize(root.blendedColors.colPrimaryContainer, 0.25)
+
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.72; height: width; radius: width / 2
+                                color: "transparent"
+                                border.width: 1
+                                border.color: ColorUtils.transparentize(root.blendedColors.colOnPrimaryContainer, 0.70)
+                            }
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.44; height: width; radius: width / 2
+                                color: "transparent"
+                                border.width: 1
+                                border.color: ColorUtils.transparentize(root.blendedColors.colOnPrimaryContainer, 0.70)
+                            }
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 32; height: 32; radius: 16
+                                color: root.blendedColors.colPrimary
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: (root.player?.isPlaying ?? false) ? "equalizer" : "music_note"
+                                    iconSize: 18
+                                    color: root.blendedColors.colOnPrimary
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ── Lyrics ──
+            // 3. Track Title & Artist
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                StyledText {
+                    Layout.fillWidth: true
+                    font.pixelSize: Appearance.font.pixelSize.normal
+                    font.weight: Font.Bold
+                    color: root.blendedColors.colOnLayer0
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    text: root.player?.trackTitle || "No media playing"
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: root.blendedColors.colSubtext
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    text: root.player?.trackArtist || (root.player ? "Unknown Artist" : "Play something to get started")
+                }
+            }
+
+            // 4. Compact Lyrics Box
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.topMargin: 8
-                Layout.bottomMargin: 8
+                Layout.topMargin: 4
+                Layout.bottomMargin: 4
                 color: ColorUtils.transparentize(root.blendedColors.colLayer0, 0.55)
                 radius: Appearance.rounding.normal
                 border.width: 1
                 border.color: ColorUtils.transparentize(root.blendedColors.colOnLayer0, 0.85)
 
                 Lyrics {
-                    id: lyricsComp
+                    id: compLyricsComp
                     anchors.fill: parent
                     anchors.margins: 10
-                    opacity: MprisController.activePlayer !== null ? 1 : 0 
                     textAlignment: Text.AlignHCenter
                     textColor: Appearance.colors.colOnPrimaryContainer
-                    activeColor: Appearance.colors.colPrimary
-                    dimColor: Appearance.colors.colSubtext
+                    activeColor: root.blendedColors.colPrimary
+                    dimColor: root.blendedColors.colSubtext
                     indicatorColor: {
                         let c = root.blendedColors.colPrimaryContainer
                         return (c && c != "#000000" && c != "transparent") ? c : root.artDominantColor
@@ -255,33 +785,31 @@ Item {
                 }
             }
 
-            // ── Progress ──
+            // 5. Progress Bar & Times
             RowLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: 5
-                spacing: 12
+                spacing: 8
 
                 StyledText {
-                    font.pixelSize: Appearance.font.pixelSize.normal
-                    color: blendedColors.colSubtext
-                    font.letterSpacing: -0.4
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.blendedColors.colSubtext
                     font.features: { "tnum": 1 }
                     text: StringUtils.friendlyTimeForSeconds(root.player?.position ?? 0)
                 }
 
                 Item {
                     Layout.fillWidth: true
-                    implicitHeight: Math.max(sliderLoader.implicitHeight, progressBarLoader.implicitHeight)
+                    implicitHeight: Math.max(compSlider.implicitHeight, compBar.implicitHeight)
 
                     Loader {
-                        id: sliderLoader
+                        id: compSlider
                         anchors.fill: parent
-                        active: root.player?.canSeek ?? false  
+                        active: root.player?.canSeek ?? false
                         sourceComponent: StyledSlider {
                             configuration: StyledSlider.Configuration.Wavy
-                            highlightColor: blendedColors.colPrimary
-                            trackColor: blendedColors.colSecondaryContainer
-                            handleColor: blendedColors.colPrimary
+                            highlightColor: root.blendedColors.colPrimary
+                            trackColor: root.blendedColors.colSecondaryContainer
+                            handleColor: root.blendedColors.colPrimary
                             value: {
                                 if (pressed) return value
                                 const len = root.player?.length ?? 1
@@ -298,170 +826,124 @@ Item {
                     }
 
                     Loader {
-                        id: progressBarLoader
-                        anchors {
-                            verticalCenter: parent.verticalCenter
-                            left: parent.left
-                            right: parent.right
-                        }
-                        active: !(root.player?.canSeek ?? false)  
+                        id: compBar
+                        anchors { verticalCenter: parent.verticalCenter; left: parent.left; right: parent.right }
+                        active: !(root.player?.canSeek ?? false)
                         sourceComponent: StyledProgressBar {
-                            highlightColor: blendedColors.colPrimary
-                            trackColor: blendedColors.colSecondaryContainer
+                            highlightColor: root.blendedColors.colPrimary
+                            trackColor: root.blendedColors.colSecondaryContainer
                             value: (root.player?.position ?? 0) / (root.player?.length ?? 1)
                         }
                     }
                 }
 
                 StyledText {
-                    font.pixelSize: Appearance.font.pixelSize.normal 
-                    color: blendedColors.colSubtext
-                    font.letterSpacing: -0.4
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.blendedColors.colSubtext
                     font.features: { "tnum": 1 }
                     text: StringUtils.friendlyTimeForSeconds(root.player?.length ?? 0)
                 }
             }
 
-            // ── Controls ──
+            // 6. Centered Controls
             RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 20
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 15
+                spacing: 16
 
                 RippleButton {
-                    property real baseSize: Math.max(42, parent.parent.height * 0.06)
-                    implicitWidth: baseSize * 1.5
-                    implicitHeight: baseSize * 1.5
-                    buttonRadius: Appearance.rounding.verylarge
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
+                    implicitWidth: 38; implicitHeight: 38
+                    buttonRadius: 19
+                    colBackground: ColorUtils.transparentize(root.blendedColors.colSecondaryContainer, 0.6)
+                    colBackgroundHover: root.blendedColors.colSecondaryContainerHover
+                    colRipple: root.blendedColors.colSecondaryContainerActive
                     downAction: () => MprisController.previous()
                     contentItem: MaterialSymbol {
-                        iconSize: 25
+                        iconSize: 22
                         fill: 1
                         horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
+                        color: root.blendedColors.colOnSecondaryContainer
                         text: "skip_previous"
                     }
                 }
 
                 RippleButton {
-                    property real baseSize: Math.max(70, parent.parent.height * 0.1)
-                    Layout.fillWidth: true
-                    implicitHeight: baseSize
-                    buttonRadius: (root.player?.isPlaying ?? false) ? Appearance.rounding.verylarge : baseSize / 2  
-                    colBackground: (root.player?.isPlaying ?? false) ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
-                    colBackgroundHover: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
-                    colRipple: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
-                    downAction: () => MprisController.togglePlaying()  
+                    implicitWidth: 50; implicitHeight: 50
+                    buttonRadius: 25
+                    colBackground: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimary : root.blendedColors.colSecondaryContainer
+                    colBackgroundHover: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimaryHover : root.blendedColors.colSecondaryContainerHover
+                    colRipple: (root.player?.isPlaying ?? false) ? root.blendedColors.colPrimaryActive : root.blendedColors.colSecondaryContainerActive
+                    downAction: () => MprisController.togglePlaying()
                     contentItem: MaterialSymbol {
-                        iconSize: 50
+                        iconSize: 28
                         fill: 1
                         horizontalAlignment: Text.AlignHCenter
-                        color: (root.player?.isPlaying ?? false) ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
+                        color: (root.player?.isPlaying ?? false) ? root.blendedColors.colOnPrimary : root.blendedColors.colOnSecondaryContainer
                         text: (root.player?.isPlaying ?? false) ? "pause" : "play_arrow"
-                        Behavior on color {
-                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                        }
                     }
                 }
 
                 RippleButton {
-                    property real baseSize: Math.max(42, parent.parent.height * 0.06)
-                    implicitWidth: baseSize * 1.5
-                    implicitHeight: baseSize * 1.5
-                    buttonRadius: Appearance.rounding.verylarge
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
+                    implicitWidth: 38; implicitHeight: 38
+                    buttonRadius: 19
+                    colBackground: ColorUtils.transparentize(root.blendedColors.colSecondaryContainer, 0.6)
+                    colBackgroundHover: root.blendedColors.colSecondaryContainerHover
+                    colRipple: root.blendedColors.colSecondaryContainerActive
                     downAction: () => MprisController.next()
                     contentItem: MaterialSymbol {
-                        iconSize: 25
+                        iconSize: 22
                         fill: 1
                         horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
+                        color: root.blendedColors.colOnSecondaryContainer
                         text: "skip_next"
                     }
                 }
             }
 
-            // ── Volume ──
+            // 7. Volume Row
             RowLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: 10
                 spacing: 8
 
-                RippleButton {
-                    property real baseSize: Math.max(36, parent.parent.height * 0.05)
-                    implicitWidth: baseSize
-                    implicitHeight: baseSize
-                    buttonRadius: Appearance.rounding.large
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => {
-                        Audio.toggleMute();
-                        GlobalStates.osdVolumeOpen = true;
-                    }
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
-                        text: (Audio.sink?.audio?.muted || Audio.volume <= 0) ? "volume_off"
-                            : (Audio.volume < 0.5) ? "volume_down"
-                            : "volume_up"
+                MaterialSymbol {
+                    iconSize: 18
+                    color: root.blendedColors.colSubtext
+                    text: (Audio.sink?.audio?.muted || Audio.volume <= 0) ? "volume_off"
+                        : (Audio.volume < 0.5) ? "volume_down"
+                        : "volume_up"
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            Audio.toggleMute()
+                            GlobalStates.osdVolumeOpen = true
+                        }
                     }
                 }
 
-                RippleButton {
-                    property real baseSize: Math.max(36, parent.parent.height * 0.05)
+                StyledSlider {
                     Layout.fillWidth: true
-                    implicitHeight: baseSize
-                    buttonRadius: Appearance.rounding.large
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => {
-                        Audio.decrementVolume(0.05);
+                    configuration: StyledSlider.Configuration.XS
+                    from: 0
+                    to: 1
+                    value: root.player?.volume ?? Audio.volume
+                    highlightColor: root.blendedColors.colPrimary
+                    trackColor: root.blendedColors.colSecondaryContainer
+                    handleColor: root.blendedColors.colPrimary
+                    onMoved: {
+                        Audio.volume = value
                         if (root.player && root.player.volumeSupported) {
-                            root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.05);
+                            root.player.volume = value
                         }
-                        GlobalStates.osdVolumeOpen = true;
-                    }
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
-                        text: "volume_down"
+                        GlobalStates.osdVolumeOpen = true
                     }
                 }
 
-                RippleButton {
-                    property real baseSize: Math.max(36, parent.parent.height * 0.05)
-                    Layout.fillWidth: true
-                    implicitHeight: baseSize
-                    buttonRadius: Appearance.rounding.large
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => {
-                        Audio.incrementVolume(0.05);
-                        if (root.player && root.player.volumeSupported) {
-                            root.player.volume = Math.min(1.0, (root.player.volume ?? 1) + 0.05);
-                        }
-                        GlobalStates.osdVolumeOpen = true;
-                    }
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
-                        text: "volume_up"
-                    }
+                StyledText {
+                    text: `${Math.round((root.player?.volume ?? Audio.volume) * 100)}%`
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.blendedColors.colSubtext
+                    Layout.preferredWidth: 34
+                    horizontalAlignment: Text.AlignRight
                 }
             }
         }

@@ -301,6 +301,28 @@ Scope { // Scope
         function open(): void {
             GlobalStates.sidebarLeftOpen = true
         }
+
+        function setTab(index: int): void {
+            if (root.sidebarContent && root.sidebarContent.setTab) {
+                root.sidebarContent.setTab(index);
+            }
+        }
+
+        function pin(): void {
+            root.pin = true;
+        }
+
+        function unpin(): void {
+            root.pin = false;
+        }
+
+        function toggleDetach(): void {
+            root.toggleDetach();
+        }
+
+        function toggleExtend(): void {
+            root.toggleExtend();
+        }
     }
 
     CompositorGlobalShortcut {

@@ -67,9 +67,51 @@ Item {
 
                 StyledText {
                     Layout.alignment: Qt.AlignHCenter
-                    text: LyricsService.status === "loading" ? Translation.tr("Loading lyrics...") : Translation.tr("No lyrics available")
+                    text: {
+                        if (LyricsService.status === "loading") {
+                            return LyricsService.ccMode ? Translation.tr("Fetching YouTube subtitles...") : Translation.tr("Searching lyrics...")
+                        } else if (LyricsService.status === "no_info") {
+                            return Translation.tr("No media playing")
+                        } else {
+                            return LyricsService.ccMode ? Translation.tr("No subtitles found") : Translation.tr("No lyrics available")
+                        }
+                    }
                     font.pixelSize: Appearance.font.pixelSize.small
                     color: root.dimColor
+                }
+
+                // If not found in lyrics mode, offer to try CC / Subtitles!
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: LyricsService.status === "not_found" && !LyricsService.ccMode
+                    implicitWidth: 140
+                    implicitHeight: 28
+                    radius: Appearance.rounding.full
+                    color: tryCcMa.containsMouse ? Appearance.colors.colPrimaryContainerHover : Appearance.colors.colPrimaryContainer
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        MaterialSymbol {
+                            text: "closed_caption"
+                            iconSize: 14
+                            color: Appearance.colors.colOnPrimaryContainer
+                        }
+                        StyledText {
+                            text: "Try Captions / CC"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.weight: Font.Bold
+                            color: Appearance.colors.colOnPrimaryContainer
+                        }
+                    }
+
+                    MouseArea {
+                        id: tryCcMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: LyricsService.toggleCC()
+                    }
                 }
             }
         }
@@ -96,15 +138,26 @@ Item {
                         if (dist === 1) return Appearance.font.pixelSize.small
                         return Appearance.font.pixelSize.smaller
                     }
+                    font.weight: dist === 0 ? Font.Bold : Font.Normal
                     opacity: {
                         if (dist === 0) return 1.0
-                        // Past (already sang): dimmer than future
-                        if (dist === 1) return isPast ? 0.30 : 0.65
-                        if (dist === 2) return isPast ? 0.12 : 0.35
-                        return isPast ? 0.05 : 0.15
+                        if (dist === 1) return isPast ? 0.35 : 0.70
+                        if (dist === 2) return isPast ? 0.15 : 0.40
+                        return isPast ? 0.08 : 0.20
                     }
                     color: dist === 0 ? root.activeColor : root.textColor
                     Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            let lineIdx = LyricsService.activeIndex - LyricsService.before + index
+                            if (lineIdx >= 0 && lineIdx < LyricsService.lyricsLines.length) {
+                                LyricsService.seekTo(LyricsService.lyricsLines[lineIdx].time)
+                            }
+                        }
+                    }
                 }
             }
         }
