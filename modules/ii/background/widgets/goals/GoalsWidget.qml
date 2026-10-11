@@ -46,18 +46,20 @@ AbstractBackgroundWidget {
 
     function updateDesktopKeyboardFocus() {
         GlobalStates.desktopWidgetKeyboardFocus = root.isUserTyping
-            || (root.activeToolScreen === "alarm" && !root.alarmShowSavedList)
+            || (root.activeToolScreen === "alarm" && !root.alarmShowSavedList && !root.alarmShowDatePicker)
             || (root.activeToolScreen === "notes" && root.notesViewMode === "edit" && !root.notesShowPreview)
             || (root.activeToolScreen === "todo")
     }
 
     onIsUserTypingChanged: updateDesktopKeyboardFocus()
+    onAlarmShowDatePickerChanged: updateDesktopKeyboardFocus()
     onActiveToolScreenChanged: {
         updateDesktopKeyboardFocus()
         if (root.activeToolScreen === "alarm") {
             if (root.editingAlarmId === "") {
                 root.alarmSelectedDays = [0, 1, 2, 3, 4, 5, 6]
             }
+            root.alarmShowDatePicker = false
             Qt.callLater(() => {
                 if (wheelBox) wheelBox.forceActiveFocus()
             })
@@ -90,6 +92,9 @@ AbstractBackgroundWidget {
     property string alarmSpecificDate: ""
     property bool alarmShowSavedList: false
     property string editingAlarmId: ""
+    property bool alarmShowDatePicker: false
+    property int alarmCalendarPickerYear: (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date.getFullYear() : new Date().getFullYear()
+    property int alarmCalendarPickerMonth: (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date.getMonth() : new Date().getMonth()
 
     // ── Notes Canvas State ──
     property string notesViewMode: "list"    // "list" | "edit"
@@ -2368,6 +2373,7 @@ AbstractBackgroundWidget {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 6
+                    visible: !root.alarmShowDatePicker
 
                     Rectangle {
                         Layout.fillWidth: true
@@ -2392,6 +2398,7 @@ AbstractBackgroundWidget {
                                     root.alarmSpecificDate = ""
                                 }
                                 root.alarmShowSavedList = false
+                                root.alarmShowDatePicker = false
                             }
                         }
                     }
@@ -2411,14 +2418,239 @@ AbstractBackgroundWidget {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.alarmShowSavedList = true
+                            onClicked: {
+                                root.alarmShowSavedList = true
+                                root.alarmShowDatePicker = false
+                            }
+                        }
+                    }
+                }
+
+                // ── MODE 1A: ALARM CALENDAR DATE PICKER SCREEN ──
+                Rectangle {
+                    id: alarmCalendarPickerScreen
+                    visible: !root.alarmShowSavedList && root.alarmShowDatePicker
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    radius: Appearance.rounding.large
+                    color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
+                    border.width: 1
+                    border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+
+                    ColumnLayout {
+                        anchors { fill: parent; margins: 10 }
+                        spacing: 8
+
+                        // Header with Back Button and Month Navigator
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            // Back Button
+                            Rectangle {
+                                implicitWidth: 26; implicitHeight: 26; radius: 13
+                                color: almCalBackMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
+                                border.width: 1
+                                border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                                MaterialSymbol { anchors.centerIn: parent; text: "arrow_back"; iconSize: 14; color: Appearance.colors.colOnLayer1 }
+                                MouseArea {
+                                    id: almCalBackMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.alarmShowDatePicker = false
+                                }
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: {
+                                    let d = new Date(root.alarmCalendarPickerYear, root.alarmCalendarPickerMonth, 1)
+                                    return Qt.formatDate(d, "MMMM yyyy")
+                                }
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.Bold
+                                color: Appearance.colors.colOnLayer1
+                            }
+
+                            // Prev Month Button
+                            Rectangle {
+                                implicitWidth: 24; implicitHeight: 24; radius: 12
+                                color: almCalPrevMa.containsMouse ? Appearance.colors.colLayer3 : "transparent"
+                                MaterialSymbol { anchors.centerIn: parent; text: "chevron_left"; iconSize: 14; color: Appearance.colors.colSubtext }
+                                MouseArea {
+                                    id: almCalPrevMa
+                                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (root.alarmCalendarPickerMonth === 0) {
+                                            root.alarmCalendarPickerMonth = 11
+                                            root.alarmCalendarPickerYear -= 1
+                                        } else {
+                                            root.alarmCalendarPickerMonth -= 1
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Next Month Button
+                            Rectangle {
+                                implicitWidth: 24; implicitHeight: 24; radius: 12
+                                color: almCalNextMa.containsMouse ? Appearance.colors.colLayer3 : "transparent"
+                                MaterialSymbol { anchors.centerIn: parent; text: "chevron_right"; iconSize: 14; color: Appearance.colors.colSubtext }
+                                MouseArea {
+                                    id: almCalNextMa
+                                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (root.alarmCalendarPickerMonth === 11) {
+                                            root.alarmCalendarPickerMonth = 0
+                                            root.alarmCalendarPickerYear += 1
+                                        } else {
+                                            root.alarmCalendarPickerMonth += 1
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Today Button
+                            Rectangle {
+                                implicitWidth: 42; implicitHeight: 22; radius: 11
+                                color: almCalTodayMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
+                                border.width: 1; border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.55)
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: "Today"
+                                    font.pixelSize: 9
+                                    font.weight: Font.Bold
+                                    color: Appearance.colors.colOnLayer1
+                                }
+                                MouseArea {
+                                    id: almCalTodayMa
+                                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        let now = (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date : new Date()
+                                        root.alarmCalendarPickerYear = now.getFullYear()
+                                        root.alarmCalendarPickerMonth = now.getMonth()
+                                        root.alarmSpecificDate = root.todayDateStr
+                                        root.alarmShowDatePicker = false
+                                    }
+                                }
+                            }
+
+                            // Clear Button (visible if specific date is set)
+                            Rectangle {
+                                implicitWidth: 42; implicitHeight: 22; radius: 11
+                                visible: root.alarmSpecificDate !== ""
+                                color: almCalClearMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
+                                border.width: 1; border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.55)
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: "Clear"
+                                    font.pixelSize: 9
+                                    font.weight: Font.Bold
+                                    color: Appearance.colors.colSubtext
+                                }
+                                MouseArea {
+                                    id: almCalClearMa
+                                    anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.alarmSpecificDate = ""
+                                        root.alarmShowDatePicker = false
+                                    }
+                                }
+                            }
+                        }
+
+                        // Weekday Names Header Row
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            Repeater {
+                                model: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                                delegate: StyledText {
+                                    required property string modelData
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData
+                                    font.pixelSize: 8
+                                    font.weight: Font.DemiBold
+                                    color: Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Calendar Matrix Grid
+                        GridLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            columns: 7
+                            rowSpacing: 3
+                            columnSpacing: 3
+
+                            Repeater {
+                                model: root.getCalendarPickerMatrix(root.alarmCalendarPickerYear, root.alarmCalendarPickerMonth)
+
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 4
+                                    color: (modelData.dateStr === root.alarmSpecificDate)
+                                        ? ColorUtils.transparentize(Appearance.colors.colPrimary, 0.25)
+                                        : (almCellMa.containsMouse
+                                            ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.20)
+                                            : (modelData.currentMonth ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.65) : "transparent"))
+                                    border.width: (modelData.dateStr === root.alarmSpecificDate || modelData.isToday) ? 1 : 0
+                                    border.color: (modelData.dateStr === root.alarmSpecificDate) ? Appearance.colors.colPrimary : (modelData.isToday ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant)
+
+                                    ColumnLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 1
+
+                                        StyledText {
+                                            Layout.alignment: Qt.AlignHCenter
+                                            text: `${modelData.day}`
+                                            font.pixelSize: 9
+                                            font.weight: (modelData.dateStr === root.alarmSpecificDate || modelData.isToday) ? Font.Bold : Font.Normal
+                                            color: (modelData.dateStr === root.alarmSpecificDate)
+                                                ? Appearance.colors.colPrimary
+                                                : (modelData.currentMonth
+                                                    ? (modelData.isToday ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1)
+                                                    : ColorUtils.transparentize(Appearance.colors.colSubtext, 0.50))
+                                        }
+
+                                        // Subtle dot indicator if an alarm exists on this date
+                                        Rectangle {
+                                            Layout.alignment: Qt.AlignHCenter
+                                            visible: {
+                                                let alarms = Alarms.alarmsList || []
+                                                return alarms.some(a => a.date === modelData.dateStr)
+                                            }
+                                            width: 4; height: 4; radius: 2
+                                            color: Appearance.colors.colPrimary
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: almCellMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.alarmCalendarPickerYear = modelData.year
+                                            root.alarmCalendarPickerMonth = modelData.month
+                                            root.alarmSpecificDate = modelData.dateStr
+                                            root.alarmShowDatePicker = false
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
                 // ── MODE 1: CREATE ALARM (Wheel Picker + Bottom Sheet Card) ──
                 Flickable {
-                    visible: !root.alarmShowSavedList
+                    visible: !root.alarmShowSavedList && !root.alarmShowDatePicker
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
@@ -2746,69 +2978,78 @@ AbstractBackgroundWidget {
                                 // Row 1: Date text + Calendar Button
                                 RowLayout {
                                     Layout.fillWidth: true
+                                    spacing: 6
+
                                     StyledText {
-                                        text: root.alarmSpecificDate ? `Date: ${root.alarmSpecificDate}` : `Today-${Qt.formatDate(new Date(), "ddd, d MMM")}`
+                                        text: root.alarmSpecificDate ? `Date: ${root.alarmSpecificDate}` : `Today - ${Qt.formatDate(new Date(), "ddd, d MMM")}`
                                         font.pixelSize: Appearance.font.pixelSize.small
                                         font.weight: Font.Bold
-                                        color: Appearance.colors.colOnLayer1
+                                        color: root.alarmSpecificDate ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (root.alarmSpecificDate) {
+                                                    let parts = root.alarmSpecificDate.split("-")
+                                                    if (parts.length === 3) {
+                                                        root.alarmCalendarPickerYear = parseInt(parts[0], 10)
+                                                        root.alarmCalendarPickerMonth = parseInt(parts[1], 10) - 1
+                                                    }
+                                                } else {
+                                                    let now = (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date : new Date()
+                                                    root.alarmCalendarPickerYear = now.getFullYear()
+                                                    root.alarmCalendarPickerMonth = now.getMonth()
+                                                }
+                                                root.alarmShowDatePicker = true
+                                            }
+                                        }
                                     }
+
+                                    // Clear Specific Date button
+                                    Rectangle {
+                                        visible: root.alarmSpecificDate !== ""
+                                        implicitWidth: 18; implicitHeight: 18; radius: 9
+                                        color: clearDateMa.containsMouse ? Appearance.colors.colLayer3Hover : "transparent"
+                                        MaterialSymbol {
+                                            anchors.centerIn: parent
+                                            text: "close"
+                                            iconSize: 13
+                                            color: Appearance.colors.colSubtext
+                                        }
+                                        MouseArea {
+                                            id: clearDateMa
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.alarmSpecificDate = ""
+                                        }
+                                    }
+
                                     Item { Layout.fillWidth: true }
+
                                     MaterialSymbol {
-                                        text: "edit_calendar"
+                                        text: "calendar_month"
                                         iconSize: 19
                                         color: calBtnMa.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
                                         MouseArea {
                                             id: calBtnMa
                                             anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: dateInputRow.visible = !dateInputRow.visible
-                                        }
-                                    }
-                                }
-
-                                // Quick Future Date Input (Collapsible)
-                                RowLayout {
-                                    id: dateInputRow
-                                    Layout.fillWidth: true
-                                    visible: false
-                                    spacing: 6
-
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        implicitHeight: 28
-                                        radius: Appearance.rounding.small
-                                        color: Appearance.colors.colLayer1
-                                        border.width: 1
-                                        border.color: specificDateField.activeFocus ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
-
-                                        TextField {
-                                            id: specificDateField
-                                            anchors { fill: parent; leftMargin: 6; rightMargin: 6 }
-                                            placeholderText: "Specific Date (YYYY-MM-DD)"
-                                            placeholderTextColor: Appearance.colors.colSubtext
-                                            color: Appearance.colors.colOnLayer1
-                                            background: null
-                                            font.pixelSize: Appearance.font.pixelSize.smallest
-                                            onActiveFocusChanged: { if (activeFocus) root.isUserTyping = true }
-                                            onAccepted: {
-                                                root.alarmSpecificDate = text.trim()
-                                                focus = false
-                                                root.isUserTyping = false
-                                            }
-                                        }
-                                    }
-
-                                    MaterialSymbol {
-                                        text: "close"
-                                        iconSize: 15
-                                        color: Appearance.colors.colSubtext
-                                        MouseArea {
-                                            anchors.fill: parent
+                                            hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                root.alarmSpecificDate = ""
-                                                specificDateField.text = ""
-                                                dateInputRow.visible = false
+                                                if (root.alarmSpecificDate) {
+                                                    let parts = root.alarmSpecificDate.split("-")
+                                                    if (parts.length === 3) {
+                                                        root.alarmCalendarPickerYear = parseInt(parts[0], 10)
+                                                        root.alarmCalendarPickerMonth = parseInt(parts[1], 10) - 1
+                                                    }
+                                                } else {
+                                                    let now = (typeof DateTime !== "undefined" && DateTime.clock) ? DateTime.clock.date : new Date()
+                                                    root.alarmCalendarPickerYear = now.getFullYear()
+                                                    root.alarmCalendarPickerMonth = now.getMonth()
+                                                }
+                                                root.alarmShowDatePicker = !root.alarmShowDatePicker
                                             }
                                         }
                                     }
@@ -2979,6 +3220,7 @@ AbstractBackgroundWidget {
                                                 root.alarmShowSavedList = true
                                                 root.alarmSelectedDays = [0, 1, 2, 3, 4, 5, 6]
                                                 root.alarmSpecificDate = ""
+                                                root.alarmShowDatePicker = false
                                             }
                                         }
                                     }
@@ -3087,6 +3329,7 @@ AbstractBackgroundWidget {
                                                 root.alarmSelectedDays = (almCard.modelData.repeatDays && almCard.modelData.repeatDays.length > 0) ? almCard.modelData.repeatDays : [0, 1, 2, 3, 4, 5, 6]
                                                 root.alarmSpecificDate = almCard.modelData.date || ""
                                                 root.alarmShowSavedList = false
+                                                root.alarmShowDatePicker = false
                                             }
                                         }
                                     }
