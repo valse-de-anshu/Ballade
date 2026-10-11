@@ -58,8 +58,8 @@ ProgressBar {
                     if (width <= 2) return;
 
                     var centerY = height / 2;
-                    var amplitude = 3.2;
-                    var wavelength = 24.0;
+                    var amplitude = 2.8;
+                    var wavelength = 28.0;
 
                     ctx.strokeStyle = root.highlightColor;
                     ctx.lineWidth = 3.2;
@@ -90,7 +90,7 @@ ProgressBar {
                     repeat: true
                     running: root.animateWave && pbCanvas.visible && width > 4
                     onTriggered: {
-                        pbCanvas.currentPhase += 0.22;
+                        pbCanvas.currentPhase += 0.045;
                         if (pbCanvas.currentPhase > 6.28) pbCanvas.currentPhase -= 6.28;
                         pbCanvas.requestPaint();
                     }

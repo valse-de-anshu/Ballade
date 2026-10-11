@@ -136,8 +136,8 @@ Slider {
                     if (width <= 2) return;
 
                     var centerY = height / 2;
-                    var amplitude = 3.2;
-                    var wavelength = 24.0;
+                    var amplitude = 2.8;
+                    var wavelength = 28.0;
 
                     ctx.strokeStyle = root.highlightColor;
                     ctx.lineWidth = 3.2;
@@ -169,7 +169,7 @@ Slider {
                     repeat: true
                     running: root.animateWave && wCanvas.visible && width > 4
                     onTriggered: {
-                        wCanvas.currentPhase += 0.22;
+                        wCanvas.currentPhase += 0.045;
                         if (wCanvas.currentPhase > 6.28) wCanvas.currentPhase -= 6.28;
                         wCanvas.requestPaint();
                     }
