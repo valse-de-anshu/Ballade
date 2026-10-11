@@ -41,18 +41,69 @@ AbstractBackgroundWidget {
     readonly property real bandHeight: 20 + (heightPct / 100) * (screenHeight - 20)
     readonly property real barsHeight: 240
 
+    function getSavedRingX() {
+        if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
+            return root.configEntry.x;
+        }
+        return Math.round((root.scaledScreenWidth - root.width) / 2);
+    }
+    function getSavedRingY() {
+        if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
+            return root.configEntry.y;
+        }
+        return Math.round((root.scaledScreenHeight - root.height) / 2);
+    }
+
     implicitWidth: isRing ? ringSize : screenWidth
     implicitHeight: isRing ? ringSize : shaderStyle ? bandHeight : barsHeight
     width: implicitWidth
     height: implicitHeight
     x: isRing ? targetX : 0
     y: isRing ? targetY : screenHeight - implicitHeight
-    draggable: isRing && placementStrategy === "free" && !Config.options.background.widgetsLocked
+    draggable: isRing && !Config.options.background.widgetsLocked
     hoverEnabled: isRing
 
     function restoreXYBinding() {
+        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
-        root.y = Qt.binding(() => root.isRing ? root.targetY : root.screenHeight - root.implicitHeight);
+        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.screenHeight - root.implicitHeight));
+    }
+
+    onReleased: {
+        if (root.isRing && root.configEntry) {
+            root.configEntry.placementStrategy = "free";
+            root.configEntry.x = Math.round(root.x);
+            root.configEntry.y = Math.round(root.y);
+            Config.save();
+        }
+        root.restoreXYBinding();
+    }
+
+    Component.onCompleted: {
+        if (root.isRing) {
+            root.x = root.getSavedRingX();
+            root.y = root.getSavedRingY();
+        }
+        root.restoreXYBinding();
+    }
+
+    onIsRingChanged: {
+        if (root.isRing) {
+            root.x = root.getSavedRingX();
+            root.y = root.getSavedRingY();
+        }
+        root.restoreXYBinding();
+    }
+
+    Connections {
+        target: root.configEntry
+        function onXChanged() {
+            if (root.isRing && !root.dragging) root.restoreXYBinding();
+        }
+        function onYChanged() {
+            if (root.isRing && !root.dragging) root.restoreXYBinding();
+        }
     }
 
     // Palettes: color1 and color2 carry the shape, color3 the accent (peaks, fallback cover)

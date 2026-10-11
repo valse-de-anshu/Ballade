@@ -18,9 +18,9 @@ AbstractWidget {
     required property real wallpaperScale
     property bool visibleWhenLocked: Config.options.lock.showWidgets
     property var configEntry: Config.options.background.widgets[configEntryName]
-    property string placementStrategy: configEntry.placementStrategy
-    property real targetX: Math.max(-width + 30, Math.min(configEntry.x, scaledScreenWidth - 30))
-    property real targetY: Math.max(-height + 30, Math.min(configEntry.y, scaledScreenHeight - 30))
+    property string placementStrategy: configEntry?.placementStrategy ?? "free"
+    property real targetX: Math.max(-width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30))
+    property real targetY: Math.max(-height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30))
     x: targetX
     y: targetY
     visible: opacity > 0
@@ -55,11 +55,14 @@ AbstractWidget {
     }
 
     onReleased: {
-        configEntry.placementStrategy = "free";
-        configEntry.x = root.x;
-        configEntry.y = root.y;
-        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(configEntry.x, scaledScreenWidth - 30)));
-        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(configEntry.y, scaledScreenHeight - 30)));
+        if (configEntry) {
+            configEntry.placementStrategy = "free";
+            configEntry.x = Math.round(root.x);
+            configEntry.y = Math.round(root.y);
+            Config.save();
+        }
+        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30)));
         root.restoreXYBinding();
     }
 
