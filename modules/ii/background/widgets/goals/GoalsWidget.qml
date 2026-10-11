@@ -55,6 +55,9 @@ AbstractBackgroundWidget {
     onActiveToolScreenChanged: {
         updateDesktopKeyboardFocus()
         if (root.activeToolScreen === "alarm") {
+            if (root.editingAlarmId === "") {
+                root.alarmSelectedDays = [0, 1, 2, 3, 4, 5, 6]
+            }
             Qt.callLater(() => {
                 if (wheelBox) wheelBox.forceActiveFocus()
             })
@@ -83,7 +86,7 @@ AbstractBackgroundWidget {
     property int alarmPickerMinute: 0
     property string alarmPickerAmPm: "am"
     property string alarmFocusedCol: "hours" // "hours" | "minutes" | "ampm"
-    property var alarmSelectedDays: [0] // 0=Sunday
+    property var alarmSelectedDays: [0, 1, 2, 3, 4, 5, 6] // 0=Sunday, 1..6=Mon..Sat (all week by default)
     property string alarmSpecificDate: ""
     property bool alarmShowSavedList: false
     property string editingAlarmId: ""
@@ -2385,6 +2388,8 @@ AbstractBackgroundWidget {
                                 if (root.alarmShowSavedList) {
                                     root.editingAlarmId = ""
                                     alarmLabelField.text = ""
+                                    root.alarmSelectedDays = [0, 1, 2, 3, 4, 5, 6]
+                                    root.alarmSpecificDate = ""
                                 }
                                 root.alarmShowSavedList = false
                             }
@@ -2892,10 +2897,40 @@ AbstractBackgroundWidget {
                                     }
                                 }
 
-                                // Row 4: Action Button (Save / Set Alarm)
+                                // Row 4: Action Button (Save / Set Alarm) with live time-left preview
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    Item { Layout.fillWidth: true }
+                                    spacing: 8
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 6
+
+                                        MaterialSymbol {
+                                            text: "schedule"
+                                            iconSize: 14
+                                            color: Appearance.colors.colSubtext
+                                        }
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            text: {
+                                                let _tick = Alarms.currentMinute
+                                                let h24 = root.alarmPickerHour
+                                                if (root.alarmPickerAmPm === "am") {
+                                                    if (h24 === 12) h24 = 0
+                                                } else {
+                                                    if (h24 !== 12) h24 += 12
+                                                }
+                                                let timeStr = `${String(h24).padStart(2, '0')}:${String(root.alarmPickerMinute).padStart(2, '0')}`
+                                                let nextDate = Alarms.getAlarmNextDate(timeStr, root.alarmSelectedDays, root.alarmSpecificDate)
+                                                let rem = Alarms.formatRemainingTime(nextDate)
+                                                return rem ? ("Rings in " + rem) : ""
+                                            }
+                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            color: Appearance.colors.colSubtext
+                                            elide: Text.ElideRight
+                                        }
+                                    }
 
                                     Rectangle {
                                         implicitWidth: 105
@@ -2942,6 +2977,8 @@ AbstractBackgroundWidget {
                                                 alarmLabelField.focus = false
                                                 root.isUserTyping = false
                                                 root.alarmShowSavedList = true
+                                                root.alarmSelectedDays = [0, 1, 2, 3, 4, 5, 6]
+                                                root.alarmSpecificDate = ""
                                             }
                                         }
                                     }
@@ -3007,7 +3044,13 @@ AbstractBackgroundWidget {
                                             color: almCard.modelData.enabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colSubtext
                                         }
                                         StyledText {
-                                            text: almCard.modelData.label || "Alarm"
+                                            text: {
+                                                let _tick = Alarms.currentMinute
+                                                let lbl = almCard.modelData.label || "Alarm"
+                                                if (!almCard.modelData.enabled) return lbl + " • Off"
+                                                let rem = Alarms.formatRemainingTime(Alarms.getAlarmNextDate(almCard.modelData.time, almCard.modelData.repeatDays, almCard.modelData.date))
+                                                return rem ? (lbl + " • in " + rem) : lbl
+                                            }
                                             font.pixelSize: Appearance.font.pixelSize.smallest
                                             color: Appearance.colors.colSubtext
                                             elide: Text.ElideRight
@@ -3041,7 +3084,7 @@ AbstractBackgroundWidget {
                                                 root.alarmPickerHour = (h24 % 12 === 0) ? 12 : (h24 % 12)
                                                 root.alarmPickerMinute = m
                                                 alarmLabelField.text = almCard.modelData.label || ""
-                                                root.alarmSelectedDays = almCard.modelData.repeatDays || []
+                                                root.alarmSelectedDays = (almCard.modelData.repeatDays && almCard.modelData.repeatDays.length > 0) ? almCard.modelData.repeatDays : [0, 1, 2, 3, 4, 5, 6]
                                                 root.alarmSpecificDate = almCard.modelData.date || ""
                                                 root.alarmShowSavedList = false
                                             }

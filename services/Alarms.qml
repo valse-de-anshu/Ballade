@@ -18,7 +18,102 @@ Singleton {
     property var activeRingingAlarm: null
     property string lastTriggeredMinute: ""
     property string lastWarnedMinute: ""
+    property string currentMinute: ""
     property bool isRinging: false
+
+    function formatAlarmTime(t24) {
+        if (!t24) return ""
+        let parts = t24.split(":")
+        if (parts.length < 2) return t24
+        let h = parseInt(parts[0], 10)
+        let m = parts[1]
+        let ampm = (h >= 12) ? "PM" : "AM"
+        let h12 = (h % 12 === 0) ? 12 : (h % 12)
+        return `${h12}:${m} ${ampm}`
+    }
+
+    function getAlarmNextDate(timeStr, repeatDays, dateStr) {
+        if (!timeStr) return null
+        let parts = timeStr.trim().split(":")
+        let targetH = parseInt(parts[0], 10)
+        let targetM = parseInt(parts[1], 10)
+        if (isNaN(targetH) || isNaN(targetM)) return null
+
+        let now = new Date()
+
+        // Specific future date
+        if (dateStr && dateStr.trim()) {
+            let dParts = dateStr.trim().split("-")
+            if (dParts.length === 3) {
+                let y = parseInt(dParts[0], 10)
+                let m = parseInt(dParts[1], 10) - 1
+                let d = parseInt(dParts[2], 10)
+                return new Date(y, m, d, targetH, targetM, 0, 0)
+            }
+        }
+
+        // Recurring days (0=Sunday, 1..6=Monday..Saturday)
+        if (Array.isArray(repeatDays) && repeatDays.length > 0) {
+            for (let offset = 0; offset <= 7; ++offset) {
+                let candDay = (now.getDay() + offset) % 7
+                if (repeatDays.includes(candDay)) {
+                    let cand = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, targetH, targetM, 0, 0)
+                    if (cand.getTime() > now.getTime()) {
+                        return cand
+                    }
+                }
+            }
+        }
+
+        // One-time alarm without specific date: today if later, else tomorrow
+        let todayCand = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetH, targetM, 0, 0)
+        if (todayCand.getTime() > now.getTime()) {
+            return todayCand
+        }
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, targetH, targetM, 0, 0)
+    }
+
+    function formatRemainingTime(targetDate) {
+        if (!targetDate) return ""
+        let now = new Date()
+        let diffMs = targetDate.getTime() - now.getTime()
+        if (diffMs <= 0) return "less than a minute"
+
+        let totalMinutes = Math.round(diffMs / 60000)
+        if (totalMinutes < 1) return "less than a minute"
+
+        let days = Math.floor(totalMinutes / (24 * 60))
+        let hours = Math.floor((totalMinutes % (24 * 60)) / 60)
+        let minutes = totalMinutes % 60
+
+        let parts = []
+        if (days > 0) parts.push(days + (days === 1 ? " day" : " days"))
+        if (hours > 0) parts.push(hours + (hours === 1 ? " hour" : " hours"))
+        if (minutes > 0 || (days === 0 && hours === 0)) parts.push(minutes + (minutes === 1 ? " minute" : " minutes"))
+
+        if (parts.length === 1) return parts[0]
+        if (parts.length === 2) return parts[0] + " and " + parts[1]
+        return parts[0] + ", " + parts[1] + " and " + parts[2]
+    }
+
+    function notifyAlarmScheduled(alm) {
+        if (!alm || !alm.time) return
+        let nextDate = getAlarmNextDate(alm.time, alm.repeatDays, alm.date)
+        let remainingStr = formatRemainingTime(nextDate)
+        let formattedTime = formatAlarmTime(alm.time)
+        let label = (alm.label && alm.label.trim()) ? alm.label.trim() : "Alarm"
+
+        let title = "⏰ Alarm Set (" + formattedTime + ")"
+        let body = "'" + label + "' will ring in " + remainingStr + "."
+
+        Quickshell.execDetached([
+            "notify-send",
+            title,
+            body,
+            "-a", "Shell",
+            "--hint=int:transient:1"
+        ])
+    }
 
     function save() {
         alarmsFileView.setText(JSON.stringify({ alarms: root.alarmsList }, null, 2))
@@ -26,12 +121,14 @@ Singleton {
 
     function addAlarm(timeStr, label, repeatDays, dateStr) {
         if (!timeStr || !timeStr.trim()) return
+        let defaultAllWeek = [0, 1, 2, 3, 4, 5, 6]
+        let days = Array.isArray(repeatDays) ? repeatDays : defaultAllWeek
         let item = {
             id: "alm-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
             time: timeStr.trim(),
             label: (label && label.trim()) ? label.trim() : "Alarm",
             enabled: true,
-            repeatDays: Array.isArray(repeatDays) ? repeatDays : [],
+            repeatDays: days,
             date: dateStr ? dateStr.trim() : "",
             isFuture: Boolean(dateStr && dateStr.trim())
         }
@@ -39,38 +136,59 @@ Singleton {
         list.push(item)
         root.alarmsList = list
         save()
+        notifyAlarmScheduled(item)
     }
 
     function updateAlarm(alarmId, timeStr, label, repeatDays, dateStr) {
         if (!timeStr || !timeStr.trim()) return
         let list = root.alarmsList.slice()
+        let updatedItem = null
         for (let i = 0; i < list.length; ++i) {
             if (list[i].id === alarmId) {
                 list[i] = Object.assign({}, list[i], {
                     time: timeStr.trim(),
                     label: (label && label.trim()) ? label.trim() : (list[i].label || "Alarm"),
-                    repeatDays: Array.isArray(repeatDays) ? repeatDays : (list[i].repeatDays || []),
+                    repeatDays: Array.isArray(repeatDays) ? repeatDays : (list[i].repeatDays || [0, 1, 2, 3, 4, 5, 6]),
                     date: (dateStr !== undefined) ? dateStr.trim() : (list[i].date || ""),
                     isFuture: Boolean(dateStr && dateStr.trim()),
                     enabled: true
                 })
+                updatedItem = list[i]
                 break
             }
         }
         root.alarmsList = list
         save()
+        if (updatedItem) {
+            notifyAlarmScheduled(updatedItem)
+        }
     }
 
     function toggleAlarm(alarmId) {
         let list = root.alarmsList.slice()
+        let toggledItem = null
         for (let i = 0; i < list.length; ++i) {
             if (list[i].id === alarmId) {
                 list[i] = Object.assign({}, list[i], { enabled: !list[i].enabled })
+                toggledItem = list[i]
                 break
             }
         }
         root.alarmsList = list
         save()
+        if (toggledItem) {
+            if (toggledItem.enabled) {
+                notifyAlarmScheduled(toggledItem)
+            } else {
+                Quickshell.execDetached([
+                    "notify-send",
+                    "⏰ Alarm Disabled",
+                    "'" + toggledItem.label + "' (" + formatAlarmTime(toggledItem.time) + ") turned off",
+                    "-a", "Shell",
+                    "--hint=int:transient:1"
+                ])
+            }
+        }
     }
 
     function deleteAlarm(alarmId) {
@@ -144,6 +262,9 @@ Singleton {
     function checkAlarms() {
         let now = new Date()
         let currentHHMM = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0")
+        if (root.currentMinute !== currentHHMM) {
+            root.currentMinute = currentHHMM
+        }
         let currentDateStr = Qt.formatDate(now, "yyyy-MM-dd")
         let currentDayOfWeek = now.getDay()
 
