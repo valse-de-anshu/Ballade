@@ -33,6 +33,12 @@ Item {
             if (pageName === "overlay" || pageName === "crosshair" || pageName === "snip") pageName = "utilities";
             if (pageName === "custom widgets") pageName = "widgets";
 
+            if (pageName === "profile") {
+                root.showingProfile = true;
+                GlobalStates.settingsPage = "";
+                return;
+            }
+
             const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName);
             
             if (idx >= 0) {

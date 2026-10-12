@@ -18,6 +18,14 @@ ContentPage {
         return "distro"
     }
     property string hostnameInput: SystemInfo.hostname
+    property string qsThemeFeedbackText: ""
+
+    Timer {
+        id: qsThemeFeedbackTimer
+        interval: 2200
+        repeat: false
+        onTriggered: page.qsThemeFeedbackText = ""
+    }
 
     FolderListModel {
         id: avatarFolderModel
@@ -556,6 +564,308 @@ ContentPage {
                             border.width: themeCard.isActive ? 2.5 : 1
                             Behavior on border.color { ColorAnimation { duration: 250 } }
                             Behavior on border.width  { NumberAnimation { duration: 150 } }
+                        }
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "palette"
+            shape: MaterialShape.Shape.Cookie4Sided
+            title: Translation.tr("QS Theme")
+
+            component ColorBall: Item {
+                id: ballRoot
+                required property var modelData
+                property bool justCopied: false
+
+                width: 48
+                height: 58
+
+                Timer {
+                    id: copiedTimer
+                    interval: 1500
+                    repeat: false
+                    onTriggered: ballRoot.justCopied = false
+                }
+
+                readonly property bool isCurrentPreset: Boolean(modelData?.preset && Presets.activeTheme === modelData.preset)
+                readonly property color ballColor: (modelData && modelData.color) ? modelData.color : "transparent"
+
+                Rectangle {
+                    id: ball
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 36
+                    height: 36
+                    radius: width / 2
+                    color: ballRoot.ballColor
+                    border.width: ballMouseArea.containsMouse ? 2 : (ballRoot.isCurrentPreset ? 2.5 : 1.2)
+                    border.color: {
+                        if (ballRoot.isCurrentPreset) return Appearance.colors.colPrimary
+                        if (ballMouseArea.containsMouse) return Appearance.colors.colPrimary
+                        return Qt.rgba(1, 1, 1, 0.22)
+                    }
+                    scale: ballMouseArea.containsMouse ? 1.18 : 1.0
+
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        visible: ballRoot.justCopied || ballRoot.isCurrentPreset
+                        text: ballRoot.justCopied ? "done" : "check"
+                        iconSize: 16
+                        color: {
+                            try {
+                                return (ballRoot.ballColor.hslLightness < 0.5) ? "#ffffff" : "#000000"
+                            } catch (e) {
+                                return "#ffffff"
+                            }
+                        }
+                    }
+                }
+
+                StyledText {
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width
+                    text: (modelData && (modelData.shortName || modelData.name)) ? (modelData.shortName || modelData.name) : ""
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: ballMouseArea.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                }
+
+                MouseArea {
+                    id: ballMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+
+                    StyledToolTip {
+                        extraVisibleCondition: false
+                        alternativeVisibleCondition: ballMouseArea.containsMouse
+                        text: `${ballRoot.modelData?.name ?? ""}\n${ballRoot.ballColor}`
+                    }
+
+                    onClicked: {
+                        const hex = ballRoot.ballColor.toString();
+                        if (ballRoot.modelData?.preset) {
+                            Presets.apply(ballRoot.modelData.preset);
+                            page.qsThemeFeedbackText = Translation.tr("Applied theme preset: ") + ballRoot.modelData.name;
+                        } else {
+                            Quickshell.clipboardText = hex;
+                            page.qsThemeFeedbackText = Translation.tr("Copied ") + hex + ` (${ballRoot.modelData?.name ?? ""})`;
+                        }
+                        ballRoot.justCopied = true;
+                        copiedTimer.restart();
+                        qsThemeFeedbackTimer.restart();
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: qsThemeContainerCol.implicitHeight + 24
+                radius: Appearance.rounding.large
+                color: Appearance.colors.colLayer1
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+
+                ColumnLayout {
+                    id: qsThemeContainerCol
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: parent.top
+                        margins: 14
+                    }
+                    spacing: 16
+
+                    // Header bar with status and clipboard feedback
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        MaterialSymbol {
+                            text: page.qsThemeFeedbackText !== "" ? "check_circle" : "palette"
+                            iconSize: 18
+                            color: page.qsThemeFeedbackText !== "" ? Appearance.m3colors.m3success : Appearance.colors.colPrimary
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: page.qsThemeFeedbackText !== ""
+                                ? page.qsThemeFeedbackText
+                                : Translation.tr("All renderable theme color balls in QuickShell. Click any ball to copy its HEX code or apply a preset.")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: page.qsThemeFeedbackText !== "" ? Appearance.m3colors.m3success : Appearance.colors.colSubtext
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+                    }
+
+                    // 1. Theme Presets (9 balls)
+                    ContentSubsection {
+                        title: Translation.tr("Theme Presets")
+                        tooltip: Translation.tr("Pre-configured system color themes. Click a ball to apply instantly.")
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Repeater {
+                                model: [
+                                    { name: "Green (Atelier)", shortName: "Green", preset: "green", color: "#7D9726" },
+                                    { name: "Sakura", shortName: "Pink", preset: "pink", color: "#E05688" },
+                                    { name: "Crimson", shortName: "Red", preset: "red", color: "#D32F2F" },
+                                    { name: "Amethyst", shortName: "Purple", preset: "purple", color: "#9C27B0" },
+                                    { name: "Tokyo Night", shortName: "Tokyo", preset: "blue", color: "#7AA2F7" },
+                                    { name: "Golden Amber", shortName: "Gold", preset: "golden", color: "#F0B849" },
+                                    { name: "Sunset Orange", shortName: "Orange", preset: "orange", color: "#FF9248" },
+                                    { name: "Nord B&W", shortName: "Gray", preset: "grayscale", color: "#8892B0" },
+                                    { name: "Catppuccin", shortName: "Mocha", preset: "catppuccin", color: "#CBA6F7" }
+                                ]
+                                delegate: ColorBall {}
+                            }
+                        }
+                    }
+
+                    // 2. Material 3 Core Accent Roles (21 balls)
+                    ContentSubsection {
+                        title: Translation.tr("Material 3 Accents & Containers")
+                        tooltip: Translation.tr("Dynamic M3 primary, secondary, tertiary, error, and success colors and containers.")
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Repeater {
+                                model: [
+                                    { name: "Primary", shortName: "Pri", color: Appearance.m3colors.m3primary },
+                                    { name: "On Primary", shortName: "OnPri", color: Appearance.m3colors.m3onPrimary },
+                                    { name: "Primary Container", shortName: "PriCon", color: Appearance.m3colors.m3primaryContainer },
+                                    { name: "On Primary Container", shortName: "OnPC", color: Appearance.m3colors.m3onPrimaryContainer },
+                                    { name: "Inverse Primary", shortName: "InvPri", color: Appearance.m3colors.m3inversePrimary },
+                                    { name: "Secondary", shortName: "Sec", color: Appearance.m3colors.m3secondary },
+                                    { name: "On Secondary", shortName: "OnSec", color: Appearance.m3colors.m3onSecondary },
+                                    { name: "Secondary Container", shortName: "SecCon", color: Appearance.m3colors.m3secondaryContainer },
+                                    { name: "On Secondary Container", shortName: "OnSC", color: Appearance.m3colors.m3onSecondaryContainer },
+                                    { name: "Tertiary", shortName: "Ter", color: Appearance.m3colors.m3tertiary },
+                                    { name: "On Tertiary", shortName: "OnTer", color: Appearance.m3colors.m3onTertiary },
+                                    { name: "Tertiary Container", shortName: "TerCon", color: Appearance.m3colors.m3tertiaryContainer },
+                                    { name: "On Tertiary Container", shortName: "OnTC", color: Appearance.m3colors.m3onTertiaryContainer },
+                                    { name: "Error", shortName: "Err", color: Appearance.m3colors.m3error },
+                                    { name: "On Error", shortName: "OnErr", color: Appearance.m3colors.m3onError },
+                                    { name: "Error Container", shortName: "ErrCon", color: Appearance.m3colors.m3errorContainer },
+                                    { name: "On Error Container", shortName: "OnEC", color: Appearance.m3colors.m3onErrorContainer },
+                                    { name: "Success", shortName: "Succ", color: Appearance.m3colors.m3success },
+                                    { name: "On Success", shortName: "OnSuc", color: Appearance.m3colors.m3onSuccess },
+                                    { name: "Success Container", shortName: "SucCon", color: Appearance.m3colors.m3successContainer },
+                                    { name: "On Success Container", shortName: "OnSucC", color: Appearance.m3colors.m3onSuccessContainer }
+                                ]
+                                delegate: ColorBall {}
+                            }
+                        }
+                    }
+
+                    // 3. Material 3 Fixed Roles (9 balls)
+                    ContentSubsection {
+                        title: Translation.tr("Material 3 Fixed Tones")
+                        tooltip: Translation.tr("Consistent fixed accents that do not shift between light and dark surfaces.")
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Repeater {
+                                model: [
+                                    { name: "Primary Fixed", shortName: "PriFix", color: Appearance.m3colors.m3primaryFixed },
+                                    { name: "Primary Fixed Dim", shortName: "PriDim", color: Appearance.m3colors.m3primaryFixedDim },
+                                    { name: "On Primary Fixed", shortName: "OnPF", color: Appearance.m3colors.m3onPrimaryFixed },
+                                    { name: "Secondary Fixed", shortName: "SecFix", color: Appearance.m3colors.m3secondaryFixed },
+                                    { name: "Secondary Fixed Dim", shortName: "SecDim", color: Appearance.m3colors.m3secondaryFixedDim },
+                                    { name: "On Secondary Fixed", shortName: "OnSF", color: Appearance.m3colors.m3onSecondaryFixed },
+                                    { name: "Tertiary Fixed", shortName: "TerFix", color: Appearance.m3colors.m3tertiaryFixed },
+                                    { name: "Tertiary Fixed Dim", shortName: "TerDim", color: Appearance.m3colors.m3tertiaryFixedDim },
+                                    { name: "On Tertiary Fixed", shortName: "OnTF", color: Appearance.m3colors.m3onTertiaryFixed }
+                                ]
+                                delegate: ColorBall {}
+                            }
+                        }
+                    }
+
+                    // 4. Surfaces, Outlines & Shell Layers (21 balls)
+                    ContentSubsection {
+                        title: Translation.tr("Surfaces, Outlines & Elevation Layers")
+                        tooltip: Translation.tr("Container hierarchy, background surfaces, outlines, and QuickShell layers 0-4.")
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Repeater {
+                                model: [
+                                    { name: "Background", shortName: "Bg", color: Appearance.m3colors.m3background },
+                                    { name: "On Background", shortName: "OnBg", color: Appearance.m3colors.m3onBackground },
+                                    { name: "Surface", shortName: "Surf", color: Appearance.m3colors.m3surface },
+                                    { name: "Surface Dim", shortName: "Dim", color: Appearance.m3colors.m3surfaceDim },
+                                    { name: "Surface Bright", shortName: "Bright", color: Appearance.m3colors.m3surfaceBright },
+                                    { name: "Surface Lowest", shortName: "Lowest", color: Appearance.m3colors.m3surfaceContainerLowest },
+                                    { name: "Surface Low", shortName: "Low", color: Appearance.m3colors.m3surfaceContainerLow },
+                                    { name: "Surface Container", shortName: "Cont", color: Appearance.m3colors.m3surfaceContainer },
+                                    { name: "Surface High", shortName: "High", color: Appearance.m3colors.m3surfaceContainerHigh },
+                                    { name: "Surface Highest", shortName: "Highest", color: Appearance.m3colors.m3surfaceContainerHighest },
+                                    { name: "Surface Variant", shortName: "Variant", color: Appearance.m3colors.m3surfaceVariant },
+                                    { name: "On Surface", shortName: "OnSurf", color: Appearance.m3colors.m3onSurface },
+                                    { name: "On Surface Variant", shortName: "OnVar", color: Appearance.m3colors.m3onSurfaceVariant },
+                                    { name: "Outline", shortName: "Outline", color: Appearance.m3colors.m3outline },
+                                    { name: "Outline Variant", shortName: "OutVar", color: Appearance.m3colors.m3outlineVariant },
+                                    { name: "Inverse Surface", shortName: "InvSurf", color: Appearance.m3colors.m3inverseSurface },
+                                    { name: "Inverse On Surface", shortName: "InvOnS", color: Appearance.m3colors.m3inverseOnSurface },
+                                    { name: "Layer 0", shortName: "Layer 0", color: Appearance.colors.colLayer0Base },
+                                    { name: "Layer 1", shortName: "Layer 1", color: Appearance.colors.colLayer1Base },
+                                    { name: "Layer 2", shortName: "Layer 2", color: Appearance.colors.colLayer2Base },
+                                    { name: "Layer 3", shortName: "Layer 3", color: Appearance.colors.colLayer3Base },
+                                    { name: "Layer 4", shortName: "Layer 4", color: Appearance.colors.colLayer4Base }
+                                ]
+                                delegate: ColorBall {}
+                            }
+                        }
+                    }
+
+                    // 5. Terminal ANSI Palette (16 balls)
+                    ContentSubsection {
+                        title: Translation.tr("Terminal ANSI Palette")
+                        tooltip: Translation.tr("16 terminal colors (term0 to term15) rendered by QuickShell.")
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Repeater {
+                                model: [
+                                    { name: "Term 0 (Black)", shortName: "T0", color: Appearance.m3colors.term0 },
+                                    { name: "Term 1 (Red)", shortName: "T1", color: Appearance.m3colors.term1 },
+                                    { name: "Term 2 (Green)", shortName: "T2", color: Appearance.m3colors.term2 },
+                                    { name: "Term 3 (Yellow)", shortName: "T3", color: Appearance.m3colors.term3 },
+                                    { name: "Term 4 (Blue)", shortName: "T4", color: Appearance.m3colors.term4 },
+                                    { name: "Term 5 (Magenta)", shortName: "T5", color: Appearance.m3colors.term5 },
+                                    { name: "Term 6 (Cyan)", shortName: "T6", color: Appearance.m3colors.term6 },
+                                    { name: "Term 7 (White)", shortName: "T7", color: Appearance.m3colors.term7 },
+                                    { name: "Term 8 (Bright Black)", shortName: "T8", color: Appearance.m3colors.term8 },
+                                    { name: "Term 9 (Bright Red)", shortName: "T9", color: Appearance.m3colors.term9 },
+                                    { name: "Term 10 (Bright Green)", shortName: "T10", color: Appearance.m3colors.term10 },
+                                    { name: "Term 11 (Bright Yellow)", shortName: "T11", color: Appearance.m3colors.term11 },
+                                    { name: "Term 12 (Bright Blue)", shortName: "T12", color: Appearance.m3colors.term12 },
+                                    { name: "Term 13 (Bright Magenta)", shortName: "T13", color: Appearance.m3colors.term13 },
+                                    { name: "Term 14 (Bright Cyan)", shortName: "T14", color: Appearance.m3colors.term14 },
+                                    { name: "Term 15 (Bright White)", shortName: "T15", color: Appearance.m3colors.term15 }
+                                ]
+                                delegate: ColorBall {}
+                            }
                         }
                     }
                 }
