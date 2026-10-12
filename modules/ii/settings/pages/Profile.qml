@@ -603,284 +603,165 @@ ContentPage {
 
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: qsThemeContainerCol.implicitHeight + 36
+                implicitHeight: themeFlow.implicitHeight + 24
                 radius: Appearance.rounding.large
                 color: Appearance.colors.colLayer1
                 border.width: 1
                 border.color: Appearance.colors.colLayer0Border
 
-                ColumnLayout {
-                    id: qsThemeContainerCol
+                Flow {
+                    id: themeFlow
                     anchors {
                         left: parent.left
                         right: parent.right
                         top: parent.top
-                        margins: 16
+                        margins: 12
                     }
-                    spacing: 16
+                    spacing: 10
 
-                    // Header row: description + current status badge
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
+                    // 1. Auto (Wallpaper)
+                    Rectangle {
+                        id: autoBall
+                        width: 38
+                        height: 38
+                        radius: 19
+
+                        readonly property bool isCurrent: !Config.options.appearance.palette.accentColor || Config.options.appearance.palette.accentColor === ""
+
+                        color: isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
+                        border.width: autoMouse.containsMouse ? 2 : (isCurrent ? 2 : 1)
+                        border.color: isCurrent ? "#ffffff" : (autoMouse.containsMouse ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.2))
+                        scale: autoMouse.containsMouse ? 1.15 : 1.0
+
+                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
 
                         MaterialSymbol {
-                            text: page.qsThemeFeedbackText !== "" ? "check_circle" : "palette"
-                            iconSize: 20
-                            color: page.qsThemeFeedbackText !== "" ? Appearance.m3colors.m3success : Appearance.colors.colPrimary
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            anchors.centerIn: parent
+                            text: autoBall.isCurrent ? "check" : "auto_awesome"
+                            iconSize: 18
+                            color: autoBall.isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colPrimary
                         }
 
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: page.qsThemeFeedbackText !== ""
-                                ? page.qsThemeFeedbackText
-                                : Translation.tr("Select an accent color for QuickShell to generate with Matugen, or sync dynamically with your wallpaper.")
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: page.qsThemeFeedbackText !== "" ? Appearance.m3colors.m3success : Appearance.colors.colSubtext
-                            wrapMode: Text.WordWrap
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                        MouseArea {
+                            id: autoMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+
+                            StyledToolTip {
+                                extraVisibleCondition: false
+                                alternativeVisibleCondition: autoMouse.containsMouse
+                                text: Translation.tr("Auto (Wallpaper)")
+                            }
+
+                            onClicked: {
+                                page.applyQsAccentColor("")
+                            }
                         }
+                    }
 
-                        // Current active status pill
-                        Rectangle {
-                            height: 26
-                            implicitWidth: currentStatusRow.implicitWidth + 16
-                            radius: 13
-                            color: Qt.alpha(Appearance.colors.colPrimary, 0.15)
-                            border.width: 1
-                            border.color: Qt.alpha(Appearance.colors.colPrimary, 0.35)
+                    // 2. Curated Seed Colors
+                    Repeater {
+                        model: [
+                            { name: Translation.tr("Green"), color: "#7D9726" },
+                            { name: Translation.tr("Sakura"), color: "#E05688" },
+                            { name: Translation.tr("Crimson"), color: "#E53935" },
+                            { name: Translation.tr("Amethyst"), color: "#9C27B0" },
+                            { name: Translation.tr("Tokyo"), color: "#7AA2F7" },
+                            { name: Translation.tr("Sapphire"), color: "#3F51B5" },
+                            { name: Translation.tr("Teal"), color: "#009688" },
+                            { name: Translation.tr("Cyan"), color: "#00BCD4" },
+                            { name: Translation.tr("Amber"), color: "#F0B849" },
+                            { name: Translation.tr("Orange"), color: "#FF9248" },
+                            { name: Translation.tr("Coral"), color: "#FF7043" },
+                            { name: Translation.tr("Lavender"), color: "#B39DDB" },
+                            { name: Translation.tr("Slate"), color: "#8892B0" }
+                        ]
+                        delegate: Rectangle {
+                            id: colorCircle
+                            required property var modelData
+                            width: 38
+                            height: 38
+                            radius: 19
 
-                            RowLayout {
-                                id: currentStatusRow
+                            readonly property color cValue: modelData.color
+                            readonly property bool isCurrent: {
+                                const active = (Config.options.appearance.palette.accentColor || "").toLowerCase();
+                                return active === String(cValue).toLowerCase();
+                            }
+
+                            color: colorCircle.cValue
+                            border.width: cMouse.containsMouse ? 2 : (colorCircle.isCurrent ? 2.5 : 1)
+                            border.color: colorCircle.isCurrent ? "#ffffff" : (cMouse.containsMouse ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.2))
+                            scale: cMouse.containsMouse ? 1.15 : 1.0
+
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                            MaterialSymbol {
                                 anchors.centerIn: parent
-                                spacing: 6
+                                visible: colorCircle.isCurrent
+                                text: "check"
+                                iconSize: 18
+                                color: (colorCircle.cValue.hslLightness < 0.5) ? "#ffffff" : "#000000"
+                            }
 
-                                Rectangle {
-                                    width: 10; height: 10; radius: 5
-                                    color: (Config.options.appearance.palette.accentColor && Config.options.appearance.palette.accentColor !== "")
-                                        ? Config.options.appearance.palette.accentColor
-                                        : Appearance.colors.colPrimary
+                            MouseArea {
+                                id: cMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+
+                                StyledToolTip {
+                                    extraVisibleCondition: false
+                                    alternativeVisibleCondition: cMouse.containsMouse
+                                    text: `${colorCircle.modelData.name} (${colorCircle.modelData.color})`
                                 }
 
-                                StyledText {
-                                    text: (Config.options.appearance.palette.accentColor && Config.options.appearance.palette.accentColor !== "")
-                                        ? Config.options.appearance.palette.accentColor
-                                        : Translation.tr("Auto (Wallpaper)")
-                                    font.pixelSize: Appearance.font.pixelSize.smallest
-                                    font.weight: Font.DemiBold
-                                    color: Appearance.colors.colPrimary
+                                onClicked: {
+                                    page.applyQsAccentColor(colorCircle.modelData.color)
                                 }
                             }
                         }
                     }
 
-                    // Curated Accent Color Balls
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: 12
+                    // 3. Eyedropper / Custom Picker
+                    Rectangle {
+                        id: customCircle
+                        width: 38
+                        height: 38
+                        radius: 19
+                        color: Appearance.colors.colLayer2
+                        border.width: customMouse.containsMouse ? 2 : 1
+                        border.color: customMouse.containsMouse ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.2)
+                        scale: customMouse.containsMouse ? 1.15 : 1.0
 
-                        // 1. Auto (From Wallpaper) Ball
-                        Item {
-                            id: autoBallRoot
-                            width: 50
-                            height: 62
+                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                            readonly property bool isCurrent: !Config.options.appearance.palette.accentColor || Config.options.appearance.palette.accentColor === ""
-
-                            Rectangle {
-                                id: autoBall
-                                anchors.top: parent.top
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: 38
-                                height: 38
-                                radius: 19
-                                color: autoBallRoot.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colLayer2
-                                border.width: autoMouseArea.containsMouse ? 2 : (autoBallRoot.isCurrent ? 2.5 : 1)
-                                border.color: autoBallRoot.isCurrent ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.25)
-                                scale: autoMouseArea.containsMouse ? 1.15 : 1.0
-
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                                Behavior on border.color { ColorAnimation { duration: 150 } }
-                                Behavior on color { ColorAnimation { duration: 150 } }
-
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: autoBallRoot.isCurrent ? "check" : "auto_awesome"
-                                    iconSize: 18
-                                    color: autoBallRoot.isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colPrimary
-                                }
-                            }
-
-                            StyledText {
-                                anchors.bottom: parent.bottom
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: parent.width
-                                text: Translation.tr("Auto")
-                                font.pixelSize: Appearance.font.pixelSize.smallest
-                                font.weight: autoBallRoot.isCurrent ? Font.DemiBold : Font.Normal
-                                color: autoBallRoot.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
-                                horizontalAlignment: Text.AlignHCenter
-                                elide: Text.ElideRight
-                            }
-
-                            MouseArea {
-                                id: autoMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-
-                                StyledToolTip {
-                                    extraVisibleCondition: false
-                                    alternativeVisibleCondition: autoMouseArea.containsMouse
-                                    text: Translation.tr("Auto (Extract colors dynamically from current wallpaper)")
-                                }
-
-                                onClicked: {
-                                    page.applyQsAccentColor("")
-                                }
-                            }
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "colorize"
+                            iconSize: 18
+                            color: Appearance.colors.colPrimary
                         }
 
-                        // 2. Curated Seed Colors
-                        Repeater {
-                            model: [
-                                { name: Translation.tr("Green"), color: "#7D9726" },
-                                { name: Translation.tr("Sakura"), color: "#E05688" },
-                                { name: Translation.tr("Crimson"), color: "#E53935" },
-                                { name: Translation.tr("Amethyst"), color: "#9C27B0" },
-                                { name: Translation.tr("Tokyo"), color: "#7AA2F7" },
-                                { name: Translation.tr("Sapphire"), color: "#3F51B5" },
-                                { name: Translation.tr("Teal"), color: "#009688" },
-                                { name: Translation.tr("Cyan"), color: "#00BCD4" },
-                                { name: Translation.tr("Amber"), color: "#F0B849" },
-                                { name: Translation.tr("Orange"), color: "#FF9248" },
-                                { name: Translation.tr("Coral"), color: "#FF7043" },
-                                { name: Translation.tr("Lavender"), color: "#B39DDB" },
-                                { name: Translation.tr("Slate"), color: "#8892B0" }
-                            ]
-                            delegate: Item {
-                                id: colorBallRoot
-                                required property var modelData
-                                width: 50
-                                height: 62
+                        MouseArea {
+                            id: customMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
 
-                                readonly property color cValue: modelData.color
-                                readonly property bool isCurrent: {
-                                    const active = (Config.options.appearance.palette.accentColor || "").toLowerCase();
-                                    return active === String(cValue).toLowerCase();
-                                }
-
-                                Rectangle {
-                                    id: colorCircle
-                                    anchors.top: parent.top
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: 38
-                                    height: 38
-                                    radius: 19
-                                    color: colorBallRoot.cValue
-                                    border.width: cMouseArea.containsMouse ? 2 : (colorBallRoot.isCurrent ? 2.5 : 1)
-                                    border.color: colorBallRoot.isCurrent ? "#ffffff" : (cMouseArea.containsMouse ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.22))
-                                    scale: cMouseArea.containsMouse ? 1.15 : 1.0
-
-                                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                                    Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                                    MaterialSymbol {
-                                        anchors.centerIn: parent
-                                        visible: colorBallRoot.isCurrent
-                                        text: "check"
-                                        iconSize: 18
-                                        color: (colorBallRoot.cValue.hslLightness < 0.5) ? "#ffffff" : "#000000"
-                                    }
-                                }
-
-                                StyledText {
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: parent.width
-                                    text: colorBallRoot.modelData.name
-                                    font.pixelSize: Appearance.font.pixelSize.smallest
-                                    font.weight: colorBallRoot.isCurrent ? Font.DemiBold : Font.Normal
-                                    color: colorBallRoot.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
-                                    horizontalAlignment: Text.AlignHCenter
-                                    elide: Text.ElideRight
-                                }
-
-                                MouseArea {
-                                    id: cMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    StyledToolTip {
-                                        extraVisibleCondition: false
-                                        alternativeVisibleCondition: cMouseArea.containsMouse
-                                        text: `${colorBallRoot.modelData.name}\n${colorBallRoot.modelData.color}`
-                                    }
-
-                                    onClicked: {
-                                        page.applyQsAccentColor(colorBallRoot.modelData.color)
-                                    }
-                                }
-                            }
-                        }
-
-                        // 3. Eyedropper / Custom Picker Ball
-                        Item {
-                            id: customBallRoot
-                            width: 50
-                            height: 62
-
-                            Rectangle {
-                                id: customCircle
-                                anchors.top: parent.top
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: 38
-                                height: 38
-                                radius: 19
-                                color: Appearance.colors.colLayer2
-                                border.width: customMouseArea.containsMouse ? 2 : 1
-                                border.color: customMouseArea.containsMouse ? Appearance.colors.colPrimary : Qt.rgba(1, 1, 1, 0.25)
-                                scale: customMouseArea.containsMouse ? 1.15 : 1.0
-
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                                Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    text: "colorize"
-                                    iconSize: 18
-                                    color: Appearance.colors.colPrimary
-                                }
+                            StyledToolTip {
+                                extraVisibleCondition: false
+                                alternativeVisibleCondition: customMouse.containsMouse
+                                text: Translation.tr("Pick Color")
                             }
 
-                            StyledText {
-                                anchors.bottom: parent.bottom
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: parent.width
-                                text: Translation.tr("Pick")
-                                font.pixelSize: Appearance.font.pixelSize.smallest
-                                color: customMouseArea.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
-                                horizontalAlignment: Text.AlignHCenter
-                                elide: Text.ElideRight
-                            }
-
-                            MouseArea {
-                                id: customMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-
-                                StyledToolTip {
-                                    extraVisibleCondition: false
-                                    alternativeVisibleCondition: customMouseArea.containsMouse
-                                    text: Translation.tr("Pick color from screen using eyedropper")
-                                }
-
-                                onClicked: {
-                                    qsColorPickerProc.running = true
-                                }
+                            onClicked: {
+                                qsColorPickerProc.running = true
                             }
                         }
                     }
