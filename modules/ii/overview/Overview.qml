@@ -15,51 +15,59 @@ Scope {
     id: overviewScope
     property bool dontAutoCancelSearch: false
 
-    PanelWindow {
-        id: panelWindow
-        property string searchingText: ""
-        readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
-        property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
-        visible: GlobalStates.overviewOpen
-
-        WlrLayershell.namespace: "quickshell:overview"
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-        color: "transparent"
-
-        mask: Region {
-            item: GlobalStates.overviewOpen ? columnLayout : null
+    Connections {
+        target: GlobalStates
+        function onOverviewOpenChanged() {
+            if (!GlobalStates.overviewOpen) {
+                overviewScope.dontAutoCancelSearch = false;
+                GlobalFocusGrab.dismiss();
+            }
         }
+    }
 
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
+    Loader {
+        id: overviewWindowLoader
+        active: GlobalStates.overviewOpen
 
-        Connections {
-            target: GlobalStates
-            function onOverviewOpenChanged() {
-                if (!GlobalStates.overviewOpen) {
-                    searchWidget.disableExpandAnimation();
-                    overviewScope.dontAutoCancelSearch = false;
-                    GlobalFocusGrab.dismiss();
-                } else {
-                    if (!overviewScope.dontAutoCancelSearch) {
-                        searchWidget.cancelSearch();
-                    }
-                    GlobalFocusGrab.addDismissable(panelWindow);
+        sourceComponent: PanelWindow {
+            id: panelWindow
+            property string searchingText: ""
+            readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
+            property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
+            visible: true
+
+            WlrLayershell.namespace: "quickshell:overview"
+            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            color: "transparent"
+
+            mask: Region {
+                item: columnLayout
+            }
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            Component.onCompleted: {
+                if (!overviewScope.dontAutoCancelSearch) {
+                    searchWidget.cancelSearch();
+                }
+                GlobalFocusGrab.addDismissable(panelWindow);
+            }
+            Component.onDestruction: {
+                GlobalFocusGrab.removeDismissable(panelWindow);
+            }
+
+            Connections {
+                target: GlobalFocusGrab
+                function onDismissed() {
+                    GlobalStates.overviewOpen = false;
                 }
             }
-        }
-
-        Connections {
-            target: GlobalFocusGrab
-            function onDismissed() {
-                GlobalStates.overviewOpen = false;
-            }
-        }
         implicitWidth: columnLayout.implicitWidth
         implicitHeight: columnLayout.implicitHeight
 
@@ -123,6 +131,7 @@ Scope {
             }
         }
     }
+}
 
     function toggleClipboard() {
         GlobalStates.clipboardOpen = !GlobalStates.clipboardOpen;
@@ -134,8 +143,12 @@ Scope {
             return;
         }
         overviewScope.dontAutoCancelSearch = true;
-        panelWindow.setSearchingText(Config.options.search.prefix.emojis);
         GlobalStates.overviewOpen = true;
+        Qt.callLater(() => {
+            if (overviewWindowLoader.item) {
+                overviewWindowLoader.item.setSearchingText(Config.options.search.prefix.emojis);
+            }
+        });
     }
 
     IpcHandler {

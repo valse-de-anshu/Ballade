@@ -67,16 +67,16 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Play request: file='$FILE' (vol=$VOL%, cat=
 if [ -n "$PLAY_TARGET" ] && [ -f "$PLAY_TARGET" ]; then
     if command -v paplay &>/dev/null; then
         PA_VOL=$((65536 * VOL / 100))
-        paplay --volume="$PA_VOL" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
+        timeout 10s paplay --volume="$PA_VOL" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
     fi
     if command -v mpv &>/dev/null; then
-        mpv --no-video --no-terminal --no-audio-display --force-window=no --really-quiet --volume="$VOL" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
+        timeout 10s mpv --no-config --keep-open=no --idle=no --no-video --no-terminal --no-audio-display --force-window=no --really-quiet --volume="$VOL" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
     fi
     if command -v pw-play &>/dev/null; then
         VOL_NORM=$(awk "BEGIN {printf \"%.2f\", $VOL/100}")
-        pw-play --volume "$VOL_NORM" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
+        timeout 10s pw-play --volume "$VOL_NORM" "$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
     fi
     if command -v canberra-gtk-play &>/dev/null; then
-        canberra-gtk-play --file="$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
+        timeout 10s canberra-gtk-play --file="$PLAY_TARGET" >>"$LOG" 2>&1 && exit 0
     fi
 fi

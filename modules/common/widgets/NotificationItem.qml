@@ -217,7 +217,7 @@ Item { // Notification item area
                     implicitWidth: actionsFlickable.implicitWidth
                     implicitHeight: actionsFlickable.implicitHeight
 
-                    layer.enabled: true
+                    layer.enabled: Boolean(root.actions && root.actions.length > 0)
                     layer.effect: OpacityMask {
                         maskSource: Rectangle {
                             width: actionsFlickable.width
@@ -259,6 +259,9 @@ Item { // Notification item area
                                     (contentItem.implicitWidth + leftPadding + rightPadding)
 
                                 onClicked: {
+                                    if ((typeof Alarms !== "undefined") && Alarms.isRinging && notificationObject && notificationObject.summary && (notificationObject.summary.includes("⏰") || notificationObject.summary.toLowerCase().includes("alarm"))) {
+                                        Alarms.stopRinging();
+                                    }
                                     root.destroyWithAnimation()
                                 }
 

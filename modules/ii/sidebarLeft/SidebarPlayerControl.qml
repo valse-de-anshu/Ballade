@@ -90,15 +90,6 @@ Item {
         radius: Appearance.rounding.large
         clip: true
 
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: background.width
-                height: background.height
-                radius: background.radius
-            }
-        }
-
         // Subdued, highly blurred ambient color tint (opacity 0.22 prevents over-bleed)
         Image {
             id: blurredArt
@@ -113,7 +104,7 @@ Item {
             opacity: 0.22
             visible: Boolean(root.displayedArtFilePath)
 
-            layer.enabled: true
+            layer.enabled: Boolean(root.displayedArtFilePath)
             layer.effect: StyledBlurEffect {
                 source: blurredArt
             }

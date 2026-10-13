@@ -3,6 +3,8 @@
 //@ pragma Env QT_QUICK_CONTROLS_STYLE=Basic
 //@ pragma Env QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000
 //@ pragma Env QT_LOGGING_RULES=quickshell.dbus.properties=false;qt.qpa.wayland.input=false
+//@ pragma Env MALLOC_ARENA_MAX=2
+//@ pragma Env MALLOC_TRIM_THRESHOLD_=131072
 
 // Remove two slashes below and adjust the value to change the UI scale
 ////@ pragma Env QT_SCALE_FACTOR=1
@@ -22,6 +24,18 @@ ShellRoot {
 
     // Stuff for every panel family
     ReloadPopup {}
+
+    Timer {
+        id: memoryTrimTimer
+        interval: 60000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (typeof gc === "function") {
+                gc();
+            }
+        }
+    }
 
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()

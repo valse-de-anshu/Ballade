@@ -21,13 +21,17 @@ Scope {
         GlobalStates.settingsOpen = false;
     }
 
-    PanelWindow {
-        id: panelWindow
-        visible: GlobalStates.settingsOpen
+    Loader {
+        id: settingsLoader
+        active: GlobalStates.settingsOpen
 
-        function hide() {
-            GlobalStates.settingsOpen = false;
-        }
+        sourceComponent: PanelWindow {
+            id: panelWindow
+            visible: true
+
+            function hide() {
+                GlobalStates.settingsOpen = false;
+            }
 
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:settings"
@@ -179,6 +183,7 @@ Scope {
             }
         }
     }
+}
 
     IpcHandler {
         target: "settings"

@@ -31,10 +31,14 @@ Scope {
         }
     }
 
-    PanelWindow {
-        id: panelWindow
+    Loader {
+        id: clipboardLoader
+        active: GlobalStates.clipboardOpen
 
-        visible: GlobalStates.clipboardOpen
+        sourceComponent: PanelWindow {
+            id: panelWindow
+
+            visible: true
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:clipboard"
@@ -96,4 +100,5 @@ Scope {
             }
         }
     }
+}
 }

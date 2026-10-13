@@ -49,7 +49,7 @@ Item {
             flickDeceleration: 1800
 
             // Pure Alpha OpacityMask: lyrics fade to absolute transparency at edges without dark blocks!
-            layer.enabled: true
+            layer.enabled: Boolean(lyricsList.count > 0)
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: lyricsList.width

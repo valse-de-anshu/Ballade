@@ -3128,6 +3128,25 @@ AbstractBackgroundWidget {
                                         font.pixelSize: Appearance.font.pixelSize.smaller
                                         leftPadding: 2
                                         onActiveFocusChanged: { if (activeFocus) root.isUserTyping = true }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.RightButton
+                                            cursorShape: Qt.IBeamCursor
+                                            onPressed: mouse => {
+                                                mouse.accepted = true
+                                                if (alarmLabelField.selectedText.length === 0) {
+                                                    alarmLabelField.cursorPosition = alarmLabelField.positionAt(mouse.x, mouse.y)
+                                                }
+                                                alarmLabelField.forceActiveFocus()
+                                                alarmLabelContextMenu.openAt(mouse.x, mouse.y)
+                                            }
+                                        }
+
+                                        TextContextMenu {
+                                            id: alarmLabelContextMenu
+                                            target: alarmLabelField
+                                        }
                                     }
 
                                     Rectangle {
@@ -3855,6 +3874,26 @@ AbstractBackgroundWidget {
                                         }
                                     }
                                 }
+
+                                MouseArea {
+                                    id: noteEditorRightClick
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.RightButton
+                                    cursorShape: Qt.IBeamCursor
+                                    onPressed: mouse => {
+                                        mouse.accepted = true
+                                        if (noteEditor.selectedText.length === 0) {
+                                            noteEditor.cursorPosition = noteEditor.positionAt(mouse.x, mouse.y)
+                                        }
+                                        noteEditor.forceActiveFocus()
+                                        noteContextMenu.openAt(mouse.x, mouse.y)
+                                    }
+                                }
+
+                                TextContextMenu {
+                                    id: noteContextMenu
+                                    target: noteEditor
+                                }
                             }
 
                             // ── Live Markdown Preview (Full AI-grade Markdown, LaTeX, Tables, Code & Think blocks) ──
@@ -3967,6 +4006,25 @@ AbstractBackgroundWidget {
                                     Todo.addTask(text.trim())
                                     text = ""
                                 }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.RightButton
+                                cursorShape: Qt.IBeamCursor
+                                onPressed: mouse => {
+                                    mouse.accepted = true
+                                    if (todoTaskInput.selectedText.length === 0) {
+                                        todoTaskInput.cursorPosition = todoTaskInput.positionAt(mouse.x, mouse.y)
+                                    }
+                                    todoTaskInput.forceActiveFocus()
+                                    todoTaskContextMenu.openAt(mouse.x, mouse.y)
+                                }
+                            }
+
+                            TextContextMenu {
+                                id: todoTaskContextMenu
+                                target: todoTaskInput
                             }
                         }
 

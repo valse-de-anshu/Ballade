@@ -62,8 +62,8 @@ Item {
             fillMode: Image.PreserveAspectCrop
             verticalAlignment: root.imageVerticalAlignment
             horizontalAlignment: root.imageHorizontalAlignment
-            sourceSize.width: root.sourceWidth > 0 ? root.sourceWidth : (root.imageSourceSize.width > 0 ? root.imageSourceSize.width : 0)
-            sourceSize.height: root.sourceHeight > 0 ? root.sourceHeight : (root.imageSourceSize.height > 0 ? root.imageSourceSize.height : 0)
+            sourceSize.width: root.sourceWidth > 0 ? root.sourceWidth : (root.imageSourceSize.width > 0 ? root.imageSourceSize.width : Math.max(128, Math.min(1920, Math.round(root.width > 0 ? root.width : 400))))
+            sourceSize.height: root.sourceHeight > 0 ? root.sourceHeight : (root.imageSourceSize.height > 0 ? root.imageSourceSize.height : Math.max(128, Math.min(1080, Math.round(root.height > 0 ? root.height : 300))))
             asynchronous: true
             cache: false
             opacity: 1
@@ -78,8 +78,8 @@ Item {
             fillMode: Image.PreserveAspectCrop
             verticalAlignment: root.imageVerticalAlignment
             horizontalAlignment: root.imageHorizontalAlignment
-            sourceSize.width: root.sourceWidth > 0 ? root.sourceWidth : (root.imageSourceSize.width > 0 ? root.imageSourceSize.width : 0)
-            sourceSize.height: root.sourceHeight > 0 ? root.sourceHeight : (root.imageSourceSize.height > 0 ? root.imageSourceSize.height : 0)
+            sourceSize.width: root.sourceWidth > 0 ? root.sourceWidth : (root.imageSourceSize.width > 0 ? root.imageSourceSize.width : Math.max(128, Math.min(1920, Math.round(root.width > 0 ? root.width : 400))))
+            sourceSize.height: root.sourceHeight > 0 ? root.sourceHeight : (root.imageSourceSize.height > 0 ? root.imageSourceSize.height : Math.max(128, Math.min(1080, Math.round(root.height > 0 ? root.height : 300))))
             asynchronous: true
             cache: false
             opacity: 0
@@ -108,36 +108,43 @@ Item {
         }
     }
 
-    // Blurred wallpaper backdrop (source for OpacityMask)
-    FastBlur {
-        id: blurredBg
-        anchors.fill: parent
-        source: bgImageContainer
-        radius: root.blurRadius
-        visible: false
-    }
-
-    // Dedicated layer mask item for OpacityMask to cleanly clip corners
-    Item {
-        id: maskItem
-        anchors.fill: parent
-        visible: false
-        layer.enabled: true
-        Rectangle {
-            anchors.fill: parent
-            radius: root.radius
-            color: "black"
-            antialiasing: true
-        }
-    }
-
     // Blurred wallpaper backdrop masked cleanly to rounded shape (skipped in pureGlass mode)
-    OpacityMask {
-        id: maskedBlurredBg
+    Loader {
+        id: blurBackdropLoader
         anchors.fill: parent
-        source: blurredBg
-        maskSource: maskItem
-        visible: !root.pureGlass
+        active: !root.pureGlass
+        visible: active
+        sourceComponent: Item {
+            anchors.fill: parent
+
+            FastBlur {
+                id: blurredBg
+                anchors.fill: parent
+                source: bgImageContainer
+                radius: root.blurRadius
+                visible: false
+            }
+
+            Item {
+                id: maskItem
+                anchors.fill: parent
+                visible: false
+                layer.enabled: true
+                Rectangle {
+                    anchors.fill: parent
+                    radius: root.radius
+                    color: "black"
+                    antialiasing: true
+                }
+            }
+
+            OpacityMask {
+                id: maskedBlurredBg
+                anchors.fill: parent
+                source: blurredBg
+                maskSource: maskItem
+            }
+        }
     }
 
     // In pureGlass mode: simple dark translucent base instead of wallpaper blur

@@ -252,7 +252,20 @@ Singleton {
         root.isRinging = false
         root.activeRingingAlarm = null
         ringRepeatTimer.stop()
-        Quickshell.execDetached(["bash", "-c", "killall -9 -q paplay pw-play mpv ffplay canberra-gtk-play 2>/dev/null"])
+        Quickshell.execDetached([
+            "bash", "-c",
+            "pkill -9 -f play-audio.sh 2>/dev/null; pkill -9 -f alarm-clock-elapsed 2>/dev/null; killall -9 -q paplay pw-play mpv ffplay canberra-gtk-play 2>/dev/null; mpc stop 2>/dev/null || mpc pause 2>/dev/null || true; playerctl pause 2>/dev/null || true"
+        ])
+        if (typeof Notifications !== "undefined" && Notifications.list) {
+            let toDiscard = []
+            for (let i = 0; i < Notifications.list.length; ++i) {
+                let n = Notifications.list[i]
+                if (n && n.summary && (n.summary.includes("⏰") || n.summary.toLowerCase().includes("alarm"))) {
+                    toDiscard.push(n.notificationId)
+                }
+            }
+            toDiscard.forEach(id => Notifications.discardNotification(id))
+        }
     }
 
     function dismissRinging() {

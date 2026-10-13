@@ -11,39 +11,44 @@ import Quickshell.Hyprland
 Scope {
     id: notificationPopup
 
-    PanelWindow {
-        id: root
-        visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked
-        screen: Quickshell.screens.find(s => Config.options.notifications?.forceMonitor?.enable ? s.name === Config.options.notifications?.forceMonitor?.name : s.name === Hyprland.focusedMonitor?.name) ?? null
+    Loader {
+        id: popupLoader
+        active: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked
 
-        WlrLayershell.namespace: "quickshell:notificationPopup"
-        WlrLayershell.layer: WlrLayer.Overlay
-        exclusiveZone: 0
+        sourceComponent: PanelWindow {
+            id: root
+            visible: true
+            screen: Quickshell.screens.find(s => Config.options.notifications?.forceMonitor?.enable ? s.name === Config.options.notifications?.forceMonitor?.name : s.name === Hyprland.focusedMonitor?.name) ?? null
 
-        anchors {
-            top: true
-            right: true
-            bottom: true
-        }
+            WlrLayershell.namespace: "quickshell:notificationPopup"
+            WlrLayershell.layer: WlrLayer.Overlay
+            exclusiveZone: 0
 
-        mask: Region {
-            item: listview.contentItem
-        }
-
-        color: "transparent"
-        implicitWidth: Appearance.sizes.notificationPopupWidth
-
-        NotificationListView {
-            id: listview
             anchors {
-                top: parent.top
-                bottom: parent.bottom
-                right: parent.right
-                rightMargin: 4
-                topMargin: 4
+                top: true
+                right: true
+                bottom: true
             }
-            implicitWidth: parent.width - Appearance.sizes.elevationMargin * 2
-            popup: true
+
+            mask: Region {
+                item: listview.contentItem
+            }
+
+            color: "transparent"
+            implicitWidth: Appearance.sizes.notificationPopupWidth
+
+            NotificationListView {
+                id: listview
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    right: parent.right
+                    rightMargin: 4
+                    topMargin: 4
+                }
+                implicitWidth: parent.width - Appearance.sizes.elevationMargin * 2
+                popup: true
+            }
         }
     }
 }

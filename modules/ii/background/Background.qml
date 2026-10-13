@@ -326,11 +326,13 @@ Variants {
                 y: bgRoot.parallaxY
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
+                sourceSize.width: Math.round(bgRoot.scaledW)
+                sourceSize.height: Math.round(bgRoot.scaledH)
                 fillMode: Image.PreserveAspectCrop
-                cache: true
+                cache: false
                 smooth: true
                 asynchronous: true
-                layer.enabled: true
+                layer.enabled: Boolean(source != "" && transitionEffect.visible)
                 visible: false
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
@@ -341,6 +343,8 @@ Variants {
                 y: bgRoot.parallaxY
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
+                sourceSize.width: Math.round(bgRoot.scaledW)
+                sourceSize.height: Math.round(bgRoot.scaledH)
                 fillMode: Image.PreserveAspectCrop
                 cache: true
                 smooth: true
@@ -548,73 +552,63 @@ Variants {
                 }
             }
 
-            // Centered wallpaper shadow behind shape
-            MaterialShape {
-                id: centeredWallpaperShadow
+            Loader {
+                id: centeredWallpaperLoader
                 z: 11
-                anchors.centerIn: parent
-                width: 1000
-                height: 1000
-                shape: bgRoot.centeredWallpaperShape
-                color: Qt.rgba(0, 0, 0, 0.5)
-                visible: opacity > 0
-                opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
-                scale: (bgRoot.centeredWallpaperSize / 1000) * (bgRoot.centeredWallpaperEnabled ? 1 : 0.85)
+                active: bgRoot.centeredWallpaperEnabled
+                visible: active
+                sourceComponent: Item {
+                    anchors.fill: parent
 
-                Behavior on opacity {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
-                }
-                Behavior on scale {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
-                }
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.9)
-                    shadowBlur: 0.95
-                    shadowVerticalOffset: 8
-                }
-            }
-
-            // Centered wallpaper shape displaying middle wallpaper
-            MaterialShape {
-                id: centeredWallpaperShapeItem
-                z: 12
-                anchors.centerIn: parent
-                width: 1000
-                height: 1000
-                color: "transparent"
-                shape: bgRoot.centeredWallpaperShape
-                transformOrigin: Item.Center
-                visible: opacity > 0
-                opacity: bgRoot.centeredWallpaperEnabled ? 1 : 0
-                scale: (bgRoot.centeredWallpaperSize / 1000) * (bgRoot.centeredWallpaperEnabled ? 1 : 0.85)
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
-                }
-                Behavior on scale {
-                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
-                }
-
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: MaterialShape {
+                    // Centered wallpaper shadow behind shape
+                    MaterialShape {
+                        id: centeredWallpaperShadow
+                        anchors.centerIn: parent
                         width: 1000
                         height: 1000
                         shape: bgRoot.centeredWallpaperShape
-                    }
-                }
+                        color: Qt.rgba(0, 0, 0, 0.5)
+                        scale: (bgRoot.centeredWallpaperSize / 1000)
 
-                Image {
-                    anchors.fill: parent
-                    source: bgRoot.wallpaperPath ? ("file://" + CF.FileUtils.trimFileProtocol(Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath))) : ""
-                    fillMode: Image.PreserveAspectCrop
-                    cache: true
-                    asynchronous: true
-                    antialiasing: true
-                    smooth: true
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Qt.rgba(0, 0, 0, 0.9)
+                            shadowBlur: 0.95
+                            shadowVerticalOffset: 8
+                        }
+                    }
+
+                    // Centered wallpaper shape displaying middle wallpaper
+                    MaterialShape {
+                        id: centeredWallpaperShapeItem
+                        anchors.centerIn: parent
+                        width: 1000
+                        height: 1000
+                        color: "transparent"
+                        shape: bgRoot.centeredWallpaperShape
+                        transformOrigin: Item.Center
+                        scale: (bgRoot.centeredWallpaperSize / 1000)
+
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: MaterialShape {
+                                width: 1000
+                                height: 1000
+                                shape: bgRoot.centeredWallpaperShape
+                            }
+                        }
+
+                        Image {
+                            anchors.fill: parent
+                            source: bgRoot.wallpaperPath ? ("file://" + CF.FileUtils.trimFileProtocol(Images.getStaticWallpaperImage(bgRoot.wallpaperPath, Config.options.background.thumbnailPath))) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            cache: false
+                            asynchronous: true
+                            antialiasing: true
+                            smooth: true
+                        }
+                    }
                 }
             }
 
@@ -713,7 +707,7 @@ Variants {
                         ? liveVideoOutput
                         : (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect)
                     hideSource: false   // keep original wallpaper visible for non-blur code paths
-                    live: true
+                    live: bgRoot.wallpaperIsVideo || (bgRoot.transitionProgress < 1.0)
                 }
 
 

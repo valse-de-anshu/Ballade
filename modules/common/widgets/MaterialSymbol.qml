@@ -17,8 +17,7 @@ StyledText {
         pixelSize: iconSize
         weight: resolvedFill > 0.5 ? Font.DemiBold : Font.Normal
         variableAxes: {
-            "FILL": resolvedFill,
-            "opsz": iconSize,
+            "FILL": resolvedFill
         }
     }
 }

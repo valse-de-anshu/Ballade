@@ -80,6 +80,19 @@ Item {
                 anchors.fill: parent
                 spacing: 10
 
+                property var loadedTabs: ({})
+                function isTabLoaded(idx) {
+                    return loadedTabs[idx] === true;
+                }
+                function markTab(idx) {
+                    if (loadedTabs[idx]) return;
+                    let c = Object.assign({}, loadedTabs);
+                    c[idx] = true;
+                    loadedTabs = c;
+                }
+                onCurrentIndexChanged: markTab(currentIndex)
+                Component.onCompleted: markTab(currentIndex)
+
                 clip: true
                 layer.enabled: true
                 layer.effect: OpacityMask {
@@ -91,22 +104,22 @@ Item {
                 }
 
                 Loader {
-                    active: root.aiChatEnabled
+                    active: root.aiChatEnabled && swipeView.isTabLoaded(0)
                     visible: active
                     sourceComponent: Component { AiChat { scopeRoot: root.scopeRoot } }
                 }
                 Loader {
-                    active: root.translatorEnabled
+                    active: root.translatorEnabled && swipeView.isTabLoaded(1)
                     visible: active
                     sourceComponent: Component { Translator {} }
                 }
                 Loader {
-                    active: root.mediaEnabled
+                    active: root.mediaEnabled && swipeView.isTabLoaded(2)
                     visible: active
                     sourceComponent: Component { SidebarPlayerControl {} }
                 }
                 Loader {
-                    active: root.animeEnabled && !root.animeCloset
+                    active: (root.animeEnabled && !root.animeCloset) && swipeView.isTabLoaded(3)
                     visible: active
                     sourceComponent: Component { Anime {} }
                 }

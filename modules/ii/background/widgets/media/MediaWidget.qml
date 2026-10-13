@@ -93,15 +93,6 @@ AbstractBackgroundWidget {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
         }
 
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: card.width
-                height: card.height
-                radius: card.radius
-            }
-        }
-
         Loader {
             anchors.fill: parent
             sourceComponent: {
@@ -203,7 +194,7 @@ AbstractBackgroundWidget {
                         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
                     }
 
-                    layer.enabled: true
+                    layer.enabled: Boolean(root.displayedArtFilePath !== "")
                     layer.effect: StyledBlurEffect {
                         source: blurredArt
                     }
@@ -233,15 +224,6 @@ AbstractBackgroundWidget {
                         color: Appearance.colors.colSurfaceContainerLow
                         radius: 20
                         clip: true
-
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: artCard.width
-                                height: artCard.height
-                                radius: artCard.radius
-                            }
-                        }
 
                         StyledImage {
                             anchors.fill: parent
@@ -398,7 +380,7 @@ Image {
                 NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
             }
 
-            layer.enabled: true
+            layer.enabled: Boolean(root.displayedArtFilePath !== "")
             layer.effect: StyledBlurEffect {
                 source: blurredArt
             }
@@ -430,14 +412,6 @@ Image {
                     color: Appearance.colors.colSurfaceContainerLow
                     radius: 20
                     clip: true
-                    layer.enabled: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: artRect.width
-                            height: artRect.height
-                            radius: artRect.radius
-                        }
-                    }
 
                     StyledImage {
                         anchors.fill: parent

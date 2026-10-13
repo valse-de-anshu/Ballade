@@ -1,7 +1,9 @@
 import QtQuick
 import Quickshell
 
+import qs
 import qs.modules.common
+import qs.services
 import qs.modules.ii.background
 import qs.modules.ii.bar
 import qs.modules.ii.cheatsheet
@@ -43,7 +45,7 @@ Scope {
     PanelLoader { component: Overview {} }
     PanelLoader { component: Polkit {} }
     PanelLoader { component: RegionSelector {} }
-    PanelLoader { component: ScreenCorners {} }
+    PanelLoader { extraCondition: (Config.options.appearance.fakeScreenRounding > 0 || Config.options.sidebar.cornerOpen.enable); component: ScreenCorners {} }
     PanelLoader { component: ScreenTranslator {} }
     PanelLoader { component: SessionScreen {} }
     PanelLoader { component: SidebarLeft {} }
@@ -52,5 +54,5 @@ Scope {
     PanelLoader { component: WallpaperSelector {} }
     PanelLoader { component: Settings {} }
     PanelLoader { component: DesktopMenu {} }
-    PanelLoader { component: DropShelfPanel {} }
+    PanelLoader { extraCondition: GlobalStates.dropShelfOpen; component: DropShelfPanel {} }
 }

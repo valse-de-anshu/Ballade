@@ -189,7 +189,7 @@ MouseArea {
 
             Loader {
                 id: loader
-                active: wrapper.isEnabled
+                active: wrapper.isEnabled && GlobalStates.screenLocked
                 onLoaded: {
                     if (item) {
                         item.draggable = false;

@@ -57,15 +57,7 @@ Item {
         anchors.margins: Appearance.sizes.elevationMargin
         color: ColorUtils.applyAlpha(blendedColors.colLayer0, 1)
         radius: root.radius
-
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: background.width
-                height: background.height
-                radius: background.radius
-            }
-        }
+        clip: true
 
         Image {
             id: blurredArt
@@ -78,7 +70,7 @@ Item {
             antialiasing: true
             asynchronous: true
 
-            layer.enabled: true
+            layer.enabled: Boolean(root.displayedArtFilePath !== "")
             layer.effect: StyledBlurEffect {
                 source: blurredArt
             }

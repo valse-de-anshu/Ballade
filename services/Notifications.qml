@@ -228,8 +228,13 @@ Singleton {
             if (notifObj && notifObj.timer) {
                 notifObj.timer.destroy();
             }
+            if ((typeof Alarms !== "undefined") && (Alarms.isRinging || (notifObj && notifObj.summary && (notifObj.summary.includes("⏰") || notifObj.summary.toLowerCase().includes("alarm"))))) {
+                Alarms.stopRinging();
+            }
             root.list = root.list.filter((notif) => notif.notificationId !== id);
             notifFileView.setText(stringifyList(root.list));
+        } else if ((typeof Alarms !== "undefined") && Alarms.isRinging) {
+            Alarms.stopRinging();
         }
         if (notifServerIndex !== -1) {
             notifServer.trackedNotifications.values[notifServerIndex].dismiss()
@@ -301,7 +306,15 @@ Singleton {
         id: notifFileView
         path: Qt.resolvedUrl(filePath)
         onLoaded: {
-            let rawParsed = JSON.parse(fileContents);
+            const content = notifFileView.text();
+            let rawParsed = [];
+            try {
+                if (content && content.trim().length > 0) {
+                    rawParsed = JSON.parse(content);
+                }
+            } catch (e) {
+                rawParsed = [];
+            }
             if (Array.isArray(rawParsed) && rawParsed.length > 50) {
                 rawParsed = rawParsed.slice(rawParsed.length - 50);
             }

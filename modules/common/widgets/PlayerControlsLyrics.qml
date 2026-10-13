@@ -56,15 +56,7 @@ Item {
                 implicitWidth: 150
                 radius: 16
                 color: ColorUtils.transparentize(root.blendedColors.colLayer1, 0.5)
-
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: artBackground.width
-                        height: artBackground.height
-                        radius: artBackground.radius
-                    }
-                }
+                clip: true
 
                 StyledImage {
                     id: mediaArt

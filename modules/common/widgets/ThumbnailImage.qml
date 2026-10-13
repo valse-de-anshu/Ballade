@@ -48,6 +48,8 @@ StyledImage {
     asynchronous: true
     smooth: true
     mipmap: false
+    sourceSize.width: width > 0 ? Math.min(512, Math.round(width * 1.5)) : 320
+    sourceSize.height: height > 0 ? Math.min(512, Math.round(height * 1.5)) : 200
 
     opacity: status === Image.Ready ? 1 : 0
     Behavior on opacity {
