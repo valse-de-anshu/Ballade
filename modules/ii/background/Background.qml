@@ -116,11 +116,10 @@ Variants {
         property string currentShader: "magic"
         property string wallpaperAnimation: Config.options.background.wallpaperAnimation ?? "random"
 
-        property list<HyprlandWorkspace> workspacesForMonitor: Hyprland.workspaces.values.filter(workspace => workspace.monitor && workspace.monitor.name == monitor.name)
-        property var activeWorkspaceWithFullscreen: workspacesForMonitor.filter(workspace => ((workspace.toplevels.values.filter(window => window.wayland?.fullscreen)[0] != undefined) && workspace.active))[0]
-        visible: GlobalStates.screenLocked || (!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen
-
         property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
+        property list<HyprlandWorkspace> workspacesForMonitor: Hyprland.workspaces.values.filter(workspace => workspace.monitor && monitor && workspace.monitor.name == monitor.name)
+        property var activeWorkspaceWithFullscreen: monitor ? workspacesForMonitor.filter(workspace => ((workspace.toplevels.values.filter(window => window.wayland?.fullscreen)[0] != undefined) && workspace.active))[0] : undefined
+        visible: GlobalStates.screenLocked || (!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen
 
         // ── Parallax ──────────────────────────────────────────────────────
         property int workspaceChunkSize: Config?.options.bar.workspaces.shown ?? 10
@@ -350,8 +349,7 @@ Variants {
                 smooth: true
                 asynchronous: true
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: !bgRoot.wallpaperIsVideo && (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen))
-                    && (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0)
+                visible: !bgRoot.wallpaperIsVideo || !bgRoot.videoRevealed
                 onStatusChanged: {
                     if (status === Image.Ready && bgRoot.transitionProgress === 0.0) {
                         transitionAnim.restart()
@@ -367,7 +365,7 @@ Variants {
                 loops: MediaPlayer.Infinite
                 audioOutput: null
 
-                readonly property bool shouldPlay: bgRoot.wallpaperIsVideo && !GlobalStates.screenLocked && !(ToplevelManager?.activeToplevel?.fullscreen ?? false)
+                readonly property bool shouldPlay: bgRoot.wallpaperIsVideo && !GlobalStates.screenLocked && (!(bgRoot.activeWorkspaceWithFullscreen != undefined))
 
                 function updatePlayback() {
                     if (shouldPlay) {
@@ -377,9 +375,15 @@ Variants {
                     }
                 }
 
+                onShouldPlayChanged: updatePlayback()
                 Component.onCompleted: updatePlayback()
                 onMediaStatusChanged: {
                     if ((mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) && shouldPlay) {
+                        play();
+                    }
+                }
+                onPlaybackStateChanged: {
+                    if (playbackState === MediaPlayer.StoppedState && shouldPlay) {
                         play();
                     }
                 }
@@ -412,6 +416,9 @@ Variants {
                 function onEffectiveWallpaperPathChanged() {
                     liveWallpaperPlayer.updatePlayback();
                 }
+                function onActiveWorkspaceWithFullscreenChanged() {
+                    liveWallpaperPlayer.updatePlayback();
+                }
             }
 
             VideoOutput {
@@ -421,8 +428,7 @@ Variants {
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
                 fillMode: VideoOutput.PreserveAspectCrop
-                layer.enabled: (blurLoader.active || fastBlurLoader.active) && bgRoot.blurFullScreen
-                visible: bgRoot.wallpaperIsVideo
+                visible: bgRoot.wallpaperIsVideo && bgRoot.videoRevealed
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
 
@@ -433,7 +439,7 @@ Variants {
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: (!blurLoader.active && (!fastBlurLoader.active || !bgRoot.blurFullScreen)) && bgRoot.wallpaperAnimation !== "" && !bgRoot.videoRevealed
+                visible: bgRoot.wallpaperAnimation !== "" && !bgRoot.videoRevealed
                     && bgRoot.transitionProgress < 1.0
                 property var fromImage: previousWallpaper
                 property var toImage: wallpaper
@@ -491,7 +497,7 @@ Variants {
             Loader {
                 id: fastBlurLoader
                 z: 7
-                active: !GlobalStates.screenLocked && (bgRoot.userBlurActive || bgRoot.overviewBlurActive)
+                active: !GlobalStates.screenLocked && !bgRoot.wallpaperIsVideo && (bgRoot.userBlurActive || bgRoot.overviewBlurActive)
                     && (!bgRoot.centeredWallpaperEnabled || bgRoot.blurFullScreen)
                 x: bgRoot.parallaxX
                 y: bgRoot.parallaxY
@@ -695,22 +701,18 @@ Variants {
                 width: bgRoot.scaledW
                 height: bgRoot.scaledH
                 // Only needs to exist (and be usable as a source) when blur is active
-                visible: bgRoot.userBlurActive || bgRoot.overviewBlurActive
+                visible: fastBlurLoader.active
                 // layer.enabled makes Qt render this subtree to an offscreen texture
                 // that FastBlur can sample from — this is the key to compositing
-                layer.enabled: bgRoot.userBlurActive || bgRoot.overviewBlurActive
+                layer.enabled: fastBlurLoader.active
 
-                // Wallpaper / video captured via ShaderEffectSource into the composite
+                // Wallpaper captured via ShaderEffectSource into the composite
                 ShaderEffectSource {
                     anchors.fill: parent
-                    sourceItem: bgRoot.wallpaperIsVideo
-                        ? liveVideoOutput
-                        : (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect)
+                    sourceItem: (bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0) ? wallpaper : transitionEffect
                     hideSource: false   // keep original wallpaper visible for non-blur code paths
-                    live: bgRoot.wallpaperIsVideo || (bgRoot.transitionProgress < 1.0)
+                    live: true
                 }
-
-
             }
 
 
