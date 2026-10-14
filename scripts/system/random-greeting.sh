@@ -22,8 +22,8 @@ SUBTITLE=$(grep "^$BASENAME|" "$SUB_FILE" | cut -d '|' -f2)
 DURATION=$(ffprobe -i "$SELECTED_FILE" -show_entries format=duration -v quiet -of csv="p=0")
 DURATION_MS=$(printf "%.0f" "$(echo "$DURATION * 1000" | bc)")
 
-# Play audio (no waiting, no lifecycle hacks)
-"$MPV" --no-video --no-terminal --keep-open=no --volume=85 --audio-buffer=0.1 "$SELECTED_FILE" &
+# Play audio (no window, no terminal, pure headless audio)
+"$MPV" --no-config --no-video --no-audio-display --force-window=no --no-terminal --keep-open=no --really-quiet --volume=85 --audio-buffer=0.1 "$SELECTED_FILE" &
 
 # Show notification with proper timeout
 "$NOTIFY" -t "$DURATION_MS" "" "$SUBTITLE"

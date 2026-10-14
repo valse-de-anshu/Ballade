@@ -95,7 +95,7 @@ play_audio_once() {
         elif command -v paplay &>/dev/null; then
             paplay --volume="$pa_vol" "$audio_file" 2>/dev/null || true
         elif command -v mpv &>/dev/null; then
-            mpv --no-video --volume="$volume" "$audio_file" 2>/dev/null || true
+            mpv --no-config --no-video --no-audio-display --force-window=no --no-terminal --keep-open=no --really-quiet --volume="$volume" "$audio_file" 2>/dev/null || true
         elif command -v ffplay &>/dev/null; then
             ffplay -nodisp -autoexit -volume "$volume" "$audio_file" 2>/dev/null || true
         else

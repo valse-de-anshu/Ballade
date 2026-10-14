@@ -35,7 +35,7 @@ if [[ -n "$AUDIO_PATH" && -f "$AUDIO_PATH" ]]; then
     elif command -v paplay &>/dev/null; then
         paplay --volume="$pa_vol" "$AUDIO_PATH" 2>/dev/null || true
     elif command -v mpv &>/dev/null; then
-        mpv --no-video --no-terminal --keep-open=no --volume="$VOLUME" --audio-buffer=0.1 "$AUDIO_PATH" 2>/dev/null || true
+        mpv --no-config --no-video --no-audio-display --force-window=no --no-terminal --keep-open=no --really-quiet --volume="$VOLUME" --audio-buffer=0.1 "$AUDIO_PATH" 2>/dev/null || true
     fi
 else
     # Fallback to system freedesktop sound theme
