@@ -187,12 +187,13 @@ MouseArea { // Notification group area
                     Layout.fillWidth: true
                     property real fontSize: Appearance.font.pixelSize.smaller
                     property bool showAppName: root.multipleNotifications
-                    implicitHeight: Math.max(topTextRow.implicitHeight, expandButton.implicitHeight)
+                    implicitHeight: Math.max(topTextRow.implicitHeight, Math.max(expandButton.implicitHeight, groupCloseButton.implicitHeight))
 
                     RowLayout {
                         id: topTextRow
                         anchors.left: parent.left
-                        anchors.right: expandButton.left
+                        anchors.right: expandButton.visible ? expandButton.left : (groupCloseButton.visible ? groupCloseButton.left : parent.right)
+                        anchors.rightMargin: 4
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 5
                         StyledText {
@@ -222,7 +223,8 @@ MouseArea { // Notification group area
                     NotificationGroupExpandButton {
                         id: expandButton
                         visible: root.multipleNotifications
-                        anchors.right: parent.right
+                        anchors.right: groupCloseButton.visible ? groupCloseButton.left : parent.right
+                        anchors.rightMargin: 4
                         anchors.verticalCenter: parent.verticalCenter
                         count: root.notificationCount
                         expanded: root.expanded
@@ -232,6 +234,31 @@ MouseArea { // Notification group area
 
                         StyledToolTip {
                             text: Translation.tr("Tip: right-clicking a group\nalso expands it")
+                        }
+                    }
+
+                    RippleButton {
+                        id: groupCloseButton
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 20
+                        implicitHeight: 20
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: containsMouse ? Appearance.colors.colLayer2Hover : "transparent"
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        visible: root.containsMouse || root.popup
+
+                        contentItem: MaterialSymbol {
+                            anchors.centerIn: parent
+                            iconSize: 13
+                            color: groupCloseButton.containsMouse ? Appearance.colors.colOnLayer2 : Appearance.colors.colSubtext
+                            text: "close"
+                        }
+
+                        onClicked: {
+                            root.notifications.forEach(notif => {
+                                Notifications.discardNotification(notif.notificationId);
+                            });
                         }
                     }
                 }

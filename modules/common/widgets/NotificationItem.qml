@@ -259,10 +259,7 @@ Item { // Notification item area
                                     (contentItem.implicitWidth + leftPadding + rightPadding)
 
                                 onClicked: {
-                                    if ((typeof Alarms !== "undefined") && Alarms.isRinging && notificationObject && notificationObject.summary && (notificationObject.summary.includes("⏰") || notificationObject.summary.toLowerCase().includes("alarm"))) {
-                                        Alarms.stopRinging();
-                                    }
-                                    root.destroyWithAnimation()
+                                    Notifications.discardNotification(notificationObject.notificationId);
                                 }
 
                                 contentItem: MaterialSymbol {

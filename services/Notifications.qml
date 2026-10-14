@@ -228,13 +228,8 @@ Singleton {
             if (notifObj && notifObj.timer) {
                 notifObj.timer.destroy();
             }
-            if ((typeof Alarms !== "undefined") && (Alarms.isRinging || (notifObj && notifObj.summary && (notifObj.summary.includes("⏰") || notifObj.summary.toLowerCase().includes("alarm"))))) {
-                Alarms.stopRinging();
-            }
             root.list = root.list.filter((notif) => notif.notificationId !== id);
             notifFileView.setText(stringifyList(root.list));
-        } else if ((typeof Alarms !== "undefined") && Alarms.isRinging) {
-            Alarms.stopRinging();
         }
         if (notifServerIndex !== -1) {
             notifServer.trackedNotifications.values[notifServerIndex].dismiss()

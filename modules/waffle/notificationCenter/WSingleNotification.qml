@@ -22,9 +22,7 @@ MouseArea {
     hoverEnabled: true
 
     function dismiss() {
-        Qt.callLater(() => {
-            Notifications.discardNotification(root.notification?.notificationId);
-        });
+        Notifications.discardNotification(root.notification?.notificationId);
         removeAnimation.start();
     }
 
