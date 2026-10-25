@@ -783,7 +783,14 @@ ContentPage {
                         {
                             icon: "graphic_eq",
                             name: Translation.tr("Visualizer"),
+                            id: "visualizer",
                             enabled: Config.options.background.widgets.visualizer.enable
+                        },
+                        {
+                            icon: "album",
+                            name: Translation.tr("Visualizer 2"),
+                            id: "visualizer2",
+                            enabled: Boolean(Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
                         },
                         {
                             icon: "calendar_month",
@@ -841,8 +848,12 @@ ContentPage {
                                             Config.options.background.widgets.media.enable = checked
                                         else if (modelData.icon === "memory")
                                             Config.options.background.widgets.resources.enable = checked
-                                        else if (modelData.icon === "graphic_eq")
+                                        else if (modelData.id === "visualizer" || (modelData.icon === "graphic_eq" && modelData.id !== "visualizer2"))
                                             Config.options.background.widgets.visualizer.enable = checked
+                                        else if (modelData.id === "visualizer2" || modelData.icon === "album") {
+                                            if (Config.options.background.widgets.visualizer2)
+                                                Config.options.background.widgets.visualizer2.enable = checked
+                                        }
                                         else if (modelData.icon === "calendar_month")
                                             Config.options.background.widgets.calendar.enable = checked
                                         else if (modelData.icon === "public")
@@ -1015,6 +1026,147 @@ ContentPage {
                     stopIndicatorValues: [380]
                     onValueChanged: {
                         settingsVisualizer.entry.ringSize = Math.round(value);
+                    }
+                }
+            }
+        }
+
+        ContentSection {
+            id: settingsVisualizer2
+            icon: "album"
+            shape: MaterialShape.Shape.Cookie4Sided
+            title: Translation.tr("Secondary GPU Visualizer (Extra)")
+
+            readonly property var entry: Config.options.background.widgets.visualizer2
+            readonly property bool isShader: Boolean(entry && entry.style !== "bars")
+            readonly property bool isRing: Boolean(entry && entry.style === "ring")
+            readonly property bool bandStyle: Boolean(entry && ["mirror", "aurora", "dots"].includes(entry.style))
+
+            GroupedList {
+                ConfigSwitch {
+                    Layout.fillWidth: true
+                    buttonIcon: "check"
+                    text: Translation.tr("Enable Secondary Visualizer")
+                    checked: settingsVisualizer2.entry ? settingsVisualizer2.entry.enable : false
+                    onCheckedChanged: {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.enable = checked;
+                            Config.save();
+                        }
+                    }
+                }
+
+                ConfigSelectionArray {
+                    stacked: true
+                    text: Translation.tr("Shader Style")
+                    icon: "style"
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable)
+                    currentValue: settingsVisualizer2.entry ? settingsVisualizer2.entry.style : "ring"
+                    onSelected: newValue => {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.style = newValue;
+                            Config.save();
+                        }
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("Ring"),
+                            icon: "album",
+                            value: "ring"
+                        },
+                        {
+                            displayName: Translation.tr("Classic"),
+                            icon: "bar_chart",
+                            value: "bars"
+                        },
+                        {
+                            displayName: Translation.tr("Mirror"),
+                            icon: "equalizer",
+                            value: "mirror"
+                        },
+                        {
+                            displayName: Translation.tr("Aurora"),
+                            icon: "waves",
+                            value: "aurora"
+                        },
+                        {
+                            displayName: Translation.tr("Dots"),
+                            icon: "grid_on",
+                            value: "dots"
+                        }
+                    ]
+                }
+
+                ConfigSelectionArray {
+                    text: Translation.tr("Colors")
+                    icon: "palette"
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable && settingsVisualizer2.isShader)
+                    currentValue: settingsVisualizer2.entry ? settingsVisualizer2.entry.colorSource : "theme"
+                    onSelected: newValue => {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.colorSource = newValue;
+                            Config.save();
+                        }
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("Theme"),
+                            icon: "palette",
+                            value: "theme"
+                        },
+                        {
+                            displayName: Translation.tr("Album cover"),
+                            icon: "album",
+                            value: "cover"
+                        }
+                    ]
+                }
+
+                ConfigSlider {
+                    text: Translation.tr("Sensitivity (%)")
+                    buttonIcon: "tune"
+                    usePercentTooltip: false
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable && settingsVisualizer2.isShader)
+                    value: settingsVisualizer2.entry ? settingsVisualizer2.entry.sensitivity * 100 : 100
+                    from: 50
+                    to: 300
+                    stopIndicatorValues: [100]
+                    onValueChanged: {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.sensitivity = Math.round(value) / 100;
+                        }
+                    }
+                }
+
+                ConfigSlider {
+                    text: Translation.tr("Height (%)")
+                    buttonIcon: "height"
+                    usePercentTooltip: true
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable && settingsVisualizer2.bandStyle)
+                    value: settingsVisualizer2.entry ? settingsVisualizer2.entry.height : 100
+                    from: 0
+                    to: 100
+                    stopIndicatorValues: [100]
+                    onValueChanged: {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.height = Math.round(value);
+                        }
+                    }
+                }
+
+                ConfigSlider {
+                    text: Translation.tr("Ring Size")
+                    buttonIcon: "aspect_ratio"
+                    usePercentTooltip: false
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable && settingsVisualizer2.isRing)
+                    value: settingsVisualizer2.entry ? settingsVisualizer2.entry.ringSize : 380
+                    from: 200
+                    to: 900
+                    stopIndicatorValues: [380]
+                    onValueChanged: {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.ringSize = Math.round(value);
+                        }
                     }
                 }
             }

@@ -110,6 +110,20 @@ Variants {
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: VisualizerWidget {
+                    configEntryName: "visualizer"
+                    screenWidth: widgetsRoot.screen.width
+                    screenHeight: widgetsRoot.screen.height
+                    scaledScreenWidth: widgetsRoot.screen.width
+                    scaledScreenHeight: widgetsRoot.screen.height
+                    wallpaperScale: 1
+                }
+            }
+            FadeLoader {
+                shown: Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable
+                    && (Config.options.background.screenList.length === 0
+                        || Config.options.background.screenList.includes(widgetsRoot.screen.name))
+                sourceComponent: VisualizerWidget {
+                    configEntryName: "visualizer2"
                     screenWidth: widgetsRoot.screen.width
                     screenHeight: widgetsRoot.screen.height
                     scaledScreenWidth: widgetsRoot.screen.width

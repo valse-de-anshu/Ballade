@@ -20,14 +20,14 @@ AbstractBackgroundWidget {
     readonly property bool isRing: style === "ring"
     readonly property bool useCoverColors: shaderStyle && Boolean(configEntry && configEntry.colorSource === "cover")
 
-    property real ringSize: (Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.ringSize) ? Config.options.background.widgets.visualizer.ringSize : 380
+    property real ringSize: (root.configEntry && root.configEntry.ringSize) ? root.configEntry.ringSize : 380
     property bool isResizing: false
     Connections {
-        target: Config.options.background.widgets.visualizer
+        target: root.configEntry
         function onRingSizeChanged() {
             if (root.isResizing) return;
-            const cfgVal = Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.ringSize
-                ? Config.options.background.widgets.visualizer.ringSize
+            const cfgVal = root.configEntry && root.configEntry.ringSize
+                ? root.configEntry.ringSize
                 : 380;
             if (Math.abs(root.ringSize - cfgVal) > 1) {
                 root.ringSize = cfgVal;
@@ -42,13 +42,19 @@ AbstractBackgroundWidget {
     readonly property real barsHeight: 240
 
     function getSavedRingX() {
-        if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
+        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.x !== undefined && root.configEntry.x !== null) {
+            return root.configEntry.x;
+        }
+        if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x !== null && root.configEntry.x !== 0) {
             return root.configEntry.x;
         }
         return Math.round((root.scaledScreenWidth - root.width) / 2);
     }
     function getSavedRingY() {
-        if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
+        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.y !== undefined && root.configEntry.y !== null) {
+            return root.configEntry.y;
+        }
+        if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y !== null && root.configEntry.y !== 0) {
             return root.configEntry.y;
         }
         return Math.round((root.scaledScreenHeight - root.height) / 2);
@@ -77,20 +83,31 @@ AbstractBackgroundWidget {
         root.y = Qt.binding(() => root.isRing ? root.targetY : (root.screenHeight - root.implicitHeight));
     }
 
-    onReleased: {
-        if (root.isRing && root.configEntry) {
-            const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
-            const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
-            root.configEntry.placementStrategy = "free";
-            root.configEntry.x = newX;
-            root.configEntry.y = newY;
-            Config.save();
-            root.targetX = newX;
-            root.targetY = newY;
-            root.x = newX;
-            root.y = newY;
-        }
+    function saveVisualizerPosition() {
+        if (!root.isRing || !root.configEntry || root.isLockWidget) return;
+        const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
+        const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
+        root.configEntry.placementStrategy = "free";
+        root.configEntry.x = newX;
+        root.configEntry.y = newY;
+        Config.save();
+        root.targetX = newX;
+        root.targetY = newY;
+        root.x = newX;
+        root.y = newY;
         root.restoreXYBinding();
+    }
+
+    onDraggingChanged: {
+        if (!dragging && !isLockWidget && isRing && configEntry) {
+            saveVisualizerPosition();
+        }
+    }
+
+    onReleased: {
+        if (!isLockWidget && isRing && configEntry) {
+            saveVisualizerPosition();
+        }
     }
 
     Component.onCompleted: {
@@ -292,7 +309,7 @@ AbstractBackgroundWidget {
         }
         onResizeFinished: {
             const finalSize = root.ringSize;
-            Config.options.background.widgets.visualizer.ringSize = finalSize;
+            if (root.configEntry) root.configEntry.ringSize = finalSize;
             Config.save();
             // Reset flag after a short delay so the Connections handler doesn't fight us
             resizeCooldownTimer.restart();

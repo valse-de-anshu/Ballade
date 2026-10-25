@@ -379,6 +379,19 @@ Singleton {
                         property int ringSize: 380
                     }
 
+                    property JsonObject visualizer2: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 0
+                        property real y: 0
+                        property real z: -1000
+                        property string style: "ring" // "bars", "mirror", "aurora", "ring", "dots"
+                        property string colorSource: "theme" // "theme", "cover"
+                        property real sensitivity: 1
+                        property int height: 100
+                        property int ringSize: 380
+                    }
+
                     property JsonObject customImage: JsonObject {
                         property bool enable: false
                         property string placementStrategy: "free"

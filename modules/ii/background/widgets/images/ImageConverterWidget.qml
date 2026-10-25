@@ -144,7 +144,13 @@ AbstractBackgroundWidget {
     function stageFiles(urls) {
         var valid = []
         for (var i = 0; i < urls.length; i++) {
-            var cleanPath = urls[i].toString().replace(/^file:\/\//, "").trim()
+            var raw = urls[i].toString().trim()
+            if (!raw) continue
+            var unquoted = raw.replace(/^file:\/\//, "")
+            try {
+                unquoted = decodeURIComponent(unquoted)
+            } catch (e) {}
+            var cleanPath = unquoted.trim()
             var ext = cleanPath.split(".").pop().toLowerCase()
             if (root.acceptedExtensions.indexOf(ext) !== -1)
                 valid.push(cleanPath)
@@ -164,6 +170,7 @@ AbstractBackgroundWidget {
 
         // Read input file size
         statProc.targetPath = valid[0]
+        statProc.running = false
         statProc.running = true
     }
 
@@ -255,6 +262,7 @@ AbstractBackgroundWidget {
         id: converter
         property string inputPath: ""
         property string outputPath: ""
+        property string lastError: ""
         command: [
             "python3",
             root.scriptPath,
@@ -264,17 +272,28 @@ AbstractBackgroundWidget {
             "--fps", root.selectedFps.toString(),
             "--max-bytes", root.selectedSizeLimit.toString()
         ]
+        stderr: StdioCollector {
+            onDataChanged: {
+                if (text && text.trim().length > 0) {
+                    converter.lastError = text.trim()
+                }
+            }
+        }
         onExited: (exitCode) => {
             root.queueDone++
             if (exitCode !== 0) {
                 root.dropStatus = "error"
-                root.statusMessage = "Failed: " + inputPath.replace(/.*\//, "")
+                var errMsg = converter.lastError ? converter.lastError.split("\n").pop() : "Failed"
+                if (errMsg.length > 35) errMsg = errMsg.substring(0, 32) + "..."
+                root.statusMessage = errMsg
+                console.warn("[ImageConverter] Error converting " + inputPath + ": " + converter.lastError)
                 root.fileQueue = []
                 root.queueTotal = 0
                 root.queueDone = 0
                 resetTimer.start()
                 return
             }
+            converter.lastError = ""
             if (root.fileQueue.length > 0) {
                 root.statusMessage = "Baking " + (root.queueDone + 1) + " / " + root.queueTotal + "..."
                 processNext()
@@ -293,13 +312,25 @@ AbstractBackgroundWidget {
     Process {
         id: batchMaker
         property string outputPath: ""
+        property string lastError: ""
+        stderr: StdioCollector {
+            onDataChanged: {
+                if (text && text.trim().length > 0) {
+                    batchMaker.lastError = text.trim()
+                }
+            }
+        }
         onExited: (exitCode) => {
             if (exitCode === 0) {
+                batchMaker.lastError = ""
                 root.dropStatus = "done"
                 root.statusMessage = "Saved: " + outputPath.replace(/.*\//, "")
             } else {
                 root.dropStatus = "error"
-                root.statusMessage = "Conversion failed"
+                var errMsg = batchMaker.lastError ? batchMaker.lastError.split("\n").pop() : "Conversion failed"
+                if (errMsg.length > 35) errMsg = errMsg.substring(0, 32) + "..."
+                root.statusMessage = errMsg
+                console.warn("[ImageConverter] Batch error: " + batchMaker.lastError)
             }
             root.batchPaths = []
             resetTimer.start()
@@ -859,7 +890,6 @@ AbstractBackgroundWidget {
         // Full-Card Drag & Drop Area
         DropArea {
             anchors.fill: parent
-            keys: ["text/uri-list"]
             onEntered: (drag) => {
                 drag.accept(Qt.CopyAction)
                 root.dropStatus = "hover"
@@ -869,8 +899,18 @@ AbstractBackgroundWidget {
                     root.dropStatus = root.stagedFiles.length > 0 ? "staged" : "idle"
             }
             onDropped: (drop) => {
+                var urls = []
                 if (drop.hasUrls && drop.urls.length > 0) {
-                    root.stageFiles(drop.urls)
+                    urls = drop.urls
+                } else if (drop.hasText && drop.text.length > 0) {
+                    var lines = drop.text.trim().split("\n")
+                    for (var i = 0; i < lines.length; i++) {
+                        var l = lines[i].trim()
+                        if (l) urls.push(l)
+                    }
+                }
+                if (urls.length > 0) {
+                    root.stageFiles(urls)
                 } else {
                     root.dropStatus = "error"
                     root.statusMessage = "Could not read dropped file"

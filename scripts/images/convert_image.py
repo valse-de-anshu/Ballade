@@ -289,18 +289,24 @@ def optimize_single_image(src_path, dst_path, target_fmt, max_bytes=0, fps=15):
 
     try:
         img = Image.open(src_path)
+        img.load()
     except Exception:
         # If Pillow cannot open (e.g. source is HEIC/PSD), try magick first to temporary png
         tmp_png = dst_path + ".tmp.png"
         res = subprocess.run(["magick", src_path, tmp_png], capture_output=True)
         if res.returncode == 0 and os.path.exists(tmp_png):
-            img = Image.open(tmp_png)
             try:
-                os.remove(tmp_png)
+                img = Image.open(tmp_png)
+                img.load()
             except Exception:
-                pass
+                return convert_with_magick(src_path, dst_path, target_fmt, max_bytes)
+            finally:
+                try:
+                    os.remove(tmp_png)
+                except Exception:
+                    pass
         else:
-            return False
+            return convert_with_magick(src_path, dst_path, target_fmt, max_bytes)
 
     # Handle format-specific requirements
     if target_fmt == "ICO":
@@ -412,6 +418,7 @@ def convert_to_pdf(input_paths, output_path, max_bytes=0):
     for p in input_paths:
         try:
             im = Image.open(p)
+            im.load()
             if im.mode != "RGB":
                 bg = Image.new("RGB", im.size, (255, 255, 255))
                 if im.mode in ("RGBA", "LA"):
@@ -424,14 +431,19 @@ def convert_to_pdf(input_paths, output_path, max_bytes=0):
             continue
 
     if not images:
-        return False
+        res = subprocess.run(["magick", *input_paths, output_path], capture_output=True)
+        return res.returncode == 0 and os.path.exists(output_path)
 
     first = images[0]
     rest = images[1:]
 
     if max_bytes <= 0:
-        first.save(output_path, "PDF", save_all=True, append_images=rest, resolution=100.0)
-        return True
+        try:
+            first.save(output_path, "PDF", save_all=True, append_images=rest, resolution=100.0)
+            return True
+        except Exception:
+            res = subprocess.run(["magick", *input_paths, output_path], capture_output=True)
+            return res.returncode == 0 and os.path.exists(output_path)
 
     for scale_pass in range(6):
         factor = (0.8) ** scale_pass
@@ -463,6 +475,25 @@ def main():
     parser.add_argument("extra_inputs", nargs="*", help="Extra inputs for PDF or Animation conversion")
 
     args = parser.parse_args()
+
+    import urllib.parse
+    def clean_arg_path(p):
+        if not p:
+            return p
+        if p.startswith("file://"):
+            p = p[7:]
+        return urllib.parse.unquote(p)
+
+    if args.input:
+        args.input = clean_arg_path(args.input)
+    if args.output:
+        args.output = clean_arg_path(args.output)
+    if args.pdf:
+        args.pdf = clean_arg_path(args.pdf)
+    if args.animate:
+        args.animate = clean_arg_path(args.animate)
+    if args.extra_inputs:
+        args.extra_inputs = [clean_arg_path(p) for p in args.extra_inputs]
 
     if args.pdf:
         all_inputs = []

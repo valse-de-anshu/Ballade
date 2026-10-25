@@ -1146,7 +1146,14 @@ ContentPage {
                         {
                             icon: "graphic_eq",
                             name: Translation.tr("Visualizer"),
+                            id: "visualizer",
                             enabled: Config.options.background.widgets.visualizer.enable
+                        },
+                        {
+                            icon: "album",
+                            name: Translation.tr("Visualizer 2"),
+                            id: "visualizer2",
+                            enabled: Boolean(Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
                         },
                         {
                             icon: "calendar_month",
@@ -1209,8 +1216,12 @@ ContentPage {
                                             Config.options.background.widgets.media.enable = checked
                                         else if (modelData.icon === "memory")
                                             Config.options.background.widgets.resources.enable = checked
-                                        else if (modelData.icon === "graphic_eq")
+                                        else if (modelData.id === "visualizer" || (modelData.icon === "graphic_eq" && modelData.id !== "visualizer2"))
                                             Config.options.background.widgets.visualizer.enable = checked
+                                        else if (modelData.id === "visualizer2" || modelData.icon === "album") {
+                                            if (Config.options.background.widgets.visualizer2)
+                                                Config.options.background.widgets.visualizer2.enable = checked
+                                        }
                                         else if (modelData.icon === "calendar_month")
                                             Config.options.background.widgets.calendar.enable = checked
                                         else if (modelData.icon === "public")
