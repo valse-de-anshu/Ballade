@@ -142,13 +142,18 @@ Item {
     }
 
     function savePosition() {
+        let finalX = snap(dragProxy.x)
+        let finalY = snap(dragProxy.y)
+        root.x = finalX
+        root.y = finalY
         var arr = Config.options.background.widgets.customImages.slice()
         if (!arr[root.imageIndex]) return
         arr[root.imageIndex] = Object.assign({}, arr[root.imageIndex], {
-            x: root.x,
-            y: root.y
+            x: finalX,
+            y: finalY
         })
         Config.options.background.widgets.customImages = arr
+        Config.save()
     }
 
     property var cachedCanvas: null
@@ -243,18 +248,22 @@ Item {
         }
 
         onReleased: {
+            let finalX = root.snap(dragProxy.x)
+            let finalY = root.snap(dragProxy.y)
+            root.x = finalX
+            root.y = finalY
             var c = root.findCanvas()
             if (c) {
                 c.setDragging(false)
-                var left = root.x
-                var right = root.x + root.width
-                var top = root.y
-                var bottom = root.y + root.height
+                var left = finalX
+                var right = finalX + root.width
+                var top = finalY
+                var bottom = finalY + root.height
                 var verticalLines = [left, right]
                 var horizontalLines = [top, bottom]
 
-                var widgetCenterX = root.x + root.width / 2
-                var widgetCenterY = root.y + root.height / 2
+                var widgetCenterX = finalX + root.width / 2
+                var widgetCenterY = finalY + root.height / 2
                 if (Math.abs(widgetCenterX - c.width / 2) < 12)
                     verticalLines.push(c.width / 2)
                 if (Math.abs(widgetCenterY - c.height / 2) < 12)
@@ -263,8 +272,8 @@ Item {
                 if (Config.options.background.showSnapLines ?? true)
                     c.flashLines(verticalLines, horizontalLines)
             }
-            dragProxy.x = root.x
-            dragProxy.y = root.y
+            dragProxy.x = finalX
+            dragProxy.y = finalY
             root.savePosition()
         }
     }

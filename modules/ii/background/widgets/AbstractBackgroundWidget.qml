@@ -51,6 +51,21 @@ AbstractWidget {
         root.y = Qt.binding(() => root.targetY);
     }
 
+    function saveDraggedPosition() {
+        if (!configEntry || isLockWidget) return;
+        const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
+        const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
+        configEntry.placementStrategy = "free";
+        configEntry.x = newX;
+        configEntry.y = newY;
+        Config.save();
+        root.targetX = newX;
+        root.targetY = newY;
+        root.x = newX;
+        root.y = newY;
+        root.restoreXYBinding();
+    }
+
     Connections {
         target: root.configEntry
         function onXChanged() {
@@ -64,16 +79,16 @@ AbstractWidget {
         }
     }
 
-    onReleased: {
-        if (configEntry) {
-            configEntry.placementStrategy = "free";
-            configEntry.x = Math.round(root.x);
-            configEntry.y = Math.round(root.y);
-            Config.save();
+    onDraggingChanged: {
+        if (!dragging && !isLockWidget && configEntry) {
+            saveDraggedPosition();
         }
-        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30)));
-        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30)));
-        root.restoreXYBinding();
+    }
+
+    onReleased: {
+        if (!isLockWidget && configEntry) {
+            saveDraggedPosition();
+        }
     }
 
     property bool needsColText: false

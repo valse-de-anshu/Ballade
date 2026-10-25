@@ -18,6 +18,11 @@ MouseArea {
     drag.target: draggable ? dragProxy : undefined
     cursorShape: (draggable && containsPress) ? Qt.ClosedHandCursor : draggable ? Qt.OpenHandCursor : Qt.ArrowCursor
 
+    property real lastDragX: root.x
+    property real lastDragY: root.y
+    readonly property real draggedX: root.snapEnabled ? root.snap(dragProxy.x) : dragProxy.x
+    readonly property real draggedY: root.snapEnabled ? root.snap(dragProxy.y) : dragProxy.y
+
     function center() {
         root.x = (root.parent.width - root.width) / 2
         root.y = (root.parent.height - root.height) / 2
@@ -56,13 +61,21 @@ MouseArea {
     onPressed: {
         dragProxy.x = root.x
         dragProxy.y = root.y
+        lastDragX = root.x
+        lastDragY = root.y
     }
 
     onXChanged: {
-        if (!root.dragging) dragProxy.x = root.x
+        if (!root.dragging) {
+            dragProxy.x = root.x
+            lastDragX = root.x
+        }
     }
     onYChanged: {
-        if (!root.dragging) dragProxy.y = root.y
+        if (!root.dragging) {
+            dragProxy.y = root.y
+            lastDragY = root.y
+        }
     }
 
     Item {
@@ -71,8 +84,14 @@ MouseArea {
         x: root.x
         y: root.y
 
-        onXChanged: if (root.dragging) root.updateCenterHighlight()
-        onYChanged: if (root.dragging) root.updateCenterHighlight()
+        onXChanged: if (root.dragging) {
+            root.lastDragX = root.snapEnabled ? root.snap(dragProxy.x) : dragProxy.x
+            root.updateCenterHighlight()
+        }
+        onYChanged: if (root.dragging) {
+            root.lastDragY = root.snapEnabled ? root.snap(dragProxy.y) : dragProxy.y
+            root.updateCenterHighlight()
+        }
     }
 
     Binding {
@@ -94,27 +113,31 @@ MouseArea {
         var canvas = getCanvas()
         if (canvas) canvas.setDragging(dragging)
 
-        if (!dragging && canvas) {
-            var left = root.x
-            var right = root.x + root.width
-            var top = root.y
-            var bottom = root.y + root.height
-            var verticalLines = [left, right]
-            var horizontalLines = [top, bottom]
+        if (!dragging) {
+            root.x = root.lastDragX
+            root.y = root.lastDragY
+            dragProxy.x = root.lastDragX
+            dragProxy.y = root.lastDragY
 
-            var widgetCenterX = root.x + root.width / 2
-            var widgetCenterY = root.y + root.height / 2
-            if (Math.abs(widgetCenterX - canvas.width / 2) < root.gridSize / 2)
-                verticalLines.push(canvas.width / 2)
-            if (Math.abs(widgetCenterY - canvas.height / 2) < root.gridSize / 2)
-                horizontalLines.push(canvas.height / 2)
+            if (canvas) {
+                var left = root.x
+                var right = root.x + root.width
+                var top = root.y
+                var bottom = root.y + root.height
+                var verticalLines = [left, right]
+                var horizontalLines = [top, bottom]
 
-            if (Config.options.background.showSnapLines)
-                canvas.flashLines(verticalLines, horizontalLines)
+                var widgetCenterX = root.x + root.width / 2
+                var widgetCenterY = root.y + root.height / 2
+                if (Math.abs(widgetCenterX - canvas.width / 2) < root.gridSize / 2)
+                    verticalLines.push(canvas.width / 2)
+                if (Math.abs(widgetCenterY - canvas.height / 2) < root.gridSize / 2)
+                    horizontalLines.push(canvas.height / 2)
+
+                if (Config.options.background.showSnapLines)
+                    canvas.flashLines(verticalLines, horizontalLines)
+            }
         }
-
-        dragProxy.x = root.x
-        dragProxy.y = root.y
     }
 
     Behavior on x {

@@ -79,10 +79,16 @@ AbstractBackgroundWidget {
 
     onReleased: {
         if (root.isRing && root.configEntry) {
+            const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
+            const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
             root.configEntry.placementStrategy = "free";
-            root.configEntry.x = Math.round(root.x);
-            root.configEntry.y = Math.round(root.y);
+            root.configEntry.x = newX;
+            root.configEntry.y = newY;
             Config.save();
+            root.targetX = newX;
+            root.targetY = newY;
+            root.x = newX;
+            root.y = newY;
         }
         root.restoreXYBinding();
     }

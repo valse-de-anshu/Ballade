@@ -142,8 +142,13 @@ Item {
     }
 
     function savePosition() {
-        Config.options.background.widgets.customImage.x = root.x
-        Config.options.background.widgets.customImage.y = root.y
+        let finalX = snap(dragProxy.x)
+        let finalY = snap(dragProxy.y)
+        root.x = finalX
+        root.y = finalY
+        Config.options.background.widgets.customImage.x = finalX
+        Config.options.background.widgets.customImage.y = finalY
+        Config.save()
     }
 
     property var cachedCanvas: null
@@ -239,18 +244,22 @@ Item {
         }
 
         onReleased: {
+            let finalX = root.snap(dragProxy.x)
+            let finalY = root.snap(dragProxy.y)
+            root.x = finalX
+            root.y = finalY
             var c = root.findCanvas()
             if (c) {
                 c.setDragging(false)
-                var left = root.x
-                var right = root.x + root.width
-                var top = root.y
-                var bottom = root.y + root.height
+                var left = finalX
+                var right = finalX + root.width
+                var top = finalY
+                var bottom = finalY + root.height
                 var verticalLines = [left, right]
                 var horizontalLines = [top, bottom]
 
-                var widgetCenterX = root.x + root.width / 2
-                var widgetCenterY = root.y + root.height / 2
+                var widgetCenterX = finalX + root.width / 2
+                var widgetCenterY = finalY + root.height / 2
                 if (Math.abs(widgetCenterX - c.width / 2) < 12)
                     verticalLines.push(c.width / 2)
                 if (Math.abs(widgetCenterY - c.height / 2) < 12)
@@ -259,8 +268,8 @@ Item {
                 if (Config.options.background.showSnapLines ?? true)
                     c.flashLines(verticalLines, horizontalLines)
             }
-            dragProxy.x = root.x
-            dragProxy.y = root.y
+            dragProxy.x = finalX
+            dragProxy.y = finalY
             root.savePosition()
         }
     }
