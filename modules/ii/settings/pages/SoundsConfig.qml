@@ -210,9 +210,9 @@ ContentPage {
         }
 
         ContentSection {
-            icon: "alarm"
+            icon: "timer"
             shape: MaterialShape.Shape.Pill
-            title: Translation.tr("Alarm & Timer Sounds")
+            title: Translation.tr("Pomodoro Timer Sounds")
 
             Rectangle {
                 Layout.fillWidth: true
@@ -220,10 +220,10 @@ ContentPage {
                 color: Appearance.colors.colLayer1
                 border.width: 1
                 border.color: Appearance.colors.colLayer0Border
-                implicitHeight: alarmSoundCardContent.implicitHeight + 28
+                implicitHeight: pomodoroSoundCardContent.implicitHeight + 28
 
                 ColumnLayout {
-                    id: alarmSoundCardContent
+                    id: pomodoroSoundCardContent
                     anchors {
                         top: parent.top
                         left: parent.left
@@ -231,137 +231,6 @@ ContentPage {
                         margins: 14
                     }
                     spacing: 12
-
-                    ConfigSwitch {
-                        buttonIcon: "alarm"
-                        text: Translation.tr("Play audio sound when alarm triggers")
-                        checked: Config.options.sounds.alarm ?? true
-                        onCheckedChanged: {
-                            Config.options.sounds.alarm = checked;
-                        }
-                    }
-
-                    // Alarm Volume Stepper Row with Minus/Plus and Live Preview
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 8
-                        Layout.rightMargin: 8
-                        spacing: 10
-
-                        OptionalMaterialSymbol {
-                            icon: "volume_up"
-                            iconSize: Appearance.font.pixelSize.larger
-                        }
-
-                        StyledText {
-                            text: Translation.tr("Alarm Sound Volume")
-                            color: Appearance.colors.colOnSecondaryContainer
-                            Layout.fillWidth: true
-                        }
-
-                        StyledText {
-                            text: (Config.options.sounds.alarmVolume ?? 80) + "%"
-                            color: Appearance.colors.colPrimary
-                            font.weight: Font.DemiBold
-                            Layout.preferredWidth: 45
-                            horizontalAlignment: Text.AlignRight
-                        }
-
-                        // Minus Button
-                        RippleButton {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            buttonRadius: Appearance.rounding.full
-                            colBackground: Appearance.colors.colSurfaceContainerHigh
-                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                            colRipple: Appearance.colors.colPrimary
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "remove"
-                                iconSize: 18
-                                color: Appearance.colors.colOnSurface
-                            }
-                            onClicked: {
-                                let current = Config.options.sounds.alarmVolume ?? 80;
-                                let nextVal = Math.max(0, current - 10);
-                                Config.options.sounds.alarmVolume = nextVal;
-                                page.playSound(Config.options.sounds.alarmSoundPath, nextVal, "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga", "alarm");
-                            }
-                        }
-
-                        // Plus Button
-                        RippleButton {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            buttonRadius: Appearance.rounding.full
-                            colBackground: Appearance.colors.colSurfaceContainerHigh
-                            colBackgroundHover: Appearance.colors.colSurfaceContainerHighest
-                            colRipple: Appearance.colors.colPrimary
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                text: "add"
-                                iconSize: 18
-                                color: Appearance.colors.colOnSurface
-                            }
-                            onClicked: {
-                                let current = Config.options.sounds.alarmVolume ?? 80;
-                                let nextVal = Math.min(100, current + 10);
-                                Config.options.sounds.alarmVolume = nextVal;
-                                page.playSound(Config.options.sounds.alarmSoundPath, nextVal, "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga", "alarm");
-                            }
-                        }
-                    }
-
-                    ConfigTextArea {
-                        id: alarmSoundPathField
-                        Layout.fillWidth: true
-                        fieldWidth: 175
-                        buttonIcon: "music_note"
-                        text: Translation.tr("Alarm Sound Path")
-                        value: Config.options.sounds.alarmSoundPath ?? ""
-                        onValueChanged: alarmSoundPathDebounceTimer.restart()
-
-                        Timer {
-                            id: alarmSoundPathDebounceTimer
-                            interval: 600
-                            repeat: false
-                            onTriggered: {
-                                Config.options.sounds.alarmSoundPath = alarmSoundPathField.value;
-                            }
-                        }
-
-                        GroupButton {
-                            baseWidth: height
-                            buttonRadius: Appearance.rounding.small
-                            contentItem: MaterialSymbol {
-                                anchors.centerIn: parent
-                                iconSize: Appearance.font.pixelSize.larger
-                                text: "play_arrow"
-                                color: Appearance.colors.colPrimary
-                            }
-                            onClicked: page.playSound(alarmSoundPathField.value, Config.options.sounds.alarmVolume ?? 80, "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga", "alarm")
-                        }
-
-                        GroupButton {
-                            baseWidth: height
-                            buttonRadius: Appearance.rounding.small
-                            contentItem: MaterialSymbol {
-                                anchors.centerIn: parent
-                                iconSize: Appearance.font.pixelSize.larger
-                                text: "folder_open"
-                                color: Appearance.colors.colOnLayer1
-                            }
-                            onClicked: {
-                                audioFileDialog.title = Translation.tr("Select Alarm Sound");
-                                audioFileDialog.targetField = alarmSoundPathField;
-                                audioFileDialog.targetCallback = (p) => { Config.options.sounds.alarmSoundPath = p; };
-                                audioFileDialog.open();
-                            }
-                        }
-                    }
-
-                    // ── Pomodoro Sound Row ──
-                    Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Appearance.colors.colLayer0Border }
 
                     ConfigSwitch {
                         buttonIcon: "timer"

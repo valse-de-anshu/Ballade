@@ -16,13 +16,17 @@ AbstractWidget {
     required property int scaledScreenWidth
     required property int scaledScreenHeight
     required property real wallpaperScale
+    property bool isLockWidget: false
     property bool visibleWhenLocked: Config.options.lock.showWidgets
     property var configEntry: Config.options.background.widgets[configEntryName]
     property string placementStrategy: configEntry?.placementStrategy ?? "free"
-    property real targetX: Math.max(-width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30))
-    property real targetY: Math.max(-height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30))
-    x: targetX
-    y: targetY
+    property real targetX: isLockWidget ? 0 : Math.max(-width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30))
+    property real targetY: isLockWidget ? 0 : Math.max(-height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30))
+    x: isLockWidget ? 0 : targetX
+    y: isLockWidget ? 0 : targetY
+    draggable: !isLockWidget && !Config.options.background.widgetsLocked
+    animateXPos: !isLockWidget && !dragging
+    animateYPos: !isLockWidget && !dragging
     visible: opacity > 0
     opacity: (GlobalStates.screenLocked && !visibleWhenLocked) ? 0 : 1
     Behavior on opacity {
@@ -33,8 +37,14 @@ AbstractWidget {
         animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
     }
 
-    draggable: !Config.options.background.widgetsLocked
     function restoreXYBinding() {
+        if (isLockWidget) {
+            root.targetX = 0;
+            root.targetY = 0;
+            root.x = 0;
+            root.y = 0;
+            return;
+        }
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.configEntry?.y ?? 0, root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.targetX);

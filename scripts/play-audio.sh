@@ -20,6 +20,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check config.json toggle before playing any sound
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/illogical-impulse/config.json"
+if [ -f "$CONFIG_FILE" ] && command -v jq &>/dev/null; then
+    case "$CATEGORY" in
+        login_greetings|startup)
+            enabled=$(jq -r '.sounds.enableStartupSound // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+        shutdown|lock|logout|sleep|bell)
+            enabled=$(jq -r '.sounds.enableSystemSounds // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+        notification)
+            enabled=$(jq -r '.sounds.notifications // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+        charger-in|charger-out|power-plug|power-unplug)
+            enabled=$(jq -r '.sounds.battery // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+        usb-in|usb-out)
+            enabled=$(jq -r '.sounds.enableUsbSounds // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+        pomodoro)
+            enabled=$(jq -r '.sounds.pomodoro // true' "$CONFIG_FILE" 2>/dev/null)
+            [ "$enabled" = "false" ] && exit 0
+            ;;
+    esac
+fi
+
 # Strip file:// prefix
 FILE="${FILE#file://}"
 FALLBACK="${FALLBACK#file://}"

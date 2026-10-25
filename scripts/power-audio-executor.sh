@@ -73,15 +73,31 @@ play_audio_once() {
         esac
     fi
 
-    # Fallback to default audio file if action-specific sound is not set
+    # Fallback if action-specific sound is not set or missing
     if [[ -z "$audio_file" || ! -f "$audio_file" ]]; then
-        if [[ -f "$CONFIG_FILE" ]] && command -v jq &>/dev/null; then
-            audio_file=$(jq -r '.sounds.shutdownSoundPath // ""' "$CONFIG_FILE" 2>/dev/null || echo "")
-        fi
-    fi
-
-    if [[ -z "$audio_file" || ! -f "$audio_file" ]]; then
-        audio_file="$DEFAULT_AUDIO"
+        case "$action" in
+            poweroff|reboot)
+                audio_file="$DEFAULT_AUDIO"
+                ;;
+            lock-session)
+                for f in "/usr/share/sounds/freedesktop/stereo/screen-capture.oga" "/usr/share/sounds/ocean/stereo/screen-capture.oga" "$DEFAULT_AUDIO"; do
+                    if [[ -f "$f" ]]; then audio_file="$f"; break; fi
+                done
+                ;;
+            suspend|hibernate)
+                for f in "/usr/share/sounds/freedesktop/stereo/suspend-error.oga" "$DEFAULT_AUDIO"; do
+                    if [[ -f "$f" ]]; then audio_file="$f"; break; fi
+                done
+                ;;
+            logout)
+                for f in "/usr/share/sounds/freedesktop/stereo/system-shutdown.oga" "$DEFAULT_AUDIO"; do
+                    if [[ -f "$f" ]]; then audio_file="$f"; break; fi
+                done
+                ;;
+            *)
+                audio_file="$DEFAULT_AUDIO"
+                ;;
+        esac
     fi
 
     # Play audio with configured volume

@@ -193,12 +193,33 @@ MouseArea {
                 onLoaded: {
                     if (item) {
                         item.draggable = false;
+                        if (item.isLockWidget !== undefined) item.isLockWidget = true;
+                        if (item.animateXPos !== undefined) item.animateXPos = false;
+                        if (item.animateYPos !== undefined) item.animateYPos = false;
                         item.x = 0;
                         item.y = 0;
                     }
                 }
             }
 
+            Binding {
+                target: loader.item
+                property: "isLockWidget"
+                value: true
+                when: Boolean(loader.item && loader.item.isLockWidget !== undefined)
+            }
+            Binding {
+                target: loader.item
+                property: "animateXPos"
+                value: false
+                when: Boolean(loader.item && loader.item.animateXPos !== undefined)
+            }
+            Binding {
+                target: loader.item
+                property: "animateYPos"
+                value: false
+                when: Boolean(loader.item && loader.item.animateYPos !== undefined)
+            }
             Binding {
                 target: loader.item
                 property: "x"
@@ -255,6 +276,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "media"
             MediaWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -266,6 +288,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "weather"
             WeatherWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -277,6 +300,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "calendar"
             CalendarWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -288,6 +312,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "goals"
             GoalsWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -299,6 +324,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "userCard"
             UserCardWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -310,6 +336,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "resources"
             ResourcesWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -321,6 +348,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "worldClock"
             WorldClockWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -332,6 +360,7 @@ MouseArea {
         LockWidgetWrapper {
             widgetKey: "visualizer"
             VisualizerWidget {
+                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width

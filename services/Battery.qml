@@ -83,7 +83,7 @@ Singleton {
     onIsFullAndChargingChanged: {
         if (!root.available || !isFullAndCharging) return;
         if (root.soundEnabled) {
-            Audio.playSystemSound("complete", Config.options.sounds.batteryFullSoundPath);
+            Audio.playSystemSound("complete", Config.options.sounds.batteryFullSoundPath, Config.options.sounds.batterySoundVolume ?? 70);
         }
         Quickshell.execDetached([
             "notify-send",
@@ -97,9 +97,9 @@ Singleton {
     onIsPluggedInChanged: {
         if (!root.available || !root.soundEnabled) return;
         if (isPluggedIn) {
-            Audio.playSystemSound("power-plug", Config.options.sounds.chargerPluggedSoundPath);
+            Audio.playSystemSound("charger-in", Config.options.sounds.chargerPluggedSoundPath, Config.options.sounds.batterySoundVolume ?? 70);
         } else {
-            Audio.playSystemSound("power-unplug", Config.options.sounds.chargerUnpluggedSoundPath);
+            Audio.playSystemSound("charger-out", Config.options.sounds.chargerUnpluggedSoundPath, Config.options.sounds.batterySoundVolume ?? 70);
         }
     }
 }

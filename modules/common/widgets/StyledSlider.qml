@@ -118,8 +118,8 @@ Slider {
                 color: root.highlightColor
                 topLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
                 bottomLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
-                topRightRadius: root.unsharpenRadius
-                bottomRightRadius: root.unsharpenRadius
+                topRightRadius: (index === background.leftWidths.length - 1 && (root.visualPosition >= 0.999 || background.rightWidths.every(w => w <= 0))) ? root.trackRadius : root.unsharpenRadius
+                bottomRightRadius: (index === background.leftWidths.length - 1 && (root.visualPosition >= 0.999 || background.rightWidths.every(w => w <= 0))) ? root.trackRadius : root.unsharpenRadius
             }
         }
 
@@ -207,7 +207,10 @@ Slider {
                 width: Math.max(0, background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? (root.circleHandle ? 0 : handleWidth / 2) : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0))
                 height: root.isWavy ? 3.5 : trackWidth
                 color: root.trackColor
-                radius: height / 2
+                topRightRadius: index === background.rightWidths.length - 1 ? (root.isWavy ? height / 2 : root.trackRadius) : root.unsharpenRadius
+                bottomRightRadius: index === background.rightWidths.length - 1 ? (root.isWavy ? height / 2 : root.trackRadius) : root.unsharpenRadius
+                topLeftRadius: (index === 0 && (root.circleHandle || root.visualPosition <= 0.001)) ? (root.isWavy ? height / 2 : root.trackRadius) : root.unsharpenRadius
+                bottomLeftRadius: (index === 0 && (root.circleHandle || root.visualPosition <= 0.001)) ? (root.isWavy ? height / 2 : root.trackRadius) : root.unsharpenRadius
             }
         }
 
@@ -234,6 +237,13 @@ Slider {
 
         border.width: root.circleHandle ? 2 : 0
         border.color: Appearance.colors.colLayer0 || "#ffffff"
+
+        opacity: (root.visualPosition <= 0.001 || root.visualPosition >= 0.999) ? 0 : 1
+        visible: opacity > 0
+
+        Behavior on opacity {
+            animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
+        }
 
         Behavior on implicitWidth {
             animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)

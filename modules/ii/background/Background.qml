@@ -561,6 +561,7 @@ Variants {
             Loader {
                 id: centeredWallpaperLoader
                 z: 11
+                anchors.fill: parent
                 active: bgRoot.centeredWallpaperEnabled
                 visible: active
                 sourceComponent: Item {
@@ -570,11 +571,10 @@ Variants {
                     MaterialShape {
                         id: centeredWallpaperShadow
                         anchors.centerIn: parent
-                        width: 1000
-                        height: 1000
+                        width: bgRoot.centeredWallpaperSize
+                        height: bgRoot.centeredWallpaperSize
                         shape: bgRoot.centeredWallpaperShape
                         color: Qt.rgba(0, 0, 0, 0.5)
-                        scale: (bgRoot.centeredWallpaperSize / 1000)
 
                         layer.enabled: true
                         layer.effect: MultiEffect {
@@ -589,18 +589,17 @@ Variants {
                     MaterialShape {
                         id: centeredWallpaperShapeItem
                         anchors.centerIn: parent
-                        width: 1000
-                        height: 1000
+                        width: bgRoot.centeredWallpaperSize
+                        height: bgRoot.centeredWallpaperSize
                         color: "transparent"
                         shape: bgRoot.centeredWallpaperShape
                         transformOrigin: Item.Center
-                        scale: (bgRoot.centeredWallpaperSize / 1000)
 
                         layer.enabled: true
                         layer.effect: OpacityMask {
                             maskSource: MaterialShape {
-                                width: 1000
-                                height: 1000
+                                width: bgRoot.centeredWallpaperSize
+                                height: bgRoot.centeredWallpaperSize
                                 shape: bgRoot.centeredWallpaperShape
                             }
                         }

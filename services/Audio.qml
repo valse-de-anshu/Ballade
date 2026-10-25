@@ -120,11 +120,22 @@ Singleton {
         }
     }
 
-    function playSystemSound(soundName, customPath) {
+    function playSystemSound(soundName, customPath, customVolume) {
+        if (soundName === "charger-in" || soundName === "charger-out" || soundName === "power-plug" || soundName === "power-unplug" || soundName === "complete") {
+            if (!(Config.options.sounds.battery ?? true)) return;
+        } else if (soundName === "usb-in" || soundName === "usb-out" || soundName === "device-added" || soundName === "device-removed") {
+            if (!(Config.options.sounds.enableUsbSounds ?? true)) return;
+        } else if (!(Config.options.sounds.enableSystemSounds ?? true)) {
+            return;
+        }
+
         let p = (customPath && customPath.trim().length > 0) ? customPath.trim() : "";
         if (p.startsWith("file://")) p = p.substring(7);
 
-        let vol = Math.max(0, Math.min(100, Config.options.sounds.systemSoundVolume ?? 70));
+        let volVal = (customVolume !== undefined && customVolume !== null)
+            ? customVolume
+            : (Config.options.sounds.systemSoundVolume ?? 70);
+        let vol = Math.max(0, Math.min(100, volVal));
         const ogaPath = `/usr/share/sounds/${root.audioTheme}/stereo/${soundName}.oga`;
 
         Quickshell.execDetached([

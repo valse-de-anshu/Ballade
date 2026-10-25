@@ -47,13 +47,18 @@ ShellRoot {
         Updates.load()
         ScreenTime.load()
         Idle.load()
+    }
 
-        if (Config.options.sounds.enableStartupSound ?? true) {
-            let startPath = Config.options.sounds.startupSoundPath || "";
-            if (startPath.length > 0) {
-                let vol = Math.max(0, Math.min(100, Config.options.sounds.systemSoundVolume ?? 70));
-                let cmd = `p="${startPath}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" -o -name "*.oga" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ] && [ -f "$file" ]; then bash "${Directories.scriptPath}/play-audio.sh" --file "$file" --volume "${vol}" --category "login_greetings"; fi`;
-                Quickshell.execDetached(["bash", "-c", cmd]);
+    Connections {
+        target: Config
+        function onReadyChanged() {
+            if (Config.ready && (Config.options.sounds.enableStartupSound === true)) {
+                let startPath = Config.options.sounds.startupSoundPath || "";
+                if (startPath.length > 0) {
+                    let vol = Math.max(0, Math.min(100, Config.options.sounds.systemSoundVolume ?? 70));
+                    let cmd = `p="${startPath}"; if [ -d "$p" ]; then file=$(find "$p" -maxdepth 1 -type f \\( -name "*.flac" -o -name "*.wav" -o -name "*.mp3" -o -name "*.ogg" -o -name "*.oga" \\) 2>/dev/null | shuf -n 1); else file="$p"; fi; if [ -n "$file" ] && [ -f "$file" ]; then bash "${Directories.scriptPath}/play-audio.sh" --file "$file" --volume "${vol}" --category "login_greetings"; fi`;
+                    Quickshell.execDetached(["bash", "-c", cmd]);
+                }
             }
         }
     }

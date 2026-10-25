@@ -58,12 +58,19 @@ AbstractBackgroundWidget {
     implicitHeight: isRing ? ringSize : shaderStyle ? bandHeight : barsHeight
     width: implicitWidth
     height: implicitHeight
-    x: isRing ? targetX : 0
-    y: isRing ? targetY : screenHeight - implicitHeight
-    draggable: isRing && !Config.options.background.widgetsLocked
-    hoverEnabled: isRing
+    x: isLockWidget ? 0 : (isRing ? targetX : 0)
+    y: isLockWidget ? 0 : (isRing ? targetY : screenHeight - implicitHeight)
+    draggable: !isLockWidget && isRing && !Config.options.background.widgetsLocked
+    hoverEnabled: !isLockWidget && isRing
 
     function restoreXYBinding() {
+        if (isLockWidget) {
+            root.targetX = 0;
+            root.targetY = 0;
+            root.x = 0;
+            root.y = 0;
+            return;
+        }
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
