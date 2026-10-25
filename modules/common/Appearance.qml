@@ -296,10 +296,10 @@ Singleton {
         readonly property list<real> standard: [0.2, 0, 0, 1, 1, 1]
         readonly property list<real> standardAccel: [0.3, 0, 1, 1, 1, 1]
         readonly property list<real> standardDecel: [0, 0, 0, 1, 1, 1]
-        readonly property real expressiveFastSpatialDuration: 350
-        readonly property real expressiveDefaultSpatialDuration: 500
-        readonly property real expressiveSlowSpatialDuration: 650
-        readonly property real expressiveEffectsDuration: 200
+        readonly property real expressiveFastSpatialDuration: 180
+        readonly property real expressiveDefaultSpatialDuration: 240
+        readonly property real expressiveSlowSpatialDuration: 320
+        readonly property real expressiveEffectsDuration: 140
     }
 
     animation: QtObject {
@@ -307,7 +307,7 @@ Singleton {
             property int duration: animationCurves.expressiveDefaultSpatialDuration
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveDefaultSpatial
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     duration: root.animation.elementMove.duration
@@ -321,7 +321,7 @@ Singleton {
             property int duration: animationCurves.expressiveFastSpatialDuration
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveFastSpatial
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     duration: root.animation.elementMoveSmall.duration
@@ -332,10 +332,10 @@ Singleton {
         }
 
         property QtObject elementMoveEnter: QtObject {
-            property int duration: 400
+            property int duration: 220
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasizedDecel
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     alwaysRunToEnd: true
@@ -347,10 +347,10 @@ Singleton {
         }
 
         property QtObject elementMoveExit: QtObject {
-            property int duration: 200
+            property int duration: 160
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasizedAccel
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     alwaysRunToEnd: true
@@ -365,7 +365,7 @@ Singleton {
             property int duration: animationCurves.expressiveEffectsDuration
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveEffects
-            property int velocity: 850
+            property int velocity: 1200
             property Component colorAnimation: Component { ColorAnimation {
                 duration: root.animation.elementMoveFast.duration
                 easing.type: root.animation.elementMoveFast.type
@@ -380,10 +380,10 @@ Singleton {
         }
 
         property QtObject elementResize: QtObject {
-            property int duration: 300
+            property int duration: 180
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.emphasized
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     alwaysRunToEnd: true
@@ -395,10 +395,10 @@ Singleton {
         }
 
         property QtObject clickBounce: QtObject {
-            property int duration: 400
+            property int duration: 200
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.expressiveDefaultSpatial
-            property int velocity: 850
+            property int velocity: 1200
             property Component numberAnimation: Component { NumberAnimation {
                 alwaysRunToEnd: true
                 duration: root.animation.clickBounce.duration
@@ -408,21 +408,21 @@ Singleton {
         }
         
         property QtObject scroll: QtObject {
-            property int duration: 200
+            property int duration: 150
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: root.animationCurves.standardDecel
         }
 
         property QtObject menuDecel: QtObject {
-            property int duration: 350
+            property int duration: 200
             property int type: Easing.OutExpo
         }
 
         property QtObject sidebarSlideEnter: QtObject {
-            property int duration: 300
+            property int duration: 200
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.standardDecel
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     alwaysRunToEnd: true
@@ -434,10 +434,10 @@ Singleton {
         }
 
         property QtObject sidebarSlideExit: QtObject {
-            property int duration: 250
+            property int duration: 160
             property int type: Easing.BezierSpline
             property list<real> bezierCurve: animationCurves.standardAccel
-            property int velocity: 650
+            property int velocity: 1200
             property Component numberAnimation: Component {
                 NumberAnimation {
                     alwaysRunToEnd: true

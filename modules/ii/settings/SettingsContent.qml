@@ -96,13 +96,6 @@ Item {
 
     Component.onCompleted: {
         Config.readWriteDelay = 0
-        Qt.callLater(() => {
-            for (let i = 0; i < root.pages.length; i++) {
-                let loader = pagesRepeater.itemAt(i)
-                if (loader) loader.active = true
-            }
-            if (profileLoader) profileLoader.active = true
-        })
     }
 
     ColumnLayout {
@@ -350,17 +343,17 @@ Item {
                             }
 
                             Behavior on opacity {
-                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                             }
                             Behavior on anchors.topMargin {
-                                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                             }
                         }
                     }
 
                     Loader {
                         id: profileLoader
-                        active: false
+                        active: root.showingProfile || item !== null
                         anchors.fill: parent
                         source: Qt.resolvedUrl("pages/Profile.qml")
 
@@ -379,10 +372,10 @@ Item {
                         }
 
                         Behavior on opacity {
-                            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                         }
                         Behavior on anchors.topMargin {
-                            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                         }
                     }
                 }

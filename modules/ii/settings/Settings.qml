@@ -17,17 +17,28 @@ import qs.modules.common.functions as CF
 Scope {
     id: root
 
+    property bool hasBeenOpened: false
+
+    Connections {
+        target: GlobalStates
+        function onSettingsOpenChanged() {
+            if (GlobalStates.settingsOpen) {
+                root.hasBeenOpened = true;
+            }
+        }
+    }
+
     Component.onCompleted: {
         GlobalStates.settingsOpen = false;
     }
 
     Loader {
         id: settingsLoader
-        active: GlobalStates.settingsOpen
+        active: GlobalStates.settingsOpen || root.hasBeenOpened
 
         sourceComponent: PanelWindow {
             id: panelWindow
-            visible: true
+            visible: GlobalStates.settingsOpen
 
             function hide() {
                 GlobalStates.settingsOpen = false;
@@ -89,9 +100,13 @@ Scope {
             anchors.centerIn: userMoved ? undefined : parent
 
             opacity: GlobalStates.settingsOpen ? 1 : 0
+            scale: GlobalStates.settingsOpen ? 1.0 : 0.96
 
             Behavior on opacity {
-                NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
+                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            }
+            Behavior on scale {
+                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
             }
 
             Keys.onPressed: (event) => {

@@ -65,16 +65,22 @@ hl.curve("smoothDecel", { type = "bezier", points = { {0.05, 0.9}, {0.1, 1.04} }
 hl.curve("smoothOut",   { type = "bezier", points = { {0.16, 1.0}, {0.3, 1.0}  } })
 hl.curve("fastSnap",    { type = "bezier", points = { {0.25, 1.0}, {0.5, 1.0}  } })
 
--- 3. High-End "YouTube Rice" Animations
+-- 3. High-End Fast & Fluid Animations
 -- Windows: Fast, responsive pop-in with clean micro-overshoot
-hl.animation({ leaf = "windowsIn",    enabled = true, speed = 2.8, bezier = "smoothDecel", style = "popin 85%" })
-hl.animation({ leaf = "windowsOut",   enabled = true, speed = 2.2, bezier = "smoothOut",   style = "popin 90%" })
-hl.animation({ leaf = "windowsMove",  enabled = true, speed = 2.8, bezier = "smoothDecel", style = "slide"     })
+hl.animation({ leaf = "windowsIn",    enabled = true, speed = 4.5, bezier = "smoothDecel", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut",   enabled = true, speed = 4.0, bezier = "smoothOut",   style = "popin 90%" })
+hl.animation({ leaf = "windowsMove",  enabled = true, speed = 4.5, bezier = "smoothDecel", style = "slide"     })
 
 -- Fade: Crisp and immediate
-hl.animation({ leaf = "fadeIn",       enabled = true, speed = 2.2, bezier = "smoothOut" })
-hl.animation({ leaf = "fadeOut",      enabled = true, speed = 1.8, bezier = "smoothOut" })
+hl.animation({ leaf = "fadeIn",       enabled = true, speed = 4.2, bezier = "smoothOut" })
+hl.animation({ leaf = "fadeOut",      enabled = true, speed = 3.6, bezier = "smoothOut" })
 
--- Workspaces: Snappy slide (cut from sluggish 700ms down to fluid 350ms)
-hl.animation({ leaf = "workspaces",   enabled = true, speed = 3.5, bezier = "smoothOut",   style = "slide" })
+-- Layers (QuickShell settings, sidebars, dialogs, popups): Snappy & lightweight
+hl.animation({ leaf = "layersIn",     enabled = true, speed = 4.8, bezier = "smoothDecel", style = "popin 93%" })
+hl.animation({ leaf = "layersOut",    enabled = true, speed = 4.2, bezier = "smoothOut",   style = "popin 94%" })
+hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 4.8, bezier = "smoothDecel" })
+hl.animation({ leaf = "fadeLayersOut",enabled = true, speed = 4.2, bezier = "smoothOut" })
+
+-- Workspaces: Snappy, fluid slide
+hl.animation({ leaf = "workspaces",   enabled = true, speed = 5.2, bezier = "smoothOut",   style = "slide" })
 
