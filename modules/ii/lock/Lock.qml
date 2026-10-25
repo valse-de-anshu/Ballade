@@ -16,7 +16,7 @@ LockScreen {
 
     Timer {
         id: restoreTimer
-        interval: 150
+        interval: 100
         repeat: false
         onTriggered: {
             var batch = ""
@@ -40,11 +40,16 @@ LockScreen {
     // Single batch for lock and unlock so we don't race multiple hyprctl calls
     Connections {
         target: GlobalStates
+        function onUnlockingChanged() {
+            if (GlobalStates.unlocking) {
+                restoreTimer.start()
+            }
+        }
         function onScreenLockedChanged() {
             if (GlobalStates.screenLocked) {
                 // Lock: save workspace per monitor and move all to temp workspace in one batch
                 var next = {}
-                var batch = "keyword animation workspaces,1,7,menu_decel,slidevert; "
+                var batch = ""
                 for (var i = 0; i < Quickshell.screens.length; ++i) {
                     var mon = Quickshell.screens[i].name
                     var mData = HyprlandData.monitors.find(m => m.name === mon)
@@ -57,7 +62,7 @@ LockScreen {
                 }
                 root.savedWorkspaces = next
                 Quickshell.execDetached(["bash", "-c", batch])
-            } else {
+            } else if (!GlobalStates.unlocking) {
                 restoreTimer.start()
             }
         }

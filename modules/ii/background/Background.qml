@@ -96,7 +96,7 @@ Variants {
         property bool videoRevealed: false
 
         //centered Wallpaper
-        property bool centeredWallpaperEnabled: Config.options.background.centeredWallpaper && (!Config.options.background.centeredWallpaperOnlyWhenLocked || GlobalStates.screenLocked)
+        property bool centeredWallpaperEnabled: Config.options.background.centeredWallpaper && (!Config.options.background.centeredWallpaperOnlyWhenLocked || GlobalStates.screenLocked || GlobalStates.unlocking)
         property int centeredWallpaperShape: getShapeFromName(Config.options.background.centeredWallpaperShape)
         property int centeredWallpaperSize: Config.options.background.centeredWallpaperSize
         property color centeredWallpaperColor: root.getColorFromName(Config.options.background.centeredWallpaperColor)
@@ -180,7 +180,7 @@ Variants {
 
         screen: modelData
         exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: (GlobalStates.screenLocked && !scaleAnim.running) ? WlrLayer.Overlay : WlrLayer.Background
+        WlrLayershell.layer: WlrLayer.Background
         WlrLayershell.namespace: "quickshell:background"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         anchors {
@@ -189,11 +189,7 @@ Variants {
             left: true
             right: true
         }
-        color: {
-            if (!bgRoot.wallpaperSafetyTriggered || bgRoot.wallpaperIsVideo)
-                return "transparent";
-            return CF.ColorUtils.mix(Appearance.colors.colLayer0, Appearance.colors.colPrimary, 0.75);
-        }
+        color: Appearance.colors.colLayer0Base || Appearance.colors.colLayer0 || "#181825"
         Behavior on color {
             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
@@ -348,11 +344,18 @@ Variants {
                 cache: true
                 smooth: true
                 asynchronous: true
+                opacity: (status === Image.Ready) ? 1.0 : 0.0
                 layer.enabled: blurLoader.active || fastBlurLoader.active
-                visible: !bgRoot.wallpaperIsVideo || !bgRoot.videoRevealed
+                visible: (!bgRoot.wallpaperIsVideo || !bgRoot.videoRevealed) && opacity > 0.01
                 onStatusChanged: {
                     if (status === Image.Ready && bgRoot.transitionProgress === 0.0) {
                         transitionAnim.restart()
+                    }
+                }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutCubic
                     }
                 }
                 Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
@@ -549,12 +552,12 @@ Variants {
                 id: centeredWallpaperDimOverlay
                 z: 10
                 anchors.fill: parent
-                color: "#000000"
+                color: Appearance.colors.colLayer0Base || Appearance.colors.colLayer0 || "#181825"
                 opacity: bgRoot.centeredWallpaperEnabled ? 0.65 : 0
                 visible: opacity > 0
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: 450; easing.type: Easing.OutCubic }
                 }
             }
 
@@ -562,8 +565,25 @@ Variants {
                 id: centeredWallpaperLoader
                 z: 11
                 anchors.fill: parent
-                active: bgRoot.centeredWallpaperEnabled
-                visible: active
+                active: bgRoot.centeredWallpaperEnabled || centeredWallpaperLoader.opacity > 0.01
+                visible: opacity > 0.01
+                opacity: bgRoot.centeredWallpaperEnabled ? 1.0 : 0.0
+                scale: (GlobalStates.screenLocked && !GlobalStates.unlocking) ? 1.06 : 1.0
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 450
+                        easing.type: Easing.OutCubic
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 480
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                    }
+                }
+
                 sourceComponent: Item {
                     anchors.fill: parent
 
@@ -612,6 +632,13 @@ Variants {
                             asynchronous: true
                             antialiasing: true
                             smooth: true
+                            opacity: (status === Image.Ready) ? 1.0 : 0.0
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 400
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
                         }
                     }
                 }

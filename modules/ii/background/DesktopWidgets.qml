@@ -35,7 +35,8 @@ Variants {
         property list<HyprlandWorkspace> workspacesForMonitor: Hyprland.workspaces.values.filter(workspace => workspace.monitor && workspace.monitor.name == monitor.name)
         property var activeWorkspaceWithFullscreen: workspacesForMonitor.filter(workspace => ((workspace.toplevels.values.filter(window => window.wayland?.fullscreen)[0] != undefined) && workspace.active))[0]
 
-        visible: !GlobalStates.screenLocked && ((!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen)
+        readonly property bool shouldShowWidgets: (!GlobalStates.screenLocked || GlobalStates.unlocking) && ((!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen)
+        visible: widgetsRoot.shouldShowWidgets || widgetCanvas.opacity > 0.01
 
         screen: modelData
         exclusionMode: ExclusionMode.Ignore
@@ -65,6 +66,31 @@ Variants {
             id: widgetCanvas
             z: 10
             anchors.fill: parent
+
+            opacity: widgetsRoot.shouldShowWidgets ? 1.0 : 0.0
+            y: widgetsRoot.shouldShowWidgets ? 0 : 28
+            scale: widgetsRoot.shouldShowWidgets ? 1.0 : 0.96
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 380
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on y {
+                NumberAnimation {
+                    duration: 420
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 420
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                }
+            }
 
             transitions: Transition {
                 PropertyAnimation {

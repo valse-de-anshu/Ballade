@@ -14,15 +14,56 @@ Scope {
 
     required property Component lockSurface
     property alias context: lockContext
+    property bool isUnlocking: false
+
+    Timer {
+        id: unlockFinishTimer
+        interval: 280
+        repeat: false
+        onTriggered: {
+            root.isUnlocking = false;
+            GlobalStates.unlocking = false;
+            GlobalStates.screenLocked = false;
+            lockContext.reset();
+
+            // Post-unlock actions
+            if (lockContext.alsoInhibitIdle) {
+                lockContext.alsoInhibitIdle = false;
+                Idle.toggleInhibit(true);
+            }
+        }
+    }
+
     property Component sessionLockSurface: WlSessionLockSurface {
         id: sessionLockSurface
         color: "transparent"
         Loader {
-            active: GlobalStates.screenLocked
+            id: lockSurfaceLoader
+            active: GlobalStates.screenLocked || root.isUnlocking
             anchors.fill: parent
-            opacity: active ? 1 : 0
+            opacity: root.isUnlocking ? 0.0 : 1.0
+            scale: root.isUnlocking ? 1.03 : 1.0
+            y: root.isUnlocking ? -24 : 0
+
             Behavior on opacity {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                NumberAnimation {
+                    duration: 260
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 280
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                }
+            }
+            Behavior on y {
+                NumberAnimation {
+                    duration: 280
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                }
             }
             sourceComponent: root.lockSurface
         }
@@ -71,18 +112,10 @@ Scope {
             // Unlock the keyring if configured to do so
             if (Config.options.lock.security.unlockKeyring) root.unlockKeyring(); // Async
 
-            // Unlock the screen before exiting, or the compositor will display a
-            // fallback lock you can't interact with.
-            GlobalStates.screenLocked = false;
-
-            // Reset
-            lockContext.reset();
-
-            // Post-unlock actions
-            if (lockContext.alsoInhibitIdle) {
-                lockContext.alsoInhibitIdle = false;
-                Idle.toggleInhibit(true);
-            }
+            // Start smooth Apple-like unlock sequence
+            root.isUnlocking = true;
+            GlobalStates.unlocking = true;
+            unlockFinishTimer.restart();
         }
     }
 
@@ -97,6 +130,9 @@ Scope {
             Quickshell.execDetached(["bash", "-c", "pidof hyprlock || hyprlock"]);
             return;
         }
+        root.isUnlocking = false;
+        GlobalStates.unlocking = false;
+        unlockFinishTimer.stop();
         GlobalStates.screenLocked = true;
     }
 
@@ -110,7 +146,7 @@ Scope {
             lockContext.shouldReFocus();
         }
         function unlock(): void {
-            GlobalStates.screenLocked = false;
+            lockContext.unlocked(LockContext.ActionEnum.Unlock);
         }
     }
 
