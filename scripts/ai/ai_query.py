@@ -69,6 +69,37 @@ def get_fallback_api_key(key_id):
         pass
     return ""
 
+def parse_tool_args(raw_args):
+    if not raw_args:
+        return {}
+    clean = raw_args.strip()
+    if not clean:
+        return {}
+    if clean.startswith("```"):
+        lines = clean.splitlines()
+        if len(lines) >= 2 and lines[-1].strip() == "```":
+            clean = "\n".join(lines[1:-1]).strip()
+            if clean.startswith("json"):
+                clean = clean[4:].strip()
+    try:
+        parsed = json.loads(clean)
+        if isinstance(parsed, dict):
+            return parsed
+        elif isinstance(parsed, str):
+            return {"command": parsed}
+    except Exception:
+        pass
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            parsed = json.loads(clean[start:end+1])
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+    return {"command": clean}
+
 def main():
     if len(sys.argv) < 2:
         emit({"type": "error", "error": "No payload file provided"})
@@ -311,6 +342,8 @@ def main():
                 method="POST"
             )
 
+            accumulated_tool_calls = {}
+            in_reasoning = False
             total_tokens = {"input": -1, "output": -1, "total": -1}
             with urllib.request.urlopen(req, context=ctx, timeout=120) as resp:
                 for line in resp:
@@ -323,21 +356,42 @@ def main():
                     try:
                         chunk_obj = json.loads(clean_json)
                         if "choices" in chunk_obj and len(chunk_obj["choices"]) > 0:
-                            delta = chunk_obj["choices"][0].get("delta", {})
+                            choice = chunk_obj["choices"][0]
+                            delta = choice.get("delta", {})
+                            
+                            # Handle reasoning / thinking tokens (e.g. DeepSeek R1 / OpenRouter)
+                            reasoning_piece = delta.get("reasoning_content") or delta.get("reasoning", "")
                             text_piece = delta.get("content", "")
+
+                            if reasoning_piece:
+                                if not in_reasoning:
+                                    emit({"type": "token", "text": "<think>\n"})
+                                    in_reasoning = True
+                                emit({"type": "token", "text": reasoning_piece})
+                            elif in_reasoning and text_piece:
+                                emit({"type": "token", "text": "\n</think>\n\n"})
+                                in_reasoning = False
+
                             if text_piece:
                                 emit({"type": "token", "text": text_piece})
+
                             tool_calls = delta.get("tool_calls", [])
                             for tc in tool_calls:
+                                idx = tc.get("index", 0)
+                                if idx not in accumulated_tool_calls:
+                                    accumulated_tool_calls[idx] = {
+                                        "id": tc.get("id", ""),
+                                        "name": "",
+                                        "arguments": ""
+                                    }
+                                if tc.get("id"):
+                                    accumulated_tool_calls[idx]["id"] = tc.get("id")
+
                                 fn = tc.get("function", {})
-                                fn_name = fn.get("name", "")
-                                fn_args_str = fn.get("arguments", "")
-                                try:
-                                    fn_args = json.loads(fn_args_str) if fn_args_str else {}
-                                except Exception:
-                                    fn_args = {"command": fn_args_str}
-                                if fn_name:
-                                    emit({"type": "function_call", "name": fn_name, "args": fn_args})
+                                if fn.get("name"):
+                                    accumulated_tool_calls[idx]["name"] += fn.get("name")
+                                if fn.get("arguments"):
+                                    accumulated_tool_calls[idx]["arguments"] += fn.get("arguments")
 
                         if "usage" in chunk_obj and chunk_obj["usage"]:
                             usage = chunk_obj["usage"]
@@ -348,6 +402,24 @@ def main():
                             }
                     except Exception:
                         pass
+
+            if in_reasoning:
+                emit({"type": "token", "text": "\n</think>\n\n"})
+                in_reasoning = False
+
+            # Emit accumulated tool calls once stream ends
+            for idx in sorted(accumulated_tool_calls.keys()):
+                tc = accumulated_tool_calls[idx]
+                fn_name = tc.get("name", "").strip()
+                raw_args = tc.get("arguments", "").strip()
+                fn_args = parse_tool_args(raw_args)
+                if fn_name:
+                    emit({
+                        "type": "function_call",
+                        "name": fn_name,
+                        "args": fn_args,
+                        "id": tc.get("id", "")
+                    })
 
             emit({"type": "done", "tokens": total_tokens})
 

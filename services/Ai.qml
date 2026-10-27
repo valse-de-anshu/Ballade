@@ -678,7 +678,7 @@ Singleton {
                 "system_prompt": root.systemPrompt || Config.options.ai.systemPrompt || "",
                 "temperature": root.temperature,
                 "messages": filteredMessageArray,
-                "tool": Config?.options?.ai?.tool ?? root.currentTool ?? "functions",
+                "tool": root.currentTool ?? Config?.options?.ai?.tool ?? "functions",
                 "tools": root.tools[model?.api_format] || {}
             };
 
@@ -836,7 +836,7 @@ Singleton {
 
         commandExecutionProc.message = responseMessage;
         commandExecutionProc.baseMessageContent = responseMessage.content;
-        commandExecutionProc.shellCommand = message.functionCall.args.command;
+        commandExecutionProc.shellCommand = (message.functionCall && message.functionCall.args) ? (message.functionCall.args.command || "") : "";
         commandExecutionProc.running = true; // Start the command execution
     }
 
@@ -845,7 +845,7 @@ Singleton {
         property string shellCommand: ""
         property AiMessageData message
         property string baseMessageContent: ""
-        command: ["bash", "-c", shellCommand]
+        command: ["bash", "-c", `${shellCommand} 2>&1`]
         stdout: SplitParser {
             onRead: (output) => {
                 commandExecutionProc.message.functionResponse += output + "\n\n";
@@ -879,12 +879,26 @@ Singleton {
             const key = args.key;
             const value = args.value;
             Config.setNestedValue(key, value);
+            addFunctionOutputMessage(name, Translation.tr("Configuration option `%1` set to `%2`.").arg(key).arg(value));
+            requester.makeRequest();
         } else if (name === "run_shell_command") {
-            if (!args.command || args.command.length === 0) {
+            let cmd = "";
+            if (typeof args === "string") {
+                cmd = args;
+            } else if (args && typeof args === "object") {
+                cmd = args.command || args.cmd || args.shell_command || args.input || "";
+            }
+            if (!cmd || cmd.trim().length === 0) {
                 addFunctionOutputMessage(name, Translation.tr("Invalid arguments. Must provide `command`."));
                 return;
             }
-            const contentToAppend = `\n\n**Command execution request**\n\n\`\`\`command\n${args.command}\n\`\`\``;
+            if (!args || typeof args !== "object") args = {};
+            args.command = cmd;
+            if (message) {
+                message.functionName = name;
+                message.functionCall = { name: name, args: args };
+            }
+            const contentToAppend = `\n\n**Command execution request**\n\n\`\`\`command\n${cmd}\n\`\`\``;
             message.rawContent += contentToAppend;
             message.content += contentToAppend;
             message.functionPending = true; // Use thinking to indicate the command is waiting for approval
