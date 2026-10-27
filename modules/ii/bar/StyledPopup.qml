@@ -73,16 +73,7 @@ LazyLoader {
         implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
         implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
 
-        Item {
-            id: nullInputItem
-            width: 0
-            height: 0
-            visible: false
-        }
 
-        mask: Region {
-            item: nullInputItem
-        }
 
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0
@@ -127,12 +118,7 @@ LazyLoader {
             bottom: Appearance.sizes.barHeight
         }
         WlrLayershell.namespace: "quickshell:popup"
-        WlrLayershell.layer: WlrLayer.Overlay
-
-        StyledRectangularShadow {
-            target: popupBackground
-            opacity: popupBackground.opacity
-        }
+        WlrLayershell.layer: WlrLayer.Top
 
         Rectangle {
             id: popupBackground
@@ -150,9 +136,9 @@ LazyLoader {
                 Appearance.colors.colLayer0Base.r,
                 Appearance.colors.colLayer0Base.g,
                 Appearance.colors.colLayer0Base.b,
-                0.22
+                0.18
             )
-            radius: Appearance.rounding.normal + 4
+            radius: Appearance.rounding.windowRounding
             children: [root.contentItem]
 
             border.width: 1

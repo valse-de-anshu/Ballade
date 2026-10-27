@@ -89,6 +89,15 @@ AbstractBackgroundWidget {
         border.color: "transparent"
         clip: true
 
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: card.width
+                height: card.height
+                radius: card.radius
+            }
+        }
+
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
         }
@@ -633,6 +642,7 @@ Image {
                         id: trackSlider
                         Layout.fillWidth: true
                         configuration: StyledSlider.Configuration.Wavy
+                        animateWave: root.currentPlayer?.isPlaying ?? false
                         highlightColor: Appearance.colors.colPrimary
                         trackColor: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.8)
                         handleColor: Appearance.colors.colPrimary

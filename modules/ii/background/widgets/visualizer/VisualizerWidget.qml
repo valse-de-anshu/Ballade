@@ -106,15 +106,16 @@ AbstractBackgroundWidget {
         root.restoreXYBinding();
     }
 
-    onDraggingChanged: {
-        if (!dragging && !isLockWidget && isRing && configEntry) {
-            saveVisualizerPosition();
-        }
-    }
+    property bool hadActualDrag: false
 
-    onReleased: {
-        if (!isLockWidget && isRing && configEntry) {
-            saveVisualizerPosition();
+    onDraggingChanged: {
+        if (dragging) {
+            hadActualDrag = true;
+        } else if (hadActualDrag) {
+            hadActualDrag = false;
+            if (!isLockWidget && isRing && configEntry) {
+                saveVisualizerPosition();
+            }
         }
     }
 

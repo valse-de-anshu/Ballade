@@ -25,8 +25,9 @@ AbstractWidget {
     x: isLockWidget ? 0 : targetX
     y: isLockWidget ? 0 : targetY
     draggable: !isLockWidget && !Config.options.background.widgetsLocked
-    animateXPos: !isLockWidget && !dragging
-    animateYPos: !isLockWidget && !dragging
+    property bool initialPositionSet: false
+    animateXPos: !isLockWidget && !dragging && initialPositionSet
+    animateYPos: !isLockWidget && !dragging && initialPositionSet
     visible: opacity > 0
     opacity: (GlobalStates.screenLocked && !visibleWhenLocked) ? 0 : 1
     Behavior on opacity {
@@ -55,6 +56,7 @@ AbstractWidget {
         if (!configEntry || isLockWidget) return;
         const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
         const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
+        if (newX <= 0 && newY <= 0) return;
         configEntry.placementStrategy = "free";
         configEntry.x = newX;
         configEntry.y = newY;
@@ -79,16 +81,34 @@ AbstractWidget {
         }
     }
 
+    property bool hadActualDrag: false
+
     onDraggingChanged: {
-        if (!dragging && !isLockWidget && configEntry) {
-            saveDraggedPosition();
+        if (dragging) {
+            hadActualDrag = true;
+        } else if (hadActualDrag) {
+            hadActualDrag = false;
+            if (!isLockWidget && configEntry) {
+                saveDraggedPosition();
+            }
         }
     }
 
-    onReleased: {
+    Component.onCompleted: {
         if (!isLockWidget && configEntry) {
-            saveDraggedPosition();
+            // If x and y are uninitialized, center in a natural desktop area
+            if ((configEntry.x === undefined || configEntry.x <= 0) && (configEntry.y === undefined || configEntry.y <= 0)) {
+                let naturalX = Math.round(Math.max(48, (scaledScreenWidth - (width > 0 ? width : 450)) / 2));
+                let naturalY = Math.round(Math.max(80, (scaledScreenHeight - (height > 0 ? height : 200)) / 2));
+                configEntry.x = naturalX;
+                configEntry.y = naturalY;
+                Config.save();
+            }
         }
+        restoreXYBinding();
+        Qt.callLater(() => {
+            initialPositionSet = true;
+        });
     }
 
     property bool needsColText: false

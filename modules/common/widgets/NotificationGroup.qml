@@ -241,16 +241,18 @@ MouseArea { // Notification group area
                         id: groupCloseButton
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 20
-                        implicitHeight: 20
+                        implicitWidth: 22
+                        implicitHeight: 22
+                        padding: 0
                         buttonRadius: Appearance.rounding.full
                         colBackground: containsMouse ? Appearance.colors.colLayer2Hover : "transparent"
                         colBackgroundHover: Appearance.colors.colLayer2Hover
                         visible: root.containsMouse || root.popup
 
                         contentItem: MaterialSymbol {
-                            anchors.centerIn: parent
-                            iconSize: 13
+                            iconSize: 15
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
                             color: groupCloseButton.containsMouse ? Appearance.colors.colOnLayer2 : Appearance.colors.colSubtext
                             text: "close"
                         }
