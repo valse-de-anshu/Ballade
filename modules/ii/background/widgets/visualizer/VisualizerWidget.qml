@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
@@ -18,7 +19,13 @@ AbstractBackgroundWidget {
     readonly property string style: (configEntry && configEntry.style) ? configEntry.style : "bars"
     readonly property bool shaderStyle: ["aurora", "ring", "dots", "mirror"].includes(style)
     readonly property bool isRing: style === "ring"
-    readonly property bool isTopVisualizer: ["aurora", "mirror"].includes(style)
+    readonly property string position: {
+        if (configEntry && configEntry.position !== undefined && configEntry.position !== "") {
+            return configEntry.position;
+        }
+        return ["aurora", "mirror"].includes(style) ? "top" : "bottom";
+    }
+    readonly property bool isTop: !isRing && position === "top"
     readonly property bool useCoverColors: shaderStyle && Boolean(configEntry && configEntry.colorSource === "cover")
 
     property real ringSize: (root.configEntry && root.configEntry.ringSize) ? root.configEntry.ringSize : 380
@@ -66,7 +73,7 @@ AbstractBackgroundWidget {
     width: implicitWidth
     height: implicitHeight
     x: isLockWidget ? 0 : (isRing ? targetX : 0)
-    y: isLockWidget ? 0 : (isRing ? targetY : (isTopVisualizer ? 0 : (screenHeight - implicitHeight)))
+    y: isLockWidget ? 0 : (isRing ? targetY : (isTop ? 0 : (screenHeight - implicitHeight)))
     draggable: !isLockWidget && isRing && !Config.options.background.widgetsLocked
     hoverEnabled: !isLockWidget && isRing
 
@@ -81,7 +88,7 @@ AbstractBackgroundWidget {
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
-        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.isTopVisualizer ? 0 : (root.screenHeight - root.implicitHeight)));
+        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.isTop ? 0 : (root.screenHeight - root.implicitHeight)));
     }
 
     function saveVisualizerPosition() {
@@ -138,6 +145,9 @@ AbstractBackgroundWidget {
         }
         function onYChanged() {
             if (root.isRing && !root.dragging) root.restoreXYBinding();
+        }
+        function onPositionChanged() {
+            root.restoreXYBinding();
         }
     }
 
@@ -300,7 +310,7 @@ AbstractBackgroundWidget {
                 hasCover: coverImage.status === Image.Ready ? 1 : 0
                 transform: Scale {
                     origin.y: root.height / 2
-                    yScale: root.style === "aurora" ? -1 : 1
+                    yScale: (root.style === "aurora" && root.isTop) ? -1 : 1
                 }
             }
         }
@@ -391,7 +401,8 @@ AbstractBackgroundWidget {
         }
 
         Row {
-            anchors.bottom: parent.bottom
+            anchors.top: root.isTop ? parent.top : undefined
+            anchors.bottom: root.isTop ? undefined : parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: bars.barSpacing
             opacity: bars.activityOpacity
@@ -410,9 +421,12 @@ AbstractBackgroundWidget {
                         return Math.max(bars.barWidth, (v / bars.maxVisualizerValue) * bars.maxBarHeight)
                     }
                     height: pointValue
-                    topLeftRadius: bars.barWidth / 2
-                    topRightRadius: bars.barWidth / 2
-                    anchors.bottom: parent.bottom
+                    topLeftRadius: root.isTop ? 0 : (bars.barWidth / 2)
+                    topRightRadius: root.isTop ? 0 : (bars.barWidth / 2)
+                    bottomLeftRadius: root.isTop ? (bars.barWidth / 2) : 0
+                    bottomRightRadius: root.isTop ? (bars.barWidth / 2) : 0
+                    anchors.top: root.isTop ? parent.top : undefined
+                    anchors.bottom: root.isTop ? undefined : parent.bottom
 
                     property real intensity: pointValue / bars.maxBarHeight
                     color: Qt.rgba(
@@ -426,6 +440,252 @@ AbstractBackgroundWidget {
                         NumberAnimation { duration: bars.smoothingDuration; easing.type: Easing.OutQuad }
                     }
                 }
+            }
+        }
+    }
+
+    // Context popup menu for non-ring visualizers
+    Popup {
+        id: positionPopup
+        padding: 8
+        implicitWidth: 200
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        focus: true
+        dim: false
+
+        function openAt(targetX, targetY) {
+            let winW = root.screenWidth || 1920;
+            let winH = root.screenHeight || 1080;
+            let posX = Math.max(16, Math.min(targetX, winW - 220));
+            let posY = Math.max(16, Math.min(targetY, winH - 180));
+            positionPopup.x = posX;
+            positionPopup.y = posY;
+            positionPopup.open();
+        }
+
+        background: Rectangle {
+            radius: Appearance.rounding.normal + 2
+            color: Qt.rgba(
+                Appearance.colors.colLayer0Base.r,
+                Appearance.colors.colLayer0Base.g,
+                Appearance.colors.colLayer0Base.b,
+                0.92
+            )
+            border.width: 1
+            border.color: Appearance.colors.colLayer0Border
+
+            StyledRectangularShadow {
+                target: parent
+            }
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 4
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.margins: 4
+                spacing: 8
+                MaterialSymbol {
+                    text: "graphic_eq"
+                    iconSize: 18
+                    color: Appearance.colors.colPrimary
+                }
+                StyledText {
+                    Layout.fillWidth: true
+                    text: Translation.tr("Visualizer Position")
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colOnLayer0
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Qt.rgba(1, 1, 1, 0.08)
+                Layout.topMargin: 2
+                Layout.bottomMargin: 2
+            }
+
+            // Top (Ceiling)
+            RippleButton {
+                Layout.fillWidth: true
+                implicitHeight: 34
+                buttonRadius: 8
+                colBackground: root.isTop ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.15) : "transparent"
+                colBackgroundHover: Qt.rgba(1, 1, 1, 0.08)
+                contentItem: RowLayout {
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                    spacing: 8
+                    MaterialSymbol {
+                        text: "vertical_align_top"
+                        iconSize: 18
+                        color: root.isTop ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Top (Ceiling)")
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.weight: root.isTop ? Font.Bold : Font.Normal
+                        color: root.isTop ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                    }
+                    MaterialSymbol {
+                        visible: root.isTop
+                        text: "check"
+                        iconSize: 16
+                        color: Appearance.colors.colPrimary
+                    }
+                }
+                onClicked: {
+                    if (root.configEntry) {
+                        root.configEntry.position = "top";
+                        Config.save();
+                    }
+                    positionPopup.close();
+                }
+            }
+
+            // Bottom (Floor)
+            RippleButton {
+                Layout.fillWidth: true
+                implicitHeight: 34
+                buttonRadius: 8
+                colBackground: !root.isTop ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.15) : "transparent"
+                colBackgroundHover: Qt.rgba(1, 1, 1, 0.08)
+                contentItem: RowLayout {
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                    spacing: 8
+                    MaterialSymbol {
+                        text: "vertical_align_bottom"
+                        iconSize: 18
+                        color: !root.isTop ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Bottom (Floor)")
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.weight: !root.isTop ? Font.Bold : Font.Normal
+                        color: !root.isTop ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                    }
+                    MaterialSymbol {
+                        visible: !root.isTop
+                        text: "check"
+                        iconSize: 16
+                        color: Appearance.colors.colPrimary
+                    }
+                }
+                onClicked: {
+                    if (root.configEntry) {
+                        root.configEntry.position = "bottom";
+                        Config.save();
+                    }
+                    positionPopup.close();
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Qt.rgba(1, 1, 1, 0.08)
+                Layout.topMargin: 2
+                Layout.bottomMargin: 2
+            }
+
+            // Configure in Settings
+            RippleButton {
+                Layout.fillWidth: true
+                implicitHeight: 34
+                buttonRadius: 8
+                colBackground: "transparent"
+                colBackgroundHover: Qt.rgba(1, 1, 1, 0.08)
+                contentItem: RowLayout {
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                    spacing: 8
+                    MaterialSymbol {
+                        text: "settings"
+                        iconSize: 18
+                        color: Appearance.colors.colOnSurfaceVariant
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Widget Settings...")
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.colors.colOnSurfaceVariant
+                    }
+                }
+                onClicked: {
+                    positionPopup.close();
+                    GlobalStates.settingsOpen = true;
+                }
+            }
+        }
+    }
+
+    // Right-click to open position menu
+    MouseArea {
+        id: visualizerContextMenuArea
+        anchors.fill: parent
+        enabled: !root.isLockWidget && !root.isRing
+        acceptedButtons: Qt.RightButton
+        hoverEnabled: true
+        cursorShape: Qt.ArrowCursor
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                positionPopup.openAt(mouse.x, mouse.y);
+            }
+        }
+    }
+
+    // Floating quick-switch pill on hover
+    Item {
+        anchors.right: parent.right
+        anchors.rightMargin: 24
+        anchors.top: root.isTop ? parent.bottom : undefined
+        anchors.bottom: root.isTop ? undefined : parent.top
+        anchors.topMargin: root.isTop ? -40 : 0
+        anchors.bottomMargin: root.isTop ? 0 : -40
+        implicitWidth: quickPill.implicitWidth
+        implicitHeight: quickPill.implicitHeight
+        visible: !root.isLockWidget && !root.isRing && (visualizerContextMenuArea.containsMouse || quickPill.containsMouse || positionPopup.opened)
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        RippleButton {
+            id: quickPill
+            implicitHeight: 30
+            implicitWidth: pillRow.implicitWidth + 18
+            buttonRadius: 15
+            colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.75)
+            colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.35)
+            border: true
+            borderWidth: 1
+            colBorder: Appearance.colors.colLayer0Border
+
+            contentItem: RowLayout {
+                id: pillRow
+                anchors.centerIn: parent
+                spacing: 6
+                MaterialSymbol {
+                    text: root.isTop ? "vertical_align_top" : "vertical_align_bottom"
+                    iconSize: 15
+                    color: Appearance.colors.colPrimary
+                }
+                StyledText {
+                    text: root.isTop ? Translation.tr("Top") : Translation.tr("Bottom")
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colOnLayer0
+                }
+                MaterialSymbol {
+                    text: "arrow_drop_down"
+                    iconSize: 16
+                    color: Appearance.colors.colOnLayer0
+                }
+            }
+            onClicked: {
+                positionPopup.openAt(root.width - 240, root.isTop ? 40 : (root.height - 180));
             }
         }
     }

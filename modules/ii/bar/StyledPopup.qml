@@ -146,12 +146,17 @@ LazyLoader {
             }
             implicitWidth: root.contentItem.implicitWidth + margin * 2
             implicitHeight: root.contentItem.implicitHeight + margin * 2
-            color: Appearance.colors.colLayer1Base
+            color: Qt.rgba(
+                Appearance.colors.colLayer0Base.r,
+                Appearance.colors.colLayer0Base.g,
+                Appearance.colors.colLayer0Base.b,
+                0.22
+            )
             radius: Appearance.rounding.normal + 4
             children: [root.contentItem]
 
             border.width: 1
-            border.color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+            border.color: Appearance.colors.colLayer0Border
 
             transformOrigin: popupWindow.anchors.bottom ? Item.Bottom : Item.Top
 

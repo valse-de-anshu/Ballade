@@ -373,6 +373,7 @@ Singleton {
                         property real y: 0
                         property real z: -1000
                         property string style: "bars" // "bars", "mirror", "aurora", "ring", "dots"
+                        property string position: "bottom" // "top", "bottom"
                         property string colorSource: "theme" // "theme", "cover"
                         property real sensitivity: 1
                         property int height: 100 // mirror, aurora and dots — 0-100% of screen height
@@ -386,6 +387,7 @@ Singleton {
                         property real y: 0
                         property real z: -1000
                         property string style: "ring" // "bars", "mirror", "aurora", "ring", "dots"
+                        property string position: "top" // "top", "bottom"
                         property string colorSource: "theme" // "theme", "cover"
                         property real sensitivity: 1
                         property int height: 100

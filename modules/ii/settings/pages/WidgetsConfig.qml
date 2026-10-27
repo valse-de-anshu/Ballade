@@ -986,6 +986,29 @@ ContentPage {
                         }
                     ]
                 }
+
+                ConfigSelectionArray {
+                    text: Translation.tr("Position")
+                    icon: "vertical_align_center"
+                    visible: settingsVisualizer.entry.style !== "ring"
+                    currentValue: (settingsVisualizer.entry && settingsVisualizer.entry.position) ? settingsVisualizer.entry.position : (["aurora", "mirror"].includes(settingsVisualizer.entry.style) ? "top" : "bottom")
+                    onSelected: newValue => {
+                        settingsVisualizer.entry.position = newValue;
+                        Config.save();
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("Top (Ceiling)"),
+                            icon: "vertical_align_top",
+                            value: "top"
+                        },
+                        {
+                            displayName: Translation.tr("Bottom (Floor)"),
+                            icon: "vertical_align_bottom",
+                            value: "bottom"
+                        }
+                    ]
+                }
         
                 ConfigSlider {
                     text: Translation.tr("Sensitivity (%)")
@@ -1118,6 +1141,31 @@ ContentPage {
                             displayName: Translation.tr("Album cover"),
                             icon: "album",
                             value: "cover"
+                        }
+                    ]
+                }
+
+                ConfigSelectionArray {
+                    text: Translation.tr("Position")
+                    icon: "vertical_align_center"
+                    visible: Boolean(settingsVisualizer2.entry && settingsVisualizer2.entry.enable && settingsVisualizer2.entry.style !== "ring")
+                    currentValue: (settingsVisualizer2.entry && settingsVisualizer2.entry.position) ? settingsVisualizer2.entry.position : (["aurora", "mirror"].includes(settingsVisualizer2.entry.style) ? "top" : "bottom")
+                    onSelected: newValue => {
+                        if (settingsVisualizer2.entry) {
+                            settingsVisualizer2.entry.position = newValue;
+                            Config.save();
+                        }
+                    }
+                    options: [
+                        {
+                            displayName: Translation.tr("Top (Ceiling)"),
+                            icon: "vertical_align_top",
+                            value: "top"
+                        },
+                        {
+                            displayName: Translation.tr("Bottom (Floor)"),
+                            icon: "vertical_align_bottom",
+                            value: "bottom"
                         }
                     ]
                 }
