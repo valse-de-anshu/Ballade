@@ -71,9 +71,9 @@ StyledPopup {
             Layout.fillWidth: true
             implicitHeight: 96
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.06)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
 
             ColumnLayout {
                 anchors.fill: parent
@@ -164,9 +164,9 @@ StyledPopup {
                 Layout.fillWidth: true
                 implicitHeight: 62
                 radius: Appearance.rounding.normal
-                color: Qt.rgba(1, 1, 1, 0.04)
+                color: Qt.rgba(1, 1, 1, 0.08)
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.06)
+                border.color: Qt.rgba(1, 1, 1, 0.18)
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -201,9 +201,9 @@ StyledPopup {
                 Layout.fillWidth: true
                 implicitHeight: 62
                 radius: Appearance.rounding.normal
-                color: Qt.rgba(1, 1, 1, 0.04)
+                color: Qt.rgba(1, 1, 1, 0.08)
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.06)
+                border.color: Qt.rgba(1, 1, 1, 0.18)
 
                 ColumnLayout {
                     anchors.fill: parent

@@ -23,9 +23,9 @@ StyledPopup {
             implicitWidth: 155
             implicitHeight: 105
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
 
             ColumnLayout {
                 anchors.fill: parent
@@ -123,9 +123,9 @@ StyledPopup {
             implicitWidth: 155
             implicitHeight: 105
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
 
             readonly property real swapRatio: ResourceUsage.swapTotal > 0 ? (ResourceUsage.swapUsed / ResourceUsage.swapTotal) : 0
 
@@ -224,9 +224,9 @@ StyledPopup {
             implicitWidth: 155
             implicitHeight: 105
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
 
             ColumnLayout {
                 anchors.fill: parent
@@ -333,9 +333,9 @@ StyledPopup {
             implicitWidth: 165
             implicitHeight: 105
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
 
             readonly property real diskRatio: ResourceUsage.diskTotal > 0 ? (ResourceUsage.diskUsed / ResourceUsage.diskTotal) : 0
 

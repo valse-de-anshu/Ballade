@@ -130,19 +130,72 @@ LazyLoader {
                 topMargin: Appearance.sizes.elevationMargin + root.popupBackgroundMargin * (!popupWindow.anchors.top)
                 bottomMargin: Appearance.sizes.elevationMargin + root.popupBackgroundMargin * (!popupWindow.anchors.bottom)
             }
-            implicitWidth: root.contentItem.implicitWidth + margin * 2
-            implicitHeight: root.contentItem.implicitHeight + margin * 2
-            color: Qt.rgba(
-                Appearance.colors.colLayer0Base.r,
-                Appearance.colors.colLayer0Base.g,
-                Appearance.colors.colLayer0Base.b,
-                0.18
-            )
+            implicitWidth: (root.contentItem ? root.contentItem.implicitWidth : 0) + margin * 2
+            implicitHeight: (root.contentItem ? root.contentItem.implicitHeight : 0) + margin * 2
             radius: Appearance.rounding.windowRounding
-            children: [root.contentItem]
+            clip: true
 
+            // Luminous frosted glass base (replaces murky dark black layer)
+            color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.65), 0.09)
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.75), 0.35)
+
+            // 1. Vertical specular reflection gradient (overhead light catching the glass)
+            Rectangle {
+                anchors.fill: parent
+                radius: popupBackground.radius
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.35) }
+                    GradientStop { position: 0.22; color: ColorUtils.applyAlpha("#ffffff", 0.12) }
+                    GradientStop { position: 0.65; color: "transparent" }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.10) }
+                }
+            }
+
+            // 2. Lateral light sheen (subtle specular glare across the curved surface)
+            Rectangle {
+                anchors.fill: parent
+                radius: popupBackground.radius
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.18) }
+                    GradientStop { position: 0.35; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
+                    GradientStop { position: 0.75; color: "transparent" }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
+                }
+            }
+
+            // 3. Top rim specular highlight line (fades smoothly before the rounded corners)
+            Rectangle {
+                anchors {
+                    top: parent.top
+                    horizontalCenter: parent.horizontalCenter
+                }
+                width: Math.max(0, parent.width - popupBackground.radius * 2)
+                height: 1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.15; color: ColorUtils.applyAlpha("#ffffff", 0.65) }
+                    GradientStop { position: 0.50; color: ColorUtils.applyAlpha("#ffffff", 0.85) }
+                    GradientStop { position: 0.85; color: ColorUtils.applyAlpha("#ffffff", 0.65) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
+
+            // 4. Content container
+            Item {
+                id: contentHost
+                anchors.centerIn: parent
+                implicitWidth: root.contentItem ? root.contentItem.implicitWidth : 0
+                implicitHeight: root.contentItem ? root.contentItem.implicitHeight : 0
+                width: implicitWidth
+                height: implicitHeight
+                children: root.contentItem ? [root.contentItem] : []
+            }
 
             transformOrigin: popupWindow.anchors.bottom ? Item.Bottom : Item.Top
 

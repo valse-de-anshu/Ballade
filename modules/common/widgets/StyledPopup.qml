@@ -107,16 +107,6 @@ LazyLoader {
         readonly property real centerOffsetX: popupWindow.lastValidX
         readonly property real centerOffsetY: popupWindow.lastValidY
 
-        Item {
-            id: nullInputItem
-            width: 0
-            height: 0
-            visible: false
-        }
-
-        mask: Region {
-            item: nullInputItem
-        }
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0
 
@@ -135,12 +125,7 @@ LazyLoader {
             bottom: root.barEdge === "bottom" ? root.barThickness : 0
         }
         WlrLayershell.namespace: "quickshell:popup"
-        WlrLayershell.layer: WlrLayer.Overlay
-
-        StyledRectangularShadow {
-            target: popupBackground
-            opacity: popupBackground.opacity
-        }
+        WlrLayershell.layer: WlrLayer.Top
 
         Rectangle {
             id: popupBackground
@@ -157,11 +142,59 @@ LazyLoader {
             // Use local reference instead of crossing LazyLoader scope boundary
             implicitWidth: (popupWindow.innerContent?.implicitWidth ?? 0) + margin * 2
             implicitHeight: (popupWindow.innerContent?.implicitHeight ?? 0) + margin * 2
+            radius: Appearance.rounding.windowRounding
+            clip: true
 
-            color: Appearance.colors.colLayer1Base
-            radius: Appearance.rounding.normal + 4
+            // Luminous frosted glass base (replaces murky dark black layer)
+            color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.65), 0.09)
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.75), 0.35)
+
+            // 1. Vertical specular reflection gradient (overhead light catching the glass)
+            Rectangle {
+                anchors.fill: parent
+                radius: popupBackground.radius
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.35) }
+                    GradientStop { position: 0.22; color: ColorUtils.applyAlpha("#ffffff", 0.12) }
+                    GradientStop { position: 0.65; color: "transparent" }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.10) }
+                }
+            }
+
+            // 2. Lateral light sheen (subtle specular glare across the curved surface)
+            Rectangle {
+                anchors.fill: parent
+                radius: popupBackground.radius
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: ColorUtils.applyAlpha("#ffffff", 0.18) }
+                    GradientStop { position: 0.35; color: ColorUtils.applyAlpha("#ffffff", 0.04) }
+                    GradientStop { position: 0.75; color: "transparent" }
+                    GradientStop { position: 1.0; color: ColorUtils.applyAlpha("#ffffff", 0.08) }
+                }
+            }
+
+            // 3. Top rim specular highlight line (fades smoothly before the rounded corners)
+            Rectangle {
+                anchors {
+                    top: parent.top
+                    horizontalCenter: parent.horizontalCenter
+                }
+                width: Math.max(0, parent.width - popupBackground.radius * 2)
+                height: 1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.15; color: ColorUtils.applyAlpha("#ffffff", 0.65) }
+                    GradientStop { position: 0.50; color: ColorUtils.applyAlpha("#ffffff", 0.85) }
+                    GradientStop { position: 0.85; color: ColorUtils.applyAlpha("#ffffff", 0.65) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             transformOrigin: root.barEdge === "bottom" ? Item.Bottom : Item.Top
 
