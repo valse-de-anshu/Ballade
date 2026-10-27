@@ -53,6 +53,22 @@ def prepare_attachment(file_path):
     except Exception:
         return None
 
+def get_fallback_api_key(key_id):
+    if not key_id:
+        return ""
+    try:
+        import subprocess
+        out = subprocess.run(
+            ["secret-tool", "lookup", "application", "illogical-impulse"],
+            capture_output=True, text=True, timeout=3
+        )
+        if out.returncode == 0 and out.stdout.strip().startswith("{"):
+            data = json.loads(out.stdout.strip())
+            return data.get("apiKeys", {}).get(key_id, "")
+    except Exception:
+        pass
+    return ""
+
 def main():
     if len(sys.argv) < 2:
         emit({"type": "error", "error": "No payload file provided"})
@@ -69,6 +85,9 @@ def main():
     api_format = config.get("api_format", "gemini")
     endpoint = config.get("endpoint", "")
     api_key = config.get("api_key", "")
+    key_id = config.get("key_id", "") or ("gemini" if api_format == "gemini" else "openrouter")
+    if not api_key:
+        api_key = get_fallback_api_key(key_id)
     model_name = config.get("model", "")
     system_prompt = config.get("system_prompt", "")
     temperature = config.get("temperature", 0.5)

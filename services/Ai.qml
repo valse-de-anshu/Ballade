@@ -297,6 +297,19 @@ Singleton {
             "key_get_description": Translation.tr("**Instructions**: Log into OpenRouter, go to Keys, click Create API Key"),
             "api_format": "openai",
         }),
+        "deepseek-chat": aiModelComponent.createObject(this, {
+            "name": "DeepSeek Chat",
+            "icon": "deepseek-symbolic",
+            "description": Translation.tr("Online | DeepSeek's high-speed reasoning and chat model via OpenRouter."),
+            "homepage": "https://openrouter.ai/deepseek/deepseek-chat",
+            "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+            "model": "deepseek/deepseek-chat",
+            "requires_key": true,
+            "key_id": "openrouter",
+            "key_get_link": "https://openrouter.ai/settings/keys",
+            "key_get_description": Translation.tr("**Instructions**: Log into OpenRouter, go to Keys, click Create API Key"),
+            "api_format": "openai",
+        }),
     }
     property var modelList: Object.keys(root.models)
     property var currentModelId: (Persistent.states?.ai?.model && root.models[Persistent.states.ai.model]) ? Persistent.states.ai.model : "gemini-3.5-flash"
@@ -328,6 +341,7 @@ Singleton {
     property string pendingFilePath: ""
 
     Component.onCompleted: {
+        KeyringStorage.fetchKeyringData();
         setModel(currentModelId, false, false); // Do necessary setup for model
         root.addUserModels() // Config onReadyChanged above might not fire if config is loaded before this service
     }
@@ -659,6 +673,7 @@ Singleton {
                 "api_format": model?.api_format || "gemini",
                 "endpoint": model?.endpoint || "",
                 "api_key": apiKey,
+                "key_id": model?.key_id || "",
                 "model": model?.model || currentModelId,
                 "system_prompt": root.systemPrompt || Config.options.ai.systemPrompt || "",
                 "temperature": root.temperature,
