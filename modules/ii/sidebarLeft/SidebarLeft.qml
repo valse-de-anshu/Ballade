@@ -302,6 +302,24 @@ Scope { // Scope
             GlobalStates.sidebarLeftOpen = true
         }
 
+        function queryAi(text: string): void {
+            GlobalStates.sidebarLeftOpen = true;
+            if (root.sidebarContent && root.sidebarContent.setTab) {
+                root.sidebarContent.setTab(0);
+            }
+            Ai.sendUserMessage(text);
+        }
+
+        function searchBooru(query: string): void {
+            GlobalStates.sidebarLeftOpen = true;
+            if (root.sidebarContent && root.sidebarContent.setTab) {
+                root.sidebarContent.setTab(3);
+            }
+            Booru.clearResponses();
+            const tagList = query.split(/\s+/).filter(t => t.length > 0);
+            Booru.makeRequest(tagList, Persistent.states.booru.allowNsfw, Config.options.sidebar.booru.limit, 1);
+        }
+
         function setTab(index: int): void {
             if (root.sidebarContent && root.sidebarContent.setTab) {
                 root.sidebarContent.setTab(index);

@@ -14,6 +14,18 @@ import ssl
 import os
 import base64
 import mimetypes
+import socket
+
+# Prefer IPv4 on networks where IPv6 is unroutable or times out
+_orig_getaddrinfo = socket.getaddrinfo
+def _prefer_ipv4_getaddrinfo(*args, **kwargs):
+    try:
+        res = _orig_getaddrinfo(*args, **kwargs)
+        v4 = [r for r in res if r[0] == socket.AF_INET]
+        return v4 if v4 else res
+    except Exception:
+        return _orig_getaddrinfo(*args, **kwargs)
+socket.getaddrinfo = _prefer_ipv4_getaddrinfo
 
 def emit(data):
     try:
@@ -124,9 +136,9 @@ def main():
                     req_body["tools"] = gemini_funcs
 
             # Build list of real candidate models
-            primary_model = model_name or "gemini-2.5-flash"
+            primary_model = model_name or "gemini-3.5-flash"
             candidate_models = [primary_model]
-            for fallback in ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview", "gemini-2.5-pro"]:
+            for fallback in ["gemini-3.5-flash", "gemini-3.5-flash-lite"]:
                 if fallback not in candidate_models:
                     candidate_models.append(fallback)
 

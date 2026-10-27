@@ -91,37 +91,6 @@ Singleton {
                 })
             }
         },
-        "zerochan": {
-            "name": "Zerochan",
-            "url": "https://www.zerochan.net",
-            "api": "https://www.zerochan.net/?json",
-            "description": Translation.tr("Clean stuff | Excellent quality, no NSFW"),
-            "mapFunc": (response) => {
-                const items = response.items || []
-                return items.map(item => {
-                    const thumb = item.thumbnail || item.small || item.large || "";
-                    const full = item.full || item.large || item.medium || thumb;
-                    const w = item.width || 1200;
-                    const h = item.height || 1600;
-                    return {
-                        "id": item.id,
-                        "width": w,
-                        "height": h,
-                        "aspect_ratio": (w && h) ? (w / h) : 1.0,
-                        "tags": Array.isArray(item.tags) ? item.tags.join(" ") : (item.tags || ""),
-                        "rating": "safe", // Zerochan doesn't have nsfw
-                        "is_nsfw": false,
-                        "md5": item.md5 || String(item.id),
-                        "preview_url": thumb,
-                        "sample_url": item.medium || thumb,
-                        "file_url": full,
-                        "file_ext": thumb.toLowerCase().endsWith(".avif") ? "avif" : "jpg",
-                        "source": getWorkingImageSource(item.source) ?? full,
-                        "character": item.tag || ""
-                    }
-                })
-            }
-        },
         "gelbooru": {
             "name": "Safebooru / Gelbooru",
             "url": "https://safebooru.org",
@@ -162,37 +131,38 @@ Singleton {
                 })
             }
         },
-        "rule34": {
-            "name": "Rule34",
-            "url": "https://rule34.xxx",
-            "api": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1",
-            "description": Translation.tr("Vast anime database | SFW and NSFW tags"),
+        "wallhaven": {
+            "name": "Wallhaven",
+            "url": "https://wallhaven.cc",
+            "api": "https://wallhaven.cc/api/v1/search",
+            "description": Translation.tr("High-res anime wallpapers & art | 4K/8K"),
             "mapFunc": (response) => {
-                const list = Array.isArray(response) ? response : [];
-                return list.map(item => {
-                    const w = item.width || 1200;
-                    const h = item.height || 1200;
+                const data = response.data || [];
+                return data.map(item => {
+                    const w = item.dimension_x || 1920;
+                    const h = item.dimension_y || 1080;
+                    const previewUrl = item.thumbs?.large || item.thumbs?.original || item.thumbs?.small || item.path;
                     return {
                         "id": item.id,
                         "width": w,
                         "height": h,
                         "aspect_ratio": w / h,
-                        "tags": item.tags || "",
-                        "rating": (item.rating || "e").charAt(0),
-                        "is_nsfw": (item.rating !== 's' && item.rating !== 'general'),
-                        "md5": item.hash || item.md5 || String(item.id),
-                        "preview_url": item.preview_url || item.file_url,
-                        "sample_url": item.sample_url || item.file_url,
-                        "file_url": item.file_url,
-                        "file_ext": (item.image || "").split('.').pop() || "jpg",
-                        "source": getWorkingImageSource(item.source) ?? item.file_url,
+                        "tags": item.category || "anime wallpaper",
+                        "rating": item.purity === "sfw" ? "s" : "e",
+                        "is_nsfw": item.purity !== "sfw",
+                        "md5": item.id || "",
+                        "preview_url": previewUrl,
+                        "sample_url": item.path,
+                        "file_url": item.path,
+                        "file_ext": (item.file_type || "image/jpeg").split("/").pop() || "jpg",
+                        "source": getWorkingImageSource(item.source) ?? item.url,
                     }
                 })
             },
-            "tagSearchTemplate": "https://api.rule34.xxx/index.php?page=dapi&s=tag&q=index&json=1&limit=10&name={{query}}*",
+            "tagSearchTemplate": "https://wallhaven.cc/api/v1/search?q={{query}}*",
             "tagMapFunc": (response) => {
-                const list = Array.isArray(response) ? response : [];
-                return list.map(item => typeof item === "string" ? { "name": item } : { "name": item.name || item.value || "", "count": item.count })
+                const data = response.data || [];
+                return data.map(item => ({ "name": item.id, "count": item.resolution }));
             }
         },
         "t.alcy.cc": {
@@ -253,83 +223,6 @@ Singleton {
                     }
                 });
             },
-        },
-        "wallhaven": {
-            "name": "Wallhaven",
-            "url": "https://wallhaven.cc",
-            "api": "https://wallhaven.cc/api/v1/search",
-            "description": Translation.tr("High-res anime wallpapers & art | 4K/8K"),
-            "mapFunc": (response) => {
-                const data = response.data || [];
-                return data.map(item => {
-                    const w = item.dimension_x || 1920;
-                    const h = item.dimension_y || 1080;
-                    const previewUrl = item.thumbs?.large || item.thumbs?.original || item.thumbs?.small || item.path;
-                    return {
-                        "id": item.id,
-                        "width": w,
-                        "height": h,
-                        "aspect_ratio": w / h,
-                        "tags": item.category || "anime wallpaper",
-                        "rating": item.purity === "sfw" ? "s" : "e",
-                        "is_nsfw": item.purity !== "sfw",
-                        "md5": item.id || "",
-                        "preview_url": previewUrl,
-                        "sample_url": item.path,
-                        "file_url": item.path,
-                        "file_ext": (item.file_type || "image/jpeg").split("/").pop() || "jpg",
-                        "source": getWorkingImageSource(item.source) ?? item.url,
-                    }
-                })
-            },
-            "tagSearchTemplate": "https://wallhaven.cc/api/v1/search?q={{query}}*",
-            "tagMapFunc": (response) => {
-                const data = response.data || [];
-                return data.map(item => ({ "name": item.id, "count": item.resolution }));
-            }
-        },
-        "pixiv": {
-            "name": "Pixiv",
-            "url": "https://www.pixiv.net",
-            "api": "https://www.pixiv.net/ranking.php?format=json",
-            "description": Translation.tr("Illustrations & daily rankings | Top tier Japanese art"),
-            "mapFunc": (response) => {
-                const items = response.body?.illustManga?.data || response.contents || [];
-                return items.map(item => {
-                    const rawUrl = item.url || "";
-                    const proxiedThumb = rawUrl.replace("https://i.pximg.net/", "https://i.pixiv.re/");
-                    const proxiedSample = rawUrl
-                        .replace("/c/250x250_80_a2/img-master/", "/img-master/")
-                        .replace("/c/480x960/img-master/", "/img-master/")
-                        .replace("square1200.jpg", "master1200.jpg")
-                        .replace("https://i.pximg.net/", "https://i.pixiv.re/");
-                    const illustId = item.id || item.illust_id || "";
-                    const w = item.width || 1200;
-                    const h = item.height || 1200;
-                    return {
-                        "id": illustId,
-                        "width": w,
-                        "height": h,
-                        "aspect_ratio": (w && h) ? (w / h) : 1.0,
-                        "tags": Array.isArray(item.tags) ? item.tags.join(" ") : (item.tags || ""),
-                        "rating": (item.xRestrict !== 0 || item.illust_content_type?.sexual || item.is_masked) ? "e" : "s",
-                        "is_nsfw": Boolean(item.xRestrict !== 0 || item.illust_content_type?.sexual || item.is_masked),
-                        "md5": String(illustId),
-                        "preview_url": proxiedThumb,
-                        "sample_url": proxiedSample,
-                        "file_url": proxiedSample,
-                        "file_ext": "jpg",
-                        "source": `https://www.pixiv.net/en/artworks/${illustId}`,
-                        "author": item.userName || item.user_name || "",
-                        "title": item.title || "",
-                    }
-                })
-            },
-            "tagSearchTemplate": "https://www.pixiv.net/ajax/search/artworks/{{query}}?word={{query}}",
-            "tagMapFunc": (response) => {
-                const tags = response.body?.relatedTags || [];
-                return tags.map(tag => ({ "name": tag, "count": "Pixiv" }));
-            }
         }
     }
     property var currentProvider: (Persistent.states?.booru?.provider && providers[Persistent.states.booru.provider]) ? Persistent.states.booru.provider : "yandere"
@@ -359,6 +252,7 @@ Singleton {
         responses = [];
         currentPage = 1;
         hasMore = true;
+        runningRequests = 0;
     }
 
     function loadNextPage(limit=20) {
@@ -378,34 +272,23 @@ Singleton {
 
     function constructRequestUrl(tags, nsfw=true, limit=20, page=1) {
         var provider = providers[currentProvider]
+        if (!provider || !provider.api) {
+            currentProvider = "yandere";
+            provider = providers["yandere"];
+        }
         var baseUrl = provider.api
         var url = baseUrl
-        var tagString = tags.join(" ")
-        if (!nsfw && !(["zerochan", "rule34", "t.alcy.cc", "wallhaven", "pixiv"].includes(currentProvider))) {
+        var queryTags = (tags || []).filter(t => t && String(t).trim().length > 0);
+        if (!nsfw && !(["wallhaven", "t.alcy.cc"].includes(currentProvider))) {
             if (currentProvider == "gelbooru") 
-                tagString += " rating:general";
+                queryTags.push("rating:general");
             else 
-                tagString += " rating:safe";
+                queryTags.push("rating:safe");
         }
+        var tagString = queryTags.join("+");
         var params = []
-        // Tags & limit
-        if (currentProvider === "zerochan") {
-            if (tagString.trim().length > 0) {
-                return `https://www.zerochan.net/${encodeURIComponent(tagString.trim())}?json&s=fav&m=0&t=1&l=${limit}&p=${page}`;
-            } else {
-                return `https://www.zerochan.net/?json&s=fav&m=0&t=1&l=${limit}&p=${page}`;
-            }
-        }
-        else if (currentProvider === "pixiv") {
-            if (tagString.trim().length > 0) {
-                return `https://www.pixiv.net/ajax/search/artworks/${encodeURIComponent(tagString.trim())}?word=${encodeURIComponent(tagString.trim())}&p=${page}${nsfw ? "&mode=r18" : ""}`;
-            } else if (nsfw) {
-                return `https://www.pixiv.net/ajax/search/artworks/R-18?word=R-18&p=${page}`;
-            } else {
-                return `https://www.pixiv.net/ranking.php?format=json&p=${page}&mode=daily`;
-            }
-        }
-        else if (currentProvider === "wallhaven") {
+
+        if (currentProvider === "wallhaven") {
             const apiKey = Config.options.sidebar.booru?.wallhaven?.apiKey || KeyringStorage.keyringData?.apiKeys?.wallhaven || "";
             if (apiKey.length > 0) {
                 params.push("apikey=" + encodeURIComponent(apiKey));
@@ -416,13 +299,6 @@ Singleton {
             params.push("categories=010"); // Anime category
             params.push("purity=" + (nsfw ? (apiKey.length > 0 ? "111" : "110") : "100")); // SFW vs Sketchy/NSFW
             params.push("page=" + page);
-        }
-        else if (currentProvider === "rule34") {
-            if (tagString.trim().length > 0) {
-                params.push("tags=" + encodeURIComponent(tagString));
-            }
-            params.push("limit=" + limit);
-            params.push("pid=" + page);
         }
         else if (currentProvider === "t.alcy.cc") {
             var cat = (tags.length > 0 && tags[0].trim().length > 0) ? tags[0].trim() : "ycy";
@@ -450,175 +326,84 @@ Singleton {
         return url
     }
 
-    function makeZerochanRequest(tags, limit, page, newResponse) {
-        // User requested to mix results from:
-        // 1. https://www.zerochan.net/?s=fav&m=0&t=1 (last week popular)
-        // 2. https://www.zerochan.net/?s=fav&m=0&t=2 (last 3 months popular)
-        // 3. https://www.zerochan.net/?s=fav&m=0&t=0 (all time popular)
-        const tValues = [1, 2, 0];
-        let results = [[], [], []];
-        let completed = 0;
-        let isDone = false;
-        const tagStr = tags.join(" ").trim();
-        const userAgent = Config.options?.sidebar?.booru?.zerochan?.username ? `Desktop sidebar booru viewer - username: ${Config.options.sidebar.booru.zerochan.username}` : defaultUserAgent;
-
-        root.runningRequests++;
-
-        function finishMix() {
-            if (isDone) return;
-            isDone = true;
-
-            // Mix results in round-robin order and deduplicate by item id
-            let mixed = [];
-            let seenIds = {};
-            let maxLen = Math.max(results[0].length, results[1].length, results[2].length);
-            for (let i = 0; i < maxLen; i++) {
-                for (let col = 0; col < 3; col++) {
-                    if (i < results[col].length) {
-                        let item = results[col][i];
-                        if (item && item.id && !seenIds[item.id]) {
-                            seenIds[item.id] = true;
-                            mixed.push(item);
-                        }
-                    }
-                }
-            }
-
-            newResponse.images = mixed;
-            newResponse.message = mixed.length > 0 ? "" : Translation.tr("Zerochan is temporarily blocking requests (Cloudflare 503). Try yande.re, Safebooru, Konachan, or Rule34 using /mode!");
-            if (mixed.length > 0) {
-                root.currentPage = page;
-            } else {
-                root.hasMore = false;
-            }
-            root.runningRequests--;
-            root.responses = [...root.responses, newResponse];
-            root.responseFinished();
-        }
-
-        tValues.forEach((tVal, idx) => {
-            let url = "";
-            if (tagStr.length > 0) {
-                // Zerochan tag search puts tags directly in the path: /{tag}?json
-                url = "https://www.zerochan.net/" + encodeURIComponent(tagStr) + "?json&s=fav&m=0&t=" + tVal + "&p=" + page + "&l=" + limit;
-            } else {
-                // Global feed without tags:
-                // t=1 (last week) and t=2 (last 3 months) work with ?s=fav&m=0&t=...
-                // t=0 (all-time) times out/500s on Zerochan without a filter, so d=huge is used to retrieve top all-time wallpapers reliably
-                if (tVal === 0) {
-                    url = "https://www.zerochan.net/?json&s=fav&d=huge&p=" + page + "&l=" + limit;
-                } else {
-                    url = "https://www.zerochan.net/?json&s=fav&m=0&t=" + tVal + "&p=" + page + "&l=" + limit;
-                }
-            }
-            console.log("[Booru] Zerochan fetching section " + idx + " (t=" + tVal + "): " + url);
-
-            let xhr = new XMLHttpRequest();
-            xhr.open("GET", url);
-            xhr.timeout = 7000;
-            xhr.ontimeout = function() {
-                console.log("[Booru] Zerochan section " + idx + " timed out");
-                completed++;
-                if (completed === tValues.length) finishMix();
-            };
-            try {
-                xhr.setRequestHeader("User-Agent", userAgent);
-            } catch (e) {}
-
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200) {
-                        try {
-                            let parsed = JSON.parse(xhr.responseText);
-                            results[idx] = providers["zerochan"].mapFunc(parsed);
-                        } catch (e) {
-                            console.log("[Booru] Zerochan section " + idx + " parse error: " + e);
-                        }
-                    } else {
-                        console.log("[Booru] Zerochan section " + idx + " failed with status: " + xhr.status);
-                    }
-                    completed++;
-                    if (completed === tValues.length) {
-                        finishMix();
-                    }
-                }
-            };
-            xhr.send();
-        });
-    }
-
     function makeRequest(tags, nsfw=false, limit=20, page=1) {
+        if (!providers[currentProvider]) {
+            currentProvider = "yandere";
+            Persistent.states.booru.provider = "yandere";
+        }
         if (page === 1) {
-            root.currentTags = tags;
+            root.currentTags = tags || [];
             root.currentPage = 1;
             root.hasMore = true;
         }
 
         const newResponse = root.booruResponseDataComponent.createObject(null, {
             "provider": currentProvider,
-            "tags": tags,
+            "tags": tags || [],
             "page": page,
             "images": [],
             "message": ""
         })
 
-        if (currentProvider === "zerochan") {
-            makeZerochanRequest(tags, limit, page, newResponse);
-            return;
-        }
-
-        var url = constructRequestUrl(tags, nsfw, limit, page)
+        var url = constructRequestUrl(tags || [], nsfw, limit, page)
         console.log("[Booru] Making request to " + url)
 
         var xhr = new XMLHttpRequest()
         xhr.open("GET", url)
+        xhr.timeout = 8000;
+
+        xhr.ontimeout = function() {
+            console.log("[Booru] Request timed out for " + currentProvider)
+            newResponse.message = Translation.tr("Request timed out. Please try another provider or check your network.");
+            root.runningRequests = Math.max(0, root.runningRequests - 1);
+            root.responses = [...root.responses, newResponse];
+            root.hasMore = false;
+            root.responseFinished();
+        }
+
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
                 try {
-                    const provider = providers[currentProvider]
-                    let response;
-                    if (provider.manualParseFunc) {
-                        response = provider.manualParseFunc(xhr.responseText)
+                    if (xhr.status === 200) {
+                        const provider = providers[currentProvider] || providers["yandere"]
+                        let response;
+                        if (provider.manualParseFunc) {
+                            response = provider.manualParseFunc(xhr.responseText)
+                        } else {
+                            response = JSON.parse(xhr.responseText)
+                            response = provider.mapFunc(response)
+                        }
+                        newResponse.images = response || []
+                        newResponse.message = (response && response.length > 0) ? "" : root.failMessage
+                        if (response && response.length > 0) {
+                            root.currentPage = page;
+                        } else {
+                            root.hasMore = false;
+                        }
                     } else {
-                        response = JSON.parse(xhr.responseText)
-                        response = provider.mapFunc(response)
-                    }
-                    newResponse.images = response
-                    newResponse.message = response.length > 0 ? "" : root.failMessage
-                    if (response.length > 0) {
-                        root.currentPage = page;
-                    } else {
+                        console.log("[Booru] Request failed with status: " + xhr.status)
+                        newResponse.message = root.failMessage
                         root.hasMore = false;
                     }
                 } catch (e) {
-                    console.log("[Booru] Failed to parse response: " + e)
+                    console.log("[Booru] Failed to process response: " + e)
                     newResponse.message = root.failMessage
                     root.hasMore = false;
                 } finally {
-                    root.runningRequests--;
+                    root.runningRequests = Math.max(0, root.runningRequests - 1);
                     root.responses = [...root.responses, newResponse]
+                    root.responseFinished()
                 }
             }
-            else if (xhr.readyState === XMLHttpRequest.DONE) {
-                console.log("[Booru] Request failed with status: " + xhr.status)
-                newResponse.message = root.failMessage
-                root.runningRequests--;
-                root.responses = [...root.responses, newResponse]
-                root.hasMore = false;
-            }
-            root.responseFinished()
         }
 
         try {
-            // Required for konachan and pixiv
-            if (["konachan", "pixiv"].includes(currentProvider)) {
-                xhr.setRequestHeader("User-Agent", defaultUserAgent)
-            }
             root.runningRequests++;
             xhr.send()
         } catch (error) {
-            console.log("Could not set User-Agent:", error)
-        } 
+            console.log("[Booru] Could not send XHR:", error)
+            root.runningRequests = Math.max(0, root.runningRequests - 1);
+        }
     }
 
     property var currentTagRequest: null

@@ -119,6 +119,12 @@ Item {
         }
     }
 
+    Component.onCompleted: {
+        if (root.responses.length === 0) {
+            root.handleInput("");
+        }
+    }
+
     onFocusChanged: (focus) => {
         if (focus) {
             tagInputField.forceActiveFocus()
@@ -530,10 +536,10 @@ Item {
 
                     StyledSwitch {
                         id: nsfwSwitch
-                        enabled: Booru.currentProvider !== "zerochan"
+                        enabled: true
                         switchScale: 0.6
                         Layout.alignment: Qt.AlignVCenter
-                        checked: Boolean(Persistent.states.booru.allowNsfw && Booru.currentProvider !== "zerochan")
+                        checked: Boolean(Persistent.states.booru.allowNsfw)
                         onToggled: {
                             if (!enabled) return;
                             Persistent.states.booru.allowNsfw = checked;
