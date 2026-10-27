@@ -310,6 +310,14 @@ Scope { // Scope
             Ai.sendUserMessage(text);
         }
 
+        function setModel(modelId: string): void {
+            Ai.setModel(modelId);
+        }
+
+        function clearAi(): void {
+            Ai.clearMessages();
+        }
+
         function searchBooru(query: string): void {
             GlobalStates.sidebarLeftOpen = true;
             if (root.sidebarContent && root.sidebarContent.setTab) {
