@@ -31,20 +31,30 @@ ShaderEffect {
     property vector4d p8; property vector4d p9; property vector4d p10; property vector4d p11
     property vector4d p12
 
-    visible: fade > 0
+    visible: (root.style === "ring") || (fade > 0)
     blending: true
     fragmentShader: Qt.resolvedUrl(`shaders/${style}.frag.qsb`)
+
+    function updateVectors() {
+        if (!root.engine) return;
+        const l = root.engine.levels;
+        const p = root.engine.peaks;
+        if (!l || !p) return;
+        for (let k = 0; k < 13; k++) {
+            const i = k * 4;
+            root[`b${k}`] = Qt.vector4d(l[i], l[i + 1], l[i + 2], l[i + 3]);
+            root[`p${k}`] = Qt.vector4d(p[i], p[i + 1], p[i + 2], p[i + 3]);
+        }
+    }
+
+    Component.onCompleted: {
+        updateVectors();
+    }
 
     Connections {
         target: root.engine
         function onFrame() {
-            const l = root.engine.levels;
-            const p = root.engine.peaks;
-            for (let k = 0; k < 13; k++) {
-                const i = k * 4;
-                root[`b${k}`] = Qt.vector4d(l[i], l[i + 1], l[i + 2], l[i + 3]);
-                root[`p${k}`] = Qt.vector4d(p[i], p[i + 1], p[i + 2], p[i + 3]);
-            }
+            root.updateVectors();
         }
     }
 }

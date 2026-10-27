@@ -11,6 +11,7 @@ Item {
     visible: false
 
     property bool active: true
+    property bool persistVisible: false
     property real sensitivity: 1
     property real maxValue: 1000
 
@@ -19,7 +20,7 @@ Item {
     property int bandCount: 0
     property real time: 0
     property real bass: 0
-    property real fade: 0
+    property real fade: persistVisible ? 1.0 : 0
     // Mutated in place every frame, read them from frame()
     readonly property var levels: new Array(maxBands).fill(0)
     readonly property var peaks: new Array(maxBands).fill(0)
@@ -29,6 +30,18 @@ Item {
     property real lastSignal: 0
     property real bassAverage: 0
     readonly property var peakHold: new Array(maxBands).fill(0)
+
+    onPersistVisibleChanged: {
+        if (persistVisible) {
+            fade = 1.0;
+            frame();
+        } else {
+            const playing = Date.now() - root.lastSignal < 1000;
+            if (!playing) {
+                ticker.running = true;
+            }
+        }
+    }
 
     onRawChanged: {
         if (!root.active) return;
@@ -46,7 +59,11 @@ Item {
         const playing = Date.now() - root.lastSignal < 1000;
         const src = root.raw;
         root.time += dt;
-        root.fade += ((playing ? 1 : 0) - root.fade) * Math.min(1, dt * (playing ? 4 : 1.5));
+        if (root.persistVisible) {
+            root.fade = 1.0;
+        } else {
+            root.fade += ((playing ? 1 : 0) - root.fade) * Math.min(1, dt * (playing ? 4 : 1.5));
+        }
 
         let bassNow = 0;
         for (let i = 0; i < root.maxBands; i++) {
@@ -71,9 +88,29 @@ Item {
         root.bass *= Math.exp(-dt * 5);
 
         root.frame();
-        if (!playing && root.fade < 0.002) {
-            root.fade = 0;
-            ticker.running = false;
+        if (!playing) {
+            if (!root.persistVisible && root.fade < 0.002) {
+                root.fade = 0;
+                ticker.running = false;
+            } else if (root.persistVisible) {
+                let settled = true;
+                for (let i = 0; i < root.maxBands; i++) {
+                    if (root.levels[i] > 0.002 || root.peaks[i] > 0.002) {
+                        settled = false;
+                        break;
+                    }
+                }
+                if (settled && root.bass < 0.01) {
+                    ticker.running = false;
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        if (root.persistVisible) {
+            root.fade = 1.0;
+            root.frame();
         }
     }
 
