@@ -18,6 +18,7 @@ AbstractBackgroundWidget {
     readonly property string style: (configEntry && configEntry.style) ? configEntry.style : "bars"
     readonly property bool shaderStyle: ["aurora", "ring", "dots", "mirror"].includes(style)
     readonly property bool isRing: style === "ring"
+    readonly property bool isTopVisualizer: ["aurora", "mirror"].includes(style)
     readonly property bool useCoverColors: shaderStyle && Boolean(configEntry && configEntry.colorSource === "cover")
 
     property real ringSize: (root.configEntry && root.configEntry.ringSize) ? root.configEntry.ringSize : 380
@@ -65,7 +66,7 @@ AbstractBackgroundWidget {
     width: implicitWidth
     height: implicitHeight
     x: isLockWidget ? 0 : (isRing ? targetX : 0)
-    y: isLockWidget ? 0 : (isRing ? targetY : screenHeight - implicitHeight)
+    y: isLockWidget ? 0 : (isRing ? targetY : (isTopVisualizer ? 0 : (screenHeight - implicitHeight)))
     draggable: !isLockWidget && isRing && !Config.options.background.widgetsLocked
     hoverEnabled: !isLockWidget && isRing
 
@@ -80,7 +81,7 @@ AbstractBackgroundWidget {
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
-        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.screenHeight - root.implicitHeight));
+        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.isTopVisualizer ? 0 : (root.screenHeight - root.implicitHeight)));
     }
 
     function saveVisualizerPosition() {
@@ -123,6 +124,10 @@ AbstractBackgroundWidget {
             root.x = root.getSavedRingX();
             root.y = root.getSavedRingY();
         }
+        root.restoreXYBinding();
+    }
+
+    onStyleChanged: {
         root.restoreXYBinding();
     }
 
@@ -293,6 +298,10 @@ AbstractBackgroundWidget {
                 color3: (root.visualizerColors && root.visualizerColors[2]) ? root.visualizerColors[2] : Appearance.colors.colSecondary
                 cover: coverTexture
                 hasCover: coverImage.status === Image.Ready ? 1 : 0
+                transform: Scale {
+                    origin.y: root.height / 2
+                    yScale: root.style === "aurora" ? -1 : 1
+                }
             }
         }
     }
