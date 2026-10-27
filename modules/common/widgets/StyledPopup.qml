@@ -107,8 +107,15 @@ LazyLoader {
         readonly property real centerOffsetX: popupWindow.lastValidX
         readonly property real centerOffsetY: popupWindow.lastValidY
 
+        Item {
+            id: nullInputItem
+            width: 0
+            height: 0
+            visible: false
+        }
+
         mask: Region {
-            item: (popupWindow.isShown && popupBackground.opacity > 0) ? popupBackground : null
+            item: nullInputItem
         }
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0

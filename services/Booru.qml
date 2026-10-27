@@ -162,39 +162,37 @@ Singleton {
                 })
             }
         },
-        "waifu.im": {
-            "name": "waifu.im",
-            "url": "https://waifu.im",
-            "api": "https://api.waifu.im/images",
-            "description": Translation.tr("Waifus only | Excellent quality, limited quantity"),
+        "rule34": {
+            "name": "Rule34",
+            "url": "https://rule34.xxx",
+            "api": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1",
+            "description": Translation.tr("Vast anime database | SFW and NSFW tags"),
             "mapFunc": (response) => {
-                const items = response.items || [];
-                return items.map(item => {
+                const list = Array.isArray(response) ? response : [];
+                return list.map(item => {
                     const w = item.width || 1200;
-                    const h = item.height || 1800;
-                    const tagList = item.tags ? item.tags.map(tag => tag.name || "").join(" ") : "";
+                    const h = item.height || 1200;
                     return {
                         "id": item.id,
                         "width": w,
                         "height": h,
                         "aspect_ratio": w / h,
-                        "tags": tagList,
-                        "rating": item.isNsfw ? "e" : "s",
-                        "is_nsfw": item.isNsfw || false,
-                        "md5": item.id ? String(item.id) : "",
-                        "preview_url": item.url,
-                        "sample_url": item.url,
-                        "file_url": item.url,
-                        "file_ext": item.extension ? item.extension.replace(".", "") : "jpg",
-                        "source": getWorkingImageSource(item.source) ?? item.url,
-                        "dominant_color": item.dominantColor || "",
+                        "tags": item.tags || "",
+                        "rating": (item.rating || "e").charAt(0),
+                        "is_nsfw": (item.rating !== 's' && item.rating !== 'general'),
+                        "md5": item.hash || item.md5 || String(item.id),
+                        "preview_url": item.preview_url || item.file_url,
+                        "sample_url": item.sample_url || item.file_url,
+                        "file_url": item.file_url,
+                        "file_ext": (item.image || "").split('.').pop() || "jpg",
+                        "source": getWorkingImageSource(item.source) ?? item.file_url,
                     }
                 })
             },
-            "tagSearchTemplate": "https://api.waifu.im/tags",
+            "tagSearchTemplate": "https://api.rule34.xxx/index.php?page=dapi&s=tag&q=index&json=1&limit=10&name={{query}}*",
             "tagMapFunc": (response) => {
-                const items = response.versatile || response.items || [];
-                return items.map(item => {return {"name": item.name || item}})
+                const list = Array.isArray(response) ? response : [];
+                return list.map(item => typeof item === "string" ? { "name": item } : { "name": item.name || item.value || "", "count": item.count })
             }
         },
         "t.alcy.cc": {
@@ -334,7 +332,7 @@ Singleton {
             }
         }
     }
-    property var currentProvider: Persistent.states.booru.provider
+    property var currentProvider: (Persistent.states?.booru?.provider && providers[Persistent.states.booru.provider]) ? Persistent.states.booru.provider : "yandere"
     property var currentTags: []
     property int currentPage: 1
     property bool hasMore: true
@@ -383,7 +381,7 @@ Singleton {
         var baseUrl = provider.api
         var url = baseUrl
         var tagString = tags.join(" ")
-        if (!nsfw && !(["zerochan", "waifu.im", "t.alcy.cc", "wallhaven", "pixiv"].includes(currentProvider))) {
+        if (!nsfw && !(["zerochan", "rule34", "t.alcy.cc", "wallhaven", "pixiv"].includes(currentProvider))) {
             if (currentProvider == "gelbooru") 
                 tagString += " rating:general";
             else 
@@ -416,33 +414,15 @@ Singleton {
                 params.push("q=" + encodeURIComponent(tagString));
             }
             params.push("categories=010"); // Anime category
-            params.push("purity=" + (nsfw ? "111" : "100")); // SFW vs Sketchy/NSFW
+            params.push("purity=" + (nsfw ? (apiKey.length > 0 ? "111" : "110") : "100")); // SFW vs Sketchy/NSFW
             params.push("page=" + page);
         }
-        else if (currentProvider === "waifu.im") {
-            var validTags = tags.filter(t => t && t.trim().length > 0);
-            let explicitNsfw = false;
-            let explicitSfw = false;
-            validTags.forEach(tag => {
-                const lower = tag.toLowerCase();
-                if (lower === "nsfw" || lower === "lewd" || lower === "hentai" || lower === "ero") {
-                    explicitNsfw = true;
-                } else if (lower === "sfw" || lower === "safe") {
-                    explicitSfw = true;
-                } else {
-                    params.push("includedTags=" + encodeURIComponent(lower));
-                }
-            });
-            params.push("pageSize=" + Math.min(limit, 30));
-            if (explicitNsfw) {
-                params.push("isNsfw=True");
-            } else if (explicitSfw || !nsfw) {
-                params.push("isNsfw=False");
-            } else {
-                params.push("isNsfw=All");
+        else if (currentProvider === "rule34") {
+            if (tagString.trim().length > 0) {
+                params.push("tags=" + encodeURIComponent(tagString));
             }
-            params.push("orderBy=Favorites");
-            params.push("page=" + page);
+            params.push("limit=" + limit);
+            params.push("pid=" + page);
         }
         else if (currentProvider === "t.alcy.cc") {
             var cat = (tags.length > 0 && tags[0].trim().length > 0) ? tags[0].trim() : "ycy";
@@ -505,7 +485,7 @@ Singleton {
             }
 
             newResponse.images = mixed;
-            newResponse.message = mixed.length > 0 ? "" : root.failMessage;
+            newResponse.message = mixed.length > 0 ? "" : Translation.tr("Zerochan is temporarily blocking requests (Cloudflare 503). Try yande.re, Safebooru, Konachan, or Rule34 using /mode!");
             if (mixed.length > 0) {
                 root.currentPage = page;
             } else {

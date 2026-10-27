@@ -343,6 +343,7 @@ Item {
                     color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
                     renderType: Text.NativeRendering
                     placeholderText: Translation.tr('Enter tags, or "%1" for commands').arg(root.commandPrefix)
+                    Keys.priority: Keys.BeforeItem
 
                     background: null
 
@@ -427,10 +428,10 @@ Item {
                                 tagInputField.insert(tagInputField.cursorPosition, "\n")
                                 event.accepted = true
                             } else { // Accept text
-                                const inputText = tagInputField.text
-                                root.handleInput(inputText)
-                                tagInputField.clear()
-                                event.accepted = true
+                                const inputText = tagInputField.text.trim();
+                                tagInputField.clear();
+                                root.handleInput(inputText);
+                                event.accepted = true;
                             }
                         }
                     }
@@ -503,46 +504,48 @@ Item {
                     text: "•"
                 }
 
-                MouseArea { // NSFW toggle
-                    visible: width > 0
-                    implicitWidth: switchesRow.implicitWidth
+                RowLayout { // NSFW toggle
+                    id: switchesRow
+                    spacing: 6
                     Layout.fillHeight: true
 
-                    hoverEnabled: true
-                    PointingHandInteraction {}
-                    onPressed: {
-                        nsfwSwitch.checked = !nsfwSwitch.checked
-                    }
+                    StyledText {
+                        Layout.fillHeight: true
+                        Layout.leftMargin: 8
+                        Layout.alignment: Qt.AlignVCenter
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: nsfwSwitch.enabled ? Appearance.colors.colOnLayer1 : Appearance.m3colors.m3outline
+                        text: Translation.tr("Allow NSFW")
 
-                    RowLayout {
-                        id: switchesRow
-                        spacing: 5
-                        anchors.centerIn: parent
-
-                        StyledText {
-                            Layout.fillHeight: true
-                            Layout.leftMargin: 10
-                            Layout.alignment: Qt.AlignVCenter
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: nsfwSwitch.enabled ? Appearance.colors.colOnLayer1 : Appearance.m3colors.m3outline
-                            text: Translation.tr("Allow NSFW")
-                        }
-                        StyledSwitch {
-                            id: nsfwSwitch
-                            enabled: Booru.currentProvider !== "zerochan"
-                            switchScale: 0.6
-                            Layout.alignment: Qt.AlignVCenter
-                            checked: (Persistent.states.booru.allowNsfw && Booru.currentProvider !== "zerochan")
-                            onCheckedChanged: {
-                                if (!nsfwSwitch.enabled) return;
-                                if (Persistent.states.booru.allowNsfw !== checked) {
-                                    Persistent.states.booru.allowNsfw = checked;
-                                    root.handleInput(tagInputField.text);
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: nsfwSwitch.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (nsfwSwitch.enabled) {
+                                    nsfwSwitch.toggle();
                                 }
                             }
                         }
                     }
 
+                    StyledSwitch {
+                        id: nsfwSwitch
+                        enabled: Booru.currentProvider !== "zerochan"
+                        switchScale: 0.6
+                        Layout.alignment: Qt.AlignVCenter
+                        checked: Boolean(Persistent.states.booru.allowNsfw && Booru.currentProvider !== "zerochan")
+                        onToggled: {
+                            if (!enabled) return;
+                            Persistent.states.booru.allowNsfw = checked;
+                            const currentQuery = tagInputField.text.trim();
+                            if (currentQuery.length > 0) {
+                                root.handleInput(currentQuery);
+                            } else {
+                                Booru.clearResponses();
+                                Booru.makeRequest(Booru.currentTags, Persistent.states.booru.allowNsfw, Config.options.sidebar.booru.limit, 1);
+                            }
+                        }
+                    }
                 }
 
                 Item { Layout.fillWidth: true }

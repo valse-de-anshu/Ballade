@@ -258,100 +258,100 @@ Singleton {
     // - api_format: The API format of the model. Can be "openai" or "gemini". Default is "openai".
     // - extraParams: Extra parameters to be passed to the model. This is a JSON object.
     property var models: Config.options.policies.ai === 2 ? {} : {
-        "gemini-3.7-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 3.7 Flash",
+        "gemini-2.5-flash": aiModelComponent.createObject(this, {
+            "name": "Gemini 2.5 Flash",
             "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nNext-gen multimodal Flash model with instant reasoning."),
+            "description": Translation.tr("Online | Google's model\nNext-gen multimodal Flash model with instant reasoning and vision."),
             "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:streamGenerateContent",
-            "model": "gemini-3.7-flash",
+            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
+            "model": "gemini-2.5-flash",
             "requires_key": true,
             "key_id": "gemini",
             "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
+            "key_get_description": Translation.tr("**Pricing**: free tier available.\n\n**Instructions**: Log into Google account, go to Google AI Studio and click Get API key"),
             "api_format": "gemini",
         }),
-        "gemini-flash-lite": aiModelComponent.createObject(this, {
-            "name": "Gemini Flash Lite",
+        "gemini-2.5-pro": aiModelComponent.createObject(this, {
+            "name": "Gemini 2.5 Pro",
+            "icon": "google-gemini-symbolic",
+            "description": Translation.tr("Online | Google's model\nAdvanced reasoning, complex coding, and large context comprehension."),
+            "homepage": "https://aistudio.google.com",
+            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent",
+            "model": "gemini-2.5-pro",
+            "requires_key": true,
+            "key_id": "gemini",
+            "key_get_link": "https://aistudio.google.com/app/apikey",
+            "key_get_description": Translation.tr("**Pricing**: free tier available.\n\n**Instructions**: Log into Google account, go to Google AI Studio and click Get API key"),
+            "api_format": "gemini",
+        }),
+        "gemini-2.5-flash-lite": aiModelComponent.createObject(this, {
+            "name": "Gemini 2.5 Flash Lite",
             "icon": "google-gemini-symbolic",
             "description": Translation.tr("Online | Google's model\nUltra-low latency lightweight model for rapid responses."),
             "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:streamGenerateContent",
-            "model": "gemini-flash-lite-latest",
+            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent",
+            "model": "gemini-2.5-flash-lite",
             "requires_key": true,
             "key_id": "gemini",
             "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
-            "api_format": "gemini",
-        }),
-        "gemini-3.6-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 3.7 Flash (Redirected)",
-            "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nRedirected to stable 3.7-flash."),
-            "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:streamGenerateContent",
-            "model": "gemini-3.7-flash",
-            "requires_key": true,
-            "key_id": "gemini",
-            "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
-            "api_format": "gemini",
-        }),
-        "gemini-2.5-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 3.7 Flash (Legacy Alias)",
-            "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nRedirected from deprecated 2.5-flash to stable 3.7-flash."),
-            "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:streamGenerateContent",
-            "model": "gemini-3.7-flash",
-            "requires_key": true,
-            "key_id": "gemini",
-            "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
+            "key_get_description": Translation.tr("**Pricing**: free tier available.\n\n**Instructions**: Log into Google account, go to Google AI Studio and click Get API key"),
             "api_format": "gemini",
         }),
         "gemini-3-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 3 Flash",
+            "name": "Gemini 3 Flash (Preview)",
             "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nPro-level intelligence at the speed and pricing of Flash."),
+            "description": Translation.tr("Online | Google's preview model\nNext-generation Flash architecture preview with enhanced reasoning."),
             "homepage": "https://aistudio.google.com",
             "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent",
             "model": "gemini-3-flash-preview",
             "requires_key": true,
             "key_id": "gemini",
             "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
+            "key_get_description": Translation.tr("**Pricing**: free tier available.\n\n**Instructions**: Log into Google account, go to Google AI Studio and click Get API key"),
             "api_format": "gemini",
         }),
-        "mistral-medium-3": aiModelComponent.createObject(this, {
-            "name": "Mistral Medium 3",
+        "mistral-medium": aiModelComponent.createObject(this, {
+            "name": "Mistral Medium",
             "icon": "mistral-symbolic",
-            "description": Translation.tr("Online | %1's model | Delivers fast, responsive and well-formatted answers. Disadvantages: not very eager to do stuff; might make up unknown function calls").arg("Mistral"),
-            "homepage": "https://mistral.ai/news/mistral-medium-3",
+            "description": Translation.tr("Online | Mistral's flagship enterprise balanced model for high performance reasoning."),
+            "homepage": "https://mistral.ai",
             "endpoint": "https://api.mistral.ai/v1/chat/completions",
-            "model": "mistral-medium-2505",
+            "model": "mistral-medium-latest",
             "requires_key": true,
             "key_id": "mistral",
             "key_get_link": "https://console.mistral.ai/api-keys",
-            "key_get_description": Translation.tr("**Instructions**: Log into Mistral account, go to Keys on the sidebar, click Create new key"),
+            "key_get_description": Translation.tr("**Instructions**: Log into Mistral console, go to API Keys, click Create new key"),
             "api_format": "mistral",
         }),
-        "openrouter-free": aiModelComponent.createObject(this, {
-            "name": "OpenRouter Free (Auto)",
+        "openrouter-auto": aiModelComponent.createObject(this, {
+            "name": "OpenRouter Auto",
             "icon": "openrouter-symbolic",
-            "description": Translation.tr("Online | OpenRouter Free Router\nAutomatically routes to the best available free model with zero cost."),
-            "homepage": "https://openrouter.ai/models?q=free",
+            "description": Translation.tr("Online | OpenRouter\nAutomatically routes prompts to the highest-performing available model."),
+            "homepage": "https://openrouter.ai/models",
             "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-            "model": "openrouter/free",
+            "model": "openrouter/auto",
             "requires_key": true,
             "key_id": "openrouter",
             "key_get_link": "https://openrouter.ai/settings/keys",
-            "key_get_description": Translation.tr("**Pricing**: free. OpenRouter free model routing.\n\n**Instructions**: Log into OpenRouter account, go to Keys on the topright menu, click Create API Key"),
+            "key_get_description": Translation.tr("**Instructions**: Log into OpenRouter, go to Keys, click Create API Key"),
+            "api_format": "openai",
+        }),
+        "openrouter-gemini-free": aiModelComponent.createObject(this, {
+            "name": "OpenRouter: Gemini Flash Free",
+            "icon": "openrouter-symbolic",
+            "description": Translation.tr("Online | OpenRouter Free\nHigh speed Gemini 2.0 Flash Experimental via OpenRouter Free Tier."),
+            "homepage": "https://openrouter.ai/models",
+            "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+            "model": "google/gemini-2.0-flash-exp:free",
+            "requires_key": true,
+            "key_id": "openrouter",
+            "key_get_link": "https://openrouter.ai/settings/keys",
+            "key_get_description": Translation.tr("**Instructions**: Log into OpenRouter, go to Keys, click Create API Key"),
             "api_format": "openai",
         }),
     }
     property var modelList: Object.keys(root.models)
-    property var currentModelId: Persistent.states?.ai?.model || "openrouter-free"
+    property var currentModelId: (Persistent.states?.ai?.model && root.models[Persistent.states.ai.model]) ? Persistent.states.ai.model : "gemini-2.5-flash"
 
     property var apiStrategies: {
         "openai": openaiApiStrategy.createObject(this),
@@ -699,7 +699,11 @@ Singleton {
             const messageArray = root.messageIDs.map(id => root.messageByID[id]);
             const filteredMessageArray = messageArray
                 .filter(msg => msg && msg.role !== Ai.interfaceRole)
-                .map(msg => ({ role: msg.role, content: msg.rawContent || msg.content }));
+                .map(msg => ({
+                    role: msg.role,
+                    content: msg.rawContent || msg.content,
+                    localFilePath: msg.localFilePath || ""
+                }));
 
             const apiKey = model?.requires_key ? (root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : "") : "";
 
@@ -710,7 +714,9 @@ Singleton {
                 "model": model?.model || currentModelId,
                 "system_prompt": root.systemPrompt || Config.options.ai.systemPrompt || "",
                 "temperature": root.temperature,
-                "messages": filteredMessageArray
+                "messages": filteredMessageArray,
+                "tool": Config?.options?.ai?.tool ?? root.currentTool ?? "functions",
+                "tools": root.tools[model?.api_format] || {}
             };
 
             /* Create local assistant message */
@@ -747,6 +753,18 @@ Singleton {
                         }
                         requester.incomingBuffer += obj.text;
                         if (!streamDripTimer.running) streamDripTimer.running = true;
+                    } else if (obj.type === "function_call") {
+                        if (requester.message) {
+                            requester.message.thinking = false;
+                            requester.message.functionName = obj.name;
+                            requester.message.functionCall = { name: obj.name, args: obj.args || {} };
+                        }
+                        root.handleFunctionCall(obj.name, obj.args || {}, requester.message);
+                    } else if (obj.type === "grounding") {
+                        if (requester.message) {
+                            if (obj.queries && obj.queries.length > 0) requester.message.searchQueries = obj.queries;
+                            if (obj.sources && obj.sources.length > 0) requester.message.annotationSources = obj.sources;
+                        }
                     } else if (obj.type === "done") {
                         if (obj.tokens) {
                             root.tokenCount.input = obj.tokens.input ?? -1;
@@ -783,8 +801,22 @@ Singleton {
     }
 
     function sendUserMessage(message) {
-        if (message.length === 0) return;
-        root.addMessage(message, "user");
+        if (message.length === 0 && (!root.pendingFilePath || root.pendingFilePath.length === 0)) return;
+        const attached = root.pendingFilePath || "";
+        root.pendingFilePath = "";
+
+        const aiMessage = aiMessageComponent.createObject(root, {
+            "role": "user",
+            "content": message,
+            "rawContent": message,
+            "localFilePath": attached,
+            "thinking": false,
+            "done": true,
+        });
+        const id = idForMessage(aiMessage);
+        root.messageIDs = [...root.messageIDs, id];
+        root.messageByID[id] = aiMessage;
+
         requester.makeRequest();
     }
 

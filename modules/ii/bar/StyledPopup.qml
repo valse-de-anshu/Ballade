@@ -73,8 +73,15 @@ LazyLoader {
         implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
         implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2 + root.popupBackgroundMargin
 
+        Item {
+            id: nullInputItem
+            width: 0
+            height: 0
+            visible: false
+        }
+
         mask: Region {
-            item: (popupWindow.isShown && popupBackground.opacity > 0) ? popupBackground : null
+            item: nullInputItem
         }
 
         exclusionMode: ExclusionMode.Ignore
@@ -139,30 +146,39 @@ LazyLoader {
             }
             implicitWidth: root.contentItem.implicitWidth + margin * 2
             implicitHeight: root.contentItem.implicitHeight + margin * 2
-            color: Appearance.m3colors.m3surfaceContainer
-            radius: Appearance.rounding.small
+            color: Appearance.colors.colLayer1Base
+            radius: Appearance.rounding.normal + 4
             children: [root.contentItem]
 
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
 
             transformOrigin: popupWindow.anchors.bottom ? Item.Bottom : Item.Top
 
-            opacity: popupWindow.isShown ? 1 : 0
-            scale: popupWindow.isShown ? 1.0 : 0.94
+            opacity: popupWindow.isShown ? 1.0 : 0.0
+            scale: popupWindow.isShown ? 1.0 : 0.85
+            y: popupWindow.isShown ? 0 : (popupWindow.anchors.bottom ? 16 : -16)
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: popupWindow.isShown ? 140 : 120
-                    easing.type: popupWindow.isShown ? Easing.OutCubic : Easing.InCubic
+                    duration: popupWindow.isShown ? 180 : 130
+                    easing.type: popupWindow.isShown ? Easing.OutQuad : Easing.InQuad
                 }
             }
 
             Behavior on scale {
                 NumberAnimation {
-                    duration: popupWindow.isShown ? 150 : 120
+                    duration: popupWindow.isShown ? 220 : 140
                     easing.type: popupWindow.isShown ? Easing.OutBack : Easing.InCubic
-                    easing.overshoot: 1.05
+                    easing.overshoot: 1.18
+                }
+            }
+
+            Behavior on y {
+                NumberAnimation {
+                    duration: popupWindow.isShown ? 220 : 140
+                    easing.type: popupWindow.isShown ? Easing.OutBack : Easing.InCubic
+                    easing.overshoot: 1.15
                 }
             }
         }

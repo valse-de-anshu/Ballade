@@ -241,6 +241,24 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
         messageListView.positionViewAtEnd();
     }
 
+    DropArea {
+        anchors.fill: parent
+        onEntered: drag => drag.accept(Qt.CopyAction)
+        onDropped: drop => {
+            let path = "";
+            if (drop.urls && drop.urls.length > 0) {
+                path = drop.urls[0].toString();
+            } else if (drop.text && drop.text.length > 0) {
+                path = drop.text.trim();
+            }
+            if (path.length > 0) {
+                path = decodeURIComponent(path.replace(/^file:\/\//, ""));
+                Ai.attachFile(path);
+                messageInputField.forceActiveFocus();
+            }
+        }
+    }
+
     Process {
         id: decodeImageAndAttachProc
         property string imageDecodePath: Directories.cliphistDecode
@@ -787,6 +805,12 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         icon: "terminal",
                         sendDirectly: false,
                         dontAddSpace: true
+                    },
+                    {
+                        name: "attach",
+                        icon: "attach_file",
+                        sendDirectly: false,
+                        dontAddSpace: false
                     },
                     {
                         name: "clear",
