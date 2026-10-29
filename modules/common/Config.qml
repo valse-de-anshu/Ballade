@@ -369,8 +369,8 @@ Singleton {
                     property JsonObject visualizer: JsonObject {
                         property bool enable: false
                         property string placementStrategy: "free"
-                        property real x: 0
-                        property real y: 0
+                        property real x: 770
+                        property real y: 350
                         property real z: -1000
                         property string style: "bars" // "bars", "mirror", "aurora", "ring", "dots"
                         property string position: "bottom" // "top", "bottom"
@@ -383,8 +383,8 @@ Singleton {
                     property JsonObject visualizer2: JsonObject {
                         property bool enable: false
                         property string placementStrategy: "free"
-                        property real x: 0
-                        property real y: 0
+                        property real x: 770
+                        property real y: 350
                         property real z: -1000
                         property string style: "ring" // "bars", "mirror", "aurora", "ring", "dots"
                         property string position: "top" // "top", "bottom"

@@ -16,7 +16,9 @@ AbstractBackgroundWidget {
     configEntryName: "visualizer"
 
     // "bars" is the original Rectangle visualizer, the others are shaders/<style>.frag.qsb
-    readonly property string style: (configEntry && configEntry.style) ? configEntry.style : "bars"
+    readonly property string style: (configEntry && configEntry.style)
+        ? configEntry.style
+        : ((desktopConfigEntry && desktopConfigEntry.style) ? desktopConfigEntry.style : "bars")
     readonly property bool shaderStyle: ["aurora", "ring", "dots", "mirror"].includes(style)
     readonly property bool isRing: style === "ring"
     readonly property string position: {
@@ -26,17 +28,23 @@ AbstractBackgroundWidget {
         return ["aurora", "mirror"].includes(style) ? "top" : "bottom";
     }
     readonly property bool isTop: !isRing && position === "top"
-    readonly property bool useCoverColors: shaderStyle && Boolean(configEntry && configEntry.colorSource === "cover")
+    readonly property bool useCoverColors: shaderStyle && Boolean(
+        (configEntry && configEntry.colorSource)
+            ? (configEntry.colorSource === "cover")
+            : (desktopConfigEntry && desktopConfigEntry.colorSource === "cover")
+    )
 
-    property real ringSize: (root.configEntry && root.configEntry.ringSize) ? root.configEntry.ringSize : 380
+    property real ringSize: (root.configEntry && root.configEntry.ringSize)
+        ? root.configEntry.ringSize
+        : ((root.desktopConfigEntry && root.desktopConfigEntry.ringSize) ? root.desktopConfigEntry.ringSize : 380)
     property bool isResizing: false
     Connections {
         target: root.configEntry
         function onRingSizeChanged() {
             if (root.isResizing) return;
-            const cfgVal = root.configEntry && root.configEntry.ringSize
+            const cfgVal = (root.configEntry && root.configEntry.ringSize)
                 ? root.configEntry.ringSize
-                : 380;
+                : ((root.desktopConfigEntry && root.desktopConfigEntry.ringSize) ? root.desktopConfigEntry.ringSize : 380);
             if (Math.abs(root.ringSize - cfgVal) > 1) {
                 root.ringSize = cfgVal;
             }
@@ -45,61 +53,97 @@ AbstractBackgroundWidget {
     // height stored as 0-100 percentage. 0% → 20px sliver, 100% → full screen height.
     // Widget is anchored to bottom (y = screenHeight - implicitHeight), so small height
     // = only the very top edge of aurora is visible peeking up from the bottom.
-    readonly property real heightPct: (configEntry && configEntry.height !== undefined) ? Math.max(0, Math.min(configEntry.height, 100)) : 100
+    readonly property real heightPct: {
+        if (configEntry && configEntry.height !== undefined) {
+            return Math.max(0, Math.min(configEntry.height, 100));
+        }
+        if (desktopConfigEntry && desktopConfigEntry.height !== undefined) {
+            return Math.max(0, Math.min(desktopConfigEntry.height, 100));
+        }
+        return 100;
+    }
     readonly property real bandHeight: 20 + (heightPct / 100) * (screenHeight - 20)
     readonly property real barsHeight: 240
 
     function getSavedRingX() {
-        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.x !== undefined && root.configEntry.x !== null) {
+        const sw = (root.scaledScreenWidth > 0) ? root.scaledScreenWidth : (root.screenWidth > 0 ? root.screenWidth : 1920);
+        const w = (root.ringSize > 0) ? root.ringSize : 380;
+        const centerX = Math.round((sw - w) / 2);
+
+        if (root.isLockWidget) {
+            if (root.configEntry && root.configEntry.position === "custom" && root.configEntry.x !== undefined && root.configEntry.x > 0) {
+                return root.configEntry.x;
+            }
+            return centerX;
+        }
+
+        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.x !== undefined && root.configEntry.x > 0) {
             return root.configEntry.x;
         }
-        if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x !== null && root.configEntry.x !== 0) {
+        if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
             return root.configEntry.x;
         }
-        return Math.round((root.scaledScreenWidth - root.width) / 2);
+        return centerX;
     }
     function getSavedRingY() {
-        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.y !== undefined && root.configEntry.y !== null) {
+        const sh = (root.scaledScreenHeight > 0) ? root.scaledScreenHeight : (root.screenHeight > 0 ? root.screenHeight : 1080);
+        const h = (root.ringSize > 0) ? root.ringSize : 380;
+        const centerY = Math.round((sh - h) / 2);
+
+        if (root.isLockWidget) {
+            if (root.configEntry && root.configEntry.position === "custom" && root.configEntry.y !== undefined && root.configEntry.y > 0) {
+                return root.configEntry.y;
+            }
+            return centerY;
+        }
+
+        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.y !== undefined && root.configEntry.y > 0) {
             return root.configEntry.y;
         }
-        if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y !== null && root.configEntry.y !== 0) {
+        if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
             return root.configEntry.y;
         }
-        return Math.round((root.scaledScreenHeight - root.height) / 2);
+        return centerY;
     }
 
     implicitWidth: isRing ? ringSize : screenWidth
     implicitHeight: isRing ? ringSize : shaderStyle ? bandHeight : barsHeight
     width: implicitWidth
     height: implicitHeight
-    x: isLockWidget ? 0 : (isRing ? targetX : 0)
-    y: isLockWidget ? 0 : (isRing ? targetY : (isTop ? 0 : (screenHeight - implicitHeight)))
-    enabled: !isLockWidget && isRing
-    acceptedButtons: (!isLockWidget && isRing) ? Qt.LeftButton : Qt.NoButton
-    draggable: !isLockWidget && isRing && !Config.options.background.widgetsLocked
-    hoverEnabled: !isLockWidget && isRing
+    x: isRing ? targetX : 0
+    y: isRing ? targetY : (isTop ? 0 : (screenHeight - implicitHeight))
+    enabled: isRing
+    acceptedButtons: isRing ? Qt.LeftButton : Qt.NoButton
+    draggable: isRing && !Config.options.background.widgetsLocked
+    hoverEnabled: isRing
 
     function restoreXYBinding() {
-        if (isLockWidget) {
+        if (!root.isRing) {
             root.targetX = 0;
             root.targetY = 0;
             root.x = 0;
-            root.y = 0;
+            root.y = Qt.binding(() => root.isTop ? 0 : (root.screenHeight - root.implicitHeight));
             return;
         }
-        root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
-        root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
-        root.x = Qt.binding(() => root.isRing ? root.targetX : 0);
-        root.y = Qt.binding(() => root.isRing ? root.targetY : (root.isTop ? 0 : (root.screenHeight - root.implicitHeight)));
+        root.targetX = Qt.binding(() => Math.max(-root.ringSize + 30, Math.min(root.getSavedRingX(), root.scaledScreenWidth - 30)));
+        root.targetY = Qt.binding(() => Math.max(-root.ringSize + 30, Math.min(root.getSavedRingY(), root.scaledScreenHeight - 30)));
+        root.x = Qt.binding(() => root.targetX);
+        root.y = Qt.binding(() => root.targetY);
     }
 
     function saveVisualizerPosition() {
-        if (!root.isRing || !root.configEntry || root.isLockWidget) return;
+        if (!root.isRing || !root.configEntry) return;
         const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
         const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
-        root.configEntry.placementStrategy = "free";
-        root.configEntry.x = newX;
-        root.configEntry.y = newY;
+        if (root.isLockWidget) {
+            root.configEntry.position = "custom";
+            root.configEntry.x = newX;
+            root.configEntry.y = newY;
+        } else {
+            root.configEntry.placementStrategy = "free";
+            root.configEntry.x = newX;
+            root.configEntry.y = newY;
+        }
         Config.save();
         root.targetX = newX;
         root.targetY = newY;
@@ -115,7 +159,7 @@ AbstractBackgroundWidget {
             hadActualDrag = true;
         } else if (hadActualDrag) {
             hadActualDrag = false;
-            if (!isLockWidget && isRing && configEntry) {
+            if (isRing && configEntry) {
                 saveVisualizerPosition();
             }
         }
@@ -267,7 +311,11 @@ AbstractBackgroundWidget {
         id: levelEngine
         active: root.shaderStyle
         persistVisible: root.isRing
-        sensitivity: (root.configEntry && root.configEntry.sensitivity !== undefined) ? root.configEntry.sensitivity : 1
+        sensitivity: {
+            if (root.configEntry && root.configEntry.sensitivity !== undefined) return root.configEntry.sensitivity;
+            if (root.desktopConfigEntry && root.desktopConfigEntry.sensitivity !== undefined) return root.desktopConfigEntry.sensitivity;
+            return 1;
+        }
     }
 
     Loader {
@@ -314,7 +362,7 @@ AbstractBackgroundWidget {
                 hasCover: coverImage.status === Image.Ready ? 1 : 0
                 transform: Scale {
                     origin.y: root.height / 2
-                    yScale: (root.style === "aurora" && root.isTop) ? -1 : 1
+                    yScale: (["aurora", "dots"].includes(root.style) && root.isTop) ? -1 : 1
                 }
             }
         }

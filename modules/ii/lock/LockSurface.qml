@@ -231,6 +231,9 @@ MouseArea {
         id: lockWidgetsArea
         anchors.fill: parent
         z: 0
+        readonly property bool isWidgetCanvas: true
+        function setDragging(active) {}
+        function setCenterActive(xActive, yActive) {}
         visible: (Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true
 
         component LockWidgetWrapper: Item {
@@ -240,86 +243,19 @@ MouseArea {
             property alias item: loader.item
 
             readonly property var lockCfg: (Config.options.lock && Config.options.lock.widgets) ? Config.options.lock.widgets[widgetKey] : null
-            readonly property var desktopCfg: (Config.options.background && Config.options.background.widgets) ? Config.options.background.widgets[widgetKey] : null
-
             readonly property bool isEnabled: ((Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true)
                 && (lockCfg ? (lockCfg.enable !== undefined ? lockCfg.enable : false) : (widgetKey === "clock" || widgetKey === "media"))
-
-            readonly property bool isInteractive: (lockCfg && lockCfg.interactive !== undefined)
-                ? lockCfg.interactive
-                : (widgetKey === "media" || widgetKey === "calendar" || widgetKey === "goals" || widgetKey === "weather")
-
-            readonly property string positionMode: (lockCfg && lockCfg.position)
-                ? lockCfg.position
-                : (widgetKey === "clock" ? "center" : (widgetKey === "media" ? "bottomLeft" : "default"))
 
             visible: isEnabled && opacity > 0
             opacity: isEnabled ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 250 } }
 
-            readonly property real itemW: loader.item ? (loader.item.width > 0 ? loader.item.width : (loader.item.implicitWidth > 0 ? loader.item.implicitWidth : 300)) : 300
-            readonly property real itemH: loader.item ? (loader.item.height > 0 ? loader.item.height : (loader.item.implicitHeight > 0 ? loader.item.implicitHeight : 200)) : 200
-
-            width: itemW
-            height: itemH
-
-            readonly property real computedX: {
-                switch (positionMode) {
-                    case "center":
-                    case "top":
-                    case "bottom":
-                        return Math.round((root.width - itemW) / 2);
-                    case "topLeft":
-                        return 48;
-                    case "topRight":
-                        return Math.round(root.width - itemW - 48);
-                    case "bottomLeft":
-                        return 48;
-                    case "bottomRight":
-                        return Math.round(root.width - itemW - 48);
-                    case "custom":
-                        return (lockCfg && lockCfg.x !== undefined) ? lockCfg.x : 0;
-                    case "default":
-                    default:
-                        return (desktopCfg && desktopCfg.x !== undefined) ? desktopCfg.x : 48;
-                }
-            }
-            readonly property real computedY: {
-                switch (positionMode) {
-                    case "center":
-                        return Math.round((root.height - itemH) / 2 - 40);
-                    case "top":
-                    case "topLeft":
-                    case "topRight":
-                        return 48;
-                    case "bottom":
-                    case "bottomLeft":
-                    case "bottomRight":
-                        return Math.round(root.height - itemH - 120);
-                    case "custom":
-                        return (lockCfg && lockCfg.y !== undefined) ? lockCfg.y : 0;
-                    case "default":
-                    default:
-                        return (desktopCfg && desktopCfg.y !== undefined) ? desktopCfg.y : 48;
-                }
-            }
-
-            x: computedX
-            y: computedY
+            anchors.fill: parent
 
             Loader {
                 id: loader
+                anchors.fill: parent
                 active: wrapper.isEnabled && (GlobalStates.screenLocked || GlobalStates.unlocking)
-                onLoaded: {
-                    if (item) {
-                        item.draggable = false;
-                        if (item.isLockWidget !== undefined) item.isLockWidget = true;
-                        if (item.animateXPos !== undefined) item.animateXPos = false;
-                        if (item.animateYPos !== undefined) item.animateYPos = false;
-                        item.x = 0;
-                        item.y = 0;
-                    }
-                }
             }
 
             Binding {
@@ -327,56 +263,6 @@ MouseArea {
                 property: "isLockWidget"
                 value: true
                 when: Boolean(loader.item && loader.item.isLockWidget !== undefined)
-            }
-            Binding {
-                target: loader.item
-                property: "animateXPos"
-                value: false
-                when: Boolean(loader.item && loader.item.animateXPos !== undefined)
-            }
-            Binding {
-                target: loader.item
-                property: "animateYPos"
-                value: false
-                when: Boolean(loader.item && loader.item.animateYPos !== undefined)
-            }
-            Binding {
-                target: loader.item
-                property: "x"
-                value: 0
-                when: Boolean(loader.item)
-            }
-            Binding {
-                target: loader.item
-                property: "y"
-                value: 0
-                when: Boolean(loader.item)
-            }
-            Binding {
-                target: loader.item
-                property: "targetX"
-                value: 0
-                when: Boolean(loader.item && loader.item.targetX !== undefined)
-            }
-            Binding {
-                target: loader.item
-                property: "targetY"
-                value: 0
-                when: Boolean(loader.item && loader.item.targetY !== undefined)
-            }
-            Binding {
-                target: loader.item
-                property: "draggable"
-                value: false
-                when: Boolean(loader.item && loader.item.draggable !== undefined)
-            }
-
-            // Click interceptor when non-interactive: forwards click to password focus
-            MouseArea {
-                anchors.fill: parent
-                enabled: !wrapper.isInteractive
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onPressed: mouse => root.forceFieldFocus()
             }
         }
 
@@ -493,6 +379,7 @@ MouseArea {
     // Main toolbar: password box
     Toolbar {
         id: mainIsland
+        z: 100
         anchors {
             horizontalCenter: parent.horizontalCenter
             bottom: parent.bottom

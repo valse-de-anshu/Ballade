@@ -32,14 +32,16 @@ AbstractBackgroundWidget {
     needsColText: clockStyle === "digital" || clockStyle === "pixel"
     width: implicitWidth
     height: implicitHeight
-    x: isLockWidget ? 0 : (forceCenter ? ((root.screenWidth - root.width) / 2) : targetX)
-    y: isLockWidget ? 0 : (forceCenter ? ((root.screenHeight - root.height) / 2) : targetY)
+    x: isLockWidget ? targetX : (forceCenter ? ((root.screenWidth - root.width) / 2) : targetX)
+    y: isLockWidget ? targetY : (forceCenter ? ((root.screenHeight - root.height) / 2) : targetY)
     visibleWhenLocked: true
 
     function restoreXYBinding() {
         if (isLockWidget) {
-            root.x = 0;
-            root.y = 0;
+            root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getDefaultLockX(), root.scaledScreenWidth - 30)));
+            root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getDefaultLockY(), root.scaledScreenHeight - 30)));
+            root.x = Qt.binding(() => root.targetX);
+            root.y = Qt.binding(() => root.targetY);
             return;
         }
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
