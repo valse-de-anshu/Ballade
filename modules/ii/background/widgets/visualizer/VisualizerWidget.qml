@@ -460,7 +460,7 @@ AbstractBackgroundWidget {
                 color2: (root.visualizerColors && root.visualizerColors[1]) ? root.visualizerColors[1] : Appearance.colors.colTertiary
                 color3: (root.visualizerColors && root.visualizerColors[2]) ? root.visualizerColors[2] : Appearance.colors.colSecondary
                 cover: coverTexture
-                hasCover: coverImage.status === Image.Ready ? 1 : 0
+                hasCover: (root.useCoverColors && root.coverUrl !== "" && coverImage.status === Image.Ready) ? 1 : 0
                 transform: Scale {
                     origin.y: root.height / 2
                     yScale: (["aurora", "dots"].includes(root.style) && root.isTop) ? -1 : 1
