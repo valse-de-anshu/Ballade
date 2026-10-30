@@ -239,6 +239,9 @@ AbstractBackgroundWidget {
 
         // 1. Parse all extracted colors into RGB, HSL, and calculate Chroma
         const parsed = [];
+        let totalLit = 0;
+        let maxSaturation = 0;
+
         for (let i = 0; i < raw.length; i++) {
             const c = raw[i];
             if (!c) continue;
@@ -249,12 +252,18 @@ AbstractBackgroundWidget {
             const s = (c.hslSaturation !== undefined && !isNaN(c.hslSaturation)) ? c.hslSaturation : 0;
             const l = (c.hslLightness !== undefined && !isNaN(c.hslLightness)) ? c.hslLightness : 0.5;
 
+            totalLit += l;
+            if (s > maxSaturation) maxSaturation = s;
+
             // Chroma emphasizes colors with distinct saturation while rewarding pleasing mid-lightness
-            const chroma = s * (1.0 - Math.abs(l - 0.5) * 0.5);
+            const chroma = s * (1.0 - Math.abs(l - 0.5) * 0.4);
             parsed.push({ r: r, g: g, b: b, h: h, s: s, l: l, chroma: chroma, color: c });
         }
 
         if (parsed.length === 0) return null;
+
+        const avgCoverLit = totalLit / parsed.length;
+        const isMonochrome = maxSaturation < 0.08;
 
         // Sort by chroma descending (most vibrant / characterful colors first)
         parsed.sort((a, b) => b.chroma - a.chroma);
@@ -270,7 +279,7 @@ AbstractBackgroundWidget {
                 let diff = Math.abs(candidate.h - d.h);
                 if (diff > 0.5) diff = 1.0 - diff;
                 if (diff < 0.055) {
-                    return Math.abs(candidate.l - d.l) > 0.35 || Math.abs(candidate.s - d.s) > 0.4;
+                    return Math.abs(candidate.l - d.l) > 0.30 || Math.abs(candidate.s - d.s) > 0.35;
                 }
                 return true;
             });
@@ -295,9 +304,9 @@ AbstractBackgroundWidget {
         ambG /= ndCount;
         ambB /= ndCount;
 
-        // Check if the album is purely achromatic / grayscale
-        const maxSat = parsed.reduce((max, c) => Math.max(max, c.s), 0);
-        const isMonochrome = maxSat < 0.07;
+        // Determine if artwork has a Dark Aesthetic (avg lightness is low or dominants are dark)
+        const d1Lit = dominants[0] ? dominants[0].l : 0.5;
+        const isDarkCover = (avgCoverLit < 0.34) || (d1Lit < 0.28 && avgCoverLit < 0.45);
 
         // Helper: blend two RGB colors
         function mixRgb(c1, c2, weight2) {
@@ -309,8 +318,8 @@ AbstractBackgroundWidget {
             };
         }
 
-        // Helper: Format tuned color with cozy, luminous lightness and velvety saturation
-        function tuneAuroraColor(rgbObj, minSat, targetLit) {
+        // Helper: Format tuned color with adaptive dynamic range
+        function tuneAdaptiveColor(rgbObj, minSat, targetLit, isDark) {
             const qc = Qt.rgba(
                 Math.max(0, Math.min(rgbObj.r, 1.0)),
                 Math.max(0, Math.min(rgbObj.g, 1.0)),
@@ -319,21 +328,38 @@ AbstractBackgroundWidget {
             );
             let h = qc.hslHue >= 0 ? qc.hslHue : 0.55;
             let s = qc.hslSaturation;
-            // Boost saturation into the soft, cozy glowing window (0.52 - 0.88)
-            s = Math.max(s, minSat);
-            s = Math.min(s, 0.88);
-            // Lightness in radiant glowing window
-            let l = Math.max(0.38, Math.min(targetLit, 0.86));
-            return Qt.hsla(h, s, l, 1.0);
+
+            if (isDark) {
+                // In dark theme: let colors stay deep, moody, and velvety!
+                s = Math.max(s, minSat * 0.7);
+                s = Math.min(s, 0.90);
+                // Keep targetLit low (0.12 - 0.35) so dark covers shine in their true darkness!
+                let l = Math.max(0.10, Math.min(targetLit, 0.72));
+                return Qt.hsla(h, s, l, 1.0);
+            } else {
+                // In bright/vibrant theme: boost into cozy radiant glow
+                s = Math.max(s, minSat);
+                s = Math.min(s, 0.88);
+                let l = Math.max(0.38, Math.min(targetLit, 0.86));
+                return Qt.hsla(h, s, l, 1.0);
+            }
         }
 
         // Case A: Pure Monochrome / Black & White cover art
-        // Turn into an ethereal "Midnight Celestial Aurora" glow
         if (isMonochrome) {
-            const c1 = Qt.hsla(0.62, 0.65, 0.46, 1.0); // Deep velvety twilight sapphire
-            const c2 = Qt.hsla(0.48, 0.72, 0.62, 1.0); // Soft ethereal aurora cyan / mint
-            const c3 = Qt.hsla(0.12, 0.60, 0.80, 1.0); // Luminous warm pearl starlight
-            return [c1, c2, c3];
+            if (isDarkCover) {
+                // Dark Moody Obsidian aesthetic (pure black/charcoal luxury with cool starlight rim)
+                const c1 = Qt.hsla(0.62, 0.25, 0.12, 1.0); // Deep velvety midnight obsidian
+                const c2 = Qt.hsla(0.58, 0.30, 0.24, 1.0); // Moody slate shadow
+                const c3 = Qt.hsla(0.55, 0.25, 0.65, 1.0); // Glowing cool starlight rim
+                return [c1, c2, c3];
+            } else {
+                // Ethereal Celestial Aurora glow
+                const c1 = Qt.hsla(0.62, 0.65, 0.46, 1.0); // Deep velvety twilight sapphire
+                const c2 = Qt.hsla(0.48, 0.72, 0.62, 1.0); // Soft ethereal aurora cyan / mint
+                const c3 = Qt.hsla(0.12, 0.60, 0.80, 1.0); // Luminous warm pearl starlight
+                return [c1, c2, c3];
+            }
         }
 
         // Case B: Artwork with colors — Aurora Fusion of 4 Dominants + Ambient Non-Dominants
@@ -346,17 +372,23 @@ AbstractBackgroundWidget {
 
         // 1. Base Glow (c1): Rich foundation blending D1 with ambient warmth
         const rawBase = mixRgb(d1, ambObj, 0.22);
-        const c1 = tuneAuroraColor(rawBase, 0.65, 0.46);
+        // If dark cover: L ≈ 0.12 - 0.20 (deep dark!); If bright cover: L ≈ 0.46
+        const baseLit = isDarkCover ? Math.max(0.12, Math.min(d1.l * 0.9, 0.20)) : 0.46;
+        const c1 = tuneAdaptiveColor(rawBase, 0.65, baseLit, isDarkCover);
 
         // 2. Midwave (c2): Flowing atmosphere blending D2 + D3 + ambient midtones
         const midDominants = mixRgb(d2, d3, 0.45);
         const rawMid = mixRgb(midDominants, ambObj, 0.18);
-        const c2 = tuneAuroraColor(rawMid, 0.68, 0.62);
+        // If dark cover: L ≈ 0.22 - 0.34 (moody dark midtone!); If bright cover: L ≈ 0.62
+        const midLit = isDarkCover ? Math.max(0.22, Math.min(avgCoverLit * 1.1, 0.34)) : 0.62;
+        const c2 = tuneAdaptiveColor(rawMid, 0.68, midLit, isDarkCover);
 
         // 3. Crest Shimmer (c3): Luminous accent highlight on peaks blending D4 + D2 + bright ambient
         const crestDominants = mixRgb(d4, d2, 0.50);
         const rawCrest = mixRgb(crestDominants, ambObj, 0.15);
-        const c3 = tuneAuroraColor(rawCrest, 0.58, 0.78);
+        // If dark cover: L ≈ 0.58 (subtle glowing rim so it is visible against dark wallpaper); If bright: L ≈ 0.78
+        const crestLit = isDarkCover ? Math.max(0.52, Math.min(avgCoverLit + 0.35, 0.68)) : 0.78;
+        const c3 = tuneAdaptiveColor(rawCrest, 0.58, crestLit, isDarkCover);
 
         return [c1, c2, c3];
     }
@@ -402,11 +434,11 @@ AbstractBackgroundWidget {
                 id: coverItem
                 width: 512
                 height: 512
-                visible: root.isRing
+                visible: Boolean(root.coverUrl && root.coverUrl !== "")
                 Image {
                     id: coverImage
                     anchors.fill: parent
-                    source: root.isRing ? root.coverUrl : ""
+                    source: (root.coverUrl && root.coverUrl !== "") ? root.coverUrl : ""
                     fillMode: Image.PreserveAspectCrop
                     sourceSize: Qt.size(512, 512)
                     asynchronous: true
