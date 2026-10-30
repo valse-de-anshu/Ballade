@@ -422,7 +422,10 @@ AbstractBackgroundWidget {
                 id: coverItem
                 width: 512
                 height: 512
-                visible: Boolean(root.coverUrl && root.coverUrl !== "")
+                Rectangle {
+                    anchors.fill: parent
+                    color: (root.visualizerColors && root.visualizerColors[0]) ? root.visualizerColors[0] : "#111111"
+                }
                 Image {
                     id: coverImage
                     anchors.fill: parent
@@ -431,6 +434,7 @@ AbstractBackgroundWidget {
                     sourceSize: Qt.size(512, 512)
                     asynchronous: true
                     smooth: true
+                    visible: status === Image.Ready
                 }
             }
             ShaderEffectSource {
