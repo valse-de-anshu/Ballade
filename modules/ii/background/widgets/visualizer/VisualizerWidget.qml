@@ -29,9 +29,11 @@ AbstractBackgroundWidget {
     }
     readonly property bool isTop: !isRing && position === "top"
     readonly property bool useCoverColors: shaderStyle && Boolean(
-        (configEntry && configEntry.colorSource)
+        (configEntry && configEntry.colorSource !== undefined)
             ? (configEntry.colorSource === "cover")
-            : (desktopConfigEntry && desktopConfigEntry.colorSource === "cover")
+            : (desktopConfigEntry && desktopConfigEntry.colorSource !== undefined
+                ? (desktopConfigEntry.colorSource === "cover")
+                : true)
     )
 
     property real ringSize: (root.configEntry && root.configEntry.ringSize)
