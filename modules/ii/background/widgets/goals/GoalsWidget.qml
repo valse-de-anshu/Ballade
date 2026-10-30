@@ -18,14 +18,28 @@ AbstractBackgroundWidget {
     hoverEnabled: true
 
     // ── Size Modes ──────────────────────────────────────
-    property string sizeMode: configEntry?.sizeMode ?? "full"
+    property string sizeMode: {
+        if (root.configEntry && root.configEntry.sizeMode) return root.configEntry.sizeMode;
+        if (root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) return root.desktopConfigEntry.sizeMode;
+        return "full";
+    }
     readonly property bool isCompact: sizeMode === "compact"
 
     Connections {
         target: root.configEntry
+        ignoreUnknownSignals: true
         function onSizeModeChanged() {
             if (root.configEntry && root.configEntry.sizeMode) {
                 root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
+    Connections {
+        target: root.desktopConfigEntry
+        ignoreUnknownSignals: true
+        function onSizeModeChanged() {
+            if ((!root.configEntry || !root.configEntry.sizeMode) && root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) {
+                root.sizeMode = root.desktopConfigEntry.sizeMode;
             }
         }
     }
@@ -607,6 +621,8 @@ AbstractBackgroundWidget {
                                     if (root.isCompact) {
                                         root.sizeMode = "full"
                                         if (root.configEntry) root.configEntry.sizeMode = "full"
+                                        if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = "full"
+                                        Config.save()
                                     }
                                     root.expandedHorizon = modelData.id
                                     root.scrollToHorizon(modelData.id)
@@ -2943,6 +2959,8 @@ AbstractBackgroundWidget {
                 onClicked: {
                     root.sizeMode = root.sizeMode === "compact" ? "full" : "compact"
                     if (root.configEntry) root.configEntry.sizeMode = root.sizeMode
+                    if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode
+                    Config.save()
                 }
             }
         }
@@ -2960,6 +2978,8 @@ AbstractBackgroundWidget {
             }
             onResizeFinished: {
                 if (root.configEntry) root.configEntry.sizeMode = root.sizeMode
+                if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode
+                Config.save()
             }
         }
     }

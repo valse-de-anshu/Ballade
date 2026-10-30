@@ -25,10 +25,15 @@ AbstractBackgroundWidget {
     readonly property real snapWidth2: singleWidth * 2 + cardSpacing  
     readonly property real snapWidth3: 640  
 
-    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
+    property string sizeMode: {
+        if (root.configEntry && root.configEntry.sizeMode) return root.configEntry.sizeMode;
+        if (root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) return root.desktopConfigEntry.sizeMode;
+        return "2x2";
+    }
 
     Connections {
         target: root.configEntry
+        ignoreUnknownSignals: true
         function onSizeModeChanged() {
             if (root.configEntry && root.configEntry.sizeMode) {
                 root.sizeMode = root.configEntry.sizeMode
@@ -47,6 +52,15 @@ AbstractBackgroundWidget {
         function onSatelliteRotationChanged() {
             if (root.configEntry && typeof root.configEntry.satelliteRotation === "number") {
                 root.satelliteRotation = root.configEntry.satelliteRotation
+            }
+        }
+    }
+    Connections {
+        target: root.desktopConfigEntry
+        ignoreUnknownSignals: true
+        function onSizeModeChanged() {
+            if ((!root.configEntry || !root.configEntry.sizeMode) && root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) {
+                root.sizeMode = root.desktopConfigEntry.sizeMode
             }
         }
     }
@@ -1305,7 +1319,9 @@ AbstractBackgroundWidget {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.sizeMode = root.sizeMode === "2x2" ? "1x2" : "2x2"
-                    root.configEntry.sizeMode = root.sizeMode
+                    if (root.configEntry) root.configEntry.sizeMode = root.sizeMode
+                    if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode
+                    Config.save()
                 }
             }
         }
@@ -1319,7 +1335,9 @@ AbstractBackgroundWidget {
                 root.sizeMode = root.modeForWidth(newWidth)
             }
             onResizeFinished: {
-                root.configEntry.sizeMode = root.sizeMode
+                if (root.configEntry) root.configEntry.sizeMode = root.sizeMode
+                if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode
+                Config.save()
             }
         }
     }

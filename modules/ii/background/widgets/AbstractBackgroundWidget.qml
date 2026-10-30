@@ -39,8 +39,11 @@ AbstractWidget {
             case "topRight":
             case "bottomRight":
                 return Math.round(sw - w - 48);
-            case "custom":
-                return (configEntry && configEntry.x !== undefined && configEntry.x > 0) ? configEntry.x : Math.round((sw - w) / 2);
+            case "custom": {
+                if (configEntry && configEntry.x !== undefined && configEntry.x > 0) return configEntry.x;
+                if (desktopConfigEntry && desktopConfigEntry.x !== undefined && desktopConfigEntry.x > 0) return desktopConfigEntry.x;
+                return Math.round((sw - w) / 2);
+            }
             case "default":
             default: {
                 const desk = desktopConfigEntry;
@@ -64,8 +67,11 @@ AbstractWidget {
             case "bottomLeft":
             case "bottomRight":
                 return Math.round(sh - h - 120);
-            case "custom":
-                return (configEntry && configEntry.y !== undefined && configEntry.y > 0) ? configEntry.y : Math.round((sh - h) / 2 - 40);
+            case "custom": {
+                if (configEntry && configEntry.y !== undefined && configEntry.y > 0) return configEntry.y;
+                if (desktopConfigEntry && desktopConfigEntry.y !== undefined && desktopConfigEntry.y > 0) return desktopConfigEntry.y;
+                return Math.round((sh - h) / 2 - 40);
+            }
             case "default":
             default: {
                 const desk = desktopConfigEntry;
@@ -119,10 +125,20 @@ AbstractWidget {
             configEntry.position = "custom";
             configEntry.x = newX;
             configEntry.y = newY;
+            if (desktopConfigEntry) {
+                desktopConfigEntry.x = newX;
+                desktopConfigEntry.y = newY;
+            }
         } else {
             configEntry.placementStrategy = "free";
             configEntry.x = newX;
             configEntry.y = newY;
+            if (Config.options.lock && Config.options.lock.widgets && Config.options.lock.widgets[configEntryName]) {
+                const lockEntry = Config.options.lock.widgets[configEntryName];
+                lockEntry.position = "custom";
+                lockEntry.x = newX;
+                lockEntry.y = newY;
+            }
         }
         Config.save();
         root.targetX = newX;

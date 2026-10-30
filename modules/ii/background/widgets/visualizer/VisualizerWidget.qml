@@ -71,8 +71,16 @@ AbstractBackgroundWidget {
         const centerX = Math.round((sw - w) / 2);
 
         if (root.isLockWidget) {
-            if (root.configEntry && root.configEntry.position === "custom" && root.configEntry.x !== undefined && root.configEntry.x > 0) {
+            const mode = (root.configEntry && root.configEntry.position) ? root.configEntry.position : "default";
+            if (mode === "custom" && root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
                 return root.configEntry.x;
+            }
+            if (mode === "center") return centerX;
+            if (mode === "topLeft" || mode === "bottomLeft") return 48;
+            if (mode === "topRight" || mode === "bottomRight") return Math.round(sw - w - 48);
+            if (mode === "top" || mode === "bottom") return centerX;
+            if (root.desktopConfigEntry && root.desktopConfigEntry.x !== undefined && root.desktopConfigEntry.x > 0) {
+                return root.desktopConfigEntry.x;
             }
             return centerX;
         }
@@ -91,8 +99,15 @@ AbstractBackgroundWidget {
         const centerY = Math.round((sh - h) / 2);
 
         if (root.isLockWidget) {
-            if (root.configEntry && root.configEntry.position === "custom" && root.configEntry.y !== undefined && root.configEntry.y > 0) {
+            const mode = (root.configEntry && root.configEntry.position) ? root.configEntry.position : "default";
+            if (mode === "custom" && root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
                 return root.configEntry.y;
+            }
+            if (mode === "center") return centerY;
+            if (mode === "top" || mode === "topLeft" || mode === "topRight") return 48;
+            if (mode === "bottom" || mode === "bottomLeft" || mode === "bottomRight") return Math.round(sh - h - 120);
+            if (root.desktopConfigEntry && root.desktopConfigEntry.y !== undefined && root.desktopConfigEntry.y > 0) {
+                return root.desktopConfigEntry.y;
             }
             return centerY;
         }
@@ -139,10 +154,20 @@ AbstractBackgroundWidget {
             root.configEntry.position = "custom";
             root.configEntry.x = newX;
             root.configEntry.y = newY;
+            if (root.desktopConfigEntry) {
+                root.desktopConfigEntry.x = newX;
+                root.desktopConfigEntry.y = newY;
+            }
         } else {
             root.configEntry.placementStrategy = "free";
             root.configEntry.x = newX;
             root.configEntry.y = newY;
+            if (Config.options.lock && Config.options.lock.widgets && Config.options.lock.widgets[root.configEntryName]) {
+                const lockEntry = Config.options.lock.widgets[root.configEntryName];
+                lockEntry.position = "custom";
+                lockEntry.x = newX;
+                lockEntry.y = newY;
+            }
         }
         Config.save();
         root.targetX = newX;
@@ -381,6 +406,7 @@ AbstractBackgroundWidget {
         onResizeFinished: {
             const finalSize = root.ringSize;
             if (root.configEntry) root.configEntry.ringSize = finalSize;
+            if (root.desktopConfigEntry) root.desktopConfigEntry.ringSize = finalSize;
             Config.save();
             // Reset flag after a short delay so the Connections handler doesn't fight us
             resizeCooldownTimer.restart();

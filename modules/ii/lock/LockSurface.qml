@@ -22,8 +22,10 @@ import qs.modules.ii.background.widgets.calendar
 import qs.modules.ii.background.widgets.worldclock
 import qs.modules.ii.background.widgets.usercard
 import qs.modules.ii.background.widgets.goals
+import qs.modules.ii.background.widgets.images
+import qs.modules.common.widgets.widgetCanvas
 
-MouseArea {
+Item {
     id: root
     required property LockContext context
     property bool active: false
@@ -159,13 +161,12 @@ MouseArea {
             forceFieldFocus();
         }
     }
-    hoverEnabled: true
-    acceptedButtons: Qt.LeftButton
-    onPressed: mouse => {
-        forceFieldFocus();
-    }
-    onPositionChanged: mouse => {
-        forceFieldFocus();
+    MouseArea {
+        id: lockBackgroundClickArea
+        anchors.fill: parent
+        z: -2
+        acceptedButtons: Qt.LeftButton
+        onPressed: root.forceFieldFocus()
     }
 
     // Toolbar appearing animation
@@ -226,49 +227,74 @@ MouseArea {
     //     }
     // }
 
-    // Lock screen widgets area
-    Item {
-        id: lockWidgetsArea
+    // Lock screen widgets area: identical to desktop WidgetCanvas
+    WidgetCanvas {
+        id: lockWidgetCanvas
+        z: 10
         anchors.fill: parent
-        z: 0
-        readonly property bool isWidgetCanvas: true
-        function setDragging(active) {}
-        function setCenterActive(xActive, yActive) {}
         visible: (Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true
+        onPressed: mouse => root.forceFieldFocus()
 
-        component LockWidgetWrapper: Item {
-            id: wrapper
-            required property string widgetKey
-            default property alias content: loader.sourceComponent
-            property alias item: loader.item
-
-            readonly property var lockCfg: (Config.options.lock && Config.options.lock.widgets) ? Config.options.lock.widgets[widgetKey] : null
-            readonly property bool isEnabled: ((Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true)
-                && (lockCfg ? (lockCfg.enable !== undefined ? lockCfg.enable : false) : (widgetKey === "clock" || widgetKey === "media"))
-
-            visible: isEnabled && opacity > 0
-            opacity: isEnabled ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 250 } }
-
-            anchors.fill: parent
-
-            Loader {
-                id: loader
-                anchors.fill: parent
-                active: wrapper.isEnabled && (GlobalStates.screenLocked || GlobalStates.unlocking)
-            }
-
-            Binding {
-                target: loader.item
-                property: "isLockWidget"
-                value: true
-                when: Boolean(loader.item && loader.item.isLockWidget !== undefined)
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer && Config.options.lock.widgets.visualizer.enable)
+                    || (Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.enable)))
+            sourceComponent: VisualizerWidget {
+                configEntryName: "visualizer"
+                isLockWidget: true
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "clock"
-            ClockWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer2 && Config.options.lock.widgets.visualizer2.enable)
+                    || (Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)))
+            sourceComponent: VisualizerWidget {
+                configEntryName: "visualizer2"
+                isLockWidget: true
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.customImage.enable)
+            sourceComponent: CustomImage {
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        Repeater {
+            model: Config.options.background.widgets.customImages
+            delegate: FadeLoader {
+                required property int index
+                shown: Boolean(Config.options.lock.showWidgets)
+                sourceComponent: ExtraCustomImage {
+                    screenWidth: root.width
+                    screenHeight: root.height
+                    scaledScreenWidth: root.width
+                    scaledScreenHeight: root.height
+                    wallpaperScale: 1
+                    imageIndex: index
+                }
+            }
+        }
+
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.clock && Config.options.lock.widgets.clock.enable)
+                    || (Config.options.background.widgets.clock && Config.options.background.widgets.clock.enable)))
+            sourceComponent: ClockWidget {
+                configEntryName: "clock"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -279,9 +305,13 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "media"
-            MediaWidget {
+        FadeLoader {
+            id: mediaLoader
+            property bool enableLoading: true
+            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.media && Config.options.lock.widgets.media.enable)
+                    || (Config.options.background.widgets.media && Config.options.background.widgets.media.enable)) && enableLoading)
+            sourceComponent: MediaWidget {
+                configEntryName: "media"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -291,9 +321,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "weather"
-            WeatherWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.weather && Config.options.lock.widgets.weather.enable)
+            sourceComponent: WeatherWidget {
+                configEntryName: "weather"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -303,9 +334,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "calendar"
-            CalendarWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.calendar && Config.options.lock.widgets.calendar.enable)
+            sourceComponent: CalendarWidget {
+                configEntryName: "calendar"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -315,9 +347,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "goals"
-            GoalsWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.goals && Config.options.lock.widgets.goals.enable)
+            sourceComponent: GoalsWidget {
+                configEntryName: "goals"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -327,9 +360,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "userCard"
-            UserCardWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.userCard && Config.options.lock.widgets.userCard.enable)
+            sourceComponent: UserCardWidget {
+                configEntryName: "userCard"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -339,9 +373,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "resources"
-            ResourcesWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.resources && Config.options.lock.widgets.resources.enable)
+            sourceComponent: ResourcesWidget {
+                configEntryName: "resources"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -351,9 +386,11 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "worldClock"
-            WorldClockWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.images && Config.options.lock.widgets.images.enable)
+                    || (Config.options.background.widgets.images && Config.options.background.widgets.images.enable)))
+            sourceComponent: ImageConverterWidget {
+                configEntryName: "images"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -363,9 +400,10 @@ MouseArea {
             }
         }
 
-        LockWidgetWrapper {
-            widgetKey: "visualizer"
-            VisualizerWidget {
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.worldClock && Config.options.lock.widgets.worldClock.enable)
+            sourceComponent: WorldClockWidget {
+                configEntryName: "worldClock"
                 isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
@@ -512,6 +550,7 @@ MouseArea {
     // Left toolbar
     Toolbar {
         id: leftIsland
+        z: 100
         anchors {
             right: mainIsland.left
             top: mainIsland.top
@@ -572,6 +611,7 @@ MouseArea {
     // Right toolbar
     Toolbar {
         id: rightIsland
+        z: 100
         anchors {
             left: mainIsland.right
             top: mainIsland.top

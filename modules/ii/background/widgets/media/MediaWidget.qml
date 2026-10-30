@@ -31,13 +31,27 @@ AbstractBackgroundWidget {
     property real buttonIconSize: 18
     property bool showLyrics: false
 
-    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "1x3"
+    property string sizeMode: {
+        if (root.configEntry && root.configEntry.sizeMode) return root.configEntry.sizeMode;
+        if (root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) return root.desktopConfigEntry.sizeMode;
+        return "1x3";
+    }
 
     Connections {
         target: root.configEntry
+        ignoreUnknownSignals: true
         function onSizeModeChanged() {
             if (root.configEntry && root.configEntry.sizeMode) {
                 root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
+    Connections {
+        target: root.desktopConfigEntry
+        ignoreUnknownSignals: true
+        function onSizeModeChanged() {
+            if ((!root.configEntry || !root.configEntry.sizeMode) && root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) {
+                root.sizeMode = root.desktopConfigEntry.sizeMode;
             }
         }
     }
@@ -737,9 +751,9 @@ Image {
             root.sizeMode = root.modeForWidth(newWidth)
         }
         onResizeFinished: {
-            if (root.configEntry) {
-                root.configEntry.sizeMode = root.sizeMode
-            }
+            if (root.configEntry) root.configEntry.sizeMode = root.sizeMode;
+            if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode;
+            Config.save();
         }
     }
 }

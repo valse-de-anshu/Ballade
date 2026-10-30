@@ -21,13 +21,27 @@ AbstractBackgroundWidget {
     readonly property real snapWidth2: root.singleWidth * 2 + root.cardSpacing
     readonly property real snapWidth3: root.singleWidth * 3 + root.cardSpacing * 2
 
-    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "1x3"
+    property string sizeMode: {
+        if (root.configEntry && root.configEntry.sizeMode) return root.configEntry.sizeMode;
+        if (root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) return root.desktopConfigEntry.sizeMode;
+        return "1x3";
+    }
 
     Connections {
         target: root.configEntry
+        ignoreUnknownSignals: true
         function onSizeModeChanged() {
             if (root.configEntry && root.configEntry.sizeMode) {
                 root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
+    Connections {
+        target: root.desktopConfigEntry
+        ignoreUnknownSignals: true
+        function onSizeModeChanged() {
+            if ((!root.configEntry || !root.configEntry.sizeMode) && root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) {
+                root.sizeMode = root.desktopConfigEntry.sizeMode;
             }
         }
     }
@@ -409,7 +423,11 @@ AbstractBackgroundWidget {
             locked: Config.options.background.widgetsLocked
             currentWidth: root.widgetWidth
             onResized: (newWidth) => { root.sizeMode = root.modeForWidth(newWidth) }
-            onResizeFinished: { root.configEntry.sizeMode = root.sizeMode }
+            onResizeFinished: {
+                if (root.configEntry) root.configEntry.sizeMode = root.sizeMode;
+                if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode;
+                Config.save();
+            }
         }
     }
 }

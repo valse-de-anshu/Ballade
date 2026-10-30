@@ -13,13 +13,27 @@ AbstractBackgroundWidget {
     configEntryName: "worldClock"
     hoverEnabled: true
 
-    property string sizeMode: (root.configEntry && root.configEntry.sizeMode) ? root.configEntry.sizeMode : "2x2"
+    property string sizeMode: {
+        if (root.configEntry && root.configEntry.sizeMode) return root.configEntry.sizeMode;
+        if (root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) return root.desktopConfigEntry.sizeMode;
+        return "2x2";
+    }
 
     Connections {
         target: root.configEntry
+        ignoreUnknownSignals: true
         function onSizeModeChanged() {
             if (root.configEntry && root.configEntry.sizeMode) {
                 root.sizeMode = root.configEntry.sizeMode;
+            }
+        }
+    }
+    Connections {
+        target: root.desktopConfigEntry
+        ignoreUnknownSignals: true
+        function onSizeModeChanged() {
+            if ((!root.configEntry || !root.configEntry.sizeMode) && root.desktopConfigEntry && root.desktopConfigEntry.sizeMode) {
+                root.sizeMode = root.desktopConfigEntry.sizeMode;
             }
         }
     }
@@ -337,7 +351,9 @@ AbstractBackgroundWidget {
                     onClicked: {
                         if (root.showingSettings) root.showingSettings = false
                         root.sizeMode = root.sizeMode === "2x2" ? "4x1" : "2x2"
-                        root.configEntry.sizeMode = root.sizeMode
+                        if (root.configEntry) root.configEntry.sizeMode = root.sizeMode
+                        if (root.desktopConfigEntry) root.desktopConfigEntry.sizeMode = root.sizeMode
+                        Config.save()
                     }
                 }
             }
