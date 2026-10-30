@@ -223,15 +223,19 @@ AbstractBackgroundWidget {
         }
     }
 
-    // Palettes: color1 and color2 carry the shape, color3 the accent (peaks, fallback cover)
+    // Palettes: 3-stop gradient [c1: grounded base, c2: radiant dominant hero, c3: soft luminous white]
     readonly property var themePalette: {
         const c = Appearance.m3colors;
-        switch (root.style) {
-            case "aurora": return [c.m3primary, c.m3tertiary, c.m3secondary];
-            case "ring": return [c.m3primary, c.m3tertiary, c.m3primaryContainer];
-            case "dots": return [c.m3primary, c.m3secondary, c.m3tertiary];
-            default: return [c.m3primary, c.m3primaryContainer, c.m3tertiary];
-        }
+        const prim = c.m3primary;
+        const h = (prim && prim.hslHue >= 0) ? prim.hslHue : 0.60;
+        const s = (prim && !isNaN(prim.hslSaturation)) ? prim.hslSaturation : 0.60;
+        // Boost saturation for visualizer so it is rich and vibrant, not dull flat grey
+        const heroSat = Math.max(s, 0.65);
+
+        const c1 = Qt.hsla(h, Math.min(heroSat, 0.60), 0.26, 1.0);  // Rich grounded base
+        const c2 = Qt.hsla(h, heroSat, 0.54, 1.0);                  // Radiant dominant theme color
+        const c3 = Qt.hsla(h, 0.10, 0.96, 1.0);                     // Soft luminous white crest
+        return [c1, c2, c3];
     }
     readonly property var coverPalette: {
         const raw = Array.from((coverQuantizer && coverQuantizer.colors) ? coverQuantizer.colors : []);
@@ -329,37 +333,22 @@ AbstractBackgroundWidget {
             let h = qc.hslHue >= 0 ? qc.hslHue : 0.55;
             let s = qc.hslSaturation;
 
-            if (isDark) {
-                // In dark theme: let colors stay deep, moody, and velvety!
-                s = Math.max(s, minSat * 0.7);
-                s = Math.min(s, 0.90);
-                // Keep targetLit low (0.12 - 0.35) so dark covers shine in their true darkness!
-                let l = Math.max(0.10, Math.min(targetLit, 0.72));
-                return Qt.hsla(h, s, l, 1.0);
-            } else {
-                // In bright/vibrant theme: boost into cozy radiant glow
-                s = Math.max(s, minSat);
-                s = Math.min(s, 0.88);
-                let l = Math.max(0.38, Math.min(targetLit, 0.86));
-                return Qt.hsla(h, s, l, 1.0);
-            }
+            s = Math.max(s, minSat);
+            s = Math.min(s, 0.95);
+            let l = Math.max(0.24, Math.min(targetLit, 0.85));
+            return Qt.hsla(h, s, l, 1.0);
         }
 
         // Case A: Pure Monochrome / Black & White cover art
         if (isMonochrome) {
-            if (isDarkCover) {
-                // Dark Moody Obsidian aesthetic (pure black/charcoal luxury with cool starlight rim)
-                const c1 = Qt.hsla(0.62, 0.25, 0.12, 1.0); // Deep velvety midnight obsidian
-                const c2 = Qt.hsla(0.58, 0.30, 0.24, 1.0); // Moody slate shadow
-                const c3 = Qt.hsla(0.55, 0.25, 0.65, 1.0); // Glowing cool starlight rim
-                return [c1, c2, c3];
-            } else {
-                // Ethereal Celestial Aurora glow
-                const c1 = Qt.hsla(0.62, 0.65, 0.46, 1.0); // Deep velvety twilight sapphire
-                const c2 = Qt.hsla(0.48, 0.72, 0.62, 1.0); // Soft ethereal aurora cyan / mint
-                const c3 = Qt.hsla(0.12, 0.60, 0.80, 1.0); // Luminous warm pearl starlight
-                return [c1, c2, c3];
-            }
+            // Ethereal Moonlit Monochrome:
+            // c1 (Base): deep velvety charcoal/slate (L = 0.26, S = 0.20)
+            const c1 = Qt.hsla(0.60, 0.20, 0.26, 1.0);
+            // c2 (Dominant Mid): glowing cool moonlight silver (L = 0.54, S = 0.35)
+            const c2 = Qt.hsla(0.58, 0.35, 0.54, 1.0);
+            // c3 (Crest Tip): luminous starlight white (L = 0.96, S = 0.05)
+            const c3 = Qt.hsla(0.58, 0.05, 0.96, 1.0);
+            return [c1, c2, c3];
         }
 
         // Case B: Artwork with colors — Aurora Fusion of 4 Dominants + Ambient Non-Dominants
@@ -370,25 +359,22 @@ AbstractBackgroundWidget {
 
         const ambObj = { r: ambR, g: ambG, b: ambB };
 
-        // 1. Base Glow (c1): Rich foundation blending D1 with ambient warmth
-        const rawBase = mixRgb(d1, ambObj, 0.22);
-        // If dark cover: L ≈ 0.12 - 0.20 (deep dark!); If bright cover: L ≈ 0.46
-        const baseLit = isDarkCover ? Math.max(0.12, Math.min(d1.l * 0.9, 0.20)) : 0.46;
+        // 1. Base Glow (c1): Grounded foundation blending D1 with ambient warmth
+        // Target L: 0.26 - 0.34 (rich and readable, never an invisible dark void!)
+        const rawBase = mixRgb(d1, ambObj, 0.25);
+        const baseLit = isDarkCover ? 0.26 : Math.max(0.26, Math.min(d1.l * 0.75, 0.36));
         const c1 = tuneAdaptiveColor(rawBase, 0.65, baseLit, isDarkCover);
 
-        // 2. Midwave (c2): Flowing atmosphere blending D2 + D3 + ambient midtones
-        const midDominants = mixRgb(d2, d3, 0.45);
-        const rawMid = mixRgb(midDominants, ambObj, 0.18);
-        // If dark cover: L ≈ 0.22 - 0.34 (moody dark midtone!); If bright cover: L ≈ 0.62
-        const midLit = isDarkCover ? Math.max(0.22, Math.min(avgCoverLit * 1.1, 0.34)) : 0.62;
-        const c2 = tuneAdaptiveColor(rawMid, 0.68, midLit, isDarkCover);
+        // 2. Dominant Hero (c2): The radiant dominant hero color from the cover!
+        // Target L: 0.52 - 0.58, High Saturation (0.80 - 0.95)
+        const midDominants = (dominants.length > 1) ? mixRgb(d1, d2, 0.40) : d1;
+        const rawMid = mixRgb(midDominants, ambObj, 0.15);
+        const midLit = isDarkCover ? 0.52 : Math.max(0.48, Math.min(d1.l, 0.60));
+        const c2 = tuneAdaptiveColor(rawMid, 0.82, midLit, false);
 
-        // 3. Crest Shimmer (c3): Luminous accent highlight on peaks blending D4 + D2 + bright ambient
-        const crestDominants = mixRgb(d4, d2, 0.50);
-        const rawCrest = mixRgb(crestDominants, ambObj, 0.15);
-        // If dark cover: L ≈ 0.58 (subtle glowing rim so it is visible against dark wallpaper); If bright: L ≈ 0.78
-        const crestLit = isDarkCover ? Math.max(0.52, Math.min(avgCoverLit + 0.35, 0.68)) : 0.78;
-        const c3 = tuneAdaptiveColor(rawCrest, 0.58, crestLit, isDarkCover);
+        // 3. Soft White Crest (c3): Luminous soft white with a subtle hint of the artwork's hue
+        const heroHue = d1.h >= 0 ? d1.h : 0.55;
+        const c3 = Qt.hsla(heroHue, 0.12, 0.95, 1.0);
 
         return [c1, c2, c3];
     }
@@ -582,15 +568,29 @@ AbstractBackgroundWidget {
                     anchors.top: root.isTop ? parent.top : undefined
                     anchors.bottom: root.isTop ? undefined : parent.bottom
 
-                    property real intensity: pointValue / bars.maxBarHeight
+                    property real intensity: Math.max(0.0, Math.min(pointValue / bars.maxBarHeight, 1.0))
                     property color barCol1: (root.visualizerColors && root.visualizerColors[0]) ? root.visualizerColors[0] : Appearance.colors.colPrimary
-                    property color barCol2: (root.visualizerColors && root.visualizerColors[1]) ? root.visualizerColors[1] : Appearance.colors.colPrimaryContainer
-                    color: Qt.rgba(
-                        barCol1.r * intensity + barCol2.r * (1 - intensity),
-                        barCol1.g * intensity + barCol2.g * (1 - intensity),
-                        barCol1.b * intensity + barCol2.b * (1 - intensity),
-                        1
-                    )
+                    property color barCol2: (root.visualizerColors && root.visualizerColors[1]) ? root.visualizerColors[1] : Appearance.colors.colTertiary
+                    property color barCol3: (root.visualizerColors && root.visualizerColors[2]) ? root.visualizerColors[2] : Qt.rgba(0.96, 0.97, 0.98, 1.0)
+                    color: {
+                        if (intensity < 0.5) {
+                            const f = intensity * 2.0;
+                            return Qt.rgba(
+                                barCol1.r * (1.0 - f) + barCol2.r * f,
+                                barCol1.g * (1.0 - f) + barCol2.g * f,
+                                barCol1.b * (1.0 - f) + barCol2.b * f,
+                                1.0
+                            );
+                        } else {
+                            const f = (intensity - 0.5) * 2.0;
+                            return Qt.rgba(
+                                barCol2.r * (1.0 - f) + barCol3.r * f,
+                                barCol2.g * (1.0 - f) + barCol3.g * f,
+                                barCol2.b * (1.0 - f) + barCol3.b * f,
+                                1.0
+                            );
+                        }
+                    }
 
                     Behavior on height {
                         NumberAnimation { duration: bars.smoothingDuration; easing.type: Easing.OutQuad }
