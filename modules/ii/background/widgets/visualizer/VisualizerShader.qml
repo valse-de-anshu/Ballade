@@ -12,6 +12,10 @@ ShaderEffect {
     property color color1
     property color color2
     property color color3
+
+    Behavior on color1 { ColorAnimation { duration: 800; easing.type: Easing.InOutQuad } }
+    Behavior on color2 { ColorAnimation { duration: 800; easing.type: Easing.InOutQuad } }
+    Behavior on color3 { ColorAnimation { duration: 800; easing.type: Easing.InOutQuad } }
     // Ring only: texture provider for the cover, and whether it holds one
     property Item cover: null
     property real hasCover: 0

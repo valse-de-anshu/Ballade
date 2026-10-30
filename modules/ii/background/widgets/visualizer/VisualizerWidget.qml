@@ -229,7 +229,7 @@ AbstractBackgroundWidget {
         switch (root.style) {
             case "aurora": return [c.m3primary, c.m3tertiary, c.m3secondary];
             case "ring": return [c.m3primary, c.m3tertiary, c.m3primaryContainer];
-            case "dots": return [c.m3onBackground, c.m3primary, c.m3error];
+            case "dots": return [c.m3primary, c.m3secondary, c.m3tertiary];
             default: return [c.m3primary, c.m3primaryContainer, c.m3tertiary];
         }
     }
@@ -237,83 +237,127 @@ AbstractBackgroundWidget {
         const raw = Array.from((coverQuantizer && coverQuantizer.colors) ? coverQuantizer.colors : []);
         if (!raw || raw.length === 0) return null;
 
-        // Categorize into chromatic colors and monochrome/grayscale tones
-        const chromatic = [];
-        const monochrome = [];
-
+        // 1. Parse all extracted colors into RGB, HSL, and calculate Chroma
+        const parsed = [];
         for (let i = 0; i < raw.length; i++) {
             const c = raw[i];
-            const sat = (c && c.hslSaturation !== undefined) ? c.hslSaturation : 0;
-            const lit = (c && c.hslLightness !== undefined) ? c.hslLightness : 0.5;
-            const hue = (c && c.hslHue !== undefined) ? c.hslHue : -1;
+            if (!c) continue;
+            const r = (c.r !== undefined && !isNaN(c.r)) ? c.r : 0.5;
+            const g = (c.g !== undefined && !isNaN(c.g)) ? c.g : 0.5;
+            const b = (c.b !== undefined && !isNaN(c.b)) ? c.b : 0.5;
+            const h = (c.hslHue !== undefined && c.hslHue >= 0) ? c.hslHue : 0;
+            const s = (c.hslSaturation !== undefined && !isNaN(c.hslSaturation)) ? c.hslSaturation : 0;
+            const l = (c.hslLightness !== undefined && !isNaN(c.hslLightness)) ? c.hslLightness : 0.5;
 
-            if (hue >= 0 && sat > 0.12 && lit > 0.05 && lit < 0.95) {
-                // Saturated color with genuine hue
-                const vibrance = sat * 1.5 + (1.0 - Math.abs(lit - 0.5));
-                chromatic.push({ color: c, sat: sat, lit: lit, hue: hue, score: vibrance });
-            } else {
-                // Achromatic / neutral (black, white, gray)
-                monochrome.push({ color: c, lit: lit });
-            }
+            // Chroma emphasizes colors with distinct saturation while rewarding pleasing mid-lightness
+            const chroma = s * (1.0 - Math.abs(l - 0.5) * 0.5);
+            parsed.push({ r: r, g: g, b: b, h: h, s: s, l: l, chroma: chroma, color: c });
         }
 
-        chromatic.sort((a, b) => b.score - a.score);
-        monochrome.sort((a, b) => b.lit - a.lit);
+        if (parsed.length === 0) return null;
 
-        // Find distinct chromatic colors (different hues)
-        const distinctChromatic = [];
-        for (let i = 0; i < chromatic.length; i++) {
-            const candidate = chromatic[i];
-            const isDistinct = distinctChromatic.every(p => {
-                let hDiff = Math.abs(candidate.hue - p.hue);
-                if (hDiff > 0.5) hDiff = 1.0 - hDiff;
-                return hDiff > 0.07;
+        // Sort by chroma descending (most vibrant / characterful colors first)
+        parsed.sort((a, b) => b.chroma - a.chroma);
+
+        // 2. Select up to 4 Dominant distinct anchor colors across the cover
+        const dominants = [];
+        for (let i = 0; i < parsed.length; i++) {
+            if (dominants.length >= 4) break;
+            const candidate = parsed[i];
+
+            // Filter out near-identical hues so we get true color variety
+            const isDistinct = dominants.every(d => {
+                let diff = Math.abs(candidate.h - d.h);
+                if (diff > 0.5) diff = 1.0 - diff;
+                if (diff < 0.055) {
+                    return Math.abs(candidate.l - d.l) > 0.35 || Math.abs(candidate.s - d.s) > 0.4;
+                }
+                return true;
             });
-            if (isDistinct || distinctChromatic.length === 0) {
-                distinctChromatic.push(candidate);
+
+            if (isDistinct || dominants.length === 0) {
+                dominants.push(candidate);
             }
         }
 
-        function formatColor(h, s, l) {
-            return Qt.hsla(Math.max(0, Math.min(h, 1.0)),
-                           Math.max(0, Math.min(s, 1.0)),
-                           Math.max(0.25, Math.min(l, 0.92)),
-                           1.0);
+        // 3. Collect non-dominant colors and compute the atmospheric ambient light
+        const nonDominants = parsed.filter(c => !dominants.includes(c));
+        let ambR = 0, ambG = 0, ambB = 0;
+        const ndCount = nonDominants.length > 0 ? nonDominants.length : parsed.length;
+        const ndSource = nonDominants.length > 0 ? nonDominants : parsed;
+
+        for (let i = 0; i < ndSource.length; i++) {
+            ambR += ndSource[i].r;
+            ambG += ndSource[i].g;
+            ambB += ndSource[i].b;
+        }
+        ambR /= ndCount;
+        ambG /= ndCount;
+        ambB /= ndCount;
+
+        // Check if the album is purely achromatic / grayscale
+        const maxSat = parsed.reduce((max, c) => Math.max(max, c.s), 0);
+        const isMonochrome = maxSat < 0.07;
+
+        // Helper: blend two RGB colors
+        function mixRgb(c1, c2, weight2) {
+            const w1 = 1.0 - weight2;
+            return {
+                r: c1.r * w1 + c2.r * weight2,
+                g: c1.g * w1 + c2.g * weight2,
+                b: c1.b * w1 + c2.b * weight2
+            };
         }
 
-        // Case 1: 3 or more distinct colorful tones in artwork
-        if (distinctChromatic.length >= 3) {
-            const c1 = formatColor(distinctChromatic[0].hue, Math.max(distinctChromatic[0].sat, 0.5), Math.max(0.45, Math.min(distinctChromatic[0].lit, 0.7)));
-            const c2 = formatColor(distinctChromatic[1].hue, Math.max(distinctChromatic[1].sat, 0.5), Math.max(0.5, Math.min(distinctChromatic[1].lit, 0.75)));
-            const c3 = formatColor(distinctChromatic[2].hue, Math.max(distinctChromatic[2].sat, 0.5), Math.max(0.55, Math.min(distinctChromatic[2].lit, 0.8)));
+        // Helper: Format tuned color with cozy, luminous lightness and velvety saturation
+        function tuneAuroraColor(rgbObj, minSat, targetLit) {
+            const qc = Qt.rgba(
+                Math.max(0, Math.min(rgbObj.r, 1.0)),
+                Math.max(0, Math.min(rgbObj.g, 1.0)),
+                Math.max(0, Math.min(rgbObj.b, 1.0)),
+                1.0
+            );
+            let h = qc.hslHue >= 0 ? qc.hslHue : 0.55;
+            let s = qc.hslSaturation;
+            // Boost saturation into the soft, cozy glowing window (0.52 - 0.88)
+            s = Math.max(s, minSat);
+            s = Math.min(s, 0.88);
+            // Lightness in radiant glowing window
+            let l = Math.max(0.38, Math.min(targetLit, 0.86));
+            return Qt.hsla(h, s, l, 1.0);
+        }
+
+        // Case A: Pure Monochrome / Black & White cover art
+        // Turn into an ethereal "Midnight Celestial Aurora" glow
+        if (isMonochrome) {
+            const c1 = Qt.hsla(0.62, 0.65, 0.46, 1.0); // Deep velvety twilight sapphire
+            const c2 = Qt.hsla(0.48, 0.72, 0.62, 1.0); // Soft ethereal aurora cyan / mint
+            const c3 = Qt.hsla(0.12, 0.60, 0.80, 1.0); // Luminous warm pearl starlight
             return [c1, c2, c3];
         }
 
-        // Case 2: 2 distinct colorful tones in artwork
-        if (distinctChromatic.length === 2) {
-            const c1 = formatColor(distinctChromatic[0].hue, Math.max(distinctChromatic[0].sat, 0.55), 0.52);
-            const c2 = formatColor(distinctChromatic[1].hue, Math.max(distinctChromatic[1].sat, 0.55), 0.68);
-            const avgHue = (distinctChromatic[0].hue + distinctChromatic[1].hue) / 2.0;
-            const c3 = formatColor(avgHue, Math.max(distinctChromatic[0].sat, 0.6), 0.80);
-            return [c1, c2, c3];
-        }
+        // Case B: Artwork with colors — Aurora Fusion of 4 Dominants + Ambient Non-Dominants
+        const d1 = dominants[0];
+        const d2 = dominants.length > 1 ? dominants[1] : { r: d1.r, g: d1.g, b: d1.b, h: (d1.h + 0.12) % 1.0, s: d1.s, l: d1.l };
+        const d3 = dominants.length > 2 ? dominants[2] : { r: d2.r, g: d2.g, b: d2.b, h: (d1.h + 0.25) % 1.0, s: d2.s, l: d2.l };
+        const d4 = dominants.length > 3 ? dominants[3] : { r: d3.r, g: d3.g, b: d3.b, h: (d1.h + 0.38) % 1.0, s: d3.s, l: d3.l };
 
-        // Case 3: 1 dominant colorful tone (e.g. Blue logo with black & white background)
-        if (distinctChromatic.length === 1) {
-            const base = distinctChromatic[0];
-            const h = base.hue;
-            const s = Math.max(base.sat, 0.6);
-            // Main color, lighter vibrant tip highlight, deep rich base
-            const c1 = formatColor(h, s, 0.52);
-            const c2 = formatColor(h, Math.max(s * 0.85, 0.4), 0.78);
-            const c3 = formatColor((h + 0.04) % 1.0, s, 0.38);
-            return [c1, c2, c3];
-        }
+        const ambObj = { r: ambR, g: ambG, b: ambB };
 
-        // Case 4: Completely monochrome / black & white cover art
-        const c1 = Qt.rgba(0.95, 0.96, 0.98, 1.0);  // Pure bright white
-        const c2 = Qt.rgba(0.65, 0.70, 0.78, 1.0);  // Cool silver slate
-        const c3 = Qt.rgba(0.25, 0.28, 0.34, 1.0);  // Deep charcoal
+        // 1. Base Glow (c1): Rich foundation blending D1 with ambient warmth
+        const rawBase = mixRgb(d1, ambObj, 0.22);
+        const c1 = tuneAuroraColor(rawBase, 0.65, 0.46);
+
+        // 2. Midwave (c2): Flowing atmosphere blending D2 + D3 + ambient midtones
+        const midDominants = mixRgb(d2, d3, 0.45);
+        const rawMid = mixRgb(midDominants, ambObj, 0.18);
+        const c2 = tuneAuroraColor(rawMid, 0.68, 0.62);
+
+        // 3. Crest Shimmer (c3): Luminous accent highlight on peaks blending D4 + D2 + bright ambient
+        const crestDominants = mixRgb(d4, d2, 0.50);
+        const rawCrest = mixRgb(crestDominants, ambObj, 0.15);
+        const c3 = tuneAuroraColor(rawCrest, 0.58, 0.78);
+
         return [c1, c2, c3];
     }
     readonly property var visualizerColors: (root.useCoverColors && root.coverPalette) ? root.coverPalette : root.themePalette
@@ -328,8 +372,8 @@ AbstractBackgroundWidget {
     ColorQuantizer {
         id: coverQuantizer
         source: root.coverUrl
-        depth: 3
-        rescaleSize: 96
+        depth: 4
+        rescaleSize: 128
     }
 
     VisualizerEngine {
@@ -507,10 +551,12 @@ AbstractBackgroundWidget {
                     anchors.bottom: root.isTop ? undefined : parent.bottom
 
                     property real intensity: pointValue / bars.maxBarHeight
+                    property color barCol1: (root.visualizerColors && root.visualizerColors[0]) ? root.visualizerColors[0] : Appearance.colors.colPrimary
+                    property color barCol2: (root.visualizerColors && root.visualizerColors[1]) ? root.visualizerColors[1] : Appearance.colors.colPrimaryContainer
                     color: Qt.rgba(
-                        Appearance.colors.colPrimary.r * intensity + Appearance.colors.colPrimaryContainer.r * (1 - intensity),
-                        Appearance.colors.colPrimary.g * intensity + Appearance.colors.colPrimaryContainer.g * (1 - intensity),
-                        Appearance.colors.colPrimary.b * intensity + Appearance.colors.colPrimaryContainer.b * (1 - intensity),
+                        barCol1.r * intensity + barCol2.r * (1 - intensity),
+                        barCol1.g * intensity + barCol2.g * (1 - intensity),
+                        barCol1.b * intensity + barCol2.b * (1 - intensity),
                         1
                     )
 
