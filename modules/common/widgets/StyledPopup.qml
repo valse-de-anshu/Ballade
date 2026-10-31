@@ -129,6 +129,11 @@ LazyLoader {
 
         Rectangle {
             id: popupBackground
+            WindowGlass {
+                anchors.fill: parent
+                cardRadius: parent?.radius ?? 0
+                tint: parent?.color ?? 'transparent'
+            }
             readonly property real margin: 8
 
             anchors {

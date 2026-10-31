@@ -77,6 +77,13 @@ Item { // Bar content region
         }
     }
 
+    WindowGlass {
+        anchors.fill: barBackground
+        glassEnabled: barBackground.visible && barBackground.color.a > 0
+        cardRadius: barBackground.radius
+        tint: barBackground.color
+    }
+
     FocusedScrollMouseArea { // Left side | scroll to change brightness
         id: barLeftSideMouseArea
 

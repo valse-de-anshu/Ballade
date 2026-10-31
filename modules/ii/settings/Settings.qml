@@ -82,6 +82,12 @@ Scope {
 
         Rectangle {
             id: settingsWindow
+            WindowGlass {
+                anchors.fill: parent
+                glassEnabled: (parent?.color.a ?? 0) > 0
+                cardRadius: parent?.radius ?? 0
+                tint: parent?.color ?? 'transparent'
+            }
             width: Math.min(parent.width - 80, 1080)
             height: Math.min(parent.height - 80, 780)
             color: Qt.rgba(

@@ -41,6 +41,19 @@ Scope { // Scope
             WlrLayershell.namespace: "quickshell:dock"
             color: "transparent"
 
+            Binding {
+                target: GlassLayers
+                property: "dockZone"
+                value: Math.max(0, dockRoot.exclusiveZone ?? 0)
+                restoreMode: Binding.RestoreBinding
+            }
+            Binding {
+                target: GlassLayers
+                property: "dockEdge"
+                value: "bottom"
+                restoreMode: Binding.RestoreBinding
+            }
+
             implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
 
             mask: Region {
@@ -83,6 +96,12 @@ Scope { // Scope
                         }
                         Rectangle { // The real rectangle that is visible
                             id: dockVisualBackground
+                            WindowGlass {
+                                anchors.fill: parent
+                                glassEnabled: (parent?.color.a ?? 0) > 0
+                                cardRadius: parent?.radius ?? 0
+                                tint: parent?.color ?? 'transparent'
+                            }
                             property real margin: Appearance.sizes.elevationMargin
                             anchors.fill: parent
                             anchors.topMargin: Appearance.sizes.elevationMargin

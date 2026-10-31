@@ -247,6 +247,17 @@ Singleton {
                 property JsonObject widgets: JsonObject {
                     property bool blurWidgets: true
                     property real blurRadius: 32
+                    property JsonObject glass: JsonObject {
+                        property bool enable: false
+                        property string tint: "transparent"
+                        property real tintStrength: 0.3
+                        property real rimWidth: 16
+                        property real pull: 26
+                        property real split: 0.06
+                        property real haze: 3
+                        property real vividness: 1.3
+                        property real sheen: 0.55
+                    }
                     property bool shadow: true
                     property JsonObject clock: JsonObject {
                         property bool enable: true

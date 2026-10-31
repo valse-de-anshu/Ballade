@@ -110,6 +110,11 @@ Scope {
             // Context Menu card
             Rectangle {
                 id: menuCard
+                WindowGlass {
+                    anchors.fill: parent
+                    cardRadius: parent.radius
+                    tint: parent.color
+                }
                 width: 264
                 implicitHeight: menuCol.implicitHeight + 16
                 x: Math.min(Math.max(GlobalStates.desktopMenuX, 12), menuWindow.width - width - 12)

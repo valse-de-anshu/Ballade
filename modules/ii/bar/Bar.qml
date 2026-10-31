@@ -90,6 +90,18 @@ Scope {
 
                 MouseArea  {
                     id: hoverRegion
+                    Binding {
+                        target: GlassLayers
+                        property: "barZone"
+                        value: Math.max(0, barRoot.exclusiveZone)
+                        restoreMode: Binding.RestoreBinding
+                    }
+                    Binding {
+                        target: GlassLayers
+                        property: "barEdge"
+                        value: Config.options.bar.bottom ? "bottom" : "top"
+                        restoreMode: Binding.RestoreBinding
+                    }
                     hoverEnabled: true
                     anchors {
                         fill: parent
@@ -176,6 +188,7 @@ Scope {
                             implicitHeight: Appearance.rounding.screenRounding
                             RoundCorner {
                                 id: leftCorner
+                                glass: true
                                 anchors {
                                     top: parent.top
                                     bottom: parent.bottom
@@ -202,6 +215,7 @@ Scope {
                             }
                             RoundCorner {
                                 id: rightCorner
+                                glass: true
                                 anchors {
                                     right: parent.right
                                     top: !Config.options.bar.bottom ? parent.top : undefined

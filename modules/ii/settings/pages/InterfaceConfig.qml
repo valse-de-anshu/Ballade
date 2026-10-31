@@ -51,6 +51,155 @@ ContentPage {
         spacing: 20
 
         ContentSection {
+            icon: "lens_blur"
+            shape: MaterialShape.Shape.Cookie4Sided
+            title: Translation.tr("Liquid Glass")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "lens_blur"
+                    text: Translation.tr("Glassy UI (Liquid Lens)")
+                    checked: Config.options.background.widgets.glass.enable
+                    onCheckedChanged: {
+                        Config.options.background.widgets.glass.enable = checked
+                    }
+                }
+
+                ConfigComboBox {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "opacity"
+                    text: Translation.tr("Glass tint")
+                    model: [
+                        { displayName: Translation.tr("Transparent"), icon: "opacity", value: "transparent" },
+                        { displayName: Translation.tr("Primary"), icon: "palette", value: "primary" },
+                        { displayName: Translation.tr("Black"), icon: "contrast", value: "black" }
+                    ]
+                    currentValue: Config.options.background.widgets.glass.tint
+                    onSelected: newValue => {
+                        Config.options.background.widgets.glass.tint = newValue
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "colorize"
+                    text: Translation.tr("Tint strength")
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    value: Math.round(Config.options.background.widgets.glass.tintStrength * 100)
+                    usePercentTooltip: true
+                    onMoved: {
+                        Config.options.background.widgets.glass.tintStrength = value / 100
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "crop_free"
+                    text: Translation.tr("Bezel width (px)")
+                    from: 4
+                    to: 40
+                    stepSize: 1
+                    value: Config.options.background.widgets.glass.rimWidth
+                    usePercentTooltip: false
+                    onMoved: {
+                        Config.options.background.widgets.glass.rimWidth = value
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "lens_blur"
+                    text: Translation.tr("Refraction")
+                    from: 0
+                    to: 80
+                    stepSize: 1
+                    value: Config.options.background.widgets.glass.pull
+                    usePercentTooltip: false
+                    onMoved: {
+                        Config.options.background.widgets.glass.pull = value
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "gradient"
+                    text: Translation.tr("Color dispersion")
+                    from: 0
+                    to: 30
+                    stepSize: 1
+                    value: Math.round(Config.options.background.widgets.glass.split * 100)
+                    usePercentTooltip: true
+                    onMoved: {
+                        Config.options.background.widgets.glass.split = value / 100
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "blur_on"
+                    text: Translation.tr("Blur")
+                    from: 1
+                    to: 16
+                    stepSize: 1
+                    value: Config.options.background.widgets.glass.haze
+                    usePercentTooltip: false
+                    onMoved: {
+                        Config.options.background.widgets.glass.haze = value
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "palette"
+                    text: Translation.tr("Vividness")
+                    from: 50
+                    to: 200
+                    stepSize: 5
+                    value: Math.round(Config.options.background.widgets.glass.vividness * 100)
+                    usePercentTooltip: true
+                    onMoved: {
+                        Config.options.background.widgets.glass.vividness = value / 100
+                    }
+                }
+
+                ConfigSlider {
+                    visible: Config.options.background.widgets.glass.enable
+                    buttonIcon: "flare"
+                    text: Translation.tr("Edge shine")
+                    from: 0
+                    to: 150
+                    stepSize: 5
+                    value: Math.round(Config.options.background.widgets.glass.sheen * 100)
+                    usePercentTooltip: true
+                    onMoved: {
+                        Config.options.background.widgets.glass.sheen = value / 100
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    visible: Config.options.background.widgets.glass.enable
+                    Layout.fillWidth: false
+                    Layout.alignment: Qt.AlignRight
+                    Layout.rightMargin: 8
+                    materialIcon: "restart_alt"
+                    mainText: Translation.tr("Reset glass defaults")
+                    onClicked: {
+                        Config.options.background.widgets.glass.tint = "transparent";
+                        Config.options.background.widgets.glass.tintStrength = 0.3;
+                        Config.options.background.widgets.glass.rimWidth = 16;
+                        Config.options.background.widgets.glass.pull = 26;
+                        Config.options.background.widgets.glass.split = 0.06;
+                        Config.options.background.widgets.glass.haze = 3;
+                        Config.options.background.widgets.glass.vividness = 1.3;
+                        Config.options.background.widgets.glass.sheen = 0.55;
+                    }
+                }
+            }
+        }
+
+        ContentSection {
             icon: "splitscreen_left"
             shape: MaterialShape.Shape.Clover4Leaf
             title: Translation.tr("Left Sidebar")

@@ -200,6 +200,11 @@ Scope { // Scope
                 target: sidebarLeftBackground
                 radius: sidebarLeftBackground.radius
             }
+            WindowGlass {
+                anchors.fill: sidebarLeftBackground
+                cardRadius: sidebarLeftBackground.radius
+                tint: sidebarLeftBackground?.color ?? "transparent"
+            }
             Rectangle {
                 id: sidebarLeftBackground
                 anchors.top: parent.top
@@ -279,6 +284,11 @@ Scope { // Scope
                 onActivated: root.toggleDetach()
             }
 
+            WindowGlass {
+                anchors.fill: detachedSidebarBackground
+                cardRadius: detachedSidebarBackground.radius
+                tint: detachedSidebarBackground?.color ?? "transparent"
+            }
             Rectangle {
                 id: detachedSidebarBackground
                 anchors.fill: parent
