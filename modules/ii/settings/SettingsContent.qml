@@ -17,48 +17,52 @@ Item {
     property int currentPage: 0
     property bool showingProfile: false
 
+    function processSettingsPage() {
+        if (GlobalStates.settingsPage === "") return
+        
+        let parts = GlobalStates.settingsPage.split(":");
+        let pageName = parts[0].toLowerCase();
+        let searchTerm = parts.length > 1 ? parts[1] : "";
+
+        // Aliases for backward compatibility
+        if (pageName === "desktop" || pageName === "wallpaper" || pageName === "background") pageName = "appearance";
+        if (pageName === "lock" || pageName === "lockscreen") pageName = "lock screen";
+        if (pageName === "sound" || pageName === "audio") pageName = "sounds";
+        if (pageName === "overlay" || pageName === "crosshair" || pageName === "snip") pageName = "utilities";
+        if (pageName === "custom widgets") pageName = "widgets";
+
+        if (pageName === "profile") {
+            root.showingProfile = true;
+            GlobalStates.settingsPage = "";
+            return;
+        }
+
+        const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName);
+        
+        if (idx >= 0) {
+            root.currentPage = idx;
+            root.showingProfile = false;
+            
+            if (searchTerm !== "") {
+                let loader = pagesRepeater.itemAt(idx);
+                if (loader && loader.item && typeof loader.item.goTo === "function") {
+                    loader.item.goTo(searchTerm);
+                } else if (loader) {
+                    loader.onLoaded.connect(function() {
+                        if (loader.item && typeof loader.item.goTo === "function") {
+                            loader.item.goTo(searchTerm);
+                        }
+                    });
+                }
+            }
+        }
+        GlobalStates.settingsPage = "";
+    }
+
     Connections {
         target: GlobalStates
         function onSettingsPageChanged() {
-            if (GlobalStates.settingsPage === "") return
-            
-            let parts = GlobalStates.settingsPage.split(":");
-            let pageName = parts[0].toLowerCase();
-            let searchTerm = parts.length > 1 ? parts[1] : "";
-
-            // Aliases for backward compatibility
-            if (pageName === "desktop" || pageName === "wallpaper" || pageName === "background") pageName = "appearance";
-            if (pageName === "lock" || pageName === "lockscreen") pageName = "lock screen";
-            if (pageName === "sound" || pageName === "audio") pageName = "sounds";
-            if (pageName === "overlay" || pageName === "crosshair" || pageName === "snip") pageName = "utilities";
-            if (pageName === "custom widgets") pageName = "widgets";
-
-            if (pageName === "profile") {
-                root.showingProfile = true;
-                GlobalStates.settingsPage = "";
-                return;
-            }
-
-            const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName);
-            
-            if (idx >= 0) {
-                root.currentPage = idx;
-                root.showingProfile = false;
-                
-                if (searchTerm !== "") {
-                    let loader = pagesRepeater.itemAt(idx);
-                    if (loader && loader.item && typeof loader.item.goTo === "function") {
-                        loader.item.goTo(searchTerm);
-                    } else if (loader) {
-                        loader.onLoaded.connect(function() {
-                            if (loader.item && typeof loader.item.goTo === "function") {
-                                loader.item.goTo(searchTerm);
-                            }
-                        });
-                    }
-                }
-            }
-            GlobalStates.settingsPage = "";
+            root.processSettingsPage();
         }
     }
 
@@ -96,6 +100,7 @@ Item {
 
     Component.onCompleted: {
         Config.readWriteDelay = 0
+        root.processSettingsPage()
     }
 
     ColumnLayout {

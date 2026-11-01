@@ -127,7 +127,7 @@ ContentPage {
                     buttonIcon: "gradient"
                     text: Translation.tr("Color dispersion")
                     from: 0
-                    to: 30
+                    to: 50
                     stepSize: 1
                     value: Math.round(Config.options.background.widgets.glass.split * 100)
                     usePercentTooltip: true
@@ -190,10 +190,10 @@ ContentPage {
                         Config.options.background.widgets.glass.tintStrength = 0.3;
                         Config.options.background.widgets.glass.rimWidth = 16;
                         Config.options.background.widgets.glass.pull = 26;
-                        Config.options.background.widgets.glass.split = 0.06;
+                        Config.options.background.widgets.glass.split = 0.12;
                         Config.options.background.widgets.glass.haze = 3;
                         Config.options.background.widgets.glass.vividness = 1.3;
-                        Config.options.background.widgets.glass.sheen = 0.55;
+                        Config.options.background.widgets.glass.sheen = 0.65;
                     }
                 }
             }
