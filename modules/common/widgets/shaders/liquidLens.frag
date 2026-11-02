@@ -163,6 +163,18 @@ void main() {
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(vec3(lum), col, vividness);
 
+    // Adaptive contrast protection: ONLY activates when the underlying wallpaper/backdrop
+    // is a hard white / blinding light base (luminance > 0.62).
+    // On dark, colorful, or normal wallpapers (bgLum <= 0.62), hardWhiteGlare is exactly 0.0,
+    // preserving 100% natural, clear, colorful liquid glass with zero forced blackening.
+    float bgLum = dot(col, vec3(0.299, 0.587, 0.114));
+    float hardWhiteGlare = smoothstep(0.62, 0.88, bgLum);
+    if (hardWhiteGlare > 0.0) {
+        // Gently compress hard white glare so white text remains readable
+        col = mix(col, col * 0.35, hardWhiteGlare * 0.65);
+        col = mix(col, vec3(0.08, 0.08, 0.10), hardWhiteGlare * 0.55);
+    }
+
     // Lighting & specular reflection
     vec2 L = normalize(LIGHT);
     float facing = dot(slopeDir, L);
@@ -192,10 +204,19 @@ void main() {
     vec3 rimHighlightColor = mix(vec3(1.0), rainbow, clamp(split * 3.5, 0.0, 0.9));
     col += rimHighlightColor * rimLight;
 
-    float top = 1.0 - smoothstep(0.0, size.y * 0.55, p.y + size.y * 0.5);
+    float top = (1.0 - smoothstep(0.0, size.y * 0.55, p.y + size.y * 0.5));
     col += vec3(0.03 * top * sheen);
 
     col = mix(col, wash.rgb, wash.a);
+
+    // If over a hard white wallpaper, ensure final luminance leaves room for white text
+    if (hardWhiteGlare > 0.0) {
+        float finalLum = dot(col, vec3(0.299, 0.587, 0.114));
+        if (finalLum > 0.35) {
+            float excess = smoothstep(0.35, 0.85, finalLum);
+            col = mix(col, vec3(0.08, 0.08, 0.10), excess * 0.60 * hardWhiteGlare);
+        }
+    }
 
     fragColor = vec4(clamp(col, 0.0, 1.0) * cover, cover) * qt_Opacity;
 }

@@ -27,9 +27,9 @@ StyledPopup {
             Layout.fillWidth: true
             implicitHeight: 88
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.18)
+            color: Appearance.colors.colLayer2
+            border.width: 0
+            border.color: "transparent"
 
             RowLayout {
                 anchors.fill: parent
@@ -99,9 +99,9 @@ StyledPopup {
         Rectangle {
             Layout.fillWidth: true
             radius: Appearance.rounding.normal
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.18)
+            color: Appearance.colors.colLayer2
+            border.width: 0
+            border.color: "transparent"
             implicitHeight: taskColumn.implicitHeight + 20
 
             readonly property var unfinishedTodos: {
@@ -163,7 +163,7 @@ StyledPopup {
                         Layout.fillWidth: true
                         implicitHeight: taskRow.implicitHeight + 10
                         radius: 8
-                        color: Qt.rgba(1, 1, 1, 0.03)
+                        color: Appearance.colors.colLayer1
 
                         RowLayout {
                             id: taskRow

@@ -42,11 +42,12 @@ Item { // Bar content region
         border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.15)
         clip: true
 
-        // Subtle specular highlight gradient across the glass rim
+        // Subtle specular highlight gradient across the glass rim (disabled when glass is active)
         Rectangle {
             anchors.fill: parent
             radius: barBackground.radius
             color: "transparent"
+            visible: !(Config.options.background?.widgets?.glass?.enable ?? false)
             gradient: Gradient {
                 orientation: Gradient.Vertical
                 GradientStop {

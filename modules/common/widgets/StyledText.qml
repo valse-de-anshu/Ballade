@@ -20,6 +20,7 @@ Text {
     }
     color: Appearance?.m3colors.m3onBackground ?? "black"
     linkColor: Appearance?.m3colors.m3primary
+    style: Text.Normal
 
     component Anim: NumberAnimation {
         target: root

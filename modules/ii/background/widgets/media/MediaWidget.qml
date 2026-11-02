@@ -496,7 +496,7 @@ Image {
                             text: root.currentPlayer?.trackTitle ?? Translation.tr("Something")
                             font.pixelSize: Appearance.font.pixelSize.small
                             color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.65
+                            opacity: 0.85
                             elide: Text.ElideRight
                         }
                     }
@@ -656,7 +656,7 @@ Image {
                         }
                         font.pixelSize: Appearance.font.pixelSize.smaller ?? 12 ?? 10
                         color: Appearance.colors.colOnPrimaryContainer
-                        opacity: 0.5
+                        opacity: 0.80
                         font.features: { "tnum": 1 }
                     }
 
@@ -690,7 +690,7 @@ Image {
                         }
                         font.pixelSize: Appearance.font.pixelSize.smaller ?? 12 ?? 10
                         color: Appearance.colors.colOnPrimaryContainer
-                        opacity: 0.5
+                        opacity: 0.80
                         font.features: { "tnum": 1 }
                     }
                 }

@@ -530,7 +530,7 @@ AbstractBackgroundWidget {
                                 font.pixelSize: Appearance.font.pixelSize.smaller
                                 font.weight: Font.Bold
                                 color: Appearance.colors.colOnLayer0
-                                opacity: 0.5
+                                opacity: 0.80
                             }
                         }
                     }

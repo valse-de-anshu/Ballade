@@ -219,13 +219,13 @@ AbstractBackgroundWidget {
                             iconSize: Appearance.font.pixelSize.smaller
                             text: "humidity_mid"
                             color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.55
+                            opacity: 0.80
                         }
                         StyledText {
                             text: Weather.data?.humidity ?? "--"
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.6
+                            opacity: 0.85
                         }
                         Rectangle {
                             Layout.preferredWidth: 1
@@ -238,13 +238,13 @@ AbstractBackgroundWidget {
                             iconSize: Appearance.font.pixelSize.smaller
                             text: "air"
                             color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.55
+                            opacity: 0.80
                         }
                         StyledText {
                             text: Weather.data?.wind ?? "--"
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colOnPrimaryContainer
-                            opacity: 0.6
+                            opacity: 0.85
                         }
                     }
                 }
