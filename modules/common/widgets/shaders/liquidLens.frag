@@ -69,8 +69,8 @@ const float GLASS_IOR = 1.5;
 const vec2 LIGHT = vec2(-0.6, -0.8);
 
 vec3 backdropAt(vec2 px, float lod) {
-    vec2 uv = clamp((px + size * 0.5) / size, vec2(0.002), vec2(0.998));
-    return textureLod(backdrop, uv, lod).rgb;
+    vec2 uv = clamp((px + size * 0.5) / size, vec2(0.015), vec2(0.985));
+    return textureLod(backdrop, uv, max(lod, 0.0)).rgb;
 }
 
 vec3 diffuseAt(vec2 px, float lod, float reach) {
@@ -132,11 +132,13 @@ void main() {
 
     // Body fluid slope smoothly kicks in throughout the glass interior
     vec2 bodySlope = (meniscus + fluidRipples * 0.4) * (pull * 0.045);
+    // Convex liquid meniscus refracts inward toward the interior at the rim,
+    // ensuring rays never sample beyond the card boundary into black texture edges
     float rimWeight = 1.0 - smoothstep(0.0, bezel, depth);
-    vec2 surfaceSlope = outward * edgeSlope + bodySlope * (1.0 - rimWeight * 0.5);
+    vec2 surfaceSlope = -outward * edgeSlope * 0.55 + bodySlope * (1.0 - rimWeight * 0.5);
 
     float slopeMag = length(surfaceSlope);
-    vec2 slopeDir = slopeMag > 1e-4 ? surfaceSlope / slopeMag : vec2(0.0, -1.0);
+    vec2 slopeDir = slopeMag > 1e-4 ? surfaceSlope / slopeMag : vec2(0.0, 1.0);
 
     // Chromatic dispersion spread - active both at the rim and across interior fluid ripples
     float spreadK = split * (0.6 + 2.0 * fall + length(bodySlope) * 3.5);
@@ -183,13 +185,7 @@ void main() {
 
     float hair = exp(-depth / 1.0);
     float wide = exp(-depth / (bezel * 0.5));
-    float rimLight = (hair * (0.2 + 0.75 * lit + 0.25 * away) + wide * 0.14 * lit) * sheen;
-
-    float rimEnv = pow(1.0 - clamp(u, 0.0, 1.0), 2.0);
-    vec3 env = backdropAt(p + outward * bezel * 1.2, min(lod + 2.0, 6.0));
-    col = mix(col, env * 1.1 + 0.03, clamp(rimEnv * 0.35 * (0.4 + 0.6 * lit), 0.0, 0.5));
-
-    col *= 1.0 - 0.14 * wide * away;
+    float rimLight = (hair * (0.25 + 0.75 * lit) + wide * 0.12 * lit) * sheen;
 
     // Optical rainbow caustics & iridescent water sheen
     float rayDeflect = length(shiftR - shiftB);

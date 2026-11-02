@@ -24,6 +24,9 @@ AbstractBackgroundWidget {
         return "full";
     }
     readonly property bool isCompact: sizeMode === "compact"
+    readonly property color subtleBorder: (Config.options?.background?.widgets?.glass?.enable ?? false)
+        ? Qt.rgba(1, 1, 1, 0.10)
+        : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.55)
 
     Connections {
         target: root.configEntry
@@ -434,7 +437,7 @@ AbstractBackgroundWidget {
                             ? Appearance.colors.colLayer3
                             : (goalsModeMa.containsMouse ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.5) : "transparent")
                         border.width: root.sectionMode === "goals" ? 1 : 0
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.5)
+                        border.color: root.subtleBorder
 
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -458,7 +461,7 @@ AbstractBackgroundWidget {
                             ? Appearance.colors.colLayer3
                             : (toolsModeMa.containsMouse ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.5) : "transparent")
                         border.width: root.sectionMode === "general" ? 1 : 0
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.5)
+                        border.color: root.subtleBorder
 
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -482,7 +485,7 @@ AbstractBackgroundWidget {
                             ? Appearance.colors.colLayer3
                             : (wbModeMa.containsMouse ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.5) : "transparent")
                         border.width: root.sectionMode === "wellbeing" ? 1 : 0
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.5)
+                        border.color: root.subtleBorder
 
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -602,7 +605,7 @@ AbstractBackgroundWidget {
                             border.width: 1
                             border.color: isSelected
                                 ? Appearance.colors.colPrimary
-                                : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.50)
+                                : root.subtleBorder
 
                             Behavior on width {
                                 animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
@@ -645,7 +648,7 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                color: root.subtleBorder
                 visible: !root.isCompact && root.sectionMode === "goals"
             }
 
@@ -702,7 +705,7 @@ AbstractBackgroundWidget {
                             radius: Appearance.rounding.full
                             color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                             border.width: 1
-                            border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                            border.color: root.subtleBorder
 
                             RowLayout {
                                 anchors.fill: parent
@@ -725,7 +728,7 @@ AbstractBackgroundWidget {
                                             ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.20)
                                             : "transparent"
                                         border.width: root.stHorizonFilter === modelData.id ? 1 : 0
-                                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.50)
+                                        border.color: root.subtleBorder
 
                                         StyledText {
                                             anchors.centerIn: parent
@@ -755,7 +758,7 @@ AbstractBackgroundWidget {
                             radius: Appearance.rounding.full
                             color: root.stShowDatePicker ? Appearance.colors.colLayer3 : (calStMa.containsMouse ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.5) : ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40))
                             border.width: 1
-                            border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                            border.color: root.subtleBorder
 
                             MaterialSymbol {
                                 anchors.centerIn: parent
@@ -786,7 +789,7 @@ AbstractBackgroundWidget {
                         radius: Appearance.rounding.normal
                         color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                         border.width: 1
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+                        border.color: root.subtleBorder
 
                         ColumnLayout {
                             anchors { fill: parent; margins: 10 }
@@ -801,7 +804,7 @@ AbstractBackgroundWidget {
                                     implicitWidth: 26; implicitHeight: 26; radius: 13
                                     color: calBackBtnMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
                                     border.width: 1
-                                    border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                                    border.color: root.subtleBorder
                                     MaterialSymbol { anchors.centerIn: parent; text: "arrow_back"; iconSize: 14; color: Appearance.colors.colOnLayer1 }
                                     MouseArea {
                                         id: calBackBtnMa
@@ -865,7 +868,7 @@ AbstractBackgroundWidget {
                                 Rectangle {
                                     implicitWidth: 42; implicitHeight: 22; radius: 11
                                     color: calTodayBtnMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
-                                    border.width: 1; border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.55)
+                                    border.width: 1; border.color: root.subtleBorder
                                     StyledText {
                                         anchors.centerIn: parent
                                         text: "Today"
@@ -928,7 +931,7 @@ AbstractBackgroundWidget {
                                                 ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.35)
                                                 : (modelData.currentMonth ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.65) : "transparent"))
                                         border.width: (modelData.dateStr === root.stSelectedDate || modelData.isToday) ? 1 : 0
-                                        border.color: modelData.isToday ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
+                                        border.color: modelData.isToday ? Appearance.colors.colPrimary : root.subtleBorder
 
                                         ColumnLayout {
                                             anchors.centerIn: parent
@@ -980,7 +983,7 @@ AbstractBackgroundWidget {
                         radius: Appearance.rounding.normal
                         color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                         border.width: 1
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+                        border.color: root.subtleBorder
 
                         ColumnLayout {
                             id: journalSummaryCol
@@ -1052,7 +1055,7 @@ AbstractBackgroundWidget {
                         radius: Appearance.rounding.normal
                         color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                         border.width: 1
-                        border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+                        border.color: root.subtleBorder
 
                         ColumnLayout {
                             anchors { fill: parent; margins: 10 }
@@ -1067,7 +1070,7 @@ AbstractBackgroundWidget {
                                     implicitWidth: 26; implicitHeight: 26; radius: 13
                                     color: wbAppBackBtnMa.containsMouse ? Appearance.colors.colLayer3 : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
                                     border.width: 1
-                                    border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                                    border.color: root.subtleBorder
                                     MaterialSymbol { anchors.centerIn: parent; text: "arrow_back"; iconSize: 14; color: Appearance.colors.colOnLayer1 }
                                     MouseArea {
                                         id: wbAppBackBtnMa
@@ -1150,7 +1153,7 @@ AbstractBackgroundWidget {
                                             radius: Appearance.rounding.small
                                             color: ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
                                             border.width: 1
-                                            border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.70)
+                                            border.color: root.subtleBorder
 
                                             RowLayout {
                                                 id: titleRow
@@ -1248,7 +1251,7 @@ AbstractBackgroundWidget {
                                         ? ColorUtils.transparentize(Appearance.colors.colLayer3, 0.40)
                                         : ColorUtils.transparentize(Appearance.colors.colLayer2, 0.60)
                                     border.width: 1
-                                    border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.70)
+                                    border.color: root.subtleBorder
 
                                     RowLayout {
                                         anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
@@ -1298,7 +1301,7 @@ AbstractBackgroundWidget {
                                                 Layout.fillWidth: true
                                                 implicitHeight: 3
                                                 radius: 1.5
-                                                color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.75)
+                                                color: root.subtleBorder
 
                                                 Rectangle {
                                                     width: Math.round(parent.width * (Math.min(100, modelData.percent) / 100))
@@ -1525,7 +1528,7 @@ AbstractBackgroundWidget {
                                             : ColorUtils.transparentize(Appearance.colors.colLayer2, 0.60))
                                     border.width: 1
                                     border.color: horizonSection.isExpanded
-                                        ? ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.40)
+                                        ? root.subtleBorder
                                         : "transparent"
 
                                     Behavior on color {
@@ -1567,7 +1570,7 @@ AbstractBackgroundWidget {
                                             radius: Appearance.rounding.full
                                             color: ColorUtils.transparentize(Appearance.colors.colLayer3, 0.50)
                                             border.width: 1
-                                            border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.55)
+                                            border.color: root.subtleBorder
 
                                             StyledText {
                                                 id: countBadgeText
@@ -1618,7 +1621,7 @@ AbstractBackgroundWidget {
                                                 radius: Appearance.rounding.small
                                                 color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                                                 border.width: 1
-                                                border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+                                                border.color: root.subtleBorder
 
                                                 RowLayout {
                                                     id: goalItemContentRow
@@ -1634,7 +1637,7 @@ AbstractBackgroundWidget {
                                                         border.width: 1.5
                                                         border.color: modelData.completed
                                                             ? Appearance.colors.colPrimary
-                                                            : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.40)
+                                                            : root.subtleBorder
                                                         Behavior on border.color {
                                                             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                                                         }
@@ -1775,7 +1778,7 @@ AbstractBackgroundWidget {
                                                 radius: Appearance.rounding.small
                                                 color: Appearance.colors.colLayer3
                                                 border.width: 1
-                                                border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.50)
+                                                border.color: root.subtleBorder
                                                 clip: true
                                                 visible: implicitHeight > 0
 
@@ -1873,7 +1876,7 @@ AbstractBackgroundWidget {
                                                             radius: Appearance.rounding.small
                                                             color: Appearance.colors.colLayer2
                                                             border.width: 1
-                                                            border.color: customDateField.activeFocus ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                                                            border.color: customDateField.activeFocus ? Appearance.colors.colPrimary : root.subtleBorder
 
                                                             TextField {
                                                                 id: customDateField
@@ -1933,7 +1936,7 @@ AbstractBackgroundWidget {
                                         border.width: 1
                                         border.color: inlineField.activeFocus
                                             ? Appearance.colors.colPrimary
-                                            : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                                            : root.subtleBorder
 
                                         RowLayout {
                                             anchors { fill: parent; leftMargin: 10; rightMargin: 8 }
@@ -2013,7 +2016,7 @@ AbstractBackgroundWidget {
                     radius: 16
                     color: backBtnMa.containsMouse ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25) : ColorUtils.transparentize(Appearance.colors.colLayer3, 0.35)
                     border.width: 1
-                    border.color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.50)
+                    border.color: root.subtleBorder
 
                     MaterialSymbol {
                         anchors.centerIn: parent
@@ -2051,7 +2054,7 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.60)
+                color: root.subtleBorder
             }
 
             // ── B. FULL MARKDOWN NOTES CANVAS (.md) ─────────────
@@ -2644,7 +2647,7 @@ AbstractBackgroundWidget {
                     radius: Appearance.rounding.normal
                     color: ColorUtils.transparentize(Appearance.colors.colLayer2, 0.40)
                     border.width: 1
-                    border.color: todoTaskInput.activeFocus ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.70)
+                    border.color: todoTaskInput.activeFocus ? Appearance.colors.colPrimary : root.subtleBorder
 
                     RowLayout {
                         anchors { fill: parent; leftMargin: 10; rightMargin: 8 }
@@ -2744,7 +2747,7 @@ AbstractBackgroundWidget {
                             border.width: 1
                             border.color: root.todoFilter === modelData.id
                                 ? Appearance.colors.colPrimary
-                                : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.70)
+                                : root.subtleBorder
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -2851,8 +2854,8 @@ AbstractBackgroundWidget {
                                     : ColorUtils.transparentize(Appearance.colors.colLayer2, 0.60)
                                 border.width: 1
                                 border.color: modelData.done
-                                    ? ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.85)
-                                    : ColorUtils.transparentize(Appearance.colors.colOutlineVariant, 0.65)
+                                    ? root.subtleBorder
+                                    : root.subtleBorder
 
                                 RowLayout {
                                     anchors { fill: parent; leftMargin: 10; rightMargin: 8 }
