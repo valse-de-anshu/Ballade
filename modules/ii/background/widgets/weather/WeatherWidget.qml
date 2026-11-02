@@ -154,15 +154,13 @@ AbstractBackgroundWidget {
                 Rectangle {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 120
-                    radius: Appearance.rounding.verylarge ?? 30
-                    color: Appearance.colors.colPrimary
-
-                    Rectangle {
-                        width: parent.radius
-                        height: parent.height
-                        anchors.right: parent.right
-                        color: parent.color
-                    }
+                    topLeftRadius: card.radius
+                    bottomLeftRadius: card.radius
+                    topRightRadius: 0
+                    bottomRightRadius: 0
+                    color: (Config.options?.background?.widgets?.glass?.enable ?? false)
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.18)
+                        : Appearance.colors.colPrimary
 
                     ColumnLayout {
                         anchors.centerIn: parent
@@ -172,15 +170,19 @@ AbstractBackgroundWidget {
                             Layout.alignment: Qt.AlignHCenter
                             iconSize: 46
                             text: Icons.getWeatherIcon(Weather.data.wCode) ?? "cloud"
-                            color: Appearance.colors.colOnPrimary
+                            color: (Config.options?.background?.widgets?.glass?.enable ?? false)
+                                ? Appearance.colors.colPrimary
+                                : Appearance.colors.colOnPrimary
                         }
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             text: Weather.data?.temp ?? "--°"
                             font.pixelSize: Appearance.font.pixelSize.huge
                             font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimary
-                            opacity: 0.7
+                            color: (Config.options?.background?.widgets?.glass?.enable ?? false)
+                                ? Appearance.colors.colPrimary
+                                : Appearance.colors.colOnPrimary
+                            opacity: 0.95
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -51,17 +52,17 @@ AbstractBackgroundWidget {
     ]
 
     property list<var> sizeOptions: [
-        { displayName: "No Limit", value: 0 },
-        { displayName: "50 KB",    value: 50 * 1024 },
-        { displayName: "200 KB",   value: 200 * 1024 },
-        { displayName: "500 KB",   value: 500 * 1024 },
-        { displayName: "1 MB",     value: 1024 * 1024 },
-        { displayName: "2 MB",     value: 2 * 1024 * 1024 },
-        { displayName: "5 MB",     value: 5 * 1024 * 1024 },
-        { displayName: "10 MB",    value: 10 * 1024 * 1024 },
-        { displayName: "25 MB",    value: 25 * 1024 * 1024 },
-        { displayName: "50 MB",    value: 50 * 1024 * 1024 },
-        { displayName: "Custom...", value: -1 }
+        { displayName: "No Limit",  value: 0 },
+        { displayName: "Custom...", value: -1 },
+        { displayName: "50 KB",     value: 50 * 1024 },
+        { displayName: "200 KB",    value: 200 * 1024 },
+        { displayName: "500 KB",    value: 500 * 1024 },
+        { displayName: "1 MB",      value: 1024 * 1024 },
+        { displayName: "2 MB",      value: 2 * 1024 * 1024 },
+        { displayName: "5 MB",      value: 5 * 1024 * 1024 },
+        { displayName: "10 MB",     value: 10 * 1024 * 1024 },
+        { displayName: "25 MB",     value: 25 * 1024 * 1024 },
+        { displayName: "50 MB",     value: 50 * 1024 * 1024 }
     ]
 
     property string selectedFormat: "webp"
@@ -90,6 +91,29 @@ AbstractBackgroundWidget {
     property string customNum: "500"
     property string customUnit: "KB" // "KB" or "MB"
 
+    property bool isUserTyping: false
+    onIsUserTypingChanged: {
+        GlobalStates.desktopWidgetKeyboardFocus = isUserTyping
+    }
+    Component.onDestruction: {
+        if (root.isUserTyping) {
+            GlobalStates.desktopWidgetKeyboardFocus = false
+        }
+    }
+
+    function activateCustomInput() {
+        root.customLimitActive = true
+        root.applyCustomLimit()
+        root.isUserTyping = true
+        GlobalStates.desktopWidgetKeyboardFocus = true
+        Qt.callLater(() => {
+            if (numInput) {
+                numInput.forceActiveFocus()
+                numInput.selectAll()
+            }
+        })
+    }
+
     // Staging and execution states
     property var stagedFiles: []
     property string detectedFormat: ""
@@ -117,10 +141,11 @@ AbstractBackgroundWidget {
     }
 
     function applyCustomLimit() {
+        if (!root.customLimitActive) return
         var raw = parseFloat(root.customNum)
         if (isNaN(raw) || raw <= 0) {
             root.selectedSizeLimit = 0
-            root.selectedSizeLabel = "No Limit"
+            root.selectedSizeLabel = "Custom"
             return
         }
         if (root.customUnit === "MB") {
@@ -139,6 +164,9 @@ AbstractBackgroundWidget {
         root.stagedFileSize = 0
         root.dropStatus = "idle"
         root.statusMessage = ""
+        root.isUserTyping = false
+        if (numInput) numInput.focus = false
+        GlobalStates.desktopWidgetKeyboardFocus = false
     }
 
     function stageFiles(urls) {
@@ -150,7 +178,7 @@ AbstractBackgroundWidget {
             try {
                 unquoted = decodeURIComponent(unquoted)
             } catch (e) {}
-            var cleanPath = unquoted.trim()
+            var cleanPath = unquoted.trim().replace(/^['"]|['"]$/g, "")
             var ext = cleanPath.split(".").pop().toLowerCase()
             if (root.acceptedExtensions.indexOf(ext) !== -1)
                 valid.push(cleanPath)
@@ -191,16 +219,20 @@ AbstractBackgroundWidget {
             var outPdf = valid[0].replace(/\.[^/.]+$/, "") + (valid.length > 1 ? "_merged" : "_converted") + tag + ".pdf"
             batchMaker.outputPath = outPdf
             batchMaker.command = ["python3", root.scriptPath, "--pdf", outPdf, "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = false
             batchMaker.running = true
             return
         }
 
-        if (root.selectedFormat === "animate" || (root.selectedFormat === "mp4" && valid.length > 1)) {
+        if (root.selectedFormat === "animate" || (valid.length > 1 && (root.selectedFormat === "mp4" || root.selectedFormat === "gif"))) {
             root.batchPaths = valid
+            const isGif = root.selectedFormat === "gif"
+            const outExt = isGif ? "gif" : "mp4"
             root.statusMessage = "Compiling " + valid.length + " frames (" + root.selectedFps + " FPS)..."
-            var outAnim = valid[0].replace(/\.[^/.]+$/, "") + "_animated" + tag + ".mp4"
+            var outAnim = valid[0].replace(/\.[^/.]+$/, "") + "_animated" + tag + "." + outExt
             batchMaker.outputPath = outAnim
             batchMaker.command = ["python3", root.scriptPath, "--animate", outAnim, "--fps", root.selectedFps.toString(), "--max-bytes", root.selectedSizeLimit.toString()].concat(valid)
+            batchMaker.running = false
             batchMaker.running = true
             return
         }
@@ -212,6 +244,7 @@ AbstractBackgroundWidget {
         converter.inputPath = valid[0]
         const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
         converter.outputPath = valid[0].replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
+        converter.running = false
         converter.running = true
     }
 
@@ -219,6 +252,12 @@ AbstractBackgroundWidget {
         id: fileChooserDialog
         title: Translation.tr("Select Media or Image Files to Convert")
         fileMode: FileDialog.OpenFiles
+        nameFilters: [
+            "Media files (*.png *.jpg *.jpeg *.webp *.avif *.gif *.mp4 *.webm *.mkv *.mov *.avi *.bmp *.tiff *.tif *.ico *.heic *.heif *.jxl *.psd *.ppm *.tga)",
+            "Images (*.png *.jpg *.jpeg *.webp *.avif *.gif *.bmp *.tiff *.tif *.ico *.heic *.heif *.jxl *.psd *.ppm *.tga)",
+            "Videos (*.mp4 *.webm *.mkv *.mov *.avi *.flv)",
+            "All files (*)"
+        ]
         onAccepted: {
             if (selectedFiles && selectedFiles.length > 0) {
                 root.stageFiles(selectedFiles)
@@ -240,7 +279,14 @@ AbstractBackgroundWidget {
 
     Process {
         id: pasteProc
-        command: ["bash", "-c", "wl-paste -t text/uri-list 2>/dev/null || wl-paste 2>/dev/null"]
+        command: [
+            "bash", "-c",
+            "if wl-paste -l 2>/dev/null | grep -q '^image/'; then " +
+            "  mkdir -p /tmp/quickshell/media && out=\"/tmp/quickshell/media/clipboard_$(date +%s%N).png\" && wl-paste > \"$out\" && echo \"$out\"; " +
+            "else " +
+            "  wl-paste -t text/uri-list 2>/dev/null || wl-paste 2>/dev/null; " +
+            "fi"
+        ]
         stdout: StdioCollector {
             onDataChanged: {
                 let t = text.trim()
@@ -355,6 +401,7 @@ AbstractBackgroundWidget {
         const tag = root.selectedSizeLimit > 0 ? ("_" + root.selectedSizeLabel.replace(/\s+/g, "").toLowerCase()) : ""
         const outExt = root.selectedFormat === "animate" ? "mp4" : root.selectedFormat
         converter.outputPath = next.replace(/\.[^/.]+$/, "") + tag + "_converted." + outExt
+        converter.running = false
         converter.running = true
     }
 
@@ -693,7 +740,11 @@ AbstractBackgroundWidget {
                     textRole: "displayName"
                     valueRole: "value"
                     currentIndex: {
-                        if (root.customLimitActive) return model.length - 1
+                        if (root.customLimitActive) {
+                            for (var j = 0; j < model.length; j++) {
+                                if (model[j].value === -1) return j
+                            }
+                        }
                         for (var i = 0; i < model.length; i++) {
                             if (model[i].value === root.selectedSizeLimit) return i
                         }
@@ -701,12 +752,14 @@ AbstractBackgroundWidget {
                     }
                     onActivated: (index) => {
                         if (model[index].value === -1) {
-                            root.customLimitActive = true
-                            root.applyCustomLimit()
+                            root.activateCustomInput()
                         } else {
                             root.customLimitActive = false
                             root.selectedSizeLimit = model[index].value
                             root.selectedSizeLabel = model[index].displayName
+                            root.isUserTyping = false
+                            if (numInput) numInput.focus = false
+                            GlobalStates.desktopWidgetKeyboardFocus = false
                         }
                     }
                 }
@@ -726,6 +779,18 @@ AbstractBackgroundWidget {
                         border.width: numInput.activeFocus ? 1 : 0
                         border.color: numInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
 
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.IBeamCursor
+                            onClicked: {
+                                root.isUserTyping = true
+                                GlobalStates.desktopWidgetKeyboardFocus = true
+                                Qt.callLater(() => {
+                                    numInput.forceActiveFocus()
+                                })
+                            }
+                        }
+
                         TextInput {
                             id: numInput
                             anchors.fill: parent
@@ -737,10 +802,22 @@ AbstractBackgroundWidget {
                             font.family: Appearance.font.family.main
                             selectByMouse: true
                             text: root.customNum
-                            validator: DoubleValidator { bottom: 0.1; top: 9999.0; decimals: 2 }
+                            validator: RegularExpressionValidator {
+                                regularExpression: /^[0-9]*\.?[0-9]{0,2}$/
+                            }
+                            inputMethodHints: Qt.ImhFormattedNumbersOnly
                             onTextChanged: {
                                 root.customNum = text
                                 root.applyCustomLimit()
+                            }
+                            onAccepted: {
+                                root.applyCustomLimit()
+                                root.isUserTyping = false
+                                numInput.focus = false
+                                GlobalStates.desktopWidgetKeyboardFocus = false
+                            }
+                            onActiveFocusChanged: {
+                                root.isUserTyping = activeFocus
                             }
                         }
                     }
@@ -789,6 +866,9 @@ AbstractBackgroundWidget {
                                 root.customLimitActive = false
                                 root.selectedSizeLimit = 0
                                 root.selectedSizeLabel = "No Limit"
+                                root.isUserTyping = false
+                                numInput.focus = false
+                                GlobalStates.desktopWidgetKeyboardFocus = false
                             }
                         }
                     }
@@ -884,6 +964,9 @@ AbstractBackgroundWidget {
                     hoverEnabled: true
                     cursorShape: root.stagedFiles.length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onClicked: {
+                        root.isUserTyping = false
+                        if (numInput) numInput.focus = false
+                        GlobalStates.desktopWidgetKeyboardFocus = false
                         if (root.dropStatus === "converting") return
                         if (root.stagedFiles.length > 0) {
                             root.startBake()

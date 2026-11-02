@@ -199,7 +199,7 @@ ComboBox {
         contentItem: StyledListView {
             id: listView
             clip: true
-            implicitHeight: contentHeight
+            implicitHeight: Math.min(contentHeight, 300 - (root.popup.topPadding + root.popup.bottomPadding))
             spacing: 2
             model: root.popup.visible ? root.delegateModel : null
             currentIndex: root.highlightedIndex
