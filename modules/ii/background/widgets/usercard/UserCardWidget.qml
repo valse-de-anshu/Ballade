@@ -115,6 +115,12 @@ AbstractBackgroundWidget {
         radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
         color: "transparent"
 
+        WindowGlass {
+            anchors.fill: parent
+            cardRadius: card.radius
+            glassEnabled: (Config.options?.background?.widgets?.glass?.enable ?? false)
+        }
+
         Loader {
             anchors.fill: parent
             sourceComponent: root.sizeMode === "2x3" ? twoByThreeContent : twoByTwoContent
@@ -186,7 +192,7 @@ AbstractBackgroundWidget {
                 FastBlur {
                     id: blurredBg
                     anchors.fill: bgImage
-                    visible: !Config.options.background.widgets.blurWidgets 
+                    visible: !Config.options.background.widgets.blurWidgets && !(Config.options.background.widgets.glass.enable ?? false)
                     source: bgImage
                     radius: 48
                     layer.enabled: true
@@ -415,12 +421,13 @@ AbstractBackgroundWidget {
                     id: cardBg
                     anchors.fill: parent
                     radius: (Appearance.rounding && Appearance.rounding.verylarge) ? Appearance.rounding.verylarge : 30
-                    color: Qt.rgba(
+                    property color fill: Qt.rgba(
                         Appearance.colors.colLayer0Base.r,
                         Appearance.colors.colLayer0Base.g,
                         Appearance.colors.colLayer0Base.b,
                         0.12
                     )
+                    color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
                     border.width: 0
                     border.color: "transparent"
                     clip: true

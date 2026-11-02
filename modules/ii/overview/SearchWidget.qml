@@ -123,14 +123,22 @@ Item { // Wrapper
         implicitWidth: columnLayout.implicitWidth
         implicitHeight: columnLayout.implicitHeight
         radius: searchBar.height / 2 + searchBar.verticalPadding
-        color: Qt.rgba(
+        property color fill: Qt.rgba(
             Appearance.colors.colLayer0Base.r,
             Appearance.colors.colLayer0Base.g,
             Appearance.colors.colLayer0Base.b,
             0.28
         )
+        color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
+
+        WindowGlass {
+            anchors.fill: parent
+            glassEnabled: searchWidgetContent.visible && searchWidgetContent.fill.a > 0
+            cardRadius: searchWidgetContent.radius
+            tint: searchWidgetContent.fill
+        }
 
         Behavior on implicitHeight {
             id: searchHeightBehavior

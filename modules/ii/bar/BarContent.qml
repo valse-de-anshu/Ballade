@@ -31,12 +31,13 @@ Item { // Bar content region
         }
         visible: Config.options.bar.showBackground
         radius: Config.options.bar.cornerStyle === 1 ? Appearance.rounding.windowRounding : 0
-        color: Qt.rgba(
+        property color fill: Qt.rgba(
             root.colLayer0Base.r,
             root.colLayer0Base.g,
             root.colLayer0Base.b,
             0.15
         )
+        color: (Config.options.background.widgets.glass.enable && fill.a > 0) ? "transparent" : fill
         border.width: Config.options.bar.cornerStyle === 1 ? 1 : 0
         border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.40), 0.15)
         clip: true
@@ -77,11 +78,19 @@ Item { // Bar content region
         }
     }
 
+    readonly property bool glassHug: Config.options.bar.cornerStyle === 0 && Config.options.background.widgets.glass.enable && Config.options.bar.showBackground
+    readonly property real hugFlare: root.glassHug ? Appearance.rounding.screenRounding : 0
+
     WindowGlass {
         anchors.fill: barBackground
-        glassEnabled: barBackground.visible && barBackground.color.a > 0
+        anchors.topMargin: Config.options.bar.bottom ? -root.hugFlare : 0
+        anchors.bottomMargin: Config.options.bar.bottom ? 0 : -root.hugFlare
+        hangLeft: root.hugFlare
+        hangRight: root.hugFlare
+        edge: Config.options.bar.bottom ? 1 : 0
+        glassEnabled: barBackground.visible && barBackground.fill.a > 0
         cardRadius: barBackground.radius
-        tint: barBackground.color
+        tint: barBackground.fill
     }
 
     FocusedScrollMouseArea { // Left side | scroll to change brightness

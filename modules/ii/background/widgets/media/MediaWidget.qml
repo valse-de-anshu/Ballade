@@ -93,15 +93,23 @@ AbstractBackgroundWidget {
             return root.artSize + 28 + 36 + (root.showLyrics ? 264 : 0)
         }
         radius: Appearance.rounding?.verylarge ?? 30
-        color: Qt.rgba(
+        property color fill: Qt.rgba(
             Appearance.colors.colLayer0Base.r,
             Appearance.colors.colLayer0Base.g,
             Appearance.colors.colLayer0Base.b,
             0.12
         )
+        color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
         border.width: 0
         border.color: "transparent"
         clip: true
+
+        WindowGlass {
+            anchors.fill: parent
+            glassEnabled: (Config.options?.background?.widgets?.glass?.enable ?? false)
+            cardRadius: card.radius
+            tint: card.fill
+        }
 
         layer.enabled: true
         layer.effect: OpacityMask {
@@ -139,7 +147,7 @@ AbstractBackgroundWidget {
                     antialiasing: true
                     sourceSize.width: 264
                     sourceSize.height: 264
-                    visible: opacity > 0
+                    visible: opacity > 0 && !(Config.options?.background?.widgets?.glass?.enable ?? false)
                     opacity: root.displayedArtFilePath !== "" ? 1 : 0
                     Behavior on opacity {
                         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
@@ -211,7 +219,7 @@ AbstractBackgroundWidget {
                     cache: false
                     antialiasing: true
                     asynchronous: true
-                    visible: opacity > 0
+                    visible: opacity > 0 && !(Config.options?.background?.widgets?.glass?.enable ?? false)
                     opacity: root.displayedArtFilePath !== "" ? 1 : 0
                     Behavior on opacity {
                         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }

@@ -80,14 +80,22 @@ Item {
         implicitWidth: workspaceGrid.implicitWidth + padding * 2
         implicitHeight: workspaceGrid.implicitHeight + padding * 2
         radius: root.largeWorkspaceRadius + padding
-        color: Qt.rgba(
+        property color fill: Qt.rgba(
             Appearance.colors.colLayer0Base.r,
             Appearance.colors.colLayer0Base.g,
             Appearance.colors.colLayer0Base.b,
             0.22
         )
+        color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
+
+        WindowGlass {
+            anchors.fill: parent
+            glassEnabled: overviewBackground.visible && overviewBackground.fill.a > 0
+            cardRadius: overviewBackground.radius
+            tint: overviewBackground.fill
+        }
 
         Grid { // Workspaces
             id: workspaceGrid
@@ -111,7 +119,7 @@ Item {
                         Appearance.colors.colSurfaceContainerLow.r,
                         Appearance.colors.colSurfaceContainerLow.g,
                         Appearance.colors.colSurfaceContainerLow.b,
-                        0.40
+                        (Config.options?.background?.widgets?.glass?.enable ?? false) ? 0.16 : 0.40
                     )
                     property color hoveredWorkspaceColor: ColorUtils.mix(defaultWorkspaceColor, Appearance.colors.colLayer1Hover, 0.1)
                     property color hoveredBorderColor: Appearance.colors.colLayer2Hover

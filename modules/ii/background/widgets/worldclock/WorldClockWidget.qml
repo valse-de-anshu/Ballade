@@ -86,16 +86,24 @@ AbstractBackgroundWidget {
         Rectangle {
             id: contentRect
             anchors.fill: parent
-            color: sizeMode === "4x1" ? "transparent" : Qt.rgba(
+            property color fill: Qt.rgba(
                 Appearance.colors.colLayer0Base.r,
                 Appearance.colors.colLayer0Base.g,
                 Appearance.colors.colLayer0Base.b,
                 0.12
             )
+            color: sizeMode === "4x1" || (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
             border.width: 0
             border.color: "transparent"
             radius: Appearance.rounding?.verylarge ?? 30
             clip: true
+
+            WindowGlass {
+                anchors.fill: parent
+                cardRadius: contentRect.radius
+                tint: contentRect.fill
+                glassEnabled: sizeMode !== "4x1" && (Config.options?.background?.widgets?.glass?.enable ?? false)
+            }
 
             // 2x2
             ColumnLayout {

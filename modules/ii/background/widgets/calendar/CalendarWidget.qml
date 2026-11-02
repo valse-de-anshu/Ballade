@@ -401,15 +401,23 @@ AbstractBackgroundWidget {
                       : root.sizeMode === "1x2" ? root.cardHeight
                       : 350
         radius: Appearance.rounding?.verylarge ?? 30
-        color: Qt.rgba(
+        property color fill: Qt.rgba(
             Appearance.colors.colLayer0Base.r,
             Appearance.colors.colLayer0Base.g,
             Appearance.colors.colLayer0Base.b,
             0.12
         )
+        color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
         border.width: 0
         border.color: "transparent"
         clip: true
+
+        WindowGlass {
+            anchors.fill: parent
+            cardRadius: card.radius
+            tint: card.fill
+            glassEnabled: (Config.options?.background?.widgets?.glass?.enable ?? false)
+        }
 
         Behavior on implicitHeight {
             animation: Appearance.animation.elementResize.numberAnimation.createObject(this)
