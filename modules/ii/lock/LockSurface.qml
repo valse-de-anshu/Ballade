@@ -11,21 +11,10 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.common.panels.lock
-import qs.modules.ii.bar as Bar
 import Quickshell
-import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
 import qs.modules.ii.background.widgets
-import qs.modules.ii.background.widgets.clock
-import qs.modules.ii.background.widgets.weather
-import qs.modules.ii.background.widgets.media
-import qs.modules.ii.background.widgets.resources
 import qs.modules.ii.background.widgets.visualizer
-import qs.modules.ii.background.widgets.calendar
-import qs.modules.ii.background.widgets.worldclock
-import qs.modules.ii.background.widgets.usercard
-import qs.modules.ii.background.widgets.goals
-import qs.modules.ii.background.widgets.images
 import qs.modules.common.widgets.widgetCanvas
 
 Item {
@@ -35,55 +24,11 @@ Item {
     property bool active: false
     property bool showInputField: active || context.currentText.length > 0
     readonly property bool requirePasswordToPower: Config.options.lock?.security?.requirePasswordToPower ?? false
-    readonly property bool showWidgets: Config.options.lock?.showWidgets ?? false
-
-    function getShapeFromName(name) {
-        switch (name) {
-            case "Circle":        return MaterialShape.Shape.Circle
-            case "Square":        return MaterialShape.Shape.Square
-            case "Slanted":       return MaterialShape.Shape.Slanted
-            case "Arch":          return MaterialShape.Shape.Arch
-            case "Fan":           return MaterialShape.Shape.Fan
-            case "Arrow":         return MaterialShape.Shape.Arrow
-            case "SemiCircle":    return MaterialShape.Shape.SemiCircle
-            case "Oval":          return MaterialShape.Shape.Oval
-            case "Pill":          return MaterialShape.Shape.Pill
-            case "Triangle":      return MaterialShape.Shape.Triangle
-            case "Diamond":       return MaterialShape.Shape.Diamond
-            case "ClamShell":     return MaterialShape.Shape.ClamShell
-            case "Pentagon":      return MaterialShape.Shape.Pentagon
-            case "Gem":           return MaterialShape.Shape.Gem
-            case "Sunny":         return MaterialShape.Shape.Sunny
-            case "VerySunny":     return MaterialShape.Shape.VerySunny
-            case "Cookie4Sided":  return MaterialShape.Shape.Cookie4Sided
-            case "Cookie6Sided":  return MaterialShape.Shape.Cookie6Sided
-            case "Cookie7Sided":  return MaterialShape.Shape.Cookie7Sided
-            case "Cookie9Sided":  return MaterialShape.Shape.Cookie9Sided
-            case "Cookie12Sided": return MaterialShape.Shape.Cookie12Sided
-            case "Ghostish":      return MaterialShape.Shape.Ghostish
-            case "Clover4Leaf":   return MaterialShape.Shape.Clover4Leaf
-            case "Clover8Leaf":   return MaterialShape.Shape.Clover8Leaf
-            case "Burst":         return MaterialShape.Shape.Burst
-            case "SoftBurst":     return MaterialShape.Shape.SoftBurst
-            case "Boom":          return MaterialShape.Shape.Boom
-            case "SoftBoom":      return MaterialShape.Shape.SoftBoom
-            case "Flower":        return MaterialShape.Shape.Flower
-            case "Puffy":         return MaterialShape.Shape.Puffy
-            case "PuffyDiamond":  return MaterialShape.Shape.PuffyDiamond
-            case "PixelCircle":   return MaterialShape.Shape.PixelCircle
-            case "PixelTriangle": return MaterialShape.Shape.PixelTriangle
-            case "Bun":           return MaterialShape.Shape.Bun
-            case "Heart":         return MaterialShape.Shape.Heart
-            default:              return MaterialShape.Shape.Cookie7Sided
-        }
-    }
 
     readonly property string lockWallpaperSource: {
-        if (Config.options.background.lockWall && Config.options.background.lockWall !== "") {
-            let p = Config.options.background.lockWall;
-            return p.startsWith("file://") ? p : "file://" + p;
-        }
-        let wPath = Wallpapers.confirmedPath || Appearance.effectiveWallpaperImagePath;
+        let p = Config.options.background.lockWall;
+        if (p && p !== "") return p.startsWith("file://") ? p : "file://" + p;
+        let wPath = Wallpapers.confirmedPath || Appearance.effectiveWallpaperImagePath || Config.options.background.wallpaperPath;
         if (!wPath) return "";
         return wPath.startsWith("file://") ? wPath : "file://" + wPath;
     }
@@ -104,7 +49,7 @@ Item {
             anchors.fill: parent
             source: root.lockWallpaperSource
             fillMode: Image.PreserveAspectCrop
-            asynchronous: true
+            asynchronous: false
             cache: true
         }
 
@@ -113,52 +58,18 @@ Item {
             anchors.fill: parent
             source: lockWallImg
             radius: (Config.options.lock.blur && Config.options.lock.blur.enable)
-                ? Math.min(Config.options.lock.blur.radius ?? 24, 36)
+                ? Math.min(Config.options.lock.blur.radius ?? 16, 24)
                 : 0
             visible: (Config.options.lock.blur && Config.options.lock.blur.enable)
         }
 
-        // Soft, radiant vignette for depth
+        // Soft natural vignette for subtle depth
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.25) }
-                GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.04) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.38) }
-            }
-        }
-
-        Loader {
-            anchors.fill: parent
-            active: Config.options.background.centeredWallpaper
-            visible: active
-            sourceComponent: Item {
-                anchors.fill: parent
-
-                MaterialShape {
-                    id: lockCenteredShape
-                    anchors.centerIn: parent
-                    width: Config.options.background.centeredWallpaperSize
-                    height: Config.options.background.centeredWallpaperSize
-                    color: "transparent"
-                    shape: root.getShapeFromName(Config.options.background.centeredWallpaperShape)
-
-                    layer.enabled: true
-                    layer.effect: OpacityMask {
-                        maskSource: MaterialShape {
-                            width: Config.options.background.centeredWallpaperSize
-                            height: Config.options.background.centeredWallpaperSize
-                            shape: root.getShapeFromName(Config.options.background.centeredWallpaperShape)
-                        }
-                    }
-
-                    Image {
-                        anchors.fill: parent
-                        source: root.lockWallpaperSource
-                        fillMode: Image.PreserveAspectCrop
-                        cache: true
-                    }
-                }
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.16) }
+                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.02) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.28) }
             }
         }
     }
@@ -211,27 +122,13 @@ Item {
         root.forceFieldFocus();
     }
 
-    // ── 2. The Native Ballade Top Bar ───────────────────────────────────────
-    Bar.BarContent {
-        id: topBar
-        z: 100
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-        }
-        height: Appearance.sizes.barHeight
-    }
-
-    // ── 3. Visualizers & Widgets Canvas ─────────────────────────────────────
-    // Visualizers are ALWAYS ON and reacting to music; desktop widgets are OFF by default.
+    // ── 2. Visualizers (Only Audio Visualizers Active) ───────────────────────
     WidgetCanvas {
         id: lockWidgetCanvas
         z: 10
         anchors.fill: parent
         onPressed: mouse => root.forceFieldFocus()
 
-        // Visualizer 1 (Always enabled on lock screen if configured)
         FadeLoader {
             shown: Boolean(Config.options.background.widgets.visualizer.enable)
             sourceComponent: VisualizerWidget {
@@ -244,7 +141,6 @@ Item {
             }
         }
 
-        // Visualizer 2 (Always enabled on lock screen if configured)
         FadeLoader {
             shown: Boolean(Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
             sourceComponent: VisualizerWidget {
@@ -256,287 +152,186 @@ Item {
                 wallpaperScale: 1
             }
         }
+    }
 
-        // Optional Desktop Widgets (Only shown when explicitly toggled in settings)
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.customImage.enable)
-            sourceComponent: CustomImage {
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
+    // ── 3. The Centerpiece: Liquid Glass Lock Card ───────────────────────────
+    Rectangle {
+        id: glassLockCard
+        z: 100
+        anchors.centerIn: parent
+        implicitWidth: 380
+        implicitHeight: cardContent.implicitHeight + 48
+        radius: 32
+        clip: true
+
+        property color fill: Qt.rgba(
+            Appearance.colors.colLayer0Base.r,
+            Appearance.colors.colLayer0Base.g,
+            Appearance.colors.colLayer0Base.b,
+            0.20
+        )
+        color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
+
+        // Subtle natural glass border (NO cheap 2D highlighter / glowing line)
+        border.width: 1
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.12)
+
+        // The Real Liquid Lens Glass Engine
+        WindowGlass {
+            anchors.fill: parent
+            cardRadius: glassLockCard.radius
+            fullscreenSurface: true
+            glassEnabled: (Config.options?.background?.widgets?.glass?.enable ?? true)
+            tint: glassLockCard.fill
         }
 
-        Repeater {
-            model: Config.options.background.widgets.customImages
-            delegate: FadeLoader {
-                required property int index
-                shown: Boolean(root.showWidgets)
-                sourceComponent: ExtraCustomImage {
-                    screenWidth: root.width
-                    screenHeight: root.height
-                    scaledScreenWidth: root.width
-                    scaledScreenHeight: root.height
-                    wallpaperScale: 1
-                    imageIndex: index
+        // Shake Animation on wrong password
+        SequentialAnimation {
+            id: shakeAnim
+            NumberAnimation { target: glassLockCard; property: "x"; to: glassLockCard.x - 14; duration: 45; easing.type: Easing.OutQuad }
+            NumberAnimation { target: glassLockCard; property: "x"; to: glassLockCard.x + 14; duration: 45; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: glassLockCard; property: "x"; to: glassLockCard.x - 7; duration: 35; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: glassLockCard; property: "x"; to: glassLockCard.x + 7; duration: 35; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: glassLockCard; property: "x"; to: glassLockCard.x; duration: 30; easing.type: Easing.OutQuad }
+        }
+
+        Connections {
+            target: GlobalStates
+            function onScreenUnlockFailedChanged() {
+                if (GlobalStates.screenUnlockFailed) {
+                    shakeAnim.restart();
+                    root.context.currentText = "";
+                    if (passwordInput) passwordInput.text = "";
+                    root.forceFieldFocus();
                 }
             }
         }
 
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.calendar.enable)
-            sourceComponent: CalendarWidget {
-                configEntryName: "calendar"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.weather.enable)
-            sourceComponent: WeatherWidget {
-                configEntryName: "weather"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.clock.enable)
-            sourceComponent: ClockWidget {
-                configEntryName: "clock"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-                wallpaperSafetyTriggered: false
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.goals.enable)
-            sourceComponent: GoalsWidget {
-                configEntryName: "goals"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            id: mediaLoader
-            property bool enableLoading: true
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.media.enable && enableLoading)
-            sourceComponent: MediaWidget {
-                configEntryName: "media"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.images && Config.options.background.widgets.images.enable)
-            sourceComponent: ImageConverterWidget {
-                configEntryName: "images"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.resources.enable)
-            sourceComponent: ResourcesWidget {
-                configEntryName: "resources"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.worldClock.enable)
-            sourceComponent: WorldClockWidget {
-                configEntryName: "worldClock"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(root.showWidgets && Config.options.background.widgets.userCard.enable)
-            sourceComponent: UserCardWidget {
-                configEntryName: "userCard"
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-    }
-
-    // ── 4. The Hero Experience: Aesthetic Ambient Clock & Floating Glass Unlock Capsule ──
-    Item {
-        id: heroContainer
-        z: 100
-        anchors.centerIn: parent
-        width: heroLayout.implicitWidth
-        height: heroLayout.implicitHeight
-
         ColumnLayout {
-            id: heroLayout
-            anchors.centerIn: parent
-            spacing: 24
-            Layout.alignment: Qt.AlignHCenter
+            id: cardContent
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+                margins: 24
+            }
+            spacing: 16
 
-            // Aesthetic Ambient Hero Clock
+            // ── Aesthetic Clock Section ─────────────────────────────────────
             ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
                 spacing: 6
 
-                // Giant Stylized Time Typography
+                // Refined Time Typography
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    spacing: 2
+                    spacing: 4
 
                     StyledText {
                         text: DateTime.hoursStr
-                        font.pixelSize: 84
-                        font.weight: 300
-                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
+                        font.pixelSize: 64
+                        font.weight: Font.DemiBold
+                        font.family: Appearance.font.family.title || Appearance.font.family.main
                         color: Appearance.colors.colOnLayer0 || "#ffffff"
                     }
 
                     StyledText {
                         text: ":"
-                        font.pixelSize: 76
-                        font.weight: 200
-                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
-                        color: Appearance.colors.colPrimary
-                        Layout.topMargin: -6
+                        font.pixelSize: 58
+                        font.weight: Font.Normal
+                        font.family: Appearance.font.family.title || Appearance.font.family.main
+                        color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.85)
+                        Layout.topMargin: -4
                     }
 
                     StyledText {
                         text: DateTime.minutesStr
-                        font.pixelSize: 84
-                        font.weight: 300
-                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
+                        font.pixelSize: 64
+                        font.weight: Font.DemiBold
+                        font.family: Appearance.font.family.title || Appearance.font.family.main
                         color: Appearance.colors.colOnLayer0 || "#ffffff"
                     }
                 }
 
-                // Frosted Date & Status Pill
-                Rectangle {
+                // Date Badge
+                RowLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitHeight: 32
-                    implicitWidth: dateRow.implicitWidth + 24
-                    radius: 16
-                    color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.35)
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.12)
+                    spacing: 6
 
-                    RowLayout {
-                        id: dateRow
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        MaterialSymbol {
-                            text: "calendar_today"
-                            iconSize: 14
-                            color: Appearance.colors.colPrimary
-                        }
-
-                        StyledText {
-                            text: DateTime.collapsedCalendarFormat
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnLayer0 || "#ffffff"
-                        }
+                    MaterialSymbol {
+                        text: "calendar_today"
+                        iconSize: 13
+                        color: Appearance.colors.colPrimary
                     }
+
+                    StyledText {
+                        text: DateTime.collapsedCalendarFormat
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        font.weight: Font.Medium
+                        color: Appearance.colors.colOnLayer0 || "#ffffff"
+                    }
+                }
+
+                // Custom Quote (Configured by user: "i like the way u smile")
+                StyledText {
+                    visible: Config.options.background?.widgets?.clock?.quote?.enable ?? true
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.topMargin: 2
+                    text: "“ " + (Config.options.background?.widgets?.clock?.quote?.text ?? "i like the way u smile") + " ”"
+                    font.italic: true
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: ColorUtils.applyAlpha(Appearance.colors.colOnLayer0 || "#ffffff", 0.65)
                 }
             }
 
-            // Floating Frosted Glass Password Capsule
+            // Subtle Glass Optical Divider
             Rectangle {
-                id: passwordCapsule
-                Layout.alignment: Qt.AlignHCenter
-                implicitWidth: 320
-                implicitHeight: 48
-                radius: 24
-                color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.45)
-                border.width: (passwordInput.activeFocus || GlobalStates.screenUnlockFailed) ? 1.5 : 1
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: ColorUtils.applyAlpha("#ffffff", 0.08)
+            }
+
+            // ── Liquid Glass Password Input Pill ────────────────────────────
+            Rectangle {
+                id: passwordPill
+                Layout.fillWidth: true
+                implicitHeight: 44
+                radius: 22
+                color: Qt.rgba(
+                    Appearance.colors.colLayer0Base.r,
+                    Appearance.colors.colLayer0Base.g,
+                    Appearance.colors.colLayer0Base.b,
+                    0.24
+                )
+                // Natural soft glass border (NO bright 2D neon line)
+                border.width: 1
                 border.color: GlobalStates.screenUnlockFailed
                     ? Appearance.colors.colError
-                    : (passwordInput.activeFocus ? Appearance.colors.colPrimary : Qt.rgba(255, 255, 255, 0.16))
+                    : ColorUtils.applyAlpha("#ffffff", passwordInput.activeFocus ? 0.22 : 0.10)
 
                 Behavior on border.color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                 }
 
-                // Shake Animation on wrong password
-                SequentialAnimation {
-                    id: shakeAnim
-                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x - 14; duration: 45; easing.type: Easing.OutQuad }
-                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x + 14; duration: 45; easing.type: Easing.InOutQuad }
-                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x - 7; duration: 35; easing.type: Easing.InOutQuad }
-                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x + 7; duration: 35; easing.type: Easing.InOutQuad }
-                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x; duration: 30; easing.type: Easing.OutQuad }
-                }
-
-                Connections {
-                    target: GlobalStates
-                    function onScreenUnlockFailedChanged() {
-                        if (GlobalStates.screenUnlockFailed) {
-                            shakeAnim.restart();
-                            root.context.currentText = "";
-                            if (passwordInput) passwordInput.text = "";
-                            root.forceFieldFocus();
-                        }
-                    }
-                }
-
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: 14
                     anchors.rightMargin: 6
                     spacing: 8
 
-                    // Left Icon
+                    // Lock Icon
                     MaterialSymbol {
-                        text: root.context.fingerprintsConfigured ? "fingerprint" : (root.context.currentText.length > 0 ? "key" : "lock")
-                        iconSize: 18
-                        color: root.context.currentText.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
+                        text: root.context.fingerprintsConfigured ? "fingerprint" : (root.context.currentText.length > 0 ? "lock_open" : "lock")
+                        iconSize: 17
+                        color: ColorUtils.applyAlpha(Appearance.colors.colOnLayer0 || "#ffffff", 0.65)
                     }
 
-                    // Password Input Field & Masked Dots
+                    // Password Field
                     Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
 
-                        // Placeholder
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -545,10 +340,11 @@ Item {
                                 ? Translation.tr("Incorrect password")
                                 : (root.context.fingerprintsConfigured ? Translation.tr("Fingerprint or password") : Translation.tr("Enter password"))
                             font.pixelSize: Appearance.font.pixelSize.small
-                            color: GlobalStates.screenUnlockFailed ? Appearance.colors.colError : Appearance.colors.colSubtext
+                            color: GlobalStates.screenUnlockFailed
+                                ? Appearance.colors.colError
+                                : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0 || "#ffffff", 0.38)
                         }
 
-                        // Animated Shape Characters
                         Loader {
                             active: Config.options.lock?.materialShapeChars ?? true
                             anchors.fill: parent
@@ -561,7 +357,6 @@ Item {
                             }
                         }
 
-                        // Text Input
                         TextInput {
                             id: passwordInput
                             anchors.fill: parent
@@ -591,15 +386,14 @@ Item {
                         }
                     }
 
-                    // Submit Action Button
+                    // Submit Button
                     Rectangle {
-                        id: submitBtn
-                        implicitWidth: 36
-                        implicitHeight: 36
-                        radius: 18
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        radius: 16
                         color: (root.context.currentText.length > 0 || submitHover.containsMouse)
                             ? Appearance.colors.colPrimary
-                            : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.20)
+                            : ColorUtils.applyAlpha("#ffffff", 0.08)
 
                         Behavior on color {
                             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
@@ -612,10 +406,10 @@ Item {
                                 if (root.context.targetAction === LockContext.ActionEnum.Reboot) return "restart_alt";
                                 return root.ctrlHeld ? "coffee" : "arrow_forward";
                             }
-                            iconSize: 18
+                            iconSize: 16
                             color: (root.context.currentText.length > 0 || submitHover.containsMouse)
                                 ? Appearance.colors.colOnPrimary
-                                : Appearance.colors.colSubtext
+                                : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0 || "#ffffff", 0.50)
                         }
 
                         MouseArea {
@@ -629,19 +423,18 @@ Item {
                 }
             }
 
-            // Subtle Hint Subtext
+            // Subtle Hint
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: {
                     if (GlobalStates.screenUnlockFailed) return Translation.tr("Press Esc to clear");
                     if (root.ctrlHeld) return Translation.tr("Coffee break mode · Screen will stay awake");
-                    if (root.context.targetAction === LockContext.ActionEnum.Poweroff) return Translation.tr("Enter password to shut down");
-                    if (root.context.targetAction === LockContext.ActionEnum.Reboot) return Translation.tr("Enter password to restart");
-                    return Translation.tr("Esc to clear · Ctrl+Enter for coffee session");
+                    return Translation.tr("Esc to clear · Enter to unlock");
                 }
                 font.pixelSize: Appearance.font.pixelSize.smallest
-                color: GlobalStates.screenUnlockFailed ? Appearance.colors.colError : Appearance.colors.colSubtext
-                opacity: 0.75
+                color: GlobalStates.screenUnlockFailed
+                    ? Appearance.colors.colError
+                    : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0 || "#ffffff", 0.40)
             }
         }
     }
