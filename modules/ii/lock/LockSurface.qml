@@ -35,6 +35,7 @@ Item {
     property bool active: false
     property bool showInputField: active || context.currentText.length > 0
     readonly property bool requirePasswordToPower: Config.options.lock?.security?.requirePasswordToPower ?? false
+    readonly property bool showWidgets: Config.options.lock?.showWidgets ?? false
 
     function getShapeFromName(name) {
         switch (name) {
@@ -87,7 +88,7 @@ Item {
         return wPath.startsWith("file://") ? wPath : "file://" + wPath;
     }
 
-    // ── 1. Wallpaper Backdrop with Subtle Cinematic Depth ───────────────────
+    // ── 1. Wallpaper Backdrop ───────────────────────────────────────────────
     Item {
         id: lockBackdrop
         anchors.fill: parent
@@ -112,18 +113,18 @@ Item {
             anchors.fill: parent
             source: lockWallImg
             radius: (Config.options.lock.blur && Config.options.lock.blur.enable)
-                ? Math.min(Config.options.lock.blur.radius ?? 32, 48)
+                ? Math.min(Config.options.lock.blur.radius ?? 24, 36)
                 : 0
             visible: (Config.options.lock.blur && Config.options.lock.blur.enable)
         }
 
-        // Elegant soft vignette so widgets and unlock controls pop with stunning contrast
+        // Soft, radiant vignette for depth
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.20) }
-                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.05) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.42) }
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.25) }
+                GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.04) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.38) }
             }
         }
 
@@ -210,17 +211,29 @@ Item {
         root.forceFieldFocus();
     }
 
-    // ── 2. Unified Desktop Widgets Canvas (100% Identical to Home Screen) ───
+    // ── 2. The Native Ballade Top Bar ───────────────────────────────────────
+    Bar.BarContent {
+        id: topBar
+        z: 100
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+        }
+        height: Appearance.sizes.barHeight
+    }
+
+    // ── 3. Visualizers & Widgets Canvas ─────────────────────────────────────
+    // Visualizers are ALWAYS ON and reacting to music; desktop widgets are OFF by default.
     WidgetCanvas {
         id: lockWidgetCanvas
         z: 10
         anchors.fill: parent
-        visible: (Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true
         onPressed: mouse => root.forceFieldFocus()
 
-        // Visualizer 1
+        // Visualizer 1 (Always enabled on lock screen if configured)
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.visualizer.enable)
+            shown: Boolean(Config.options.background.widgets.visualizer.enable)
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer"
                 screenWidth: root.width
@@ -231,9 +244,9 @@ Item {
             }
         }
 
-        // Visualizer 2
+        // Visualizer 2 (Always enabled on lock screen if configured)
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
+            shown: Boolean(Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer2"
                 screenWidth: root.width
@@ -244,9 +257,9 @@ Item {
             }
         }
 
-        // Custom Image
+        // Optional Desktop Widgets (Only shown when explicitly toggled in settings)
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.customImage.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.customImage.enable)
             sourceComponent: CustomImage {
                 screenWidth: root.width
                 screenHeight: root.height
@@ -256,12 +269,11 @@ Item {
             }
         }
 
-        // Extra Custom Images
         Repeater {
             model: Config.options.background.widgets.customImages
             delegate: FadeLoader {
                 required property int index
-                shown: Boolean(Config.options.lock.showWidgets)
+                shown: Boolean(root.showWidgets)
                 sourceComponent: ExtraCustomImage {
                     screenWidth: root.width
                     screenHeight: root.height
@@ -273,9 +285,8 @@ Item {
             }
         }
 
-        // Calendar
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.calendar.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.calendar.enable)
             sourceComponent: CalendarWidget {
                 configEntryName: "calendar"
                 screenWidth: root.width
@@ -286,9 +297,8 @@ Item {
             }
         }
 
-        // Weather
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.weather.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.weather.enable)
             sourceComponent: WeatherWidget {
                 configEntryName: "weather"
                 screenWidth: root.width
@@ -299,9 +309,8 @@ Item {
             }
         }
 
-        // Clock
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.clock.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.clock.enable)
             sourceComponent: ClockWidget {
                 configEntryName: "clock"
                 screenWidth: root.width
@@ -313,9 +322,8 @@ Item {
             }
         }
 
-        // Goals & Notes
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.goals.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.goals.enable)
             sourceComponent: GoalsWidget {
                 configEntryName: "goals"
                 screenWidth: root.width
@@ -326,11 +334,10 @@ Item {
             }
         }
 
-        // Media Player
         FadeLoader {
             id: mediaLoader
             property bool enableLoading: true
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.media.enable && enableLoading)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.media.enable && enableLoading)
             sourceComponent: MediaWidget {
                 configEntryName: "media"
                 screenWidth: root.width
@@ -341,9 +348,8 @@ Item {
             }
         }
 
-        // Media Studio (Image Converter)
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.images && Config.options.background.widgets.images.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.images && Config.options.background.widgets.images.enable)
             sourceComponent: ImageConverterWidget {
                 configEntryName: "images"
                 screenWidth: root.width
@@ -354,9 +360,8 @@ Item {
             }
         }
 
-        // System Resources
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.resources.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.resources.enable)
             sourceComponent: ResourcesWidget {
                 configEntryName: "resources"
                 screenWidth: root.width
@@ -367,9 +372,8 @@ Item {
             }
         }
 
-        // World Clock
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.worldClock.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.worldClock.enable)
             sourceComponent: WorldClockWidget {
                 configEntryName: "worldClock"
                 screenWidth: root.width
@@ -380,9 +384,8 @@ Item {
             }
         }
 
-        // User Card
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.userCard.enable)
+            shown: Boolean(root.showWidgets && Config.options.background.widgets.userCard.enable)
             sourceComponent: UserCardWidget {
                 configEntryName: "userCard"
                 screenWidth: root.width
@@ -394,284 +397,95 @@ Item {
         }
     }
 
-    // ── 3. Sleek Top-Right Status & Power Capsule ───────────────────────────
-    Rectangle {
-        id: statusCapsule
-        z: 100
-        anchors {
-            top: parent.top
-            right: parent.right
-            margins: 20
-        }
-        implicitHeight: 38
-        implicitWidth: statusRow.implicitWidth + 24
-        radius: 19
-        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.45)
-        border.width: 1
-        border.color: Qt.rgba(255, 255, 255, 0.12)
-
-        RowLayout {
-            id: statusRow
-            anchors.centerIn: parent
-            spacing: 10
-
-            // Keyboard Layout
-            RowLayout {
-                spacing: 4
-                MaterialSymbol {
-                    text: "keyboard_alt"
-                    iconSize: 15
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-                StyledText {
-                    text: HyprlandXkb.currentLayoutCode
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-            }
-
-            // Fcitx SysTray
-            Bar.SysTray {
-                showSeparator: false
-                showOverflowMenu: false
-                pinnedItems: SystemTray.items.values.filter(i => i.id == "Fcitx")
-                visible: pinnedItems.length > 0
-            }
-
-            // Divider
-            Rectangle {
-                implicitWidth: 1
-                implicitHeight: 14
-                color: Qt.rgba(255, 255, 255, 0.14)
-            }
-
-            // Battery Status
-            RowLayout {
-                visible: Battery.available
-                spacing: 4
-                MaterialSymbol {
-                    text: Battery.isCharging ? "bolt" : "battery_android_full"
-                    iconSize: 15
-                    color: (Battery.isLow && !Battery.isCharging) ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
-                }
-                StyledText {
-                    text: Math.round(Battery.percentage * 100) + "%"
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-            }
-
-            // Divider (if battery visible)
-            Rectangle {
-                visible: Battery.available
-                implicitWidth: 1
-                implicitHeight: 14
-                color: Qt.rgba(255, 255, 255, 0.14)
-            }
-
-            // Quick Power Actions
-            RowLayout {
-                spacing: 4
-
-                // Suspend / Sleep
-                Rectangle {
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    radius: 14
-                    color: sleepHover.containsMouse
-                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                        : "transparent"
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "dark_mode"
-                        iconSize: 15
-                        color: sleepHover.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
-                    }
-                    MouseArea {
-                        id: sleepHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Session.suspend()
-                    }
-                    StyledToolTip {
-                        extraVisibleCondition: sleepHover.containsMouse
-                        text: Translation.tr("Sleep")
-                    }
-                }
-
-                // Restart
-                Rectangle {
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    radius: 14
-                    color: (root.context.targetAction === LockContext.ActionEnum.Reboot || restartHover.containsMouse)
-                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                        : "transparent"
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "restart_alt"
-                        iconSize: 15
-                        color: (root.context.targetAction === LockContext.ActionEnum.Reboot || restartHover.containsMouse)
-                            ? Appearance.colors.colPrimary
-                            : Appearance.colors.colOnSurfaceVariant
-                    }
-                    MouseArea {
-                        id: restartHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!root.requirePasswordToPower) {
-                                root.context.unlocked(LockContext.ActionEnum.Reboot);
-                                return;
-                            }
-                            if (root.context.targetAction === LockContext.ActionEnum.Reboot) {
-                                root.context.resetTargetAction();
-                            } else {
-                                root.context.targetAction = LockContext.ActionEnum.Reboot;
-                                root.forceFieldFocus();
-                            }
-                        }
-                    }
-                    StyledToolTip {
-                        extraVisibleCondition: restartHover.containsMouse
-                        text: Translation.tr("Restart")
-                    }
-                }
-
-                // Power Off
-                Rectangle {
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    radius: 14
-                    color: (root.context.targetAction === LockContext.ActionEnum.Poweroff || powerHover.containsMouse)
-                        ? Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.22)
-                        : "transparent"
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "power_settings_new"
-                        iconSize: 15
-                        color: (root.context.targetAction === LockContext.ActionEnum.Poweroff || powerHover.containsMouse)
-                            ? Appearance.colors.colError
-                            : Appearance.colors.colOnSurfaceVariant
-                    }
-                    MouseArea {
-                        id: powerHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!root.requirePasswordToPower) {
-                                root.context.unlocked(LockContext.ActionEnum.Poweroff);
-                                return;
-                            }
-                            if (root.context.targetAction === LockContext.ActionEnum.Poweroff) {
-                                root.context.resetTargetAction();
-                            } else {
-                                root.context.targetAction = LockContext.ActionEnum.Poweroff;
-                                root.forceFieldFocus();
-                            }
-                        }
-                    }
-                    StyledToolTip {
-                        extraVisibleCondition: powerHover.containsMouse
-                        text: Translation.tr("Shut Down")
-                    }
-                }
-            }
-        }
-    }
-
-    // ── 4. The Hero Element: Liquid Glass Unlock Island ─────────────────────
+    // ── 4. The Hero Experience: Aesthetic Ambient Clock & Floating Glass Unlock Capsule ──
     Item {
-        id: heroUnlockContainer
+        id: heroContainer
         z: 100
         anchors.centerIn: parent
-        width: unlockColumn.implicitWidth
-        height: unlockColumn.implicitHeight
+        width: heroLayout.implicitWidth
+        height: heroLayout.implicitHeight
 
         ColumnLayout {
-            id: unlockColumn
+            id: heroLayout
             anchors.centerIn: parent
-            spacing: 12
+            spacing: 24
             Layout.alignment: Qt.AlignHCenter
 
-            // User Avatar & Name
+            // Aesthetic Ambient Hero Clock
             ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 8
+                spacing: 6
 
-                // Circular Avatar
-                Rectangle {
+                // Giant Stylized Time Typography
+                RowLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitWidth: 64
-                    implicitHeight: 64
-                    radius: 32
-                    color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.40)
-                    border.width: 1.5
-                    border.color: Qt.rgba(255, 255, 255, 0.24)
+                    spacing: 2
 
-                    readonly property string avatarSource: {
-                        const pic = Config.options.profile?.avatarPicture ?? "";
-                        if (pic && pic !== "") return pic.startsWith("file://") ? pic : "file://" + pic;
-                        const p = Config.options.profile?.avatarPath ?? "";
-                        if (p && p !== "") return p.startsWith("file://") ? p : "file://" + p;
-                        return "";
+                    StyledText {
+                        text: DateTime.hoursStr
+                        font.pixelSize: 84
+                        font.weight: 300
+                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
+                        color: Appearance.colors.colOnLayer0 || "#ffffff"
                     }
 
-                    Image {
-                        id: avatarImg
-                        anchors.fill: parent
-                        anchors.margins: 2
-                        source: parent.avatarSource
-                        fillMode: Image.PreserveAspectCrop
-                        cache: true
-                        visible: status === Image.Ready
-
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: avatarImg.width
-                                height: avatarImg.height
-                                radius: width / 2
-                            }
-                        }
-                    }
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        visible: !avatarImg.visible
-                        text: "person"
-                        iconSize: 34
+                    StyledText {
+                        text: ":"
+                        font.pixelSize: 76
+                        font.weight: 200
+                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
                         color: Appearance.colors.colPrimary
+                        Layout.topMargin: -6
+                    }
+
+                    StyledText {
+                        text: DateTime.minutesStr
+                        font.pixelSize: 84
+                        font.weight: 300
+                        font.family: Appearance.font.family.expressive || Appearance.font.family.title
+                        color: Appearance.colors.colOnLayer0 || "#ffffff"
                     }
                 }
 
-                // Display Name / Username
-                StyledText {
+                // Frosted Date & Status Pill
+                Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    text: {
-                        const disp = Config.options.profile?.displayName ?? "";
-                        if (disp && disp.length > 0) return disp;
-                        return SystemInfo.realName || SystemInfo.username || "User";
+                    implicitHeight: 32
+                    implicitWidth: dateRow.implicitWidth + 24
+                    radius: 16
+                    color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.35)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                    RowLayout {
+                        id: dateRow
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        MaterialSymbol {
+                            text: "calendar_today"
+                            iconSize: 14
+                            color: Appearance.colors.colPrimary
+                        }
+
+                        StyledText {
+                            text: DateTime.collapsedCalendarFormat
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnLayer0 || "#ffffff"
+                        }
                     }
-                    font.pixelSize: Appearance.font.pixelSize.medium
-                    font.weight: Font.DemiBold
-                    font.family: Appearance.font.family.main
-                    color: Appearance.colors.colOnLayer0 || "#ffffff"
                 }
             }
 
-            // Liquid Glass Password Capsule
+            // Floating Frosted Glass Password Capsule
             Rectangle {
                 id: passwordCapsule
                 Layout.alignment: Qt.AlignHCenter
                 implicitWidth: 320
                 implicitHeight: 48
                 radius: 24
-                color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.48)
+                color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.45)
                 border.width: (passwordInput.activeFocus || GlobalStates.screenUnlockFailed) ? 1.5 : 1
                 border.color: GlobalStates.screenUnlockFailed
                     ? Appearance.colors.colError
@@ -785,7 +599,7 @@ Item {
                         radius: 18
                         color: (root.context.currentText.length > 0 || submitHover.containsMouse)
                             ? Appearance.colors.colPrimary
-                            : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+                            : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.20)
 
                         Behavior on color {
                             animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
@@ -823,15 +637,11 @@ Item {
                     if (root.ctrlHeld) return Translation.tr("Coffee break mode · Screen will stay awake");
                     if (root.context.targetAction === LockContext.ActionEnum.Poweroff) return Translation.tr("Enter password to shut down");
                     if (root.context.targetAction === LockContext.ActionEnum.Reboot) return Translation.tr("Enter password to restart");
-                    return "";
+                    return Translation.tr("Esc to clear · Ctrl+Enter for coffee session");
                 }
                 font.pixelSize: Appearance.font.pixelSize.smallest
                 color: GlobalStates.screenUnlockFailed ? Appearance.colors.colError : Appearance.colors.colSubtext
-                opacity: text.length > 0 ? 0.9 : 0.0
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 180 }
-                }
+                opacity: 0.75
             }
         }
     }
