@@ -154,5 +154,21 @@ Item {
                 }
             }
         }
+
+        Loader {
+            active: Config.options.bar.utilButtons.showDesktopWidgetsToggle
+            visible: Config.options.bar.utilButtons.showDesktopWidgetsToggle
+            sourceComponent: CircleUtilButton {
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: GlobalStates.toggleDesktopWidgets()
+                MaterialSymbol {
+                    horizontalAlignment: Qt.AlignHCenter
+                    fill: GlobalStates.desktopWidgetsVisible ? 1 : 0
+                    text: "widgets"
+                    iconSize: Appearance.font.pixelSize.large
+                    color: GlobalStates.desktopWidgetsVisible ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer2
+                }
+            }
+        }
     }
 }

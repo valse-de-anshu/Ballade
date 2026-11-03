@@ -235,6 +235,14 @@ ContentPage {
                     Config.options.bar.utilButtons.showScreenRecord = checked;
                 }
             }
+            ConfigSwitch {
+                buttonIcon: "widgets"
+                text: Translation.tr("Desktop widgets")
+                checked: Config.options.bar.utilButtons.showDesktopWidgetsToggle
+                onCheckedChanged: {
+                    Config.options.bar.utilButtons.showDesktopWidgetsToggle = checked;
+                }
+            }
         }
     }
 

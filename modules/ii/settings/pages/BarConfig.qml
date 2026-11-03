@@ -376,6 +376,15 @@ ContentPage {
                         onCheckedChanged: { Config.options.bar.utilButtons.showWallpaperToggle = checked }
                     }
                 }
+                ConfigRow {
+                    uniform: true
+                    ConfigSwitch {
+                        buttonIcon: "widgets"
+                        text: Translation.tr("Desktop widgets toggle")
+                        checked: Config.options.bar.utilButtons.showDesktopWidgetsToggle
+                        onCheckedChanged: { Config.options.bar.utilButtons.showDesktopWidgetsToggle = checked }
+                    }
+                }
             }
         }
 

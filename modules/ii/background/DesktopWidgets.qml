@@ -8,6 +8,7 @@ import qs.modules.common.widgets.widgetCanvas
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
@@ -23,22 +24,43 @@ import qs.modules.ii.background.widgets.worldclock
 import qs.modules.ii.background.widgets.usercard
 import qs.modules.ii.background.widgets.goals
 
-Variants {
-    id: root
-    model: Quickshell.screens
+Scope {
+    id: rootScope
 
-    PanelWindow {
-        id: widgetsRoot
+    IpcHandler {
+        target: "widgets"
 
-        required property var modelData
-        property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
-        property list<HyprlandWorkspace> workspacesForMonitor: Hyprland.workspaces.values.filter(workspace => workspace.monitor && workspace.monitor.name == monitor.name)
-        property var activeWorkspaceWithFullscreen: workspacesForMonitor.filter(workspace => ((workspace.toplevels.values.filter(window => window.wayland?.fullscreen)[0] != undefined) && workspace.active))[0]
+        function toggle(): void {
+            GlobalStates.toggleDesktopWidgets();
+        }
 
-        readonly property bool shouldShowWidgets: (!GlobalStates.screenLocked || GlobalStates.unlocking) && ((!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen)
-        visible: widgetsRoot.shouldShowWidgets || widgetCanvas.opacity > 0.01
+        function show(): void {
+            if (!GlobalStates.desktopWidgetsVisible) GlobalStates.toggleDesktopWidgets();
+        }
 
-        screen: modelData
+        function hide(): void {
+            if (GlobalStates.desktopWidgetsVisible) GlobalStates.toggleDesktopWidgets();
+        }
+    }
+
+    Variants {
+        id: root
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: widgetsRoot
+
+            required property var modelData
+            property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
+            property list<HyprlandWorkspace> workspacesForMonitor: Hyprland.workspaces.values.filter(workspace => workspace.monitor && workspace.monitor.name == monitor.name)
+            property var activeWorkspaceWithFullscreen: workspacesForMonitor.filter(workspace => ((workspace.toplevels.values.filter(window => window.wayland?.fullscreen)[0] != undefined) && workspace.active))[0]
+
+            readonly property bool baseDisplayCondition: (!GlobalStates.screenLocked || GlobalStates.unlocking) && ((!(activeWorkspaceWithFullscreen != undefined)) || !Config?.options.background.hideWhenFullscreen)
+            readonly property bool shouldShowWidgets: baseDisplayCondition && GlobalStates.desktopWidgetsVisible
+            readonly property bool visualizerEnabled: (Config.options.background.widgets.visualizer.enable || (Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable))
+            visible: widgetsRoot.baseDisplayCondition && (widgetsRoot.shouldShowWidgets || regularWidgetsGroup.opacity > 0.01 || widgetsRoot.visualizerEnabled)
+
+            screen: modelData
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.namespace: "quickshell:desktopWidgets"
@@ -67,31 +89,6 @@ Variants {
             z: 10
             anchors.fill: parent
 
-            opacity: widgetsRoot.shouldShowWidgets ? 1.0 : 0.0
-            y: widgetsRoot.shouldShowWidgets ? 0 : 28
-            scale: widgetsRoot.shouldShowWidgets ? 1.0 : 0.96
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 380
-                    easing.type: Easing.OutCubic
-                }
-            }
-            Behavior on y {
-                NumberAnimation {
-                    duration: 420
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
-                }
-            }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 420
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
-                }
-            }
-
             transitions: Transition {
                 PropertyAnimation {
                     properties: "width,height"
@@ -105,8 +102,11 @@ Variants {
                     easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
                 }
             }
+
+            // Visualizers are an EXCEPTION: always visible regardless of desktop widgets toggle
             FadeLoader {
-                shown: Config.options.background.widgets.visualizer.enable
+                shown: widgetsRoot.baseDisplayCondition
+                    && Config.options.background.widgets.visualizer.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: VisualizerWidget {
@@ -119,7 +119,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable
+                shown: widgetsRoot.baseDisplayCondition
+                    && Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: VisualizerWidget {
@@ -131,8 +132,39 @@ Variants {
                     wallpaperScale: 1
                 }
             }
+
+            // Regular desktop widgets (faded & unloaded when desktopWidgetsVisible is false)
+            Item {
+                id: regularWidgetsGroup
+                anchors.fill: parent
+
+                opacity: widgetsRoot.shouldShowWidgets ? 1.0 : 0.0
+                y: widgetsRoot.shouldShowWidgets ? 0 : 28
+                scale: widgetsRoot.shouldShowWidgets ? 1.0 : 0.96
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 380
+                        easing.type: Easing.OutCubic
+                    }
+                }
+                Behavior on y {
+                    NumberAnimation {
+                        duration: 420
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 420
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Appearance.animationCurves.expressiveDefaultSpatial
+                    }
+                }
             FadeLoader {
-                shown: Config.options.background.widgets.customImage.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.customImage.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: CustomImage {
@@ -148,7 +180,8 @@ Variants {
                 model: Config.options.background.widgets.customImages
                 delegate: FadeLoader {
                     required property int index
-                    shown: (Config.options.background.screenList.length === 0
+                    shown: widgetsRoot.shouldShowWidgets
+                        && (Config.options.background.screenList.length === 0
                             || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                     sourceComponent: ExtraCustomImage {
                         screenWidth:        widgetsRoot.screen.width
@@ -161,7 +194,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.calendar.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.calendar.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: CalendarWidget {
@@ -173,7 +207,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.weather.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.weather.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: WeatherWidget {
@@ -185,7 +220,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.clock.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.clock.enable
                     && (GlobalStates.screenLocked
                         || Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
@@ -199,7 +235,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.goals.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.goals.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: GoalsWidget {
@@ -213,7 +250,8 @@ Variants {
             FadeLoader {
                 id: mediaLoader
                 property bool enableLoading: true
-                shown: Config.options.background.widgets.media.enable && enableLoading
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.media.enable && enableLoading
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: MediaWidget {
@@ -233,7 +271,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.images.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.images.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: ImageConverterWidget {
@@ -245,7 +284,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.resources.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.resources.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: ResourcesWidget {
@@ -257,7 +297,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.worldClock.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.worldClock.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: WorldClockWidget {
@@ -269,7 +310,8 @@ Variants {
                 }
             }
             FadeLoader {
-                shown: Config.options.background.widgets.userCard.enable
+                shown: widgetsRoot.shouldShowWidgets
+                    && Config.options.background.widgets.userCard.enable
                     && (Config.options.background.screenList.length === 0
                         || Config.options.background.screenList.includes(widgetsRoot.screen.name))
                 sourceComponent: UserCardWidget {
@@ -280,19 +322,23 @@ Variants {
                     wallpaperScale: 1
                 }
             }
-        }
+        } // regularWidgetsGroup
+    } // widgetCanvas
 
-        MouseArea {
-            id: desktopRightClickArea
-            anchors.fill: parent
-            z: -2
-            acceptedButtons: Qt.RightButton
-            onClicked: (mouse) => {
-                GlobalStates.desktopMenuScreen = widgetsRoot.screen
-                GlobalStates.desktopMenuX = mouse.x
-                GlobalStates.desktopMenuY = mouse.y
-                GlobalStates.desktopMenuOpen = true
-            }
+    MouseArea {
+        id: desktopRightClickArea
+        anchors.fill: parent
+        z: -2
+        enabled: true
+        acceptedButtons: Qt.RightButton
+        onClicked: (mouse) => {
+            GlobalStates.desktopMenuScreen = widgetsRoot.screen
+            GlobalStates.desktopMenuX = mouse.x
+            GlobalStates.desktopMenuY = mouse.y
+            GlobalStates.desktopMenuOpen = true
         }
     }
+    }
 }
+}
+

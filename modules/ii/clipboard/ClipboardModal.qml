@@ -271,6 +271,11 @@ Rectangle {
         }
     }
 
+    // Absorb clicks on modal background/padding so they do not dismiss
+    MouseArea {
+        anchors.fill: parent
+    }
+
     // Split Layout
     RowLayout {
         anchors.fill: parent

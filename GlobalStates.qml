@@ -37,6 +37,34 @@ Singleton {
     property Item currentPageInstance: null
     property list<real> visualizerPoints: []
     property bool desktopWidgetKeyboardFocus: false
+    property bool desktopWidgetsVisible: Config.options?.background?.widgetsVisible ?? true
+
+    function toggleDesktopWidgets() {
+        let newVal = !desktopWidgetsVisible;
+        desktopWidgetsVisible = newVal;
+        if (Config.options && Config.options.background) {
+            Config.options.background.widgetsVisible = newVal;
+        }
+        Config.setNestedValue("background.widgetsVisible", newVal);
+    }
+
+    Connections {
+        target: Config.options?.background ?? null
+        function onWidgetsVisibleChanged() {
+            if (Config.options?.background?.widgetsVisible !== undefined) {
+                root.desktopWidgetsVisible = Config.options.background.widgetsVisible;
+            }
+        }
+    }
+
+    Connections {
+        target: Config
+        function onReadyChanged() {
+            if (Config.ready && Config.options?.background?.widgetsVisible !== undefined) {
+                root.desktopWidgetsVisible = Config.options.background.widgetsVisible;
+            }
+        }
+    }
     property bool desktopMenuOpen: false
     property var desktopMenuScreen: null
     property real desktopMenuX: 0

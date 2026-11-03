@@ -238,6 +238,7 @@ Singleton {
             property JsonObject background: JsonObject {
                 property string lockWall: ""
                 property bool widgetsLocked: false
+                property bool widgetsVisible: true
                 property bool showGrid: true
                 property bool showBlur: false
                 property int blurRadius: 32 // 1 to 128
@@ -522,6 +523,7 @@ Singleton {
                     property bool showMicToggle: false
                     property bool showKeyboardToggle: false
                     property bool showWallpaperToggle: true
+                    property bool showDesktopWidgetsToggle: true
                     property bool showDarkModeToggle: false
                     property bool showPerformanceProfileToggle: false
                     property bool showScreenRecord: false       

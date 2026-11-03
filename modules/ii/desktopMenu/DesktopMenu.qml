@@ -304,6 +304,34 @@ Scope {
                         }
                     }
 
+                    // Toggle Desktop Widgets Visibility
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        buttonRadius: 12
+                        colBackground: "transparent"
+                        colBackgroundHover: Qt.rgba(1, 1, 1, 0.09)
+                        contentItem: RowLayout {
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            spacing: 12
+                            MaterialSymbol {
+                                text: GlobalStates.desktopWidgetsVisible ? "visibility" : "visibility_off"
+                                iconSize: 20
+                                color: GlobalStates.desktopWidgetsVisible ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: GlobalStates.desktopWidgetsVisible ? Translation.tr("Hide Desktop Widgets") : Translation.tr("Show Desktop Widgets")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnLayer0
+                            }
+                        }
+                        onClicked: {
+                            GlobalStates.desktopMenuOpen = false
+                            GlobalStates.toggleDesktopWidgets()
+                        }
+                    }
+
                     // Desktop Widgets Submenu
                     RippleButton {
                         id: widgetsBtn
