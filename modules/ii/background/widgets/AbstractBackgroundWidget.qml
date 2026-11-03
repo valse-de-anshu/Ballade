@@ -19,76 +19,14 @@ AbstractWidget {
     property bool isLockWidget: false
     property bool visibleWhenLocked: Config.options.lock.showWidgets
     readonly property var desktopConfigEntry: Config.options.background && Config.options.background.widgets ? Config.options.background.widgets[configEntryName] : null
-    property var configEntry: isLockWidget
-        ? (Config.options.lock && Config.options.lock.widgets ? Config.options.lock.widgets[configEntryName] : null)
-        : desktopConfigEntry
+    property var configEntry: desktopConfigEntry
     property string placementStrategy: configEntry?.placementStrategy ?? "free"
 
-    function getDefaultLockX() {
-        const mode = (configEntry && configEntry.position) ? configEntry.position : (configEntryName === "clock" ? "center" : (configEntryName === "media" ? "bottomLeft" : "default"));
-        const sw = (scaledScreenWidth > 0) ? scaledScreenWidth : screenWidth;
-        const w = (width > 0) ? width : (implicitWidth > 0 ? implicitWidth : 300);
-        switch (mode) {
-            case "center":
-            case "top":
-            case "bottom":
-                return Math.round((sw - w) / 2);
-            case "topLeft":
-            case "bottomLeft":
-                return 48;
-            case "topRight":
-            case "bottomRight":
-                return Math.round(sw - w - 48);
-            case "custom": {
-                if (configEntry && configEntry.x !== undefined && configEntry.x > 0) return configEntry.x;
-                if (desktopConfigEntry && desktopConfigEntry.x !== undefined && desktopConfigEntry.x > 0) return desktopConfigEntry.x;
-                return Math.round((sw - w) / 2);
-            }
-            case "default":
-            default: {
-                const desk = desktopConfigEntry;
-                return (desk && desk.x !== undefined && desk.x > 0) ? desk.x : 48;
-            }
-        }
-    }
-
-    function getDefaultLockY() {
-        const mode = (configEntry && configEntry.position) ? configEntry.position : (configEntryName === "clock" ? "center" : (configEntryName === "media" ? "bottomLeft" : "default"));
-        const sh = (scaledScreenHeight > 0) ? scaledScreenHeight : screenHeight;
-        const h = (height > 0) ? height : (implicitHeight > 0 ? implicitHeight : 200);
-        switch (mode) {
-            case "center":
-                return Math.round((sh - h) / 2 - 40);
-            case "top":
-            case "topLeft":
-            case "topRight":
-                return 48;
-            case "bottom":
-            case "bottomLeft":
-            case "bottomRight":
-                return Math.round(sh - h - 120);
-            case "custom": {
-                if (configEntry && configEntry.y !== undefined && configEntry.y > 0) return configEntry.y;
-                if (desktopConfigEntry && desktopConfigEntry.y !== undefined && desktopConfigEntry.y > 0) return desktopConfigEntry.y;
-                return Math.round((sh - h) / 2 - 40);
-            }
-            case "default":
-            default: {
-                const desk = desktopConfigEntry;
-                return (desk && desk.y !== undefined && desk.y > 0) ? desk.y : 48;
-            }
-        }
-    }
-
-    property real targetX: isLockWidget
-        ? Math.max(-width + 30, Math.min(getDefaultLockX(), scaledScreenWidth - 30))
-        : Math.max(-width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30))
-    property real targetY: isLockWidget
-        ? Math.max(-height + 30, Math.min(getDefaultLockY(), scaledScreenHeight - 30))
-        : Math.max(-height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30))
+    property real targetX: Math.max(-width + 30, Math.min(configEntry?.x ?? 0, scaledScreenWidth - 30))
+    property real targetY: Math.max(-height + 30, Math.min(configEntry?.y ?? 0, scaledScreenHeight - 30))
     x: targetX
     y: targetY
-    draggable: !Config.options.background.widgetsLocked
+    draggable: !Config.options.background.widgetsLocked && !GlobalStates.screenLocked
     property bool initialPositionSet: false
     animateXPos: !dragging && initialPositionSet
     animateYPos: !dragging && initialPositionSet
@@ -103,13 +41,6 @@ AbstractWidget {
     }
 
     function restoreXYBinding() {
-        if (isLockWidget) {
-            root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getDefaultLockX(), root.scaledScreenWidth - 30)));
-            root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getDefaultLockY(), root.scaledScreenHeight - 30)));
-            root.x = Qt.binding(() => root.targetX);
-            root.y = Qt.binding(() => root.targetY);
-            return;
-        }
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.configEntry?.y ?? 0, root.scaledScreenHeight - 30)));
         root.x = Qt.binding(() => root.targetX);
@@ -117,29 +48,13 @@ AbstractWidget {
     }
 
     function saveDraggedPosition() {
-        if (!configEntry) return;
+        if (!configEntry || GlobalStates.screenLocked) return;
         const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
         const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
         if (newX <= 0 && newY <= 0) return;
-        if (isLockWidget) {
-            configEntry.position = "custom";
-            configEntry.x = newX;
-            configEntry.y = newY;
-            if (desktopConfigEntry) {
-                desktopConfigEntry.x = newX;
-                desktopConfigEntry.y = newY;
-            }
-        } else {
-            configEntry.placementStrategy = "free";
-            configEntry.x = newX;
-            configEntry.y = newY;
-            if (Config.options.lock && Config.options.lock.widgets && Config.options.lock.widgets[configEntryName]) {
-                const lockEntry = Config.options.lock.widgets[configEntryName];
-                lockEntry.position = "custom";
-                lockEntry.x = newX;
-                lockEntry.y = newY;
-            }
-        }
+        configEntry.placementStrategy = "free";
+        configEntry.x = newX;
+        configEntry.y = newY;
         Config.save();
         root.targetX = newX;
         root.targetY = newY;
@@ -179,7 +94,7 @@ AbstractWidget {
     }
 
     Component.onCompleted: {
-        if (!isLockWidget && configEntry) {
+        if (configEntry) {
             // If x and y are uninitialized, center in a natural desktop area
             if ((configEntry.x === undefined || configEntry.x <= 0) && (configEntry.y === undefined || configEntry.y <= 0)) {
                 let naturalX = Math.round(Math.max(48, (scaledScreenWidth - (width > 0 ? width : 450)) / 2));

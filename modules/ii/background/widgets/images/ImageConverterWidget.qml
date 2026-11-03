@@ -17,9 +17,9 @@ AbstractBackgroundWidget {
 
     configEntryName: "images"
 
-    // Balanced, constant geometry — zero jiggle or size shifting
-    implicitWidth: 240
-    implicitHeight: 156
+    // Balanced, proportionate geometry — clean, aesthetic, and comfortably readable
+    implicitWidth: 300
+    implicitHeight: 176
 
     property list<var> formatOptions: [
         // Animation & Video
@@ -626,12 +626,6 @@ AbstractBackgroundWidget {
                             anchors.leftMargin: 8
                             anchors.rightMargin: 8
                             spacing: 4
-
-                            MaterialSymbol {
-                                text: "tune"
-                                iconSize: 14
-                                color: Appearance.colors.colPrimary
-                            }
 
                             TextInput {
                                 id: numInput

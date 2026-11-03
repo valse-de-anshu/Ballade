@@ -13,17 +13,13 @@ AbstractBackgroundWidget {
 
     configEntryName: "clock"
 
-    readonly property string clockStyle: isLockWidget
-        ? Config.options.background.widgets.clock.style
-        : (GlobalStates.screenLocked ? Config.options.background.widgets.clock.styleLocked : Config.options.background.widgets.clock.style)
+    readonly property string clockStyle: Config.options.background.widgets.clock.style
     property bool isLockWidget: false
     implicitWidth: contentColumn.implicitWidth
     implicitHeight: contentColumn.implicitHeight
-    readonly property bool forceCenter: (!isLockWidget && GlobalStates.screenLocked && Config.options.lock.centerClock)
-    readonly property bool shouldShow: (!Config.options.background.widgets.clock.showOnlyWhenLocked || GlobalStates.screenLocked)
+    readonly property bool shouldShow: true
     readonly property string customClockColorKey: Config.options.background.widgets.clock.color ?? ""
     readonly property color resolvedClockColor: {
-        if (GlobalStates.screenLocked) return Appearance.colors.colOnLayer0;
         if (customClockColorKey === "") return root.colText;
         const propName = "col" + customClockColorKey.charAt(0).toUpperCase() + customClockColorKey.slice(1);
         return Appearance.colors[propName] ?? root.colText;
@@ -32,22 +28,15 @@ AbstractBackgroundWidget {
     needsColText: clockStyle === "digital" || clockStyle === "pixel"
     width: implicitWidth
     height: implicitHeight
-    x: isLockWidget ? targetX : (forceCenter ? ((root.screenWidth - root.width) / 2) : targetX)
-    y: isLockWidget ? targetY : (forceCenter ? ((root.screenHeight - root.height) / 2) : targetY)
+    x: targetX
+    y: targetY
     visibleWhenLocked: true
 
     function restoreXYBinding() {
-        if (isLockWidget) {
-            root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.getDefaultLockX(), root.scaledScreenWidth - 30)));
-            root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.getDefaultLockY(), root.scaledScreenHeight - 30)));
-            root.x = Qt.binding(() => root.targetX);
-            root.y = Qt.binding(() => root.targetY);
-            return;
-        }
         root.targetX = Qt.binding(() => Math.max(-root.width + 30, Math.min(root.configEntry?.x ?? 0, root.scaledScreenWidth - 30)));
         root.targetY = Qt.binding(() => Math.max(-root.height + 30, Math.min(root.configEntry?.y ?? 0, root.scaledScreenHeight - 30)));
-        root.x = Qt.binding(() => root.forceCenter ? ((root.screenWidth - root.width) / 2) : root.targetX);
-        root.y = Qt.binding(() => root.forceCenter ? ((root.screenHeight - root.height) / 2) : root.targetY);
+        root.x = Qt.binding(() => root.targetX);
+        root.y = Qt.binding(() => root.targetY);
     }
 
     Connections {

@@ -19,7 +19,7 @@ Scope {
     
     Loader {
         id: overlayLoader
-        active: GlobalStates.overlayOpen || OverlayContext.hasPinnedWidgets
+        active: (GlobalStates.overlayOpen || OverlayContext.hasPinnedWidgets) && !GlobalStates.screenLocked
         sourceComponent: PanelWindow {
             id: overlayWindow
             exclusionMode: ExclusionMode.Ignore

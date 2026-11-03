@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -12,6 +14,7 @@ import qs.modules.common.panels.lock
 import qs.modules.ii.bar as Bar
 import Quickshell
 import Quickshell.Services.SystemTray
+import Quickshell.Hyprland
 import qs.modules.ii.background.widgets
 import qs.modules.ii.background.widgets.clock
 import qs.modules.ii.background.widgets.weather
@@ -27,10 +30,11 @@ import qs.modules.common.widgets.widgetCanvas
 
 Item {
     id: root
+
     required property LockContext context
     property bool active: false
     property bool showInputField: active || context.currentText.length > 0
-    readonly property bool requirePasswordToPower: Config.options.lock.security.requirePasswordToPower
+    readonly property bool requirePasswordToPower: Config.options.lock?.security?.requirePasswordToPower ?? false
 
     function getShapeFromName(name) {
         switch (name) {
@@ -83,6 +87,7 @@ Item {
         return wPath.startsWith("file://") ? wPath : "file://" + wPath;
     }
 
+    // ── 1. Wallpaper Backdrop with Subtle Cinematic Depth ───────────────────
     Item {
         id: lockBackdrop
         anchors.fill: parent
@@ -90,7 +95,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Appearance.colors.colLayer0Base || Appearance.colors.colLayer0 || "#181825"
+            color: Appearance.colors.colLayer0Base || Appearance.colors.colLayer0 || "#121318"
         }
 
         Image {
@@ -106,14 +111,20 @@ Item {
             id: lockBlurLayer
             anchors.fill: parent
             source: lockWallImg
-            radius: Config.options.lock.blur.radius ?? 48
-            visible: Config.options.lock.blur.enable
+            radius: (Config.options.lock.blur && Config.options.lock.blur.enable)
+                ? Math.min(Config.options.lock.blur.radius ?? 32, 48)
+                : 0
+            visible: (Config.options.lock.blur && Config.options.lock.blur.enable)
         }
 
+        // Elegant soft vignette so widgets and unlock controls pop with stunning contrast
         Rectangle {
             anchors.fill: parent
-            color: Appearance.colors.colLayer0 || "#181825"
-            opacity: Config.options.lock.blur.enable ? 0.35 : 0.15
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.20) }
+                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.05) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.42) }
+            }
         }
 
         Loader {
@@ -151,16 +162,20 @@ Item {
         }
     }
 
-    // Force focus on entry
+    // ── Focus & Keyboard Handling ───────────────────────────────────────────
     function forceFieldFocus() {
-        passwordBox.forceActiveFocus();
-    }
-    Connections {
-        target: context
-        function onShouldReFocus() {
-            forceFieldFocus();
+        if (passwordInput) {
+            passwordInput.forceActiveFocus();
         }
     }
+
+    Connections {
+        target: root.context
+        function onShouldReFocus() {
+            root.forceFieldFocus();
+        }
+    }
+
     MouseArea {
         id: lockBackgroundClickArea
         anchors.fill: parent
@@ -169,65 +184,33 @@ Item {
         onPressed: root.forceFieldFocus()
     }
 
-    // Toolbar appearing animation
-    property real toolbarScale: 0.9
-    property real toolbarOpacity: 0
-    Behavior on toolbarScale {
-        NumberAnimation {
-            duration: Appearance.animation.elementMove.duration
-            easing.type: Appearance.animation.elementMove.type
-            easing.bezierCurve: Appearance.animationCurves.expressiveFastSpatial
-        }
-    }
-    Behavior on toolbarOpacity {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-    }
-
-    // Init
-    Component.onCompleted: {
-        forceFieldFocus();
-        toolbarScale = 1;
-        toolbarOpacity = 1;
-    }
-
-    // Key presses
     property bool ctrlHeld: false
+
     Keys.onPressed: event => {
         root.context.resetClearTimer();
         if (event.key === Qt.Key_Control) {
             root.ctrlHeld = true;
         }
-        if (event.key === Qt.Key_Escape) { // Esc to clear
+        if (event.key === Qt.Key_Escape) {
             root.context.currentText = "";
-        } 
-        forceFieldFocus();
+            if (passwordInput) passwordInput.text = "";
+            GlobalStates.screenUnlockFailed = false;
+        }
+        root.forceFieldFocus();
     }
+
     Keys.onReleased: event => {
         if (event.key === Qt.Key_Control) {
             root.ctrlHeld = false;
         }
-        forceFieldFocus();
+        root.forceFieldFocus();
     }
 
-    // RippleButton {
-    //     anchors {
-    //         top: parent.top
-    //         left: parent.left
-    //         leftMargin: 10
-    //         topMargin: 10
-    //     }
-    //     implicitHeight: 40
-    //     colBackground: Appearance.colors.colLayer2
-    //     onClicked: {
-    //         context.unlocked(LockContext.ActionEnum.Unlock);
-    //         GlobalStates.screenLocked = false;
-    //     }
-    //     contentItem: StyledText {
-    //         text: "[[ DEBUG BYPASS ]]"
-    //     }
-    // }
+    Component.onCompleted: {
+        root.forceFieldFocus();
+    }
 
-    // Lock screen widgets area: identical to desktop WidgetCanvas
+    // ── 2. Unified Desktop Widgets Canvas (100% Identical to Home Screen) ───
     WidgetCanvas {
         id: lockWidgetCanvas
         z: 10
@@ -235,12 +218,11 @@ Item {
         visible: (Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true
         onPressed: mouse => root.forceFieldFocus()
 
+        // Visualizer 1
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer && Config.options.lock.widgets.visualizer.enable)
-                    || (Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.enable)))
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.visualizer.enable)
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer"
-                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -249,12 +231,11 @@ Item {
             }
         }
 
+        // Visualizer 2
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer2 && Config.options.lock.widgets.visualizer2.enable)
-                    || (Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)))
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer2"
-                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -263,6 +244,7 @@ Item {
             }
         }
 
+        // Custom Image
         FadeLoader {
             shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.customImage.enable)
             sourceComponent: CustomImage {
@@ -274,6 +256,7 @@ Item {
             }
         }
 
+        // Extra Custom Images
         Repeater {
             model: Config.options.background.widgets.customImages
             delegate: FadeLoader {
@@ -290,12 +273,37 @@ Item {
             }
         }
 
+        // Calendar
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.clock && Config.options.lock.widgets.clock.enable)
-                    || (Config.options.background.widgets.clock && Config.options.background.widgets.clock.enable)))
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.calendar.enable)
+            sourceComponent: CalendarWidget {
+                configEntryName: "calendar"
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        // Weather
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.weather.enable)
+            sourceComponent: WeatherWidget {
+                configEntryName: "weather"
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        // Clock
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.clock.enable)
             sourceComponent: ClockWidget {
                 configEntryName: "clock"
-                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -305,14 +313,26 @@ Item {
             }
         }
 
+        // Goals & Notes
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.goals.enable)
+            sourceComponent: GoalsWidget {
+                configEntryName: "goals"
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        // Media Player
         FadeLoader {
             id: mediaLoader
             property bool enableLoading: true
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.media && Config.options.lock.widgets.media.enable)
-                    || (Config.options.background.widgets.media && Config.options.background.widgets.media.enable)) && enableLoading)
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.media.enable && enableLoading)
             sourceComponent: MediaWidget {
                 configEntryName: "media"
-                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -321,77 +341,11 @@ Item {
             }
         }
 
+        // Media Studio (Image Converter)
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.weather && Config.options.lock.widgets.weather.enable)
-            sourceComponent: WeatherWidget {
-                configEntryName: "weather"
-                isLockWidget: true
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.calendar && Config.options.lock.widgets.calendar.enable)
-            sourceComponent: CalendarWidget {
-                configEntryName: "calendar"
-                isLockWidget: true
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.goals && Config.options.lock.widgets.goals.enable)
-            sourceComponent: GoalsWidget {
-                configEntryName: "goals"
-                isLockWidget: true
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.userCard && Config.options.lock.widgets.userCard.enable)
-            sourceComponent: UserCardWidget {
-                configEntryName: "userCard"
-                isLockWidget: true
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.resources && Config.options.lock.widgets.resources.enable)
-            sourceComponent: ResourcesWidget {
-                configEntryName: "resources"
-                isLockWidget: true
-                screenWidth: root.width
-                screenHeight: root.height
-                scaledScreenWidth: root.width
-                scaledScreenHeight: root.height
-                wallpaperScale: 1
-            }
-        }
-
-        FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.images && Config.options.lock.widgets.images.enable)
-                    || (Config.options.background.widgets.images && Config.options.background.widgets.images.enable)))
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.images && Config.options.background.widgets.images.enable)
             sourceComponent: ImageConverterWidget {
                 configEntryName: "images"
-                isLockWidget: true
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -400,11 +354,37 @@ Item {
             }
         }
 
+        // System Resources
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && Config.options.lock.widgets.worldClock && Config.options.lock.widgets.worldClock.enable)
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.resources.enable)
+            sourceComponent: ResourcesWidget {
+                configEntryName: "resources"
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        // World Clock
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.worldClock.enable)
             sourceComponent: WorldClockWidget {
                 configEntryName: "worldClock"
-                isLockWidget: true
+                screenWidth: root.width
+                screenHeight: root.height
+                scaledScreenWidth: root.width
+                scaledScreenHeight: root.height
+                wallpaperScale: 1
+            }
+        }
+
+        // User Card
+        FadeLoader {
+            shown: Boolean(Config.options.lock.showWidgets && Config.options.background.widgets.userCard.enable)
+            sourceComponent: UserCardWidget {
+                configEntryName: "userCard"
                 screenWidth: root.width
                 screenHeight: root.height
                 scaledScreenWidth: root.width
@@ -414,284 +394,445 @@ Item {
         }
     }
 
-    // Main toolbar: password box
-    Toolbar {
-        id: mainIsland
+    // ── 3. Sleek Top-Right Status & Power Capsule ───────────────────────────
+    Rectangle {
+        id: statusCapsule
         z: 100
         anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
-            bottomMargin: 20
+            top: parent.top
+            right: parent.right
+            margins: 20
         }
-        Behavior on anchors.bottomMargin {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
-        }
+        implicitHeight: 38
+        implicitWidth: statusRow.implicitWidth + 24
+        radius: 19
+        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.45)
+        border.width: 1
+        border.color: Qt.rgba(255, 255, 255, 0.12)
 
-        scale: root.toolbarScale
-        opacity: root.toolbarOpacity
+        RowLayout {
+            id: statusRow
+            anchors.centerIn: parent
+            spacing: 10
 
-        // Fingerprint
-        Loader {
-            Layout.leftMargin: 10
-            Layout.rightMargin: 6
-            Layout.alignment: Qt.AlignVCenter
-            active: root.context.fingerprintsConfigured
-            visible: active
-
-            sourceComponent: MaterialSymbol {
-                id: fingerprintIcon
-                fill: 1
-                text: "fingerprint"
-                iconSize: Appearance.font.pixelSize.hugeass
-                color: Appearance.colors.colOnSurfaceVariant
-            }
-        }
-
-        ToolbarTextField {
-            id: passwordBox
-            Layout.rightMargin: -Layout.leftMargin
-            placeholderText: GlobalStates.screenUnlockFailed ? Translation.tr("Incorrect password") : Translation.tr("Enter password")
-
-            // Style
-            clip: true
-            font.pixelSize: Appearance.font.pixelSize.small
-            selectedTextColor: materialShapeChars ? "transparent" : Appearance.colors.colOnSecondaryContainer
-            selectionColor: materialShapeChars ? "transparent" : Appearance.colors.colSecondaryContainer
-
-            // Password
-            enabled: !root.context.unlockInProgress
-            echoMode: TextInput.Password
-            inputMethodHints: Qt.ImhSensitiveData
-
-            // Synchronizing (across monitors) and unlocking
-            onTextChanged: root.context.currentText = this.text
-            onAccepted: {
-                root.context.tryUnlock(ctrlHeld);
-            }
-            Connections {
-                target: root.context
-                function onCurrentTextChanged() {
-                    passwordBox.text = root.context.currentText;
-                }
-            }
-
-            Keys.onPressed: event => {
-                root.context.resetClearTimer();
-            }
-            
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: passwordBox.width - 8
-                    height: passwordBox.height
-                    radius: height / 2
-                }
-            }
-
-            // Shake when wrong password
-            ErrorShakeAnimation {
-                id: wrongPasswordShakeAnim
-                target: passwordBox
-            }
-            Connections {
-                target: GlobalStates
-                function onScreenUnlockFailedChanged() {
-                    if (GlobalStates.screenUnlockFailed) wrongPasswordShakeAnim.restart();
-                }
-            }
-
-            // We're drawing dots manually
-            property bool materialShapeChars: Config.options.lock.materialShapeChars
-            color: ColorUtils.transparentize(Appearance.colors.colOnLayer1, materialShapeChars ? 1 : 0)
-            Loader {
-                active: passwordBox.materialShapeChars
-                anchors {
-                    fill: parent
-                    leftMargin: passwordBox.padding
-                    rightMargin: passwordBox.padding
-                }
-                sourceComponent: PasswordChars {
-                    length: root.context.currentText.length
-                    selectionStart: passwordBox.selectionStart
-                    selectionEnd: passwordBox.selectionEnd
-                    cursorPosition: passwordBox.cursorPosition
-                }
-            }
-        }
-
-        ToolbarButton {
-            id: confirmButton
-            implicitWidth: height
-            toggled: true
-            enabled: !root.context.unlockInProgress
-            colBackgroundToggled: Appearance.colors.colPrimary
-
-            onClicked: root.context.tryUnlock()
-
-            contentItem: MaterialSymbol {
-                anchors.centerIn: parent
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                iconSize: 24
-                text: {
-                    if (root.context.targetAction === LockContext.ActionEnum.Unlock) {
-                        return root.ctrlHeld ? "coffee" : "arrow_right_alt";
-                    } else if (root.context.targetAction === LockContext.ActionEnum.Poweroff) {
-                        return "power_settings_new";
-                    } else if (root.context.targetAction === LockContext.ActionEnum.Reboot) {
-                        return "restart_alt";
-                    }
-                }
-                color: confirmButton.enabled ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
-            }
-        }
-    }
-
-    // Left toolbar
-    Toolbar {
-        id: leftIsland
-        z: 100
-        anchors {
-            right: mainIsland.left
-            top: mainIsland.top
-            bottom: mainIsland.bottom
-            rightMargin: 10
-        }
-        scale: root.toolbarScale
-        opacity: root.toolbarOpacity
-
-        // Username
-        IconAndTextPair {
-            Layout.leftMargin: 8
-            icon: "account_circle"
-            text: SystemInfo.username
-        }
-
-        // Keyboard layout (Xkb)
-        Loader {
-            Layout.rightMargin: 8
-            Layout.fillHeight: true
-
-            active: true
-            visible: active
-
-            sourceComponent: Row {
-                spacing: 8
-
+            // Keyboard Layout
+            RowLayout {
+                spacing: 4
                 MaterialSymbol {
-                    id: keyboardIcon
-                    anchors.verticalCenter: parent.verticalCenter
-                    fill: 1
                     text: "keyboard_alt"
-                    iconSize: Appearance.font.pixelSize.huge
+                    iconSize: 15
                     color: Appearance.colors.colOnSurfaceVariant
                 }
-                Loader {
-                    anchors.verticalCenter: parent.verticalCenter
-                    sourceComponent: StyledText {
-                        text: HyprlandXkb.currentLayoutCode
-                        color: Appearance.colors.colOnSurfaceVariant
-                        animateChange: true
+                StyledText {
+                    text: HyprlandXkb.currentLayoutCode
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
+            }
+
+            // Fcitx SysTray
+            Bar.SysTray {
+                showSeparator: false
+                showOverflowMenu: false
+                pinnedItems: SystemTray.items.values.filter(i => i.id == "Fcitx")
+                visible: pinnedItems.length > 0
+            }
+
+            // Divider
+            Rectangle {
+                implicitWidth: 1
+                implicitHeight: 14
+                color: Qt.rgba(255, 255, 255, 0.14)
+            }
+
+            // Battery Status
+            RowLayout {
+                visible: Battery.available
+                spacing: 4
+                MaterialSymbol {
+                    text: Battery.isCharging ? "bolt" : "battery_android_full"
+                    iconSize: 15
+                    color: (Battery.isLow && !Battery.isCharging) ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
+                }
+                StyledText {
+                    text: Math.round(Battery.percentage * 100) + "%"
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
+            }
+
+            // Divider (if battery visible)
+            Rectangle {
+                visible: Battery.available
+                implicitWidth: 1
+                implicitHeight: 14
+                color: Qt.rgba(255, 255, 255, 0.14)
+            }
+
+            // Quick Power Actions
+            RowLayout {
+                spacing: 4
+
+                // Suspend / Sleep
+                Rectangle {
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: 14
+                    color: sleepHover.containsMouse
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        : "transparent"
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "dark_mode"
+                        iconSize: 15
+                        color: sleepHover.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
+                    }
+                    MouseArea {
+                        id: sleepHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Session.suspend()
+                    }
+                    StyledToolTip {
+                        extraVisibleCondition: sleepHover.containsMouse
+                        text: Translation.tr("Sleep")
+                    }
+                }
+
+                // Restart
+                Rectangle {
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: 14
+                    color: (root.context.targetAction === LockContext.ActionEnum.Reboot || restartHover.containsMouse)
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        : "transparent"
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "restart_alt"
+                        iconSize: 15
+                        color: (root.context.targetAction === LockContext.ActionEnum.Reboot || restartHover.containsMouse)
+                            ? Appearance.colors.colPrimary
+                            : Appearance.colors.colOnSurfaceVariant
+                    }
+                    MouseArea {
+                        id: restartHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (!root.requirePasswordToPower) {
+                                root.context.unlocked(LockContext.ActionEnum.Reboot);
+                                return;
+                            }
+                            if (root.context.targetAction === LockContext.ActionEnum.Reboot) {
+                                root.context.resetTargetAction();
+                            } else {
+                                root.context.targetAction = LockContext.ActionEnum.Reboot;
+                                root.forceFieldFocus();
+                            }
+                        }
+                    }
+                    StyledToolTip {
+                        extraVisibleCondition: restartHover.containsMouse
+                        text: Translation.tr("Restart")
+                    }
+                }
+
+                // Power Off
+                Rectangle {
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    radius: 14
+                    color: (root.context.targetAction === LockContext.ActionEnum.Poweroff || powerHover.containsMouse)
+                        ? Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.22)
+                        : "transparent"
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "power_settings_new"
+                        iconSize: 15
+                        color: (root.context.targetAction === LockContext.ActionEnum.Poweroff || powerHover.containsMouse)
+                            ? Appearance.colors.colError
+                            : Appearance.colors.colOnSurfaceVariant
+                    }
+                    MouseArea {
+                        id: powerHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (!root.requirePasswordToPower) {
+                                root.context.unlocked(LockContext.ActionEnum.Poweroff);
+                                return;
+                            }
+                            if (root.context.targetAction === LockContext.ActionEnum.Poweroff) {
+                                root.context.resetTargetAction();
+                            } else {
+                                root.context.targetAction = LockContext.ActionEnum.Poweroff;
+                                root.forceFieldFocus();
+                            }
+                        }
+                    }
+                    StyledToolTip {
+                        extraVisibleCondition: powerHover.containsMouse
+                        text: Translation.tr("Shut Down")
                     }
                 }
             }
         }
-
-        // Keyboard layout (Fcitx)
-        Bar.SysTray {
-            Layout.rightMargin: 10
-            Layout.alignment: Qt.AlignVCenter
-            showSeparator: false
-            showOverflowMenu: false
-            pinnedItems: SystemTray.items.values.filter(i => i.id == "Fcitx")
-            visible: pinnedItems.length > 0
-        }
     }
 
-    // Right toolbar
-    Toolbar {
-        id: rightIsland
+    // ── 4. The Hero Element: Liquid Glass Unlock Island ─────────────────────
+    Item {
+        id: heroUnlockContainer
         z: 100
-        anchors {
-            left: mainIsland.right
-            top: mainIsland.top
-            bottom: mainIsland.bottom
-            leftMargin: 10
-        }
+        anchors.centerIn: parent
+        width: unlockColumn.implicitWidth
+        height: unlockColumn.implicitHeight
 
-        scale: root.toolbarScale
-        opacity: root.toolbarOpacity
+        ColumnLayout {
+            id: unlockColumn
+            anchors.centerIn: parent
+            spacing: 12
+            Layout.alignment: Qt.AlignHCenter
 
-        IconAndTextPair {
-            visible: Battery.available
-            icon: Battery.isCharging ? "bolt" : "battery_android_full"
-            text: Math.round(Battery.percentage * 100)
-            color: (Battery.isLow && !Battery.isCharging) ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
-        }
+            // User Avatar & Name
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 8
 
-        IconToolbarButton {
-            id: sleepButton
-            onClicked: Session.suspend()
-            text: "dark_mode"
-        }
+                // Circular Avatar
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: 64
+                    implicitHeight: 64
+                    radius: 32
+                    color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.40)
+                    border.width: 1.5
+                    border.color: Qt.rgba(255, 255, 255, 0.24)
 
-        PasswordGuardedIconToolbarButton {
-            id: powerButton
-            text: "power_settings_new"
-            targetAction: LockContext.ActionEnum.Poweroff
-        }
+                    readonly property string avatarSource: {
+                        const pic = Config.options.profile?.avatarPicture ?? "";
+                        if (pic && pic !== "") return pic.startsWith("file://") ? pic : "file://" + pic;
+                        const p = Config.options.profile?.avatarPath ?? "";
+                        if (p && p !== "") return p.startsWith("file://") ? p : "file://" + p;
+                        return "";
+                    }
 
-        PasswordGuardedIconToolbarButton {
-            id: rebootButton
-            text: "restart_alt"
-            targetAction: LockContext.ActionEnum.Reboot
-        }
-    }
+                    Image {
+                        id: avatarImg
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        source: parent.avatarSource
+                        fillMode: Image.PreserveAspectCrop
+                        cache: true
+                        visible: status === Image.Ready
 
-    component PasswordGuardedIconToolbarButton: IconToolbarButton {
-        id: guardedBtn
-        required property var targetAction
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: avatarImg.width
+                                height: avatarImg.height
+                                radius: width / 2
+                            }
+                        }
+                    }
 
-        toggled: root.context.targetAction === guardedBtn.targetAction
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        visible: !avatarImg.visible
+                        text: "person"
+                        iconSize: 34
+                        color: Appearance.colors.colPrimary
+                    }
+                }
 
-        onClicked: {
-            if (!root.requirePasswordToPower) {
-                root.context.unlocked(guardedBtn.targetAction);
-                return;
+                // Display Name / Username
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: {
+                        const disp = Config.options.profile?.displayName ?? "";
+                        if (disp && disp.length > 0) return disp;
+                        return SystemInfo.realName || SystemInfo.username || "User";
+                    }
+                    font.pixelSize: Appearance.font.pixelSize.medium
+                    font.weight: Font.DemiBold
+                    font.family: Appearance.font.family.main
+                    color: Appearance.colors.colOnLayer0 || "#ffffff"
+                }
             }
-            if (root.context.targetAction === guardedBtn.targetAction) {
-                root.context.resetTargetAction();
-            } else {
-                root.context.targetAction = guardedBtn.targetAction;
-                root.context.shouldReFocus();
+
+            // Liquid Glass Password Capsule
+            Rectangle {
+                id: passwordCapsule
+                Layout.alignment: Qt.AlignHCenter
+                implicitWidth: 320
+                implicitHeight: 48
+                radius: 24
+                color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.48)
+                border.width: (passwordInput.activeFocus || GlobalStates.screenUnlockFailed) ? 1.5 : 1
+                border.color: GlobalStates.screenUnlockFailed
+                    ? Appearance.colors.colError
+                    : (passwordInput.activeFocus ? Appearance.colors.colPrimary : Qt.rgba(255, 255, 255, 0.16))
+
+                Behavior on border.color {
+                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                }
+
+                // Shake Animation on wrong password
+                SequentialAnimation {
+                    id: shakeAnim
+                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x - 14; duration: 45; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x + 14; duration: 45; easing.type: Easing.InOutQuad }
+                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x - 7; duration: 35; easing.type: Easing.InOutQuad }
+                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x + 7; duration: 35; easing.type: Easing.InOutQuad }
+                    NumberAnimation { target: passwordCapsule; property: "x"; to: passwordCapsule.x; duration: 30; easing.type: Easing.OutQuad }
+                }
+
+                Connections {
+                    target: GlobalStates
+                    function onScreenUnlockFailedChanged() {
+                        if (GlobalStates.screenUnlockFailed) {
+                            shakeAnim.restart();
+                            root.context.currentText = "";
+                            if (passwordInput) passwordInput.text = "";
+                            root.forceFieldFocus();
+                        }
+                    }
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 6
+                    spacing: 8
+
+                    // Left Icon
+                    MaterialSymbol {
+                        text: root.context.fingerprintsConfigured ? "fingerprint" : (root.context.currentText.length > 0 ? "key" : "lock")
+                        iconSize: 18
+                        color: root.context.currentText.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
+                    }
+
+                    // Password Input Field & Masked Dots
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+
+                        // Placeholder
+                        StyledText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            visible: root.context.currentText.length === 0
+                            text: GlobalStates.screenUnlockFailed
+                                ? Translation.tr("Incorrect password")
+                                : (root.context.fingerprintsConfigured ? Translation.tr("Fingerprint or password") : Translation.tr("Enter password"))
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: GlobalStates.screenUnlockFailed ? Appearance.colors.colError : Appearance.colors.colSubtext
+                        }
+
+                        // Animated Shape Characters
+                        Loader {
+                            active: Config.options.lock?.materialShapeChars ?? true
+                            anchors.fill: parent
+                            visible: root.context.currentText.length > 0
+                            sourceComponent: PasswordChars {
+                                length: root.context.currentText.length
+                                selectionStart: passwordInput.selectionStart
+                                selectionEnd: passwordInput.selectionEnd
+                                cursorPosition: passwordInput.cursorPosition
+                            }
+                        }
+
+                        // Text Input
+                        TextInput {
+                            id: passwordInput
+                            anchors.fill: parent
+                            verticalAlignment: TextInput.AlignVCenter
+                            echoMode: TextInput.Password
+                            color: (Config.options.lock?.materialShapeChars ?? true) ? "transparent" : Appearance.colors.colOnLayer1
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            font.family: Appearance.font.family.main
+                            enabled: !root.context.unlockInProgress
+                            inputMethodHints: Qt.ImhSensitiveData
+
+                            onTextChanged: {
+                                root.context.currentText = text;
+                            }
+                            onAccepted: {
+                                root.context.tryUnlock(root.ctrlHeld);
+                            }
+
+                            Connections {
+                                target: root.context
+                                function onCurrentTextChanged() {
+                                    if (passwordInput.text !== root.context.currentText) {
+                                        passwordInput.text = root.context.currentText;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Submit Action Button
+                    Rectangle {
+                        id: submitBtn
+                        implicitWidth: 36
+                        implicitHeight: 36
+                        radius: 18
+                        color: (root.context.currentText.length > 0 || submitHover.containsMouse)
+                            ? Appearance.colors.colPrimary
+                            : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
+
+                        Behavior on color {
+                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                        }
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: {
+                                if (root.context.targetAction === LockContext.ActionEnum.Poweroff) return "power_settings_new";
+                                if (root.context.targetAction === LockContext.ActionEnum.Reboot) return "restart_alt";
+                                return root.ctrlHeld ? "coffee" : "arrow_forward";
+                            }
+                            iconSize: 18
+                            color: (root.context.currentText.length > 0 || submitHover.containsMouse)
+                                ? Appearance.colors.colOnPrimary
+                                : Appearance.colors.colSubtext
+                        }
+
+                        MouseArea {
+                            id: submitHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.context.tryUnlock(root.ctrlHeld)
+                        }
+                    }
+                }
             }
-        }
-    }
 
-    component IconAndTextPair: Row {
-        id: pair
-        required property string icon
-        required property string text
-        property color color: Appearance.colors.colOnSurfaceVariant
+            // Subtle Hint Subtext
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: {
+                    if (GlobalStates.screenUnlockFailed) return Translation.tr("Press Esc to clear");
+                    if (root.ctrlHeld) return Translation.tr("Coffee break mode · Screen will stay awake");
+                    if (root.context.targetAction === LockContext.ActionEnum.Poweroff) return Translation.tr("Enter password to shut down");
+                    if (root.context.targetAction === LockContext.ActionEnum.Reboot) return Translation.tr("Enter password to restart");
+                    return "";
+                }
+                font.pixelSize: Appearance.font.pixelSize.smallest
+                color: GlobalStates.screenUnlockFailed ? Appearance.colors.colError : Appearance.colors.colSubtext
+                opacity: text.length > 0 ? 0.9 : 0.0
 
-        spacing: 4
-        Layout.fillHeight: true
-        Layout.leftMargin: 10
-        Layout.rightMargin: 10
-        
-
-        MaterialSymbol {
-            anchors.verticalCenter: parent.verticalCenter
-            fill: 1
-            text: pair.icon
-            iconSize: Appearance.font.pixelSize.huge
-            animateChange: true
-            color: pair.color
-        }
-        StyledText {
-            anchors.verticalCenter: parent.verticalCenter
-            text: pair.text
-            color: pair.color
+                Behavior on opacity {
+                    NumberAnimation { duration: 180 }
+                }
+            }
         }
     }
 }

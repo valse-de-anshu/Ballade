@@ -70,26 +70,11 @@ AbstractBackgroundWidget {
         const w = (root.ringSize > 0) ? root.ringSize : 380;
         const centerX = Math.round((sw - w) / 2);
 
-        if (root.isLockWidget) {
-            const mode = (root.configEntry && root.configEntry.position) ? root.configEntry.position : "default";
-            if (mode === "custom" && root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
-                return root.configEntry.x;
-            }
-            if (mode === "center") return centerX;
-            if (mode === "topLeft" || mode === "bottomLeft") return 48;
-            if (mode === "topRight" || mode === "bottomRight") return Math.round(sw - w - 48);
-            if (mode === "top" || mode === "bottom") return centerX;
-            if (root.desktopConfigEntry && root.desktopConfigEntry.x !== undefined && root.desktopConfigEntry.x > 0) {
-                return root.desktopConfigEntry.x;
-            }
-            return centerX;
-        }
-
-        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.x !== undefined && root.configEntry.x > 0) {
-            return root.configEntry.x;
-        }
         if (root.configEntry && root.configEntry.x !== undefined && root.configEntry.x > 0) {
             return root.configEntry.x;
+        }
+        if (root.desktopConfigEntry && root.desktopConfigEntry.x !== undefined && root.desktopConfigEntry.x > 0) {
+            return root.desktopConfigEntry.x;
         }
         return centerX;
     }
@@ -98,25 +83,11 @@ AbstractBackgroundWidget {
         const h = (root.ringSize > 0) ? root.ringSize : 380;
         const centerY = Math.round((sh - h) / 2);
 
-        if (root.isLockWidget) {
-            const mode = (root.configEntry && root.configEntry.position) ? root.configEntry.position : "default";
-            if (mode === "custom" && root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
-                return root.configEntry.y;
-            }
-            if (mode === "center") return centerY;
-            if (mode === "top" || mode === "topLeft" || mode === "topRight") return 48;
-            if (mode === "bottom" || mode === "bottomLeft" || mode === "bottomRight") return Math.round(sh - h - 120);
-            if (root.desktopConfigEntry && root.desktopConfigEntry.y !== undefined && root.desktopConfigEntry.y > 0) {
-                return root.desktopConfigEntry.y;
-            }
-            return centerY;
-        }
-
-        if (root.configEntry && root.configEntry.placementStrategy === "free" && root.configEntry.y !== undefined && root.configEntry.y > 0) {
-            return root.configEntry.y;
-        }
         if (root.configEntry && root.configEntry.y !== undefined && root.configEntry.y > 0) {
             return root.configEntry.y;
+        }
+        if (root.desktopConfigEntry && root.desktopConfigEntry.y !== undefined && root.desktopConfigEntry.y > 0) {
+            return root.desktopConfigEntry.y;
         }
         return centerY;
     }
@@ -170,28 +141,12 @@ AbstractBackgroundWidget {
     }
 
     function saveVisualizerPosition() {
-        if (!root.isRing || !root.configEntry) return;
+        if (!root.isRing || !root.configEntry || GlobalStates.screenLocked) return;
         const newX = Math.round(root.lastDragX !== undefined ? root.lastDragX : root.x);
         const newY = Math.round(root.lastDragY !== undefined ? root.lastDragY : root.y);
-        if (root.isLockWidget) {
-            root.configEntry.position = "custom";
-            root.configEntry.x = newX;
-            root.configEntry.y = newY;
-            if (root.desktopConfigEntry) {
-                root.desktopConfigEntry.x = newX;
-                root.desktopConfigEntry.y = newY;
-            }
-        } else {
-            root.configEntry.placementStrategy = "free";
-            root.configEntry.x = newX;
-            root.configEntry.y = newY;
-            if (Config.options.lock && Config.options.lock.widgets && Config.options.lock.widgets[root.configEntryName]) {
-                const lockEntry = Config.options.lock.widgets[root.configEntryName];
-                lockEntry.position = "custom";
-                lockEntry.x = newX;
-                lockEntry.y = newY;
-            }
-        }
+        root.configEntry.placementStrategy = "free";
+        root.configEntry.x = newX;
+        root.configEntry.y = newY;
         Config.save();
         root.targetX = newX;
         root.targetY = newY;
