@@ -121,16 +121,39 @@ AbstractBackgroundWidget {
         return centerY;
     }
 
+    readonly property bool hasAudioPoints: {
+        const pts = GlobalStates.visualizerPoints;
+        if (!pts || pts.length === 0) return false;
+        for (let i = 0; i < pts.length; i++) {
+            if (pts[i] > 0) return true;
+        }
+        return false;
+    }
+    readonly property bool isMusicPlaying: Boolean(
+        (MprisController.activePlayer && MprisController.activePlayer.isPlaying) ||
+        (MprisController.players && MprisController.players.some(p => p && p.isPlaying)) ||
+        hasAudioPoints
+    )
+
     implicitWidth: isRing ? ringSize : screenWidth
     implicitHeight: isRing ? ringSize : shaderStyle ? bandHeight : barsHeight
     width: implicitWidth
     height: implicitHeight
     x: isRing ? targetX : 0
     y: isRing ? targetY : (isTop ? 0 : (screenHeight - implicitHeight))
-    enabled: isRing
-    acceptedButtons: isRing ? Qt.LeftButton : Qt.NoButton
-    draggable: isRing && !Config.options.background.widgetsLocked
-    hoverEnabled: isRing
+    opacity: isMusicPlaying ? 1.0 : 0.0
+    visible: opacity > 0.001
+    enabled: isMusicPlaying && isRing
+    acceptedButtons: (isMusicPlaying && isRing) ? Qt.LeftButton : Qt.NoButton
+    draggable: isMusicPlaying && isRing && !Config.options.background.widgetsLocked
+    hoverEnabled: isMusicPlaying && isRing
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 350
+            easing.type: Easing.InOutQuad
+        }
+    }
 
     function restoreXYBinding() {
         if (!root.isRing) {
@@ -345,8 +368,8 @@ AbstractBackgroundWidget {
 
     VisualizerEngine {
         id: levelEngine
-        active: root.shaderStyle
-        persistVisible: root.isRing
+        active: root.shaderStyle && root.isMusicPlaying
+        persistVisible: false
         sensitivity: {
             if (root.configEntry && root.configEntry.sensitivity !== undefined) return root.configEntry.sensitivity;
             if (root.desktopConfigEntry && root.desktopConfigEntry.sensitivity !== undefined) return root.desktopConfigEntry.sensitivity;
@@ -406,8 +429,10 @@ AbstractBackgroundWidget {
 
     ResizeHandler {
         anchorItem: root
-        hoverActive: root.containsMouse
-        locked: Config.options.background.widgetsLocked || !root.isRing
+        hoverActive: root.containsMouse && root.isMusicPlaying
+        locked: Config.options.background.widgetsLocked || !root.isRing || !root.isMusicPlaying
+        visible: root.isMusicPlaying && root.isRing
+        enabled: root.isMusicPlaying && root.isRing
         currentWidth: root.ringSize
         resizeMode: "diagonal"
         onResized: newValue => {

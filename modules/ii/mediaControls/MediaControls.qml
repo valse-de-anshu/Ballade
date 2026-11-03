@@ -57,7 +57,7 @@ Scope {
 
     Process {
         id: cavaProc
-        running: (MprisController.activePlayer?.isPlaying ?? false) || mediaControlsLoader.active
+        running: (MprisController.activePlayer?.isPlaying ?? false) || (MprisController.players && MprisController.players.some(p => p && p.isPlaying)) || mediaControlsLoader.active
         onRunningChanged: {
             if (!cavaProc.running) {
                 root.visualizerPoints = [];

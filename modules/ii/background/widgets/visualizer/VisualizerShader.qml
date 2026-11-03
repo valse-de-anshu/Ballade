@@ -35,7 +35,7 @@ ShaderEffect {
     property vector4d p8; property vector4d p9; property vector4d p10; property vector4d p11
     property vector4d p12
 
-    visible: (root.style === "ring") || (fade > 0)
+    visible: fade > 0.001
     blending: true
     fragmentShader: Qt.resolvedUrl(`shaders/${style}.frag.qsb`)
 
