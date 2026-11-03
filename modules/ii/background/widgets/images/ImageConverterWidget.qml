@@ -18,8 +18,8 @@ AbstractBackgroundWidget {
     configEntryName: "images"
 
     // Balanced, constant geometry — zero jiggle or size shifting
-    implicitWidth: 350
-    implicitHeight: 284
+    implicitWidth: 240
+    implicitHeight: 156
 
     property list<var> formatOptions: [
         // Animation & Video
@@ -71,21 +71,6 @@ AbstractBackgroundWidget {
     property string selectedSizeLabel: "No Limit"
 
     readonly property bool isAnimationFormat: selectedFormat === "animate" || selectedFormat === "mp4" || selectedFormat === "gif"
-
-    readonly property string modeDescription: {
-        switch (selectedFormat) {
-            case "gif":     return "Convert video clips or photos into an animated GIF"
-            case "animate": return "Assemble image frames into an MP4 video sequence"
-            case "mp4":     return "Convert videos or compile frames into MP4 video"
-            case "pdf":     return "Merge multiple images or documents into a single PDF"
-            case "webp":    return "Convert images or video frames to modern WebP"
-            case "png":     return "Convert to lossless transparent PNG image"
-            case "jpg":     return "Convert to standard compressed JPG photo"
-            case "avif":    return "Convert to ultra-compact modern AVIF format"
-            case "ico":     return "Convert image into 256x256 desktop App Icon"
-            default:        return "Convert media to " + selectedFormat.toUpperCase()
-        }
-    }
 
     property bool customLimitActive: false
     property string customNum: "500"
@@ -408,7 +393,7 @@ AbstractBackgroundWidget {
     Rectangle {
         id: contentItem
         anchors.fill: parent
-        radius: Appearance.rounding?.verylarge ?? 30
+        radius: Appearance.rounding?.large ?? 20
         property color fill: Qt.rgba(
             Appearance.colors.colLayer0Base.r,
             Appearance.colors.colLayer0Base.g,
@@ -416,8 +401,8 @@ AbstractBackgroundWidget {
             0.12
         )
         color: (Config.options?.background?.widgets?.glass?.enable && fill.a > 0) ? "transparent" : fill
-        border.width: 0
-        border.color: "transparent"
+        border.width: root.dropStatus === "hover" ? 1 : 0
+        border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : "transparent"
         clip: true
 
         WindowGlass {
@@ -430,13 +415,14 @@ AbstractBackgroundWidget {
         ColumnLayout {
             anchors {
                 fill: parent
-                margins: 14
+                margins: 10
             }
-            spacing: 8
+            spacing: 6
 
-            // 1. Header Bar
+            // 1. Sleek Icon-Only Header Bar (Zero redundant text)
             RowLayout {
                 Layout.fillWidth: true
+                implicitHeight: 22
                 spacing: 6
 
                 MaterialSymbol {
@@ -445,63 +431,39 @@ AbstractBackgroundWidget {
                     color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
                 }
 
+                // Staged media filename badge (only visible when staged)
                 StyledText {
-                    text: "Media Studio"
-                    font.pixelSize: Appearance.font.pixelSize.small
+                    visible: root.stagedFiles.length > 0
+                    Layout.fillWidth: true
+                    text: root.stagedFiles.length > 1
+                        ? (root.stagedFiles.length + " files")
+                        : (root.detectedFileName + (root.stagedFileSize > 0 ? (" · " + root.formatBytes(root.stagedFileSize)) : ""))
+                    font.pixelSize: Appearance.font.pixelSize.smallest
                     font.weight: Font.DemiBold
+                    elide: Text.ElideMiddle
                     color: Appearance.colors.colOnLayer1
                 }
 
-                Item { Layout.fillWidth: true }
-
-                // Quick Paste Button
-                Rectangle {
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    radius: Appearance.rounding.full
-                    color: pasteHover.containsMouse
-                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.16)
-                    border.width: 0
-                    border.color: "transparent"
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "content_paste"
-                        iconSize: 15
-                        color: pasteHover.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
-                    }
-
-                    MouseArea {
-                        id: pasteHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.pasteFromClipboard()
-                    }
-
-                    StyledToolTip {
-                        extraVisibleCondition: pasteHover.containsMouse
-                        text: "Paste file from clipboard"
-                    }
+                Item {
+                    visible: root.stagedFiles.length === 0
+                    Layout.fillWidth: true
                 }
 
                 // Clear / Reset Button
                 Rectangle {
                     visible: root.stagedFiles.length > 0
-                    implicitWidth: 28
-                    implicitHeight: 28
+                    implicitWidth: 22
+                    implicitHeight: 22
                     radius: Appearance.rounding.full
                     color: clearHover.containsMouse
                         ? Appearance.colors.colErrorContainer
                         : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.16)
                     border.width: 0
-                    border.color: "transparent"
 
                     MaterialSymbol {
                         anchors.centerIn: parent
                         text: "close"
-                        iconSize: 15
+                        iconSize: 13
                         color: clearHover.containsMouse ? Appearance.colors.colOnErrorContainer : Appearance.colors.colOnSurfaceVariant
                     }
 
@@ -518,197 +480,78 @@ AbstractBackgroundWidget {
                         text: "Clear selected files"
                     }
                 }
-            }
 
-            // 2. Conversion Flow Card: Balanced 50/50 Split [ Input Media -> Converting To ]
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 78
-                radius: Appearance.rounding?.normal ?? 14
-                color: root.dropStatus === "hover"
-                    ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.18)
-                    : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
-                border.width: root.dropStatus === "hover" ? 1 : 0
-                border.color: root.dropStatus === "hover" ? Appearance.colors.colPrimary : "transparent"
-                clip: true
+                // Quick Paste Button
+                Rectangle {
+                    implicitWidth: 22
+                    implicitHeight: 22
+                    radius: Appearance.rounding.full
+                    color: pasteHover.containsMouse
+                        ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.16)
+                    border.width: 0
 
-                RowLayout {
-                    anchors {
-                        fill: parent
-                        margins: 8
-                    }
-                    spacing: 6
-
-                    // Left Box: Real Media File (Exactly 50% width, strictly clipped)
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        Layout.fillHeight: true
-                        radius: 10
-                        clip: true
-                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
-                        border.width: root.stagedFiles.length > 0 ? 1 : 0
-                        border.color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : "transparent"
-
-                        ColumnLayout {
-                            anchors {
-                                fill: parent
-                                margins: 6
-                            }
-                            spacing: 1
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: "REAL MEDIA FILE"
-                                font.pixelSize: Appearance.font.pixelSize.smallest - 1
-                                font.weight: Font.Bold
-                                elide: Text.ElideRight
-                                color: Appearance.colors.colPrimary
-                            }
-
-                            Item { Layout.fillHeight: true }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 6
-
-                                MaterialSymbol {
-                                    text: root.stagedFiles.length > 0
-                                        ? (/\.(mp4|webm|mkv|mov|avi)$/i.test(root.detectedFileName) ? "movie" : "image")
-                                        : "add_photo_alternate"
-                                    iconSize: 20
-                                    color: root.stagedFiles.length > 0 ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 0
-
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        text: root.stagedFiles.length > 0
-                                            ? (root.stagedFiles.length > 1 ? (root.stagedFiles.length + " frames") : root.detectedFileName)
-                                            : "Tap or drop file"
-                                        font.pixelSize: Appearance.font.pixelSize.smallie
-                                        font.weight: Font.DemiBold
-                                        elide: Text.ElideMiddle
-                                        color: Appearance.colors.colOnLayer1
-                                    }
-
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        text: root.stagedFiles.length > 0
-                                            ? (root.detectedFormat + (root.stagedFileSize > 0 ? (" · " + root.formatBytes(root.stagedFileSize)) : ""))
-                                            : "Browse media"
-                                        font.pixelSize: Appearance.font.pixelSize.smallest
-                                        elide: Text.ElideRight
-                                        color: Appearance.colors.colOnSurfaceVariant
-                                    }
-                                }
-                            }
-
-                            Item { Layout.fillHeight: true }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: fileChooserDialog.open()
-                        }
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "content_paste"
+                        iconSize: 13
+                        color: pasteHover.containsMouse ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
                     }
 
-                    // Middle Connector Arrow
-                    Rectangle {
-                        Layout.fillWidth: false
-                        implicitWidth: 24
-                        implicitHeight: 24
-                        radius: 12
-                        color: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                        border.width: 0
-                        border.color: "transparent"
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            text: "arrow_forward"
-                            iconSize: 14
-                            color: Appearance.colors.colPrimary
-                        }
+                    MouseArea {
+                        id: pasteHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.pasteFromClipboard()
                     }
 
-                    // Right Box: Converting To (Exactly 50% width, strictly clipped)
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        Layout.fillHeight: true
-                        radius: 10
-                        clip: true
-                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
-                        border.width: 0
-                        border.color: "transparent"
-
-                        ColumnLayout {
-                            anchors {
-                                fill: parent
-                                margins: 6
-                            }
-                            spacing: 2
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: "CONVERTING TO"
-                                font.pixelSize: Appearance.font.pixelSize.smallest - 1
-                                font.weight: Font.Bold
-                                elide: Text.ElideRight
-                                color: Appearance.colors.colSecondary
-                            }
-
-                            Item { Layout.fillHeight: true }
-
-                            StyledComboBox {
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: 1
-                                implicitWidth: 0
-                                implicitHeight: 32
-                                buttonRadius: 8
-                                colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.22)
-                                colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
-                                colBackgroundActive: Appearance.colors.colPrimaryContainer
-                                model: root.formatOptions
-                                textRole: "shortName"
-                                valueRole: "value"
-                                currentIndex: {
-                                    for (var i = 0; i < model.length; i++) {
-                                        if (model[i].value === root.selectedFormat) return i
-                                    }
-                                    return 0
-                                }
-                                onActivated: (index) => {
-                                    root.selectedFormat = model[index].value
-                                }
-                            }
-
-                            Item { Layout.fillHeight: true }
-                        }
+                    StyledToolTip {
+                        extraVisibleCondition: pasteHover.containsMouse
+                        text: "Paste file from clipboard"
                     }
                 }
             }
 
-            // 3. Fine-tuning Options Row: Perfectly Balanced Ratios
+            // 2. Direct Format Selector (No arrow, full width, minimal)
+            StyledComboBox {
+                Layout.fillWidth: true
+                implicitHeight: 32
+                buttonRadius: 10
+                btnPadding: 10
+                colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
+                colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
+                colBackgroundActive: Appearance.colors.colPrimaryContainer
+                model: root.formatOptions
+                textRole: "shortName"
+                valueRole: "value"
+                currentIndex: {
+                    for (var i = 0; i < model.length; i++) {
+                        if (model[i].value === root.selectedFormat) return i
+                    }
+                    return 0
+                }
+                onActivated: (index) => {
+                    root.selectedFormat = model[index].value
+                }
+            }
+
+            // 3. Settings Row: FPS & Size Limit
             RowLayout {
                 Layout.fillWidth: true
+                implicitHeight: 32
                 spacing: 6
 
                 // FPS Selector (only for animated / video formats)
                 StyledComboBox {
                     visible: root.isAnimationFormat
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    implicitWidth: 0
                     implicitHeight: 32
                     buttonIcon: "speed"
-                    buttonRadius: 8
-                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
-                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
+                    buttonRadius: 10
+                    btnPadding: 8
+                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
+                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.fpsOptions
                     textRole: "displayName"
@@ -724,17 +567,16 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Size Limit Dropdown (Balanced 50% or 100% width)
+                // Size Limit Dropdown
                 StyledComboBox {
                     visible: !root.customLimitActive
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    implicitWidth: 0
                     implicitHeight: 32
                     buttonIcon: "compress"
-                    buttonRadius: 8
-                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
-                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.25)
+                    buttonRadius: 10
+                    btnPadding: 10
+                    colBackground: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
+                    colBackgroundHover: Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
                     colBackgroundActive: Appearance.colors.colPrimaryContainer
                     model: root.sizeOptions
                     textRole: "displayName"
@@ -764,20 +606,61 @@ AbstractBackgroundWidget {
                     }
                 }
 
-                // Custom Limit Input (Takes exact slot)
+                // Custom Limit Input Pill
                 RowLayout {
                     visible: root.customLimitActive
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
                     spacing: 4
 
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 32
-                        radius: 8
-                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        Layout.fillHeight: true
+                        radius: 10
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
                         border.width: numInput.activeFocus ? 1 : 0
                         border.color: numInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 4
+
+                            MaterialSymbol {
+                                text: "tune"
+                                iconSize: 14
+                                color: Appearance.colors.colPrimary
+                            }
+
+                            TextInput {
+                                id: numInput
+                                Layout.fillWidth: true
+                                verticalAlignment: TextInput.AlignVCenter
+                                color: Appearance.colors.colOnSurface
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                font.family: Appearance.font.family.main
+                                selectByMouse: true
+                                text: root.customNum
+                                validator: RegularExpressionValidator {
+                                    regularExpression: /^[0-9]*\.?[0-9]{0,2}$/
+                                }
+                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                onTextChanged: {
+                                    root.customNum = text
+                                    root.applyCustomLimit()
+                                }
+                                onAccepted: {
+                                    root.applyCustomLimit()
+                                    root.isUserTyping = false
+                                    numInput.focus = false
+                                    GlobalStates.desktopWidgetKeyboardFocus = false
+                                }
+                                onActiveFocusChanged: {
+                                    root.isUserTyping = activeFocus
+                                }
+                            }
+                        }
 
                         MouseArea {
                             anchors.fill: parent
@@ -790,42 +673,12 @@ AbstractBackgroundWidget {
                                 })
                             }
                         }
-
-                        TextInput {
-                            id: numInput
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            anchors.rightMargin: 8
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: Appearance.colors.colOnSurface
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            font.family: Appearance.font.family.main
-                            selectByMouse: true
-                            text: root.customNum
-                            validator: RegularExpressionValidator {
-                                regularExpression: /^[0-9]*\.?[0-9]{0,2}$/
-                            }
-                            inputMethodHints: Qt.ImhFormattedNumbersOnly
-                            onTextChanged: {
-                                root.customNum = text
-                                root.applyCustomLimit()
-                            }
-                            onAccepted: {
-                                root.applyCustomLimit()
-                                root.isUserTyping = false
-                                numInput.focus = false
-                                GlobalStates.desktopWidgetKeyboardFocus = false
-                            }
-                            onActiveFocusChanged: {
-                                root.isUserTyping = activeFocus
-                            }
-                        }
                     }
 
                     Rectangle {
-                        implicitHeight: 32
-                        implicitWidth: 38
-                        radius: 8
+                        Layout.fillHeight: true
+                        implicitWidth: 36
+                        radius: 10
                         color: Appearance.colors.colPrimaryContainer
 
                         StyledText {
@@ -847,15 +700,15 @@ AbstractBackgroundWidget {
                     }
 
                     Rectangle {
-                        implicitHeight: 32
+                        Layout.fillHeight: true
                         implicitWidth: 26
-                        radius: 8
-                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        radius: 10
+                        color: Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
 
                         MaterialSymbol {
                             anchors.centerIn: parent
                             text: "close"
-                            iconSize: 14
+                            iconSize: 13
                             color: Appearance.colors.colOnSurfaceVariant
                         }
 
@@ -875,42 +728,21 @@ AbstractBackgroundWidget {
                 }
             }
 
-            // 4. Short Intro / Status Caption
-            StyledText {
-                Layout.fillWidth: true
-                font.pixelSize: Appearance.font.pixelSize.smallest
-                color: root.dropStatus === "error"
-                    ? Appearance.colors.colError
-                    : (root.dropStatus === "done" ? Appearance.colors.colTertiary : Appearance.colors.colOnSurfaceVariant)
-                elide: Text.ElideMiddle
-                horizontalAlignment: Text.AlignHCenter
-                text: {
-                    switch (root.dropStatus) {
-                        case "converting": return root.statusMessage
-                        case "done":       return root.statusMessage
-                        case "error":      return root.statusMessage
-                        case "staged":     return root.statusMessage + " · Click Bake to convert"
-                        default:           return root.modeDescription
-                    }
-                }
-            }
-
-            // 5. The Prominent "Bake" Button
+            // 4. Compact Action Button
             Rectangle {
                 id: bakeButton
                 Layout.fillWidth: true
-                implicitHeight: 38
+                implicitHeight: 34
                 radius: Appearance.rounding.full
                 color: {
                     if (root.dropStatus === "converting") return Appearance.colors.colSecondary
                     if (root.dropStatus === "done")       return Appearance.colors.colTertiary
+                    if (root.dropStatus === "error")      return Appearance.colors.colErrorContainer
                     if (root.stagedFiles.length > 0)     return bakeHover.containsMouse ? Appearance.colors.colPrimaryHover : Appearance.colors.colPrimary
                     return bakeHover.containsMouse
                         ? Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.22)
-                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.18)
+                        : Qt.rgba(Appearance.colors.colLayer0Base.r, Appearance.colors.colLayer0Base.g, Appearance.colors.colLayer0Base.b, 0.14)
                 }
-                border.width: 0
-                border.color: "transparent"
 
                 Behavior on color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
@@ -925,34 +757,38 @@ AbstractBackgroundWidget {
                         loading: root.dropStatus === "converting"
                         colBg: Appearance.colors.colPrimary
                         colShape: Appearance.colors.colOnPrimary
-                        implicitSize: 20
+                        implicitSize: 16
                     }
 
                     MaterialSymbol {
                         visible: root.dropStatus !== "converting"
                         text: {
                             if (root.dropStatus === "done") return "check_circle"
+                            if (root.dropStatus === "error") return "warning"
                             if (root.stagedFiles.length > 0) return "local_fire_department"
-                            return "touch_app"
+                            return "add"
                         }
-                        iconSize: 18
+                        iconSize: 16
                         color: {
                             if (root.stagedFiles.length > 0 || root.dropStatus === "done") return Appearance.colors.colOnPrimary
+                            if (root.dropStatus === "error") return Appearance.colors.colOnErrorContainer
                             return Appearance.colors.colOnSurfaceVariant
                         }
                     }
 
                     StyledText {
                         text: {
-                            if (root.dropStatus === "converting") return "Baking in progress..."
-                            if (root.dropStatus === "done")       return "Baking Complete!"
-                            if (root.stagedFiles.length > 0)     return "Bake (" + root.selectedFormat.toUpperCase() + ")"
-                            return "Select or Drop a Media File First"
+                            if (root.dropStatus === "converting") return root.fileQueue.length > 0 ? ("Baking " + (root.queueDone + 1) + " / " + root.queueTotal) : "Baking..."
+                            if (root.dropStatus === "done")       return "Complete"
+                            if (root.dropStatus === "error")      return "Failed"
+                            if (root.stagedFiles.length > 0)     return "Convert"
+                            return "Choose File"
                         }
                         font.pixelSize: Appearance.font.pixelSize.small
                         font.weight: Font.DemiBold
                         color: {
                             if (root.stagedFiles.length > 0 || root.dropStatus === "done") return Appearance.colors.colOnPrimary
+                            if (root.dropStatus === "error") return Appearance.colors.colOnErrorContainer
                             return Appearance.colors.colOnSurfaceVariant
                         }
                     }
@@ -962,7 +798,7 @@ AbstractBackgroundWidget {
                     id: bakeHover
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: root.stagedFiles.length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         root.isUserTyping = false
                         if (numInput) numInput.focus = false
