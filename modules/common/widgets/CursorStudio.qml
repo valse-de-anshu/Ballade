@@ -34,6 +34,7 @@ ColumnLayout {
     // In-panel custom icon browser state
     property bool customExplorerOpen: false
     property string customExplorerFolder: Directories.downloads + "/shorekeeper_47394874a2_VSTHEMES-ORG/Cursors"
+    property string anyCursorSourceTheme: SystemTheming.currentCursorTheme || "Shorekeeper"
 
     // Debounce timer for smooth cursor size slider IPC updates
     Timer {
@@ -215,8 +216,7 @@ ColumnLayout {
                             readonly property string tileKey: modelData.key
                             readonly property string tileOverride: Config.options.appearance?.cursor?.overrides?.[tileKey] || ""
                             readonly property bool isOverridden: tileOverride !== "" && tileOverride !== "Default"
-                            readonly property string activeTheme: isOverridden ? tileOverride : (SystemTheming.currentCursorTheme || "Gloomi_x")
-                            readonly property string previewPath: SystemTheming.getCursorPreview(activeTheme, tileKey)
+                            readonly property string previewPath: (SystemTheming.cursorPreviewVersion, SystemTheming.getOverridePreview(tileOverride, tileKey))
                             readonly property bool isSelected: root.selectedActionIndex === index
 
                             buttonRadius: Appearance.rounding.normal
@@ -381,7 +381,7 @@ ColumnLayout {
                         width: 84
                         implicitHeight: 86
                         readonly property bool isCurrent: !root.selectedActionIsOverridden
-                        readonly property string iconSrc: SystemTheming.getCursorPreview(SystemTheming.currentCursorTheme, root.selectedActionKey)
+                        readonly property string iconSrc: (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(SystemTheming.currentCursorTheme, root.selectedActionKey))
 
                         buttonRadius: Appearance.rounding.normal
                         colBackground: defaultCard.isCurrent
@@ -460,7 +460,15 @@ ColumnLayout {
                             if (SystemTheming.currentCursorTheme && !themes.includes(SystemTheming.currentCursorTheme)) {
                                 themes.push(SystemTheming.currentCursorTheme)
                             }
-                            themes.sort()
+                            const priority = ["Shorekeeper", "Columbina-Animated", "Columbina-Static", "catppuccin-mocha-dark-cursors", "macOS", "macOS-White", "Nordzy-cursors", "Bibata-Modern-Classic", "Gloomi_x"]
+                            themes.sort((a, b) => {
+                                let ia = priority.indexOf(a)
+                                let ib = priority.indexOf(b)
+                                if (ia !== -1 && ib !== -1) return ia - ib
+                                if (ia !== -1) return -1
+                                if (ib !== -1) return 1
+                                return a.localeCompare(b)
+                            })
                             return themes
                         }
                         delegate: RippleButton {
@@ -470,8 +478,8 @@ ColumnLayout {
                             width: 84
                             implicitHeight: 86
 
-                            readonly property bool isCurrent: root.selectedActionOverride === modelData
-                            readonly property string iconSrc: SystemTheming.getCursorPreview(modelData, root.selectedActionKey)
+                            readonly property bool isCurrent: root.selectedActionOverride === modelData || root.selectedActionOverride === (modelData + ":" + root.selectedActionKey)
+                            readonly property string iconSrc: (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(modelData, root.selectedActionKey))
 
                             buttonRadius: Appearance.rounding.normal
                             colBackground: themeCard.isCurrent
@@ -555,7 +563,7 @@ ColumnLayout {
                         width: 84
                         implicitHeight: 86
 
-                        readonly property string iconSrc: SystemTheming.getCursorPreview("custom", root.selectedActionKey)
+                        readonly property string iconSrc: (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview("custom", root.selectedActionKey))
 
                         buttonRadius: Appearance.rounding.normal
                         colBackground: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
@@ -662,6 +670,211 @@ ColumnLayout {
                                 horizontalAlignment: Text.AlignHCenter
                                 color: Appearance.colors.colPrimary
                                 elide: Text.ElideRight
+                            }
+                        }
+                    }
+                }
+
+                // Clean divider
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Appearance.colors.colLayer0Border
+                    opacity: 0.35
+                }
+
+                // Section: Pick Any Cursor from Any Theme to use as this action
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
+                            StyledText {
+                                text: root.currentAction
+                                    ? `${Translation.tr("Use Any Cursor Style as")} ${root.currentAction.label}`
+                                    : Translation.tr("Use Any Cursor Style")
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                font.weight: Font.DemiBold
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+
+                            StyledText {
+                                text: Translation.tr("Link any pointer style (arrows, crosshairs, anime sprites, grab, etc.) to this action:")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                            }
+                        }
+                    }
+
+                    // Theme selector chips / scroll row
+                    Flickable {
+                        Layout.fillWidth: true
+                        implicitHeight: 38
+                        contentWidth: themePillsRow.implicitWidth
+                        contentHeight: 38
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        RowLayout {
+                            id: themePillsRow
+                            spacing: 6
+
+                            Repeater {
+                                model: {
+                                    let themes = SystemTheming.cursorThemes.slice()
+                                    if (SystemTheming.currentCursorTheme && !themes.includes(SystemTheming.currentCursorTheme)) {
+                                        themes.push(SystemTheming.currentCursorTheme)
+                                    }
+                                    const priority = ["Shorekeeper", "Columbina-Animated", "Columbina-Static", "catppuccin-mocha-dark-cursors", "macOS", "macOS-White", "Nordzy-cursors", "Bibata-Modern-Classic", "Gloomi_x"]
+                                    themes.sort((a, b) => {
+                                        let ia = priority.indexOf(a)
+                                        let ib = priority.indexOf(b)
+                                        if (ia !== -1 && ib !== -1) return ia - ib
+                                        if (ia !== -1) return -1
+                                        if (ib !== -1) return 1
+                                        return a.localeCompare(b)
+                                    })
+                                    return themes
+                                }
+                                delegate: RippleButton {
+                                    id: themePill
+                                    required property string modelData
+                                    readonly property bool isSelected: root.anyCursorSourceTheme === modelData
+
+                                    buttonRadius: Appearance.rounding.full
+                                    colBackground: isSelected
+                                        ? Appearance.colors.colPrimaryContainer
+                                        : Appearance.colors.colLayer2
+                                    colBackgroundHover: isSelected
+                                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.8)
+                                        : Appearance.colors.colLayer2Hover
+                                    padding: 6
+
+                                    onClicked: {
+                                        root.anyCursorSourceTheme = modelData
+                                    }
+
+                                    contentItem: RowLayout {
+                                        spacing: 5
+                                        MaterialSymbol {
+                                            text: themePill.isSelected ? "check" : "palette"
+                                            iconSize: 14
+                                            color: themePill.isSelected
+                                                ? Appearance.colors.colOnPrimaryContainer
+                                                : Appearance.colors.colSubtext
+                                        }
+                                        StyledText {
+                                            text: themePill.modelData
+                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            font.weight: themePill.isSelected ? Font.Bold : Font.Normal
+                                            color: themePill.isSelected
+                                                ? Appearance.colors.colOnPrimaryContainer
+                                                : Appearance.colors.colSubtext
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Grid of all 17 cursor icons available in root.anyCursorSourceTheme
+                    Flow {
+                        id: anyCursorFlow
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Repeater {
+                            model: SystemTheming.cursorActions
+                            delegate: RippleButton {
+                                id: anyCursorBtn
+                                required property var modelData
+
+                                width: 84
+                                implicitHeight: 86
+
+                                readonly property string targetOverride: root.anyCursorSourceTheme + ":" + modelData.key
+                                readonly property bool isSelected: root.selectedActionOverride === anyCursorBtn.targetOverride
+                                readonly property string iconSrc: (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(root.anyCursorSourceTheme, modelData.key))
+
+                                buttonRadius: Appearance.rounding.normal
+                                colBackground: anyCursorBtn.isSelected
+                                    ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
+                                    : Appearance.colors.colLayer2
+                                colBackgroundHover: anyCursorBtn.isSelected
+                                    ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
+                                    : Appearance.colors.colLayer2Hover
+
+                                onClicked: {
+                                    if (anyCursorBtn.isSelected) {
+                                        SystemTheming.resetCursorOverride(root.selectedActionKey)
+                                    } else {
+                                        SystemTheming.setCursorOverride(root.selectedActionKey, anyCursorBtn.targetOverride)
+                                    }
+                                }
+
+                                contentItem: Item {
+                                    anchors.fill: parent
+
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        spacing: 4
+
+                                        Item {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+
+                                            Image {
+                                                anchors.centerIn: parent
+                                                width: 38
+                                                height: 38
+                                                fillMode: Image.PreserveAspectFit
+                                                source: anyCursorBtn.iconSrc
+                                                smooth: true
+                                                mipmap: true
+                                                cache: false
+                                            }
+
+                                            MaterialSymbol {
+                                                visible: anyCursorBtn.isSelected
+                                                anchors { top: parent.top; right: parent.right }
+                                                text: "check_circle"
+                                                iconSize: 16
+                                                color: Appearance.colors.colPrimary
+                                            }
+                                        }
+
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            text: anyCursorBtn.modelData.shortLabel || anyCursorBtn.modelData.label
+                                            font.pixelSize: 11
+                                            font.weight: anyCursorBtn.isSelected ? Font.Bold : Font.Normal
+                                            horizontalAlignment: Text.AlignHCenter
+                                            color: anyCursorBtn.isSelected ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        visible: anyCursorBtn.isSelected
+                                        anchors {
+                                            bottom: parent.bottom
+                                            bottomMargin: 3
+                                            horizontalCenter: parent.horizontalCenter
+                                        }
+                                        width: 22
+                                        height: 3
+                                        radius: 1.5
+                                        color: Appearance.colors.colPrimary
+                                    }
+                                }
                             }
                         }
                     }

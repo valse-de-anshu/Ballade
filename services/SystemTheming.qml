@@ -127,6 +127,25 @@ Singleton {
         return `file://${home}/.cache/ballade/cursor_previews/${theme}/${action}.png`
     }
 
+    function getOverridePreview(overrideValue, defaultActionKey) {
+        const home = FileUtils.trimFileProtocol(Directories.home)
+        if (!overrideValue || overrideValue === "Default" || overrideValue === "") {
+            const baseTheme = root.currentCursorTheme || "Gloomi_x"
+            return `file://${home}/.cache/ballade/cursor_previews/${baseTheme}/${defaultActionKey}.png`
+        }
+        if (typeof overrideValue === "string") {
+            if (overrideValue.startsWith("/") || overrideValue.startsWith("file://") || overrideValue === "custom") {
+                return `file://${home}/.cache/ballade/cursor_previews/custom/${defaultActionKey}.png`
+            }
+            if (overrideValue.indexOf(":") !== -1) {
+                const parts = overrideValue.split(":")
+                return `file://${home}/.cache/ballade/cursor_previews/${parts[0]}/${parts[1]}.png`
+            }
+            return `file://${home}/.cache/ballade/cursor_previews/${overrideValue}/${defaultActionKey}.png`
+        }
+        return `file://${home}/.cache/ballade/cursor_previews/${root.currentCursorTheme || "Gloomi_x"}/${defaultActionKey}.png`
+    }
+
     function setCustomCursorFile(actionKey, filePath) {
         if (!filePath) return
         let clean = FileUtils.trimFileProtocol(filePath)
@@ -154,7 +173,7 @@ Singleton {
 
     function setCursorOverride(actionKey, sourceTheme) {
         let current = Object.assign({}, Config.options.appearance?.cursor?.overrides || {})
-        if (!sourceTheme || sourceTheme === "Default" || sourceTheme === root.currentCursorTheme) {
+        if (!sourceTheme || sourceTheme === "Default" || sourceTheme === root.currentCursorTheme || sourceTheme === (root.currentCursorTheme + ":" + actionKey)) {
             delete current[actionKey]
         } else {
             current[actionKey] = sourceTheme

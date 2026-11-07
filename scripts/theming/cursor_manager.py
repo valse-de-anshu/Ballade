@@ -667,8 +667,17 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
 
     clean_overrides = {}
     for k, v in overrides.items():
-        if not v or v == 'Default' or v == base_theme:
+        if not v or v == 'Default':
             continue
+        # If it's a theme:action override matching base_theme's own action (e.g. Shorekeeper:pointer when base is Shorekeeper)
+        if v == base_theme or v == f"{base_theme}:{k}":
+            continue
+        # Check theme:action syntax (e.g. "Shorekeeper:crosshair")
+        if ':' in v and not v.startswith('file://'):
+            t_name = v.split(':', 1)[0]
+            if t_name in installed:
+                clean_overrides[k] = v
+                continue
         # Allow installed themes, or direct file paths (starting with / or file://)
         if v in installed or v.startswith('/') or v.startswith('file://') or os.path.exists(os.path.expanduser(v.replace('file://', ''))):
             clean_overrides[k] = v
@@ -716,16 +725,31 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
             else:
                 continue
         else:
-            # Installed theme name
-            src_dir = find_theme_cursors_dir(source)
+            # Installed theme name or theme:action
+            if ':' in source and not source.startswith('file://'):
+                src_theme, src_action = source.split(':', 1)
+            else:
+                src_theme = source
+                src_action = action_key
+
+            src_dir = find_theme_cursors_dir(src_theme)
             if not src_dir:
                 continue
+
+            src_info = ACTIONS.get(src_action, {})
+            src_aliases = src_info.get('aliases', [src_action])
+
             src_file = None
-            for a in aliases:
+            for a in src_aliases:
                 p = os.path.join(src_dir, a)
                 if os.path.exists(p):
                     src_file = p
                     break
+            if not src_file:
+                p = os.path.join(src_dir, src_action)
+                if os.path.exists(p):
+                    src_file = p
+
             if not src_file:
                 continue
 
