@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Dialogs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -19,23 +20,38 @@ ColumnLayout {
     readonly property string selectedActionKey: currentAction ? currentAction.key : "default"
     readonly property string selectedActionOverride: Config.options.appearance?.cursor?.overrides?.[selectedActionKey] || ""
     readonly property bool selectedActionIsOverridden: selectedActionOverride !== "" && selectedActionOverride !== "Default"
-    readonly property string selectedActionEffectiveTheme: selectedActionIsOverridden
-        ? selectedActionOverride
-        : (SystemTheming.currentCursorTheme || "Gloomi_x")
+    readonly property bool selectedActionIsCustomFile: typeof selectedActionOverride === "string" && (selectedActionOverride.startsWith("/") || selectedActionOverride.startsWith("file://"))
+    readonly property string customFileName: selectedActionIsCustomFile
+        ? selectedActionOverride.replace(/^file:\/\//, "").split("/").pop()
+        : ""
 
     readonly property int totalOverridesCount: {
         const o = Config.options.appearance?.cursor?.overrides
         return o ? Object.keys(o).filter(k => o[k] && o[k] !== "Default").length : 0
     }
 
-    // ── 1. Master Base Theme & Size Card ──────────────────────────────────────
+    // Native file dialog for selecting a custom mouse icon / image from disk
+    FileDialog {
+        id: customCursorDialog
+        title: Translation.tr("Select Custom Mouse Icon from Disk")
+        nameFilters: [
+            Translation.tr("Cursor & Image files (*.png *.svg *.xcursor *.cur *.jpg *.jpeg *.webp)"),
+            Translation.tr("All files (*)")
+        ]
+        onAccepted: {
+            const raw = selectedFile.toString().replace(/^file:\/\//, "")
+            SystemTheming.setCustomCursorFile(root.selectedActionKey, raw)
+        }
+    }
+
+    // ── 1. Master Base Theme & Size Card (GroupedList with smooth slider) ──────
     GroupedList {
         Layout.fillWidth: true
 
         ConfigComboBox {
             buttonIcon: "mouse"
             text: Translation.tr("Base cursor theme")
-            description: Translation.tr("Active cursor pack used as default for all pointer states")
+            description: Translation.tr("Default cursor pack inherited by all pointer states")
             model: {
                 let themes = SystemTheming.cursorThemes.slice()
                 if (SystemTheming.currentCursorTheme && !themes.includes(SystemTheming.currentCursorTheme)) {
@@ -50,425 +66,314 @@ ColumnLayout {
             }
         }
 
-        ConfigSpinBox {
-            id: cursorSizeSpin
-            icon: "zoom_in"
+        ConfigSlider {
+            buttonIcon: "zoom_in"
             text: Translation.tr("Cursor size")
+            from: 16
+            to: 64
+            stepSize: 4
+            usePercentTooltip: false
             value: SystemTheming.currentCursorSize
-            from: 16; to: 64; stepSize: 2
-            onValueChanged: {
-                if (value === SystemTheming.currentCursorSize) return
-                cursorSizeApplyTimer.restart()
-            }
-            Timer {
-                id: cursorSizeApplyTimer
-                interval: 400
-                repeat: false
-                onTriggered: SystemTheming.applyCursorTheme(SystemTheming.currentCursorTheme, cursorSizeSpin.value)
+            onMoved: {
+                SystemTheming.setCursorSize(Math.round(value))
             }
         }
     }
 
-    // ── 2. Action Grid Header ─────────────────────────────────────────────────
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.topMargin: 4
-        spacing: 10
+    // ── 2. Unified Visual Cursor Studio Card ──────────────────────────────────
+    ContentSubsection {
+        title: Translation.tr("Cursor Studio")
 
-        ColumnLayout {
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 2
+            radius: Appearance.rounding.normal
+            color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.70)
+            border.width: 1
+            border.color: Appearance.colors.colLayer0Border
+            implicitHeight: studioMainCol.implicitHeight + 28
 
-            RowLayout {
-                spacing: 8
-                StyledText {
-                    text: Translation.tr("Cursor Action Studio")
-                    font.pixelSize: Appearance.font.pixelSize.large
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colOnSecondaryContainer
+            ColumnLayout {
+                id: studioMainCol
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: 14
                 }
+                spacing: 14
 
-                Rectangle {
-                    radius: 10
-                    color: root.totalOverridesCount > 0
-                        ? Appearance.colors.colPrimary
-                        : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.12)
-                    implicitHeight: 20
-                    implicitWidth: overrideBadgeText.implicitWidth + 12
+                // Palette Header
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
 
-                    StyledText {
-                        id: overrideBadgeText
-                        anchors.centerIn: parent
-                        text: root.totalOverridesCount > 0
-                            ? `${root.totalOverridesCount} ${Translation.tr("Custom")}`
-                            : Translation.tr("All Default")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.weight: Font.Bold
-                        color: root.totalOverridesCount > 0
-                            ? Appearance.colors.colOnPrimary
-                            : Appearance.colors.colSubtext
-                    }
-                }
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                text: Translation.tr("Click any action tile to inspect and customize its cursor shape from any installed theme.")
-                font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.colors.colSubtext
-                wrapMode: Text.Wrap
-            }
-        }
-
-        RippleButton {
-            visible: root.totalOverridesCount > 0
-            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-            buttonRadius: Appearance.rounding.full
-            colBackground: Appearance.colors.colLayer2
-            colBackgroundHover: Appearance.colors.colLayer2Hover
-            padding: 8
-            onClicked: SystemTheming.resetAllCursorOverrides()
-
-            contentItem: RowLayout {
-                spacing: 6
-                MaterialSymbol {
-                    text: "restart_alt"
-                    iconSize: 18
-                    color: Appearance.colors.colPrimary
-                }
-                StyledText {
-                    text: Translation.tr("Reset All")
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colPrimary
-                    font.weight: Font.Medium
-                }
-            }
-        }
-    }
-
-    // ── 3. Cursor Action Tiles Grid ───────────────────────────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        radius: Appearance.rounding.normal
-        color: ColorUtils.applyAlpha(Appearance.colors.colLayer1Base, 0.50)
-        border.width: 1
-        border.color: Appearance.colors.colLayer0Border
-        implicitHeight: gridFlow.implicitHeight + 20
-
-        Flow {
-            id: gridFlow
-            anchors {
-                left: parent.left
-                right: parent.right
-                top: parent.top
-                margins: 10
-            }
-            spacing: 8
-
-            Repeater {
-                model: SystemTheming.cursorActions
-                delegate: RippleButton {
-                    id: tileButton
-                    required property var modelData
-                    required property int index
-
-                    width: Math.floor((gridFlow.width - (gridFlow.spacing * 5)) / 6)
-                    implicitHeight: 94
-
-                    readonly property string tileKey: modelData.key
-                    readonly property string tileOverride: Config.options.appearance?.cursor?.overrides?.[tileKey] || ""
-                    readonly property bool isOverridden: tileOverride !== "" && tileOverride !== "Default"
-                    readonly property string activeTheme: isOverridden ? tileOverride : (SystemTheming.currentCursorTheme || "Gloomi_x")
-                    readonly property string previewPath: SystemTheming.getCursorPreview(activeTheme, tileKey)
-                    readonly property bool isSelected: root.selectedActionIndex === index
-
-                    buttonRadius: 14
-                    colBackground: isSelected
-                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.18)
-                        : isOverridden
-                            ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.08)
-                            : Appearance.colors.colLayer1
-                    colBackgroundHover: isSelected
-                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
-                        : Appearance.colors.colLayer1Hover
-
-                    border: true
-                    borderWidth: isSelected ? 2 : 1
-                    colBorder: isSelected
-                        ? Appearance.colors.colPrimary
-                        : isOverridden
-                            ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.45)
-                            : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.10)
-
-                    onClicked: {
-                        root.selectedActionIndex = index
-                    }
-
-                    contentItem: ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 4
-
-                        // Preview box with optional custom indicator
-                        Item {
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        StyledText {
+                            text: Translation.tr("Active Pointer Palette")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                        StyledText {
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
+                            text: Translation.tr("Click any cursor to select it, then choose an icon below:")
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                        }
+                    }
 
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 42
-                                height: 42
-                                radius: 10
-                                color: tileButton.isSelected
-                                    ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.25)
-                                    : Appearance.colors.colLayer2
+                    RippleButton {
+                        visible: root.totalOverridesCount > 0
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        padding: 8
+                        onClicked: SystemTheming.resetAllCursorOverrides()
 
-                                Image {
-                                    id: tileCursorImg
-                                    anchors.centerIn: parent
-                                    width: 30
-                                    height: 30
-                                    fillMode: Image.PreserveAspectFit
-                                    source: tileButton.previewPath
-                                    smooth: false
-                                    scale: tileButton.hovered ? 1.15 : 1.0
+                        contentItem: RowLayout {
+                            spacing: 6
+                            MaterialSymbol {
+                                text: "restart_alt"
+                                iconSize: 18
+                                color: Appearance.colors.colPrimary
+                            }
+                            StyledText {
+                                text: Translation.tr("Reset All")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colPrimary
+                                font.weight: Font.Medium
+                            }
+                        }
+                    }
+                }
 
-                                    Behavior on scale {
-                                        NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+                // Grid of 17 symmetrical active cursor tiles (clean, flat, no harsh borders)
+                Flow {
+                    id: paletteFlow
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    Repeater {
+                        model: SystemTheming.cursorActions
+                        delegate: RippleButton {
+                            id: tileBtn
+                            required property var modelData
+                            required property int index
+
+                            width: Math.floor((paletteFlow.width - (paletteFlow.spacing * 5)) / 6)
+                            implicitHeight: 82
+
+                            readonly property string tileKey: modelData.key
+                            readonly property string tileOverride: Config.options.appearance?.cursor?.overrides?.[tileKey] || ""
+                            readonly property bool isOverridden: tileOverride !== "" && tileOverride !== "Default"
+                            readonly property string activeTheme: isOverridden ? tileOverride : (SystemTheming.currentCursorTheme || "Gloomi_x")
+                            readonly property string previewPath: SystemTheming.getCursorPreview(activeTheme, tileKey)
+                            readonly property bool isSelected: root.selectedActionIndex === index
+
+                            buttonRadius: Appearance.rounding.small
+                            colBackground: isSelected
+                                ? Appearance.colors.colSecondaryContainer
+                                : Appearance.colors.colLayer1
+                            colBackgroundHover: isSelected
+                                ? Appearance.colors.colSecondaryContainerHover
+                                : Appearance.colors.colLayer1Hover
+
+                            onClicked: {
+                                root.selectedActionIndex = index
+                            }
+
+                            contentItem: ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 2
+
+                                // Symmetrical centered icon
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+
+                                    Image {
+                                        id: tileImg
+                                        anchors.centerIn: parent
+                                        width: 38
+                                        height: 38
+                                        fillMode: Image.PreserveAspectFit
+                                        source: tileBtn.previewPath
+                                        smooth: true
+                                        mipmap: true
+                                        cache: false
+                                    }
+
+                                    MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        visible: tileImg.status !== Image.Ready
+                                        text: tileBtn.modelData.icon || "mouse"
+                                        iconSize: 24
+                                        color: tileBtn.isSelected ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
+                                    }
+
+                                    // Subtle accent dot for customized actions
+                                    Rectangle {
+                                        visible: tileBtn.isOverridden
+                                        anchors {
+                                            top: parent.top
+                                            right: parent.right
+                                            topMargin: 2
+                                            rightMargin: 2
+                                        }
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        color: Appearance.colors.colPrimary
                                     }
                                 }
 
-                                MaterialSymbol {
-                                    anchors.centerIn: parent
-                                    visible: tileCursorImg.status !== Image.Ready
-                                    text: tileButton.modelData.icon || "mouse"
-                                    iconSize: 22
-                                    color: tileButton.isSelected ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: tileBtn.modelData.shortLabel || tileBtn.modelData.label
+                                    font.pixelSize: 11
+                                    font.weight: tileBtn.isSelected ? Font.Bold : Font.Normal
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: tileBtn.isSelected
+                                        ? Appearance.colors.colOnSecondaryContainer
+                                        : Appearance.colors.colSubtext
+                                    elide: Text.ElideRight
                                 }
                             }
-
-                            // Accent badge for custom overrides
-                            Rectangle {
-                                visible: tileButton.isOverridden
-                                anchors {
-                                    top: parent.top
-                                    right: parent.right
-                                    topMargin: -2
-                                    rightMargin: -2
-                                }
-                                width: 8
-                                height: 8
-                                radius: 4
-                                color: Appearance.colors.colPrimary
-                                border.width: 1
-                                border.color: Appearance.colors.colLayer1Base
-                            }
-                        }
-
-                        // Action label
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: tileButton.modelData.shortLabel || tileButton.modelData.label
-                            font.pixelSize: 11
-                            font.weight: tileButton.isSelected ? Font.Bold : Font.Normal
-                            horizontalAlignment: Text.AlignHCenter
-                            color: tileButton.isSelected
-                                ? Appearance.colors.colPrimary
-                                : Appearance.colors.colOnLayer1
-                            elide: Text.ElideRight
                         }
                     }
                 }
-            }
-        }
-    }
 
-    // ── 4. Selected Cursor Action Inspector ───────────────────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        radius: Appearance.rounding.normal
-        color: Appearance.colors.colLayer1
-        border.width: 1
-        border.color: Appearance.colors.colLayer0Border
-        implicitHeight: inspectorCol.implicitHeight + 24
-
-        ColumnLayout {
-            id: inspectorCol
-            anchors {
-                left: parent.left
-                right: parent.right
-                top: parent.top
-                margins: 14
-            }
-            spacing: 12
-
-            // Top inspector row: Preview + Title/Desc + Reset button
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 14
-
+                // Clean separator
                 Rectangle {
-                    Layout.preferredWidth: 54
-                    Layout.preferredHeight: 54
-                    Layout.alignment: Qt.AlignVCenter
-                    radius: 12
-                    color: root.selectedActionIsOverridden
-                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.20)
-                        : Appearance.colors.colLayer2
-                    border.width: 1.5
-                    border.color: root.selectedActionIsOverridden
-                        ? Appearance.colors.colPrimary
-                        : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.15)
-
-                    Image {
-                        id: inspectLargeImg
-                        anchors.centerIn: parent
-                        width: 36
-                        height: 36
-                        fillMode: Image.PreserveAspectFit
-                        source: SystemTheming.getCursorPreview(root.selectedActionEffectiveTheme, root.selectedActionKey)
-                        smooth: false
-                    }
-
-                    MaterialSymbol {
-                        anchors.centerIn: parent
-                        visible: inspectLargeImg.status !== Image.Ready
-                        text: root.currentAction ? root.currentAction.icon : "mouse"
-                        iconSize: 28
-                        color: Appearance.colors.colPrimary
-                    }
-                }
-
-                ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 3
-
-                    RowLayout {
-                        spacing: 8
-                        StyledText {
-                            text: root.currentAction ? root.currentAction.label : ""
-                            font.pixelSize: Appearance.font.pixelSize.large
-                            font.weight: Font.DemiBold
-                            color: Appearance.colors.colOnLayer1
-                        }
-
-                        Rectangle {
-                            radius: 6
-                            color: root.selectedActionIsOverridden
-                                ? Appearance.colors.colPrimary
-                                : ColorUtils.applyAlpha(Appearance.colors.colOnLayer0, 0.12)
-                            implicitHeight: 20
-                            implicitWidth: activePillText.implicitWidth + 10
-
-                            StyledText {
-                                id: activePillText
-                                anchors.centerIn: parent
-                                text: root.selectedActionIsOverridden
-                                    ? `Custom: ${root.selectedActionOverride}`
-                                    : `Default: ${SystemTheming.currentCursorTheme || "Gloomi_x"}`
-                                font.pixelSize: Appearance.font.pixelSize.smallest
-                                font.weight: Font.DemiBold
-                                color: root.selectedActionIsOverridden
-                                    ? Appearance.colors.colOnPrimary
-                                    : Appearance.colors.colSubtext
-                            }
-                        }
-                    }
-
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: root.currentAction ? root.currentAction.desc : ""
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.colors.colSubtext
-                    }
+                    implicitHeight: 1
+                    color: Appearance.colors.colLayer0Border
+                    opacity: 0.35
                 }
 
-                RippleButton {
-                    visible: root.selectedActionIsOverridden
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    buttonRadius: Appearance.rounding.full
-                    colBackground: Appearance.colors.colLayer2
-                    colBackgroundHover: Appearance.colors.colLayer2Hover
-                    padding: 8
-                    onClicked: {
-                        SystemTheming.resetCursorOverride(root.selectedActionKey)
-                    }
+                // Section: Available Icons for Selected Action
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
 
-                    contentItem: RowLayout {
-                        spacing: 6
-                        MaterialSymbol {
-                            text: "undo"
-                            iconSize: 18
-                            color: Appearance.colors.colSubtext
-                        }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+
                         StyledText {
-                            text: Translation.tr("Reset to Default")
+                            text: root.currentAction
+                                ? `${Translation.tr("Available Icons for")} ${root.currentAction.label}`
+                                : Translation.tr("Available Icons")
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            font.weight: Font.DemiBold
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+
+                        StyledText {
+                            text: Translation.tr("Click any icon below to apply it immediately:")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colSubtext
                         }
                     }
+
+                    RippleButton {
+                        visible: root.selectedActionIsOverridden
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        padding: 6
+                        onClicked: SystemTheming.resetCursorOverride(root.selectedActionKey)
+
+                        contentItem: RowLayout {
+                            spacing: 4
+                            MaterialSymbol {
+                                text: "undo"
+                                iconSize: 16
+                                color: Appearance.colors.colSubtext
+                            }
+                            StyledText {
+                                text: Translation.tr("Reset to Default")
+                                font.pixelSize: Appearance.font.pixelSize.smallest
+                                color: Appearance.colors.colSubtext
+                            }
+                        }
+                    }
                 }
-            }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: Appearance.colors.colLayer0Border
-                opacity: 0.5
-            }
-
-            // Theme picker chips row
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                StyledText {
-                    text: Translation.tr("Assign cursor from theme:")
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    font.weight: Font.Medium
-                    color: Appearance.colors.colSubtext
-                }
-
+                // Visual Icon Cards Flow (clean, soft selection, no harsh borders)
                 Flow {
-                    id: themeChipsFlow
+                    id: visualIconsFlow
                     Layout.fillWidth: true
                     spacing: 8
 
-                    // 1. "Default (Inherited)" chip
+                    // 1. "Default (Inherited)" Visual Tile
                     RippleButton {
+                        id: defaultCard
+                        width: 82
+                        implicitHeight: 84
                         readonly property bool isCurrent: !root.selectedActionIsOverridden
-                        buttonRadius: Appearance.rounding.full
-                        implicitHeight: 38
-                        padding: 10
-                        colBackground: isCurrent
-                            ? Appearance.colors.colPrimary
+                        readonly property string iconSrc: SystemTheming.getCursorPreview(SystemTheming.currentCursorTheme, root.selectedActionKey)
+
+                        buttonRadius: Appearance.rounding.small
+                        colBackground: defaultCard.isCurrent
+                            ? Appearance.colors.colSecondaryContainer
                             : Appearance.colors.colLayer2
-                        colBackgroundHover: isCurrent
-                            ? Appearance.colors.colPrimaryHover
+                        colBackgroundHover: defaultCard.isCurrent
+                            ? Appearance.colors.colSecondaryContainerHover
                             : Appearance.colors.colLayer2Hover
 
                         onClicked: {
                             SystemTheming.resetCursorOverride(root.selectedActionKey)
                         }
 
-                        contentItem: RowLayout {
-                            spacing: 6
-                            MaterialSymbol {
-                                text: isCurrent ? "check" : "restart_alt"
-                                iconSize: 18
-                                color: isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colSubtext
+                        contentItem: ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 2
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 38
+                                    height: 38
+                                    fillMode: Image.PreserveAspectFit
+                                    source: defaultCard.iconSrc
+                                    smooth: true
+                                    mipmap: true
+                                    cache: false
+                                }
+
+                                MaterialSymbol {
+                                    visible: defaultCard.isCurrent
+                                    anchors { top: parent.top; right: parent.right }
+                                    text: "check"
+                                    iconSize: 14
+                                    color: Appearance.colors.colPrimary
+                                }
                             }
+
                             StyledText {
-                                text: Translation.tr("Default (Inherited)")
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                font.weight: isCurrent ? Font.Bold : Font.Normal
-                                color: isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer1
+                                Layout.fillWidth: true
+                                text: Translation.tr("Default")
+                                font.pixelSize: 11
+                                font.weight: defaultCard.isCurrent ? Font.Bold : Font.Normal
+                                horizontalAlignment: Text.AlignHCenter
+                                color: defaultCard.isCurrent ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
+                                elide: Text.ElideRight
                             }
                         }
                     }
 
-                    // 2. Individual theme chips with mini preview
+                    // 2. Installed Theme Visual Tiles
                     Repeater {
                         model: {
                             let themes = SystemTheming.cursorThemes.slice()
@@ -479,18 +384,21 @@ ColumnLayout {
                             return themes
                         }
                         delegate: RippleButton {
+                            id: themeCard
                             required property string modelData
-                            readonly property bool isCurrent: root.selectedActionOverride === modelData
-                            readonly property string chipPreview: SystemTheming.getCursorPreview(modelData, root.selectedActionKey)
 
-                            buttonRadius: Appearance.rounding.full
-                            implicitHeight: 38
-                            padding: 8
-                            colBackground: isCurrent
-                                ? Appearance.colors.colPrimary
+                            width: 82
+                            implicitHeight: 84
+
+                            readonly property bool isCurrent: root.selectedActionOverride === modelData
+                            readonly property string iconSrc: SystemTheming.getCursorPreview(modelData, root.selectedActionKey)
+
+                            buttonRadius: Appearance.rounding.small
+                            colBackground: themeCard.isCurrent
+                                ? Appearance.colors.colSecondaryContainer
                                 : Appearance.colors.colLayer2
-                            colBackgroundHover: isCurrent
-                                ? Appearance.colors.colPrimaryHover
+                            colBackgroundHover: themeCard.isCurrent
+                                ? Appearance.colors.colSecondaryContainerHover
                                 : Appearance.colors.colLayer2Hover
 
                             onClicked: {
@@ -501,40 +409,140 @@ ColumnLayout {
                                 }
                             }
 
-                            contentItem: RowLayout {
-                                spacing: 8
+                            contentItem: ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 2
 
-                                Rectangle {
-                                    width: 24
-                                    height: 24
-                                    radius: 6
-                                    color: isCurrent
-                                        ? ColorUtils.applyAlpha(Appearance.colors.colOnPrimary, 0.20)
-                                        : ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.50)
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
 
                                     Image {
                                         anchors.centerIn: parent
-                                        width: 18
-                                        height: 18
+                                        width: 38
+                                        height: 38
                                         fillMode: Image.PreserveAspectFit
-                                        source: chipPreview
-                                        smooth: false
+                                        source: themeCard.iconSrc
+                                        smooth: true
+                                        mipmap: true
+                                        cache: false
+                                    }
+
+                                    MaterialSymbol {
+                                        visible: themeCard.isCurrent
+                                        anchors { top: parent.top; right: parent.right }
+                                        text: "check"
+                                        iconSize: 14
+                                        color: Appearance.colors.colPrimary
                                     }
                                 }
 
                                 StyledText {
-                                    text: modelData
-                                    font.pixelSize: Appearance.font.pixelSize.small
-                                    font.weight: isCurrent ? Font.Bold : Font.Normal
-                                    color: isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer1
+                                    Layout.fillWidth: true
+                                    text: themeCard.modelData
+                                    font.pixelSize: 11
+                                    font.weight: themeCard.isCurrent ? Font.Bold : Font.Normal
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: themeCard.isCurrent ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Custom File Visual Tile (visible when a custom disk file is active)
+                    RippleButton {
+                        id: customFileCard
+                        visible: root.selectedActionIsCustomFile
+                        width: 82
+                        implicitHeight: 84
+
+                        readonly property string iconSrc: SystemTheming.getCursorPreview("custom", root.selectedActionKey)
+
+                        buttonRadius: Appearance.rounding.small
+                        colBackground: Appearance.colors.colSecondaryContainer
+                        colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+
+                        contentItem: ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 2
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 38
+                                    height: 38
+                                    fillMode: Image.PreserveAspectFit
+                                    source: customFileCard.iconSrc
+                                    smooth: true
+                                    mipmap: true
+                                    cache: false
                                 }
 
                                 MaterialSymbol {
-                                    visible: isCurrent
+                                    anchors { top: parent.top; right: parent.right }
                                     text: "check"
-                                    iconSize: 16
-                                    color: Appearance.colors.colOnPrimary
+                                    iconSize: 14
+                                    color: Appearance.colors.colPrimary
                                 }
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: root.customFileName
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignHCenter
+                                color: Appearance.colors.colOnSecondaryContainer
+                                elide: Text.ElideMiddle
+                            }
+                        }
+                    }
+
+                    // 4. "+ Add Custom Icon from Disk" Button
+                    RippleButton {
+                        id: addFromDiskCard
+                        width: 82
+                        implicitHeight: 84
+
+                        buttonRadius: Appearance.rounding.small
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+
+                        onClicked: {
+                            customCursorDialog.open()
+                        }
+
+                        contentItem: ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 2
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "add_photo_alternate"
+                                    iconSize: 28
+                                    color: Appearance.colors.colPrimary
+                                }
+                            }
+
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("From Disk...")
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                horizontalAlignment: Text.AlignHCenter
+                                color: Appearance.colors.colPrimary
+                                elide: Text.ElideRight
                             }
                         }
                     }
@@ -543,7 +551,7 @@ ColumnLayout {
         }
     }
 
-    // ── 5. System Themes & Icons (GTK & Icon Themes) ───────────────────────────
+    // ── 3. System Themes & Icons (GTK & Icon Themes) ───────────────────────────
     ContentSubsection {
         title: Translation.tr("System Themes & Icons")
 

@@ -64,6 +64,23 @@ Singleton {
         Quickshell.execDetached(["bash", `${root.scriptDir}/set-gtk-theme.sh`, theme])
     }
 
+    // Fast-path: updates cursor size across all sinks in ~3ms without rebuilding overrides
+    function setCursorSize(size) {
+        root.currentCursorSize = size
+        Config.options.appearance.cursor.size = size
+        if (typeof NiriConfig !== "undefined" && NiriConfig.options && NiriConfig.options.cursor) {
+            NiriConfig.options.cursor.size = size
+        }
+        const hasOverrides = Config.options.appearance?.cursor?.overrides && Object.keys(Config.options.appearance.cursor.overrides).some(k => Config.options.appearance.cursor.overrides[k] && Config.options.appearance.cursor.overrides[k] !== "Default")
+        const activeTheme = hasOverrides ? "Ballade-Custom" : (root.currentCursorTheme || "Gloomi_x")
+        Quickshell.execDetached([
+            "bash",
+            `${root.scriptDir}/set-cursor-theme.sh`,
+            activeTheme,
+            String(size)
+        ])
+    }
+
     // Writes every cursor sink: gsettings + ~/.icons/default + niri + hyprland (composed with overrides)
     function applyCursorTheme(theme, size) {
         root.currentCursorTheme = theme
@@ -97,10 +114,27 @@ Singleton {
         { key: "zoom-out",     shortLabel: Translation.tr("Zoom Out"),     label: Translation.tr("Zoom Out"),              desc: Translation.tr("Demagnifying content view"),         icon: "zoom_out" }
     ]
 
+    property int cursorPreviewVersion: 1
+
     function getCursorPreview(theme, action) {
-        if (!theme || theme === "Default" || theme === "") theme = root.currentCursorTheme || "Gloomi_x"
         const home = FileUtils.trimFileProtocol(Directories.home)
+        if (!theme || theme === "Default" || theme === "") {
+            theme = root.currentCursorTheme || "Gloomi_x"
+        }
+        if (typeof theme === "string" && (theme.startsWith("/") || theme.startsWith("file://") || theme === "custom")) {
+            return `file://${home}/.cache/ballade/cursor_previews/custom/${action}.png`
+        }
         return `file://${home}/.cache/ballade/cursor_previews/${theme}/${action}.png`
+    }
+
+    function setCustomCursorFile(actionKey, filePath) {
+        if (!filePath) return
+        let clean = FileUtils.trimFileProtocol(filePath)
+        let current = Object.assign({}, Config.options.appearance?.cursor?.overrides || {})
+        current[actionKey] = clean
+        Config.options.appearance.cursor.overrides = current
+        root.cursorPreviewVersion++
+        root.applyComposedCursor()
     }
 
     function applyComposedCursor() {
@@ -115,6 +149,7 @@ Singleton {
             "--size", String(size),
             "--overrides", JSON.stringify(overrides)
         ])
+        root.cursorPreviewVersion++
     }
 
     function setCursorOverride(actionKey, sourceTheme) {

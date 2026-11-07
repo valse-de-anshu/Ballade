@@ -307,7 +307,7 @@ ContentPage {
                         }
                         Timer {
                             id: cursorSizeApplyTimer
-                            interval: 400
+                            interval: 120
                             repeat: false
                             onTriggered: SystemTheming.applyCursorTheme(SystemTheming.currentCursorTheme, hyprCursorSizeSpin.value)
                         }
