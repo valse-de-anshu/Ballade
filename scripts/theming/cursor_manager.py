@@ -21,63 +21,63 @@ ACTIONS = {
         'label': 'Normal Select',
         'desc': 'Standard pointer arrow',
         'icon': 'near_me',
-        'aliases': ['default', 'arrow', 'left_ptr', 'top_left_arrow'],
+        'aliases': ['default', 'arrow', 'left_ptr', 'top_left_arrow', 'right_ptr'],
         'hotspot': (0.0, 0.0)
     },
     'pointer': {
         'label': 'Link Select',
         'desc': 'Hovering over links and buttons',
         'icon': 'touch_app',
-        'aliases': ['pointer', 'pointing_hand', 'hand2', '9d8014430fc793608692d77b36a36282'],
+        'aliases': ['pointer', 'pointing_hand', 'hand', 'hand2', 'link', '9d8014430fc793608692d77b36a36282'],
         'hotspot': (0.2, 0.05)
     },
     'grab': {
         'label': 'Grab (Open Hand)',
         'desc': 'Ready to drag an item or canvas',
         'icon': 'pan_tool',
-        'aliases': ['grab', 'openhand', 'hand1'],
+        'aliases': ['grab', 'openhand', 'hand1', 'pan_tool'],
         'hotspot': (0.5, 0.5)
     },
     'grabbing': {
         'label': 'Grabbing (Closed Hand)',
         'desc': 'Actively dragging an item or window',
         'icon': 'drag_pan',
-        'aliases': ['grabbing', 'closedhand', 'dnd-none', 'dnd-move'],
+        'aliases': ['grabbing', 'closedhand', 'dnd-none', 'dnd-move', 'dnd-copy', 'dnd-link', 'dnd-ask'],
         'hotspot': (0.5, 0.5)
     },
     'text': {
         'label': 'Text Select',
         'desc': 'I-Beam cursor for text editing',
         'icon': 'edit',
-        'aliases': ['text', 'xterm', 'ibeam'],
+        'aliases': ['text', 'xterm', 'ibeam', 'vertical-text'],
         'hotspot': (0.5, 0.5)
     },
     'move': {
         'label': 'Move / Scroll',
         'desc': 'Moving windows or 4-way scrolling',
         'icon': 'open_with',
-        'aliases': ['move', 'all-scroll', 'fleur', '4498f0e0c1937ffe01f96f7836b01145'],
+        'aliases': ['move', 'all-scroll', 'fleur', 'all-resize', 'size_all', '4498f0e0c1937ffe01f96f7836b01145', '908011447fc01e81120240800b80110e'],
         'hotspot': (0.5, 0.5)
     },
     'crosshair': {
         'label': 'Crosshair',
         'desc': 'Precision targeting and sniping',
         'icon': 'control_camera',
-        'aliases': ['crosshair', 'cross', 'target'],
+        'aliases': ['crosshair', 'cross', 'target', 'tcross', 'diamond_cross', 'cross_reverse', 'precision'],
         'hotspot': (0.5, 0.5)
     },
     'not-allowed': {
         'label': 'Unavailable',
         'desc': 'Action is forbidden or unavailable',
         'icon': 'block',
-        'aliases': ['not-allowed', 'crossed_circle', 'forbidden', 'circle'],
+        'aliases': ['not-allowed', 'crossed_circle', 'forbidden', 'circle', 'no-drop', '03b6e0fcb3499374a867c041f52298f0'],
         'hotspot': (0.5, 0.5)
     },
     'help': {
         'label': 'Help / Question',
         'desc': 'Context help and tooltips',
         'icon': 'help',
-        'aliases': ['help', 'question_arrow', 'd9ce0ab605698f320427677b458ad60b'],
+        'aliases': ['help', 'question_arrow', 'whats_this', 'd9ce0ab605698f320427677b458ad60b', '5c6cd98b3f3ebcb01f17d52e08010f1a'],
         'hotspot': (0.0, 0.0)
     },
     'wait': {
@@ -91,49 +91,49 @@ ACTIONS = {
         'label': 'Working in Background',
         'desc': 'Busy while remaining interactive',
         'icon': 'hourglass_top',
-        'aliases': ['progress', 'left_ptr_watch', '3ecb610c1bf2410f44200f48c40d3599'],
+        'aliases': ['progress', 'left_ptr_watch', 'half-busy', '00000000000000020006000e7e800403', '3ecb610c1bf2410f44200f48c40d3599'],
         'hotspot': (0.0, 0.0)
     },
     'ew-resize': {
         'label': 'Horizontal Resize',
         'desc': 'Resizing borders left and right',
         'icon': 'swap_horiz',
-        'aliases': ['ew-resize', 'col-resize', 'h_double_arrow', 'size_hor'],
+        'aliases': ['ew-resize', 'col-resize', 'h_double_arrow', 'size_hor', 'w-resize', 'e-resize', 'right_side', 'left_side', 'sb_h_double_arrow', '028006030e0e7ebffc7f7070c0600140', '14fef782d02440884392942c11205230'],
         'hotspot': (0.5, 0.5)
     },
     'ns-resize': {
         'label': 'Vertical Resize',
         'desc': 'Resizing borders top and bottom',
         'icon': 'swap_vert',
-        'aliases': ['ns-resize', 'row-resize', 'v_double_arrow', 'size_ver'],
+        'aliases': ['ns-resize', 'row-resize', 'v_double_arrow', 'size_ver', 'n-resize', 's-resize', 'top_side', 'bottom_side', 'sb_v_double_arrow', '00008160000006810000408080010102', '2870a09082c103050810ffdffffe0204'],
         'hotspot': (0.5, 0.5)
     },
     'nwse-resize': {
         'label': 'Diagonal Resize 1',
         'desc': 'Resizing top-left / bottom-right',
         'icon': 'north_west',
-        'aliases': ['nwse-resize', 'size_fdiag', 'bd_double_arrow', 'top_left_corner'],
+        'aliases': ['nwse-resize', 'size_fdiag', 'bd_double_arrow', 'top_left_corner', 'bottom_right_corner', 'nw-resize', 'se-resize', 'c7088f0f3e6c8088236ef8e1e3e70000', '38c9d0d2e642866164250b0d04060a41'],
         'hotspot': (0.5, 0.5)
     },
     'nesw-resize': {
         'label': 'Diagonal Resize 2',
         'desc': 'Resizing top-right / bottom-left',
         'icon': 'north_east',
-        'aliases': ['nesw-resize', 'size_bdiag', 'fd_double_arrow', 'top_right_corner'],
+        'aliases': ['nesw-resize', 'size_bdiag', 'fd_double_arrow', 'top_right_corner', 'bottom_left_corner', 'ne-resize', 'sw-resize', 'fcf1c3c7cd4491d801f1e1c78f100000', '50585d75b494802d0151028115016902'],
         'hotspot': (0.5, 0.5)
     },
     'zoom-in': {
         'label': 'Zoom In',
         'desc': 'Zooming into content',
         'icon': 'zoom_in',
-        'aliases': ['zoom-in'],
+        'aliases': ['zoom-in', 'zoom_in'],
         'hotspot': (0.35, 0.35)
     },
     'zoom-out': {
         'label': 'Zoom Out',
         'desc': 'Zooming out of content',
         'icon': 'zoom_out',
-        'aliases': ['zoom-out'],
+        'aliases': ['zoom-out', 'zoom_out'],
         'hotspot': (0.35, 0.35)
     }
 }
@@ -700,6 +700,22 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
     os.makedirs(cursors_dir, exist_ok=True)
     os.makedirs(CUSTOM_CURSORS_DIR, exist_ok=True)
 
+    # 1. Populate ALL cursors from base theme first, so Ballade-Custom is a 100% complete theme!
+    src_base_dir = find_theme_cursors_dir(base_theme)
+    if not src_base_dir:
+        src_base_dir = find_theme_cursors_dir('Gloomi_x') or find_theme_cursors_dir('Adwaita')
+
+    if src_base_dir and os.path.isdir(src_base_dir):
+        for entry in os.listdir(src_base_dir):
+            src_entry = os.path.join(src_base_dir, entry)
+            dst_entry = os.path.join(cursors_dir, entry)
+            try:
+                real_target = os.path.realpath(src_entry)
+                if os.path.exists(real_target):
+                    os.symlink(real_target, dst_entry)
+            except OSError:
+                pass
+
     # index.theme with inheritance
     index_path = os.path.join(CUSTOM_THEME_DIR, 'index.theme')
     with open(index_path, 'w') as f:
@@ -711,7 +727,7 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
     # Apply overridden files
     for action_key, source in clean_overrides.items():
         info = ACTIONS.get(action_key, {})
-        aliases = info.get('aliases', [action_key])
+        aliases = list(set(info.get('aliases', []) + [action_key]))
 
         if source.startswith('/') or source.startswith('file://'):
             # Custom file from disk!
@@ -721,7 +737,7 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                 # Also generate preview PNG
                 preview_png = os.path.join(CACHE_DIR, 'custom', f"{action_key}.png")
                 extract_cursor_frame_to_png(custom_xcur, preview_png, target_size=48)
-                src_file = custom_xcur
+                src_file = os.path.realpath(custom_xcur)
             else:
                 continue
         else:
@@ -737,18 +753,18 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                 continue
 
             src_info = ACTIONS.get(src_action, {})
-            src_aliases = src_info.get('aliases', [src_action])
+            src_aliases = list(set(src_info.get('aliases', []) + [src_action]))
 
             src_file = None
             for a in src_aliases:
                 p = os.path.join(src_dir, a)
                 if os.path.exists(p):
-                    src_file = p
+                    src_file = os.path.realpath(p)
                     break
             if not src_file:
                 p = os.path.join(src_dir, src_action)
                 if os.path.exists(p):
-                    src_file = p
+                    src_file = os.path.realpath(p)
 
             if not src_file:
                 continue

@@ -7,7 +7,8 @@ theme="$1"
 size="${2:-24}"
 [[ -z "$theme" ]] && { echo "usage: $0 <cursor-theme> [size]" >&2; exit 1; }
 
-# 1. GNOME / GTK settings
+# 1. GNOME / GTK settings (toggle to trigger live cache invalidation for updated themes)
+gsettings set org.gnome.desktop.interface cursor-theme "default" 2>/dev/null || true
 gsettings set org.gnome.desktop.interface cursor-theme "$theme" 2>/dev/null || true
 gsettings set org.gnome.desktop.interface cursor-size "$size" 2>/dev/null || true
 
@@ -33,8 +34,9 @@ if command -v xrdb >/dev/null 2>&1; then
     printf "Xcursor.theme: %s\nXcursor.size: %s\n" "$theme" "$size" | xrdb -merge 2>/dev/null || true
 fi
 
-# 5. Hyprland runtime apply
+# 5. Hyprland runtime apply (toggle to force compositor cursor reload)
 if command -v hyprctl >/dev/null 2>&1 && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    hyprctl setcursor default "$size" 2>/dev/null || true
     hyprctl setcursor "$theme" "$size" 2>/dev/null || true
     hyprctl eval "hl.env('XCURSOR_THEME', '$theme'); hl.env('XCURSOR_SIZE', '$size'); hl.env('HYPRCURSOR_THEME', '$theme'); hl.env('HYPRCURSOR_SIZE', '$size')" 2>/dev/null || true
 fi
