@@ -447,6 +447,7 @@ Singleton {
                 property int centeredWallpaperSize: 400
                 property string centeredWallpaperColor: "primaryContainer"
                 property bool centeredWallpaperOnlyWhenLocked: false
+                property real centeredWallpaperBrightness: 0.35
                 property string wallpaperAnimation: "magic"
                 property bool enableWallpaperPreview: false
                 property string thumbnailPath: ""
@@ -664,6 +665,7 @@ Singleton {
                     property string shape: "Cookie7Sided"
                     property int size: 400
                     property string color: "primaryContainer"
+                    property real brightness: 0.35
                 }
                 property JsonObject widgets: JsonObject {
                     property JsonObject clock: JsonObject {

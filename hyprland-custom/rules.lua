@@ -48,25 +48,24 @@ hl.layer_rule({ match = { namespace = "quickshell:desktopMenu" }, no_anim = true
 -- Frosted glass blur for Bar (top, bottom, left, right)
 hl.layer_rule({ match = { namespace = "quickshell:bar" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:bar" }, xray = true })
-hl.layer_rule({ match = { namespace = "quickshell:bar" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:bar" }, ignore_alpha = 0.79 })
 
 hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, xray = true })
-hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:verticalBar" }, ignore_alpha = 0.79 })
 
 -- Frosted glass blur for Window Overview and Clipboard
 hl.layer_rule({ match = { namespace = "quickshell:overview" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:overview" }, xray = true })
-hl.layer_rule({ match = { namespace = "quickshell:overview" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:overview" }, ignore_alpha = 0.79 })
 
 hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, xray = true })
-hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, ignore_alpha = 0.79 })
 
--- Frosted glass blur for Bar Popups / Tooltips
+-- Frosted glass blur for Bar Popups / Tooltips (prevent corner light bleeding & halo artifacts)
 hl.layer_rule({ match = { namespace = "quickshell:popup" }, blur = true })
-hl.layer_rule({ match = { namespace = "quickshell:popup" }, xray = true })
-hl.layer_rule({ match = { namespace = "quickshell:popup" }, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "quickshell:popup" }, ignore_alpha = 0.8 })
 
 -- Lock faux screen corners from animating or scaling (prevents corner dark glitch & flicker)
 hl.layer_rule({ match = { namespace = "quickshell:screenCorners" }, no_anim = true })

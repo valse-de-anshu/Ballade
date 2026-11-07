@@ -384,6 +384,22 @@ ContentPage {
                             Config.options.background.centeredWallpaperSize = Math.round(value)
                         }
                     }
+
+                    ConfigSlider {
+                        id: bgBrightnessSlider
+                        visible: Config.options.background.centeredWallpaper
+                        text: Translation.tr("Backdrop Brightness")
+                        value: Math.round((Config.options.background.centeredWallpaperBrightness ?? 0.35) * 100)
+                        usePercentTooltip: true
+                        buttonIcon: "brightness_6"
+                        from: 0
+                        to: 100
+                        stepSize: 5
+                        stopIndicatorValues: [35, 100]
+                        onMoved: {
+                            Config.options.background.centeredWallpaperBrightness = value / 100.0
+                        }
+                    }
                 }
 
                 Connections {
@@ -406,6 +422,11 @@ ContentPage {
                     function onCenteredWallpaperSizeChanged() {
                         if (!bgSizeSlider.pressed && Math.round(bgSizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
                             bgSizeSlider.value = Config.options.background.centeredWallpaperSize
+                        }
+                    }
+                    function onCenteredWallpaperBrightnessChanged() {
+                        if (!bgBrightnessSlider.pressed && Math.round(bgBrightnessSlider.value) !== Math.round((Config.options.background.centeredWallpaperBrightness ?? 1.0) * 100)) {
+                            bgBrightnessSlider.value = Math.round((Config.options.background.centeredWallpaperBrightness ?? 1.0) * 100)
                         }
                     }
                 }

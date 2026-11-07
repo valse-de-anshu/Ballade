@@ -100,6 +100,7 @@ Variants {
         property int centeredWallpaperShape: getShapeFromName(Config.options.background.centeredWallpaperShape)
         property int centeredWallpaperSize: Config.options.background.centeredWallpaperSize
         property color centeredWallpaperColor: root.getColorFromName(Config.options.background.centeredWallpaperColor)
+        property real centeredWallpaperBrightness: Config.options.background.centeredWallpaperBrightness ?? 0.35
         property real splitFraction: {
             switch (Config.options.background.splitRatio) {
                 case "0":  return 0.0
@@ -553,11 +554,11 @@ Variants {
                 z: 10
                 anchors.fill: parent
                 color: Appearance.colors.colLayer0Base || Appearance.colors.colLayer0 || "#181825"
-                opacity: bgRoot.centeredWallpaperEnabled ? 0.65 : 0
+                opacity: bgRoot.centeredWallpaperEnabled ? (1.0 - Math.max(0.0, Math.min(1.0, bgRoot.centeredWallpaperBrightness))) : 0
                 visible: opacity > 0
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 450; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
                 }
             }
 

@@ -120,6 +120,10 @@ LazyLoader {
         WlrLayershell.namespace: "quickshell:popup"
         WlrLayershell.layer: WlrLayer.Top
 
+        mask: Region {
+            item: popupBackground
+        }
+
         Rectangle {
             id: popupBackground
             readonly property real margin: 10

@@ -97,6 +97,25 @@ Item {
             }
         }
 
+        // Background Brightness slider
+        ConfigSlider {
+            id: brightnessSlider
+            Layout.fillWidth: true
+            text: Translation.tr("Backdrop")
+            textWidth: 45
+            value: Math.round((Config.options.background.centeredWallpaperBrightness ?? 0.35) * 100)
+            usePercentTooltip: true
+            buttonIcon: "brightness_6"
+            from: 0
+            to: 100
+            stepSize: 5
+            stopIndicatorValues: [35, 100]
+            enabled: Config.options.background.centeredWallpaper
+            onMoved: {
+                Config.options.background.centeredWallpaperBrightness = value / 100.0
+            }
+        }
+
         Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: 2
@@ -171,6 +190,11 @@ Item {
         function onCenteredWallpaperSizeChanged() {
             if (!sizeSlider.pressed && Math.round(sizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
                 sizeSlider.value = Config.options.background.centeredWallpaperSize
+            }
+        }
+        function onCenteredWallpaperBrightnessChanged() {
+            if (!brightnessSlider.pressed && Math.round(brightnessSlider.value) !== Math.round((Config.options.background.centeredWallpaperBrightness ?? 1.0) * 100)) {
+                brightnessSlider.value = Math.round((Config.options.background.centeredWallpaperBrightness ?? 1.0) * 100)
             }
         }
     }

@@ -111,9 +111,20 @@ Item {
         }
 
         Rectangle {
+            id: lockBackgroundDimOverlay
             anchors.fill: parent
             color: Appearance.colors.colLayer0 || "#181825"
-            opacity: Config.options.lock.blur.enable ? 0.35 : 0.15
+            opacity: {
+                if ((Config.options.lock?.centeredWallpaper?.enable ?? false) || Config.options.background.centeredWallpaperOnlyWhenLocked) {
+                    const b = Config.options.lock?.centeredWallpaper?.brightness ?? Config.options.background.centeredWallpaperBrightness ?? 0.35;
+                    return (1.0 - Math.max(0.0, Math.min(1.0, b)));
+                }
+                return Config.options.lock.blur.enable ? 0.35 : 0.15;
+            }
+
+            Behavior on opacity {
+                NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+            }
         }
 
         Loader {
