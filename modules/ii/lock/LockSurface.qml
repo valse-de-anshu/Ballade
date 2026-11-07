@@ -414,7 +414,7 @@ Item {
         }
     }
 
-    // Time & Month pill (inline left)
+    // Time pill (inline left)
     Toolbar {
         id: timeIsland
         z: 100
@@ -429,7 +429,7 @@ Item {
 
         IconAndTextPair {
             icon: "schedule"
-            text: DateTime.time + " · " + Translation.tr("Month %1 of 12").arg(DateTime.clock.date.getMonth() + 1)
+            text: DateTime.time
         }
     }
 
