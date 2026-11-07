@@ -33,7 +33,7 @@ ColumnLayout {
 
     // In-panel custom icon browser state
     property bool customExplorerOpen: false
-    property string customExplorerFolder: Directories.pictures + "/avtar"
+    property string customExplorerFolder: Directories.downloads + "/shorekeeper_47394874a2_VSTHEMES-ORG/Cursors"
 
     // Debounce timer for smooth cursor size slider IPC updates
     Timer {
@@ -694,69 +694,48 @@ ColumnLayout {
                             font.weight: Font.Medium
                         }
 
-                        // Avatars Folder Tab
+                        // Shorekeeper Downloaded Pack Tab
                         RippleButton {
                             buttonRadius: Appearance.rounding.full
-                            readonly property bool active: root.customExplorerFolder === (Directories.pictures + "/avtar")
+                            readonly property string shorekeeperPath: Directories.downloads + "/shorekeeper_47394874a2_VSTHEMES-ORG/Cursors"
+                            readonly property bool active: root.customExplorerFolder === shorekeeperPath
                             colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
                             colBackgroundHover: Appearance.colors.colLayer2Hover
                             padding: 6
-                            onClicked: root.customExplorerFolder = Directories.pictures + "/avtar"
+                            onClicked: root.customExplorerFolder = shorekeeperPath
                             contentItem: RowLayout {
                                 spacing: 4
                                 MaterialSymbol {
-                                    text: "face"
+                                    text: "auto_awesome"
                                     iconSize: 16
                                     color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
                                 }
                                 StyledText {
-                                    text: Translation.tr("Avatars")
+                                    text: "Shorekeeper"
                                     font.pixelSize: Appearance.font.pixelSize.smallest
                                     color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
                                 }
                             }
                         }
 
-                        // Pictures Folder Tab
+                        // Columbina Downloaded Pack Tab
                         RippleButton {
                             buttonRadius: Appearance.rounding.full
-                            readonly property bool active: root.customExplorerFolder === Directories.pictures
+                            readonly property string columbinaPath: Directories.downloads + "/shorekeeper_47394874a2_VSTHEMES-ORG/columbina-genshin_c4cdb91178_VSTHEMES-ORG/Windows"
+                            readonly property bool active: root.customExplorerFolder === columbinaPath
                             colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
                             colBackgroundHover: Appearance.colors.colLayer2Hover
                             padding: 6
-                            onClicked: root.customExplorerFolder = Directories.pictures
+                            onClicked: root.customExplorerFolder = columbinaPath
                             contentItem: RowLayout {
                                 spacing: 4
                                 MaterialSymbol {
-                                    text: "photo_library"
+                                    text: "stars"
                                     iconSize: 16
                                     color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
                                 }
                                 StyledText {
-                                    text: Translation.tr("Pictures")
-                                    font.pixelSize: Appearance.font.pixelSize.smallest
-                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
-                                }
-                            }
-                        }
-
-                        // Icons Folder Tab
-                        RippleButton {
-                            buttonRadius: Appearance.rounding.full
-                            readonly property bool active: root.customExplorerFolder === (Directories.home + "/.icons")
-                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
-                            colBackgroundHover: Appearance.colors.colLayer2Hover
-                            padding: 6
-                            onClicked: root.customExplorerFolder = Directories.home + "/.icons"
-                            contentItem: RowLayout {
-                                spacing: 4
-                                MaterialSymbol {
-                                    text: "category"
-                                    iconSize: 16
-                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
-                                }
-                                StyledText {
-                                    text: Translation.tr("Icons")
+                                    text: "Columbina"
                                     font.pixelSize: Appearance.font.pixelSize.smallest
                                     color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
                                 }
@@ -780,6 +759,29 @@ ColumnLayout {
                                 }
                                 StyledText {
                                     text: Translation.tr("Downloads")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Installed Icons Tab
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            readonly property bool active: root.customExplorerFolder === (Directories.home + "/.icons")
+                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: root.customExplorerFolder = Directories.home + "/.icons"
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "category"
+                                    iconSize: 16
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Installed")
                                     font.pixelSize: Appearance.font.pixelSize.smallest
                                     color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
                                 }
@@ -878,6 +880,42 @@ ColumnLayout {
                         }
                     }
 
+                    // Quick Install Pack Action Bar
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.small
+                            colBackground: Appearance.colors.colPrimaryContainer
+                            colBackgroundHover: Appearance.colors.colPrimary
+                            padding: 8
+                            onClicked: {
+                                const folder = FileUtils.trimFileProtocol(root.customExplorerFolder)
+                                Quickshell.execDetached([
+                                    "bash", "-c",
+                                    `python3 "${SystemTheming.scriptDir}/cursor_manager.py" import-pack "${folder}" && qs -c ballade ipc call systemTheming rescanThemes 2>/dev/null || true`
+                                ])
+                            }
+                            contentItem: RowLayout {
+                                spacing: 6
+                                MaterialSymbol {
+                                    text: "install_desktop"
+                                    iconSize: 18
+                                    color: Appearance.colors.colOnPrimaryContainer
+                                }
+                                StyledText {
+                                    text: Translation.tr("Install this folder as a System Cursor Theme")
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.weight: Font.DemiBold
+                                    color: Appearance.colors.colOnPrimaryContainer
+                                }
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+                    }
+
                     // Embedded Folder Model & Image Thumbnail Flow
                     FolderListModel {
                         id: customFolderModel
@@ -888,7 +926,7 @@ ColumnLayout {
                             return trimmed.startsWith("file://") ? trimmed : ("file://" + trimmed)
                         }
                         showDirs: false
-                        nameFilters: ["*.png", "*.svg", "*.xcursor", "*.cur", "*.jpg", "*.jpeg", "*.webp"]
+                        nameFilters: ["*.ani", "*.cur", "*.xcursor", "*.png", "*.svg"]
                     }
 
                     // Thumbnail Flow
@@ -948,6 +986,7 @@ ColumnLayout {
                                                 Layout.fillHeight: true
 
                                                 Image {
+                                                    id: thumbImg
                                                     anchors.centerIn: parent
                                                     width: 38
                                                     height: 38
@@ -956,6 +995,14 @@ ColumnLayout {
                                                     smooth: true
                                                     mipmap: true
                                                     cache: false
+                                                }
+
+                                                MaterialSymbol {
+                                                    anchors.centerIn: parent
+                                                    visible: thumbImg.status !== Image.Ready
+                                                    text: "mouse"
+                                                    iconSize: 22
+                                                    color: thumbItem.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                                                 }
 
                                                 MaterialSymbol {

@@ -232,6 +232,10 @@ Singleton {
         }
     }
 
+    function rescanThemes() {
+        scanProc.running = true
+    }
+
     Process {
         id: scanProc
         running: true
@@ -269,5 +273,10 @@ Singleton {
                 root.currentCursorSize = Config.options.appearance?.cursor?.size || parseInt(data.CURRENT[3]) || 24
             }
         }
+    }
+
+    IpcHandler {
+        target: "systemTheming"
+        function rescanThemes(): void { root.rescanThemes(); }
     }
 }

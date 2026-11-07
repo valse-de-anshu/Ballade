@@ -181,16 +181,30 @@ def get_installed_themes():
 
 def extract_cursor_frame_to_png(xcursor_path, png_out_path, target_size=48):
     """
-    Parses Xcursor binary, selects the sharpest image chunk closest to target_size,
+    Parses Xcursor binary, .cur, or .ani, selects the sharpest image chunk closest to target_size,
     un-premultiplies alpha, and writes a crisp high-res PNG.
     """
     try:
         with open(xcursor_path, 'rb') as f:
             magic = f.read(4)
             if magic != b'Xcur':
-                # Might be an already plain image file (e.g. user selected PNG directly)
+                # Might be an .ani, .cur, or standard image file
                 f.seek(0)
+                data = f.read()
+                if data[:4] == b'RIFF' and data[8:12] == b'ACON':
+                    frames = parse_cur_or_ani_data(data)
+                    if frames:
+                        os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
+                        frames[0][0].save(png_out_path, 'PNG')
+                        return True
+                elif data[:4] == b'\x00\x00\x02\x00':
+                    frames = parse_cur_or_ani_data(data)
+                    if frames:
+                        os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
+                        frames[0][0].save(png_out_path, 'PNG')
+                        return True
                 try:
+                    f.seek(0)
                     im = Image.open(f).convert('RGBA')
                     os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
                     im.save(png_out_path, 'PNG')
@@ -246,6 +260,287 @@ def extract_cursor_frame_to_png(xcursor_path, png_out_path, target_size=48):
         return False
 
 
+INF_ACTION_MAP = {
+    'pointer': 'default',
+    'arrow': 'default',
+    'link': 'pointer',
+    'hand': 'zoom-in',
+    'working': 'progress',
+    'busy': 'wait',
+    'wait': 'wait',
+    'precision': 'crosshair',
+    'cross': 'crosshair',
+    'text': 'text',
+    'ibeam': 'text',
+    'move': 'move',
+    'sizeall': 'move',
+    'help': 'help',
+    'unavailable': 'not-allowed',
+    'no': 'not-allowed',
+    'horz': 'ew-resize',
+    'sizewe': 'ew-resize',
+    'horizontal': 'ew-resize',
+    'vert': 'ns-resize',
+    'sizens': 'ns-resize',
+    'vertical': 'ns-resize',
+    'dgn1': 'nwse-resize',
+    'sizenwse': 'nwse-resize',
+    'diagonal1': 'nwse-resize',
+    'dgn2': 'nesw-resize',
+    'sizenesw': 'nesw-resize',
+    'diagonal2': 'nesw-resize',
+    'alternate': 'grab',
+    'pin': 'grabbing',
+    'person': 'zoom-out'
+}
+
+
+def decode_cur_icon_bytes(icon_bytes):
+    """
+    Decodes Windows .cur / .ico bytes into a PIL.Image RGBA with AND mask transparency
+    properly applied to eliminate black backgrounds.
+    """
+    import io
+    try:
+        im = Image.open(io.BytesIO(icon_bytes))
+    except Exception:
+        return None, 0, 0
+
+    xhot, yhot = 0, 0
+    if len(icon_bytes) > 14 and icon_bytes[2:4] == b'\x02\x00':
+        xhot, yhot = struct.unpack('<HH', icon_bytes[10:14])
+
+    im_rgba = im.convert('RGBA')
+    arr = np.array(im_rgba)
+
+    # If alpha is completely opaque (255), decode the 1-bit AND mask from the DIB
+    if np.all(arr[:, :, 3] == 255):
+        try:
+            offset = 0
+            if len(icon_bytes) > 22 and icon_bytes[:4] in (b'\x00\x00\x01\x00', b'\x00\x00\x02\x00'):
+                offset = struct.unpack('<I', icon_bytes[18:22])[0]
+
+            dib = icon_bytes[offset:]
+            if len(dib) >= 40:
+                biSize, biWidth, biHeight, biPlanes, biBitCount, biCompression = struct.unpack('<IIIHHH', dib[:18])
+                real_h = biHeight // 2 if biHeight > biWidth else biHeight
+                w = biWidth
+
+                if real_h == arr.shape[0] and w == arr.shape[1] and biBitCount in (1, 4, 8):
+                    pal_colors = 1 << biBitCount
+                    pal_size = pal_colors * 4
+                    xor_offset = biSize + pal_size
+                    xor_stride = ((w * biBitCount + 31) // 32) * 4
+                    and_offset = xor_offset + (xor_stride * real_h)
+                    and_stride = ((w + 31) // 32) * 4
+
+                    if len(dib) >= and_offset + (and_stride * real_h):
+                        for y in range(real_h):
+                            row_start = and_offset + (real_h - 1 - y) * and_stride
+                            row_bytes = dib[row_start:row_start + and_stride]
+                            bits = ''.join(f'{b:08b}' for b in row_bytes)[:w]
+                            for x in range(w):
+                                if bits[x] == '1':
+                                    arr[y, x, 3] = 0
+                        im_rgba = Image.fromarray(arr, 'RGBA')
+        except Exception:
+            pass
+
+    return im_rgba, xhot, yhot
+
+
+def parse_cur_or_ani_data(data):
+    """Parses binary data of Windows .ani or .cur file into [(PIL.Image, xhot, yhot, delay_ms)]."""
+    import io
+    if data[:4] == b'RIFF' and data[8:12] == b'ACON':
+        pos = data.find(b'anih')
+        if pos == -1:
+            return []
+        size = struct.unpack('<I', data[pos+4:pos+8])[0]
+        anih = data[pos+8:pos+8+size]
+        n_frames, n_steps, width, height, bpp, planes, jif_rate, flags = struct.unpack('<IIIIIIII', anih[4:36])
+        delay_ms = max(16, int(round(jif_rate * 1000.0 / 60.0))) if jif_rate else 60
+
+        frames = []
+        idx = 0
+        while True:
+            icon_pos = data.find(b'icon', idx)
+            if icon_pos == -1:
+                break
+            i_size = struct.unpack('<I', data[icon_pos+4:icon_pos+8])[0]
+            icon_bytes = data[icon_pos+8:icon_pos+8+i_size]
+
+            im_rgba, xhot, yhot = decode_cur_icon_bytes(icon_bytes)
+            if im_rgba:
+                frames.append((im_rgba, xhot, yhot, delay_ms))
+            idx = icon_pos + 8 + i_size
+        return frames
+    elif data[:4] == b'\x00\x00\x02\x00':
+        im_rgba, xhot, yhot = decode_cur_icon_bytes(data)
+        if im_rgba:
+            return [(im_rgba, xhot, yhot, 50)]
+        return []
+    else:
+        try:
+            im = Image.open(io.BytesIO(data)).convert('RGBA')
+            return [(im, 0, 0, 50)]
+        except Exception:
+            return []
+
+
+def parse_cur_or_ani(file_path):
+    with open(file_path, 'rb') as f:
+        return parse_cur_or_ani_data(f.read())
+
+
+def write_multi_frame_xcursor(frames, out_path, sizes=None):
+    """
+    Writes an Xcursor binary containing multi-resolution frames (24, 32, 48, 64px)
+    and animation delays, allowing Hyprland to smoothly scale the cursor up/down.
+    """
+    if not frames:
+        return False
+
+    if sizes is None:
+        sizes = [24, 32, 48, 64]
+
+    orig_w, orig_h = frames[0][0].size
+    total_entries = len(sizes) * len(frames)
+    toc_entries = []
+    chunks = []
+    header_size = 16
+    toc_size = total_entries * 12
+    current_offset = header_size + toc_size
+
+    for sz in sizes:
+        scale_x = sz / float(orig_w) if orig_w > 0 else 1.0
+        scale_y = sz / float(orig_h) if orig_h > 0 else 1.0
+
+        for im, xhot, yhot, delay in frames:
+            resized = im.resize((sz, sz), Image.Resampling.LANCZOS)
+            sxhot = max(0, min(sz - 1, int(round(xhot * scale_x))))
+            syhot = max(0, min(sz - 1, int(round(yhot * scale_y))))
+
+            arr = np.array(resized, dtype=np.float32)
+            r, g, b, a = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
+            alpha = a / 255.0
+            r_pre = np.clip(r * alpha, 0, 255).astype(np.uint8)
+            g_pre = np.clip(g * alpha, 0, 255).astype(np.uint8)
+            b_pre = np.clip(b * alpha, 0, 255).astype(np.uint8)
+            a_u8 = a.astype(np.uint8)
+            bgra = np.stack([b_pre, g_pre, r_pre, a_u8], axis=-1).tobytes()
+
+            chunk_header = struct.pack('<IIIIIIIII', 36, 0xfffd0002, sz, 1, sz, sz, sxhot, syhot, delay)
+            chunk_data = chunk_header + bgra
+
+            toc_entries.append(struct.pack('<III', 0xfffd0002, sz, current_offset))
+            chunks.append(chunk_data)
+            current_offset += len(chunk_data)
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'wb') as f:
+        f.write(struct.pack('<IIII', 0x72756358, 16, 1, total_entries))
+        for t in toc_entries:
+            f.write(t)
+        for c in chunks:
+            f.write(c)
+    return True
+
+
+def import_windows_pack(src_path, theme_name=None):
+    """
+    Imports a Windows cursor pack directory (containing .ani, .cur, and/or install.inf)
+    into ~/.icons/<theme_name>/ as a full native Linux Xcursor theme.
+    """
+    import re
+    src_path = os.path.expanduser(src_path)
+    if os.path.isfile(src_path):
+        src_dir = os.path.dirname(src_path)
+    else:
+        src_dir = src_path
+
+    if not os.path.isdir(src_dir):
+        return None
+
+    # Determine theme name if not provided
+    if not theme_name:
+        # Check install.inf for SCHEME_NAME
+        inf_path = os.path.join(src_dir, 'install.inf')
+        if os.path.exists(inf_path):
+            with open(inf_path, 'r', errors='ignore') as f:
+                for line in f:
+                    m = re.match(r'SCHEME_NAME\s*=\s*\"?([^\"]+)\"?', line.strip(), re.IGNORECASE)
+                    if m:
+                        theme_name = m.group(1).strip().replace(' ', '-')
+                        break
+        if not theme_name:
+            theme_name = os.path.basename(os.path.normpath(src_dir))
+
+    dest_theme = os.path.expanduser(f'~/.icons/{theme_name}')
+    cursors_dest = os.path.join(dest_theme, 'cursors')
+    os.makedirs(cursors_dest, exist_ok=True)
+
+    # Read install.inf if present
+    mapping = {}
+    inf_path = os.path.join(src_dir, 'install.inf')
+    if os.path.exists(inf_path):
+        with open(inf_path, 'r', errors='ignore') as f:
+            for line in f:
+                m = re.match(r'([a-zA-Z0-9_]+)\s*=\s*\"?([^\"]+)\"?', line.strip())
+                if m:
+                    k = m.group(1).lower()
+                    v = m.group(2).strip()
+                    if k in INF_ACTION_MAP:
+                        mapping[INF_ACTION_MAP[k]] = v
+
+    # Also scan directory for .ani / .cur files directly
+    for f in os.listdir(src_dir):
+        base, ext = os.path.splitext(f)
+        b_low = base.lower()
+        if ext.lower() in ('.ani', '.cur'):
+            if b_low in INF_ACTION_MAP and INF_ACTION_MAP[b_low] not in mapping:
+                mapping[INF_ACTION_MAP[b_low]] = f
+
+    if not mapping:
+        return None
+
+    for action, filename in mapping.items():
+        src_file = os.path.join(src_dir, filename)
+        if not os.path.exists(src_file):
+            continue
+        frames = parse_cur_or_ani(src_file)
+        if not frames:
+            continue
+        primary_file = os.path.join(cursors_dest, action)
+        write_multi_frame_xcursor(frames, primary_file)
+
+        # Link aliases
+        aliases = ACTIONS.get(action, {}).get('aliases', [])
+        for alias in aliases:
+            if alias != action:
+                dst = os.path.join(cursors_dest, alias)
+                if os.path.exists(dst) or os.path.islink(dst):
+                    try:
+                        os.remove(dst)
+                    except OSError:
+                        pass
+                try:
+                    os.symlink(action, dst)
+                except OSError:
+                    pass
+
+    # index.theme
+    with open(os.path.join(dest_theme, 'index.theme'), 'w') as f:
+        f.write('[Icon Theme]\n')
+        f.write(f'Name={theme_name}\n')
+        f.write(f'Comment={theme_name} cursor theme converted from Windows pack\n')
+        f.write('Inherits=Gloomi_x\n')
+
+    # Ensure previews are generated
+    ensure_theme_previews(theme_name, force=True)
+    return theme_name
+
+
 def create_xcursor_from_image(input_path, output_xcursor_path, action_key='default'):
     """
     Converts any image (PNG, SVG, JPG, WebP) into an Xcursor binary with multiple
@@ -259,11 +554,16 @@ def create_xcursor_from_image(input_path, output_xcursor_path, action_key='defau
     # Check if input is already an Xcursor binary
     try:
         with open(input_path, 'rb') as f:
-            if f.read(4) == b'Xcur':
+            magic4 = f.read(4)
+            if magic4 == b'Xcur':
                 os.makedirs(os.path.dirname(output_xcursor_path), exist_ok=True)
                 shutil.copyfile(input_path, output_xcursor_path)
                 return True
-    except OSError:
+            elif magic4 == b'RIFF' or magic4 == b'\x00\x00\x02\x00':
+                frames = parse_cur_or_ani(input_path)
+                if frames:
+                    return write_multi_frame_xcursor(frames, output_xcursor_path)
+    except Exception:
         pass
 
     # Open image with Pillow
@@ -477,13 +777,25 @@ def main():
     p_setcustom.add_argument('--action', required=True)
     p_setcustom.add_argument('--file', required=True)
 
+    # import-pack
+    p_imp = subparsers.add_parser('import-pack')
+    p_imp.add_argument('path', help='Directory or install.inf file to import')
+    p_imp.add_argument('--name', default=None, help='Target theme name')
+
     # get-manifest
     p_man = subparsers.add_parser('get-manifest')
     p_man.add_argument('--base', default=None)
 
     args = parser.parse_args()
 
-    if args.command == 'list-themes':
+    if args.command == 'import-pack':
+        imported = import_windows_pack(args.path, args.name)
+        if imported:
+            print(json.dumps({'status': 'ok', 'theme': imported}))
+        else:
+            print(json.dumps({'status': 'error', 'message': 'No valid cursor files or install.inf found'}), file=sys.stderr)
+            sys.exit(1)
+    elif args.command == 'list-themes':
         print(json.dumps(get_installed_themes()))
     elif args.command == 'list-actions':
         action_list = []

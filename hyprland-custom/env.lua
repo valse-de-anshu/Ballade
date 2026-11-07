@@ -1,6 +1,6 @@
 -- Gloomi XCursor theme
 hl.env("XCURSOR_THEME", "Ballade-Custom")
-hl.env("XCURSOR_SIZE", "40")
+hl.env("XCURSOR_SIZE", "60")
 
 -- Custom Quickshell Rice
 hl.env("qsConfig", "ballade")
