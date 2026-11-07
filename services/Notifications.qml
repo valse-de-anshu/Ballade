@@ -34,6 +34,7 @@ Singleton {
         property double time
         property string urgency: notification?.urgency.toString() ?? "normal"
         property Timer timer
+        property bool unread: true
 
         onNotificationChanged: {
             if (notification === null) {
@@ -93,7 +94,18 @@ Singleton {
         return JSON.stringify(list.map((notif) => notifToJSON(notif)), null, 2);
     }
     
+    function updateUnreadCount() {
+        let count = 0;
+        for (let i = 0; i < root.list.length; i++) {
+            if (root.list[i] && root.list[i].unread) {
+                count++;
+            }
+        }
+        root.unread = Math.min(count, root.list.length);
+    }
+    
     onListChanged: {
+        root.updateUnreadCount();
         // Update latest time for each app
         root.list.forEach((notif) => {
             if (!root.latestTimeForApp[notif.appName] || notif.time > root.latestTimeForApp[notif.appName]) {
@@ -177,20 +189,32 @@ Singleton {
 
         onNotification: (notification) => {
             notification.tracked = true
+            const targetId = notification.id + root.idOffset;
             const newNotifObject = notifComponent.createObject(root, {
-                "notificationId": notification.id + root.idOffset,
+                "notificationId": targetId,
                 "notification": notification,
                 "time": Date.now(),
+                "unread": true,
             });
-            let updatedList = [...root.list, newNotifObject];
-            const maxStoredNotifs = 50;
-            if (updatedList.length > maxStoredNotifs) {
-                const excess = updatedList.length - maxStoredNotifs;
-                for (let i = 0; i < excess; i++) {
-                    const oldNotif = updatedList[i];
-                    if (oldNotif && oldNotif.timer) oldNotif.timer.destroy();
+
+            const existingIndex = root.list.findIndex((notif) => notif.notificationId === targetId);
+            let updatedList;
+            if (existingIndex !== -1) {
+                const oldNotif = root.list[existingIndex];
+                if (oldNotif && oldNotif.timer) oldNotif.timer.destroy();
+                updatedList = [...root.list];
+                updatedList[existingIndex] = newNotifObject;
+            } else {
+                updatedList = [...root.list, newNotifObject];
+                const maxStoredNotifs = 50;
+                if (updatedList.length > maxStoredNotifs) {
+                    const excess = updatedList.length - maxStoredNotifs;
+                    for (let i = 0; i < excess; i++) {
+                        const oldNotif = updatedList[i];
+                        if (oldNotif && oldNotif.timer) oldNotif.timer.destroy();
+                    }
+                    updatedList = updatedList.slice(excess);
                 }
-                updatedList = updatedList.slice(excess);
             }
             root.list = updatedList;
 
@@ -203,8 +227,8 @@ Singleton {
                         "interval": notification.expireTimeout < 0 ? (Config?.options.notifications.timeout ?? 7000) : notification.expireTimeout,
                     });
                 }
-                root.unread++;
             }
+            root.updateUnreadCount();
             root.notify(newNotifObject);
 
             // Notification Sound Effect
@@ -216,6 +240,9 @@ Singleton {
     }
 
     function markAllRead() {
+        for (let i = 0; i < root.list.length; i++) {
+            if (root.list[i]) root.list[i].unread = false;
+        }
         root.unread = 0;
     }
 
@@ -234,11 +261,13 @@ Singleton {
         if (notifServerIndex !== -1) {
             notifServer.trackedNotifications.values[notifServerIndex].dismiss()
         }
+        root.updateUnreadCount();
         root.discard(id); // Emit signal
     }
 
     function discardAllNotifications() {
         root.list = []
+        root.unread = 0
         triggerListChange()
         notifFileView.setText(stringifyList(root.list));
         notifServer.trackedNotifications.values.forEach((notif) => {
@@ -324,6 +353,7 @@ Singleton {
                     "summary": notif.summary,
                     "time": notif.time,
                     "urgency": notif.urgency,
+                    "unread": false,
                 });
             });
             // Find largest notificationId

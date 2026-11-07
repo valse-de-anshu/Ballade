@@ -16,15 +16,15 @@ MaterialSymbol {
         anchors {
             right: parent.right
             top: parent.top
-            rightMargin: root.showUnreadCount ? 0 : 1
-            topMargin: root.showUnreadCount ? 0 : 3
+            rightMargin: root.showUnreadCount ? -4 : 1
+            topMargin: root.showUnreadCount ? -4 : 3
         }
-        radius: Appearance.rounding.full
         color: Appearance.colors.colOnLayer0
         z: 1
 
-        implicitHeight: root.showUnreadCount ? Math.max(notificationCounterText.implicitWidth, notificationCounterText.implicitHeight) : 8
-        implicitWidth: implicitHeight
+        width: root.showUnreadCount ? Math.max(16, notificationCounterText.implicitWidth + 8) : 8
+        height: root.showUnreadCount ? 16 : 8
+        radius: height / 2
 
         StyledText {
             id: notificationCounterText
@@ -32,7 +32,7 @@ MaterialSymbol {
             anchors.centerIn: parent
             font.pixelSize: Appearance.font.pixelSize.smallest
             color: Appearance.colors.colLayer0
-            text: Notifications.unread
+            text: Notifications.unread > 99 ? "99+" : Notifications.unread
         }
     }
 }
