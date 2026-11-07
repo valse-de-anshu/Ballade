@@ -3,36 +3,38 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
-MaterialSymbol {
+Item {
     id: root
-    readonly property bool showUnreadCount: Config.options.bar.indicators.notifications.showUnreadCount
-    text: Notifications.silent ? "notifications_paused" : "notifications"
-    iconSize: Appearance.font.pixelSize.larger
-    color: rightSidebarButton.colText
+
+    implicitWidth: bellIcon.implicitWidth
+    implicitHeight: bellIcon.implicitHeight
+
+    MaterialSymbol {
+        id: bellIcon
+        anchors.centerIn: parent
+        text: Notifications.silent ? "notifications_paused" : "notifications"
+        iconSize: Appearance.font.pixelSize.larger
+        color: rightSidebarButton.colText
+    }
 
     Rectangle {
-        id: notifPing
+        id: notifDot
         visible: !Notifications.silent && Notifications.unread > 0
+        z: 2
+
         anchors {
-            right: parent.right
-            top: parent.top
-            rightMargin: root.showUnreadCount ? -4 : 1
-            topMargin: root.showUnreadCount ? -4 : 3
+            top: bellIcon.top
+            topMargin: 2
+            right: bellIcon.right
+            rightMargin: 1
         }
-        color: Appearance.colors.colOnLayer0
-        z: 1
 
-        width: root.showUnreadCount ? Math.max(16, notificationCounterText.implicitWidth + 8) : 8
-        height: root.showUnreadCount ? 16 : 8
-        radius: height / 2
+        width: 6
+        height: 6
+        radius: 3
 
-        StyledText {
-            id: notificationCounterText
-            visible: root.showUnreadCount
-            anchors.centerIn: parent
-            font.pixelSize: Appearance.font.pixelSize.smallest
-            color: Appearance.colors.colLayer0
-            text: Notifications.unread > 99 ? "99+" : Notifications.unread
-        }
+        color: Appearance.colors.colPrimary
+        border.width: 1
+        border.color: Appearance.colors.colLayer0Base || "#141313"
     }
 }
