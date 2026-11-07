@@ -121,25 +121,44 @@ Item {
             active: (Config.options.lock?.centeredWallpaper?.enable ?? false) || Config.options.background.centeredWallpaperOnlyWhenLocked
             visible: active
             sourceComponent: Item {
+                id: lockCenteredContainer
                 anchors.fill: parent
 
                 readonly property int shapeSize: Config.options.lock?.centeredWallpaper?.size ?? 400
-                readonly property string shapeName: Config.options.lock?.centeredWallpaper?.shape ?? "Cookie7Sided"
+                readonly property int shapeEnum: root.getShapeFromName(Config.options.lock?.centeredWallpaper?.shape ?? "Cookie7Sided")
+
+                // Centered wallpaper shadow behind shape (matching Background.qml)
+                MaterialShape {
+                    id: lockCenteredShadow
+                    anchors.centerIn: parent
+                    width: lockCenteredContainer.shapeSize
+                    height: lockCenteredContainer.shapeSize
+                    shape: lockCenteredContainer.shapeEnum
+                    color: Qt.rgba(0, 0, 0, 0.5)
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.9)
+                        shadowBlur: 0.95
+                        shadowVerticalOffset: 8
+                    }
+                }
 
                 MaterialShape {
                     id: lockCenteredShape
                     anchors.centerIn: parent
-                    width: parent.shapeSize
-                    height: parent.shapeSize
+                    width: lockCenteredContainer.shapeSize
+                    height: lockCenteredContainer.shapeSize
                     color: "transparent"
-                    shape: root.getShapeFromName(parent.shapeName)
+                    shape: lockCenteredContainer.shapeEnum
 
                     layer.enabled: true
                     layer.effect: OpacityMask {
                         maskSource: MaterialShape {
-                            width: parent.shapeSize
-                            height: parent.shapeSize
-                            shape: root.getShapeFromName(parent.shapeName)
+                            width: lockCenteredContainer.shapeSize
+                            height: lockCenteredContainer.shapeSize
+                            shape: lockCenteredContainer.shapeEnum
                         }
                     }
 
@@ -148,6 +167,7 @@ Item {
                         source: root.lockWallpaperSource
                         fillMode: Image.PreserveAspectCrop
                         cache: true
+                        asynchronous: true
                     }
                 }
             }
