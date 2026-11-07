@@ -335,7 +335,7 @@ ContentPage {
                     ConfigSlider {
                         id: appBrightnessSlider
                         visible: Config.options.background.centeredWallpaper
-                        text: Translation.tr("Backdrop Brightness")
+                        text: Translation.tr("Brightness")
                         value: Math.round((Config.options.background.centeredWallpaperBrightness ?? 0.35) * 100)
                         usePercentTooltip: true
                         buttonIcon: "brightness_6"

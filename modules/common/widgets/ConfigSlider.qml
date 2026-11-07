@@ -37,8 +37,10 @@ RowLayout {
         StyledText {
             id: labelWidget
             Layout.preferredWidth: root.textWidth
+            Layout.maximumWidth: root.textWidth
             text: root.text
             color: Appearance.colors.colOnSecondaryContainer
+            elide: Text.ElideRight
         }
     }
     StyledSlider {

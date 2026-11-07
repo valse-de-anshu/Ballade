@@ -83,7 +83,7 @@ Item {
             id: sizeSlider
             Layout.fillWidth: true
             text: Translation.tr("Size")
-            textWidth: 45
+            textWidth: 80
             value: Config.options.background.centeredWallpaperSize
             usePercentTooltip: false
             buttonIcon: "aspect_ratio"
@@ -101,8 +101,8 @@ Item {
         ConfigSlider {
             id: brightnessSlider
             Layout.fillWidth: true
-            text: Translation.tr("Backdrop")
-            textWidth: 45
+            text: Translation.tr("Brightness")
+            textWidth: 80
             value: Math.round((Config.options.background.centeredWallpaperBrightness ?? 0.35) * 100)
             usePercentTooltip: true
             buttonIcon: "brightness_6"
