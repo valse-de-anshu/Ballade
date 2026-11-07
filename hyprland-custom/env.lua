@@ -4,4 +4,6 @@ hl.env("XCURSOR_SIZE", "24")
 
 -- Custom Quickshell Rice
 hl.env("qsConfig", "ballade")
+hl.env("MALLOC_ARENA_MAX", "2")
+hl.env("MALLOC_TRIM_THRESHOLD_", "131072")
 

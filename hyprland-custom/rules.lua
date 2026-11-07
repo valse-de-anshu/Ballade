@@ -63,6 +63,11 @@ hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, blur = true })
 hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, xray = true })
 hl.layer_rule({ match = { namespace = "quickshell:clipboard" }, ignore_alpha = 0.05 })
 
+-- Frosted glass blur for Bar Popups / Tooltips
+hl.layer_rule({ match = { namespace = "quickshell:popup" }, blur = true })
+hl.layer_rule({ match = { namespace = "quickshell:popup" }, xray = true })
+hl.layer_rule({ match = { namespace = "quickshell:popup" }, ignore_alpha = 0.05 })
+
 -- Lock faux screen corners from animating or scaling (prevents corner dark glitch & flicker)
 hl.layer_rule({ match = { namespace = "quickshell:screenCorners" }, no_anim = true })
 
