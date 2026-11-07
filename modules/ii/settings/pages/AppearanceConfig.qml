@@ -677,5 +677,16 @@ ContentPage {
                 }
             }
         }
+
+        // ── 5. Mouse & Cursor Customization ───────────────────────────────────
+        ContentSection {
+            icon: "mouse"
+            title: Translation.tr("Mouse & Cursor")
+            shape: MaterialShape.Shape.Arrow
+
+            CursorStudio {
+                Layout.fillWidth: true
+            }
+        }
     }
 }

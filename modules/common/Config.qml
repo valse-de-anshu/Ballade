@@ -155,6 +155,11 @@ Singleton {
                         property bool forceDarkMode: false
                     }
                 }
+                property JsonObject cursor: JsonObject {
+                    property string theme: "Gloomi_x"
+                    property int size: 24
+                    property var overrides: ({})
+                }
                 property JsonObject palette: JsonObject {
                     property string type: "auto" // Allowed: auto, scheme-content, scheme-expressive, scheme-fidelity, scheme-fruit-salad, scheme-monochrome, scheme-neutral, scheme-rainbow, scheme-tonal-spot
                     property string accentColor: ""

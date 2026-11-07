@@ -271,6 +271,48 @@ ContentPage {
                             HyprlandConfig.set("input:repeat_rate", value)
                         }
                     }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Mouse & Cursor")
+                GroupedList {
+                    ConfigComboBox {
+                        buttonIcon: "mouse"
+                        text: Translation.tr("Cursor theme")
+                        description: Translation.tr("Active cursor pack for pointers and desktop")
+                        model: {
+                            let themes = SystemTheming.cursorThemes.slice()
+                            if (SystemTheming.currentCursorTheme && !themes.includes(SystemTheming.currentCursorTheme)) {
+                                themes.push(SystemTheming.currentCursorTheme)
+                            }
+                            themes.sort()
+                            return themes.map(t => ({ displayName: t, value: t }))
+                        }
+                        currentValue: SystemTheming.currentCursorTheme
+                        onSelected: newValue => {
+                            SystemTheming.applyCursorTheme(newValue, SystemTheming.currentCursorSize)
+                        }
+                    }
+
+                    ConfigSpinBox {
+                        id: hyprCursorSizeSpin
+                        icon: "zoom_in"
+                        text: Translation.tr("Cursor size")
+                        value: SystemTheming.currentCursorSize
+                        from: 16; to: 64; stepSize: 2
+                        onValueChanged: {
+                            if (value === SystemTheming.currentCursorSize) return
+                            cursorSizeApplyTimer.restart()
+                        }
+                        Timer {
+                            id: cursorSizeApplyTimer
+                            interval: 400
+                            repeat: false
+                            onTriggered: SystemTheming.applyCursorTheme(SystemTheming.currentCursorTheme, hyprCursorSizeSpin.value)
+                        }
+                    }
+
                     ConfigSelectionArray {
                         text: Translation.tr("Follow mouse")
                         icon: "mouse"
@@ -285,6 +327,38 @@ ContentPage {
                             { displayName: Translation.tr("Loose"),    icon: "drag_pan",   value: 2 },
                             { displayName: Translation.tr("Explicit"), icon: "ads_click",  value: 3 },
                         ]
+                    }
+
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 40
+                        buttonRadius: Appearance.rounding.full
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        padding: 8
+                        onClicked: {
+                            GlobalStates.settingsPage = "appearance:mouse"
+                        }
+                        contentItem: RowLayout {
+                            spacing: 8
+                            anchors.centerIn: parent
+                            MaterialSymbol {
+                                text: "tune"
+                                iconSize: 18
+                                color: Appearance.colors.colPrimary
+                            }
+                            StyledText {
+                                text: Translation.tr("Customize Individual Cursor Shapes (Grabbing, Move, etc.)")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colPrimary
+                                font.weight: Font.Medium
+                            }
+                            MaterialSymbol {
+                                text: "arrow_forward"
+                                iconSize: 16
+                                color: Appearance.colors.colPrimary
+                            }
+                        }
                     }
                 }
             }

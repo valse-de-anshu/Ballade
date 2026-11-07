@@ -64,14 +64,80 @@ Singleton {
         Quickshell.execDetached(["bash", `${root.scriptDir}/set-gtk-theme.sh`, theme])
     }
 
-    // Writes every cursor sink: gsettings + ~/.icons/default + niri (qssettings/shell.kdl)
+    // Writes every cursor sink: gsettings + ~/.icons/default + niri + hyprland (composed with overrides)
     function applyCursorTheme(theme, size) {
         root.currentCursorTheme = theme
         root.currentCursorSize = size
-        NiriConfig.options.cursor.theme = theme
-        NiriConfig.options.cursor.size = size
-        if (theme !== "")
-            Quickshell.execDetached(["bash", `${root.scriptDir}/set-cursor-theme.sh`, theme, String(size)])
+        Config.options.appearance.cursor.theme = theme
+        Config.options.appearance.cursor.size = size
+        if (typeof NiriConfig !== "undefined" && NiriConfig.options && NiriConfig.options.cursor) {
+            NiriConfig.options.cursor.theme = theme
+            NiriConfig.options.cursor.size = size
+        }
+        root.applyComposedCursor()
+    }
+
+    readonly property list<var> cursorActions: [
+        { key: "default",      shortLabel: Translation.tr("Normal"),       label: Translation.tr("Normal Select"),         desc: Translation.tr("Standard pointer arrow"),            icon: "near_me" },
+        { key: "pointer",      shortLabel: Translation.tr("Link"),         label: Translation.tr("Link Select"),           desc: Translation.tr("Hovering links and buttons"),         icon: "touch_app" },
+        { key: "grab",         shortLabel: Translation.tr("Grab"),         label: Translation.tr("Grab (Open Hand)"),      desc: Translation.tr("Ready to drag an item or canvas"),    icon: "pan_tool" },
+        { key: "grabbing",     shortLabel: Translation.tr("Grabbing"),     label: Translation.tr("Grabbing (Closed Hand)"),desc: Translation.tr("Actively dragging or moving"),        icon: "drag_pan" },
+        { key: "text",         shortLabel: Translation.tr("Text"),         label: Translation.tr("Text Select"),           desc: Translation.tr("I-Beam text editing and selection"),  icon: "edit" },
+        { key: "move",         shortLabel: Translation.tr("Move"),         label: Translation.tr("Move / Scroll"),         desc: Translation.tr("Moving windows or 4-way scrolling"),  icon: "open_with" },
+        { key: "crosshair",    shortLabel: Translation.tr("Crosshair"),    label: Translation.tr("Crosshair"),             desc: Translation.tr("Precision targeting and selection"),  icon: "control_camera" },
+        { key: "not-allowed",  shortLabel: Translation.tr("Forbidden"),    label: Translation.tr("Unavailable"),           desc: Translation.tr("Forbidden or disabled action"),       icon: "block" },
+        { key: "help",         shortLabel: Translation.tr("Help"),         label: Translation.tr("Help / Question"),       desc: Translation.tr("Context help and tooltips"),          icon: "help" },
+        { key: "wait",         shortLabel: Translation.tr("Busy"),         label: Translation.tr("Busy / Waiting"),        desc: Translation.tr("System or application busy"),         icon: "hourglass_empty" },
+        { key: "progress",     shortLabel: Translation.tr("Progress"),     label: Translation.tr("Working in Background"), desc: Translation.tr("Loading while still interactive"),    icon: "hourglass_top" },
+        { key: "ew-resize",    shortLabel: Translation.tr("Resize H"),     label: Translation.tr("Horizontal Resize"),     desc: Translation.tr("Resizing borders left / right"),      icon: "swap_horiz" },
+        { key: "ns-resize",    shortLabel: Translation.tr("Resize V"),     label: Translation.tr("Vertical Resize"),       desc: Translation.tr("Resizing borders top / bottom"),      icon: "swap_vert" },
+        { key: "nwse-resize",  shortLabel: Translation.tr("Diagonal 1"),   label: Translation.tr("Diagonal Resize 1"),     desc: Translation.tr("Resizing top-left to bottom-right"),  icon: "north_west" },
+        { key: "nesw-resize",  shortLabel: Translation.tr("Diagonal 2"),   label: Translation.tr("Diagonal Resize 2"),     desc: Translation.tr("Resizing top-right to bottom-left"),  icon: "north_east" },
+        { key: "zoom-in",      shortLabel: Translation.tr("Zoom In"),      label: Translation.tr("Zoom In"),               desc: Translation.tr("Magnifying content view"),           icon: "zoom_in" },
+        { key: "zoom-out",     shortLabel: Translation.tr("Zoom Out"),     label: Translation.tr("Zoom Out"),              desc: Translation.tr("Demagnifying content view"),         icon: "zoom_out" }
+    ]
+
+    function getCursorPreview(theme, action) {
+        if (!theme || theme === "Default" || theme === "") theme = root.currentCursorTheme || "Gloomi_x"
+        const home = FileUtils.trimFileProtocol(Directories.home)
+        return `file://${home}/.cache/ballade/cursor_previews/${theme}/${action}.png`
+    }
+
+    function applyComposedCursor() {
+        const base = root.currentCursorTheme || "Gloomi_x"
+        const size = root.currentCursorSize || 24
+        const overrides = Config.options.appearance?.cursor?.overrides || {}
+        Quickshell.execDetached([
+            "python3",
+            `${root.scriptDir}/cursor_manager.py`,
+            "apply",
+            "--base", base,
+            "--size", String(size),
+            "--overrides", JSON.stringify(overrides)
+        ])
+    }
+
+    function setCursorOverride(actionKey, sourceTheme) {
+        let current = Object.assign({}, Config.options.appearance?.cursor?.overrides || {})
+        if (!sourceTheme || sourceTheme === "Default" || sourceTheme === root.currentCursorTheme) {
+            delete current[actionKey]
+        } else {
+            current[actionKey] = sourceTheme
+        }
+        Config.options.appearance.cursor.overrides = current
+        root.applyComposedCursor()
+    }
+
+    function resetCursorOverride(actionKey) {
+        let current = Object.assign({}, Config.options.appearance?.cursor?.overrides || {})
+        delete current[actionKey]
+        Config.options.appearance.cursor.overrides = current
+        root.applyComposedCursor()
+    }
+
+    function resetAllCursorOverrides() {
+        Config.options.appearance.cursor.overrides = {}
+        root.applyComposedCursor()
     }
 
     function regenerateMatugenConfig() {
@@ -140,7 +206,7 @@ Singleton {
             echo :::GTK
             find /usr/share/themes "$HOME/.themes" "$HOME/.local/share/themes" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | xargs -r -n1 basename | sort -u
             echo :::CURSOR
-            find /usr/share/icons "$HOME/.local/share/icons" "$HOME/.icons" -mindepth 2 -maxdepth 2 -type d -name cursors 2>/dev/null | sed 's|/cursors$||' | xargs -r -n1 basename | sort -u
+            python3 "${root.scriptDir}/cursor_manager.py" list-themes 2>/dev/null | tr -d '[]" ' | tr ',' '\n' | grep -v '^$'
             echo :::CURRENT
             (gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null || echo) | tr -d "'"
             (gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null || echo) | tr -d "'"
@@ -164,8 +230,8 @@ Singleton {
                 root.cursorThemes = data.CURSOR.filter(l => l !== "")
                 root.currentIconTheme = data.CURRENT[0] ?? ""
                 root.currentGtkTheme = data.CURRENT[1] ?? ""
-                root.currentCursorTheme = data.CURRENT[2] ?? ""
-                root.currentCursorSize = parseInt(data.CURRENT[3]) || 24
+                root.currentCursorTheme = Config.options.appearance?.cursor?.theme || data.CURRENT[2] || "Gloomi_x"
+                root.currentCursorSize = Config.options.appearance?.cursor?.size || parseInt(data.CURRENT[3]) || 24
             }
         }
     }
