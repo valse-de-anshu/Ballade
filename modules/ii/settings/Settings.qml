@@ -46,7 +46,7 @@ Scope {
 
         exclusiveZone: 0
         WlrLayershell.namespace: "quickshell:settings"
-        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: GlobalStates.settingsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         color: "transparent"
 
@@ -61,16 +61,6 @@ Scope {
             if (visible) {
                 settingsWindow.userMoved = false;
                 settingsWindow.forceActiveFocus();
-                GlobalFocusGrab.addDismissable(panelWindow);
-            } else {
-                GlobalFocusGrab.removeDismissable(panelWindow);
-            }
-        }
-
-        Connections {
-            target: GlobalFocusGrab
-            function onDismissed() {
-                panelWindow.hide();
             }
         }
 

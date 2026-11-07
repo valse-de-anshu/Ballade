@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
+import Qt.labs.folderlistmodel
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -30,21 +31,34 @@ ColumnLayout {
         return o ? Object.keys(o).filter(k => o[k] && o[k] !== "Default").length : 0
     }
 
-    // Native file dialog for selecting a custom mouse icon / image from disk
-    FileDialog {
-        id: customCursorDialog
-        title: Translation.tr("Select Custom Mouse Icon from Disk")
-        nameFilters: [
-            Translation.tr("Cursor & Image files (*.png *.svg *.xcursor *.cur *.jpg *.jpeg *.webp)"),
-            Translation.tr("All files (*)")
-        ]
-        onAccepted: {
-            const raw = selectedFile.toString().replace(/^file:\/\//, "")
-            SystemTheming.setCustomCursorFile(root.selectedActionKey, raw)
+    // In-panel custom icon browser state
+    property bool customExplorerOpen: false
+    property string customExplorerFolder: Directories.pictures + "/avtar"
+
+    // Debounce timer for smooth cursor size slider IPC updates
+    Timer {
+        id: cursorSizeDebounceTimer
+        interval: 90
+        repeat: false
+        onTriggered: {
+            SystemTheming.setCursorSize(Math.round(cursorSizeSlider.value))
         }
     }
 
-    // ── 1. Master Base Theme & Size Card (GroupedList with smooth slider) ──────
+    // Drag and Drop support anywhere in CursorStudio
+    DropArea {
+        anchors.fill: parent
+        onDropped: (drop) => {
+            if (drop.hasUrls && drop.urls.length > 0) {
+                const url = drop.urls[0].toString()
+                const clean = url.replace(/^file:\/\//, "")
+                SystemTheming.setCustomCursorFile(root.selectedActionKey, clean)
+                drop.acceptProposedAction()
+            }
+        }
+    }
+
+    // ── 1. Master Base Theme & Size Card (with smooth slider & live px indicator) ──
     GroupedList {
         Layout.fillWidth: true
 
@@ -66,16 +80,47 @@ ColumnLayout {
             }
         }
 
-        ConfigSlider {
-            buttonIcon: "zoom_in"
-            text: Translation.tr("Cursor size")
-            from: 16
-            to: 64
-            stepSize: 4
-            usePercentTooltip: false
-            value: SystemTheming.currentCursorSize
-            onMoved: {
-                SystemTheming.setCursorSize(Math.round(value))
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+            Layout.leftMargin: 8
+            Layout.rightMargin: 8
+
+            ConfigSlider {
+                id: cursorSizeSlider
+                Layout.fillWidth: true
+                buttonIcon: "zoom_in"
+                text: Translation.tr("Cursor size")
+                from: 16
+                to: 64
+                stepSize: 4
+                usePercentTooltip: false
+                value: SystemTheming.currentCursorSize
+                onMoved: {
+                    cursorSizeDebounceTimer.restart()
+                }
+                onPressedChanged: {
+                    if (!pressed) {
+                        SystemTheming.setCursorSize(Math.round(value))
+                    }
+                }
+            }
+
+            // Crisp live badge showing exact pixel size
+            Rectangle {
+                implicitWidth: sizeLabel.implicitWidth + 16
+                implicitHeight: 26
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colPrimaryContainer
+
+                StyledText {
+                    id: sizeLabel
+                    anchors.centerIn: parent
+                    text: `${Math.round(cursorSizeSlider.value)} px`
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colOnPrimaryContainer
+                }
             }
         }
     }
@@ -118,7 +163,7 @@ ColumnLayout {
                         }
                         StyledText {
                             Layout.fillWidth: true
-                            text: Translation.tr("Click any cursor to select it, then choose an icon below:")
+                            text: Translation.tr("Click any pointer state to select it, then choose an icon below:")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colSubtext
                             wrapMode: Text.Wrap
@@ -151,7 +196,7 @@ ColumnLayout {
                     }
                 }
 
-                // Grid of 17 symmetrical active cursor tiles (clean, flat, no harsh borders)
+                // Grid of 17 symmetrical active cursor tiles (refined Material 3 selection)
                 Flow {
                     id: paletteFlow
                     Layout.fillWidth: true
@@ -165,7 +210,7 @@ ColumnLayout {
                             required property int index
 
                             width: Math.floor((paletteFlow.width - (paletteFlow.spacing * 5)) / 6)
-                            implicitHeight: 82
+                            implicitHeight: 86
 
                             readonly property string tileKey: modelData.key
                             readonly property string tileOverride: Config.options.appearance?.cursor?.overrides?.[tileKey] || ""
@@ -174,81 +219,99 @@ ColumnLayout {
                             readonly property string previewPath: SystemTheming.getCursorPreview(activeTheme, tileKey)
                             readonly property bool isSelected: root.selectedActionIndex === index
 
-                            buttonRadius: Appearance.rounding.small
+                            buttonRadius: Appearance.rounding.normal
                             colBackground: isSelected
-                                ? Appearance.colors.colSecondaryContainer
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
                                 : Appearance.colors.colLayer1
                             colBackgroundHover: isSelected
-                                ? Appearance.colors.colSecondaryContainerHover
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
                                 : Appearance.colors.colLayer1Hover
 
                             onClicked: {
                                 root.selectedActionIndex = index
                             }
 
-                            contentItem: ColumnLayout {
+                            contentItem: Item {
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: 2
 
-                                // Symmetrical centered icon
-                                Item {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 4
 
-                                    Image {
-                                        id: tileImg
-                                        anchors.centerIn: parent
-                                        width: 38
-                                        height: 38
-                                        fillMode: Image.PreserveAspectFit
-                                        source: tileBtn.previewPath
-                                        smooth: true
-                                        mipmap: true
-                                        cache: false
-                                    }
+                                    // Symmetrical centered icon preview
+                                    Item {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
 
-                                    MaterialSymbol {
-                                        anchors.centerIn: parent
-                                        visible: tileImg.status !== Image.Ready
-                                        text: tileBtn.modelData.icon || "mouse"
-                                        iconSize: 24
-                                        color: tileBtn.isSelected ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
-                                    }
-
-                                    // Subtle accent dot for customized actions
-                                    Rectangle {
-                                        visible: tileBtn.isOverridden
-                                        anchors {
-                                            top: parent.top
-                                            right: parent.right
-                                            topMargin: 2
-                                            rightMargin: 2
+                                        Image {
+                                            id: tileImg
+                                            anchors.centerIn: parent
+                                            width: 40
+                                            height: 40
+                                            fillMode: Image.PreserveAspectFit
+                                            source: tileBtn.previewPath
+                                            smooth: true
+                                            mipmap: true
+                                            cache: false
                                         }
-                                        width: 6
-                                        height: 6
-                                        radius: 3
-                                        color: Appearance.colors.colPrimary
+
+                                        MaterialSymbol {
+                                            anchors.centerIn: parent
+                                            visible: tileImg.status !== Image.Ready
+                                            text: tileBtn.modelData.icon || "mouse"
+                                            iconSize: 26
+                                            color: tileBtn.isSelected ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                        }
+
+                                        // Subtle accent dot for customized actions
+                                        Rectangle {
+                                            visible: tileBtn.isOverridden
+                                            anchors {
+                                                top: parent.top
+                                                right: parent.right
+                                                topMargin: 2
+                                                rightMargin: 2
+                                            }
+                                            width: 7
+                                            height: 7
+                                            radius: 3.5
+                                            color: Appearance.colors.colPrimary
+                                        }
+                                    }
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: tileBtn.modelData.shortLabel || tileBtn.modelData.label
+                                        font.pixelSize: 11
+                                        font.weight: tileBtn.isSelected ? Font.Bold : Font.Normal
+                                        horizontalAlignment: Text.AlignHCenter
+                                        color: tileBtn.isSelected
+                                            ? Appearance.colors.colPrimary
+                                            : Appearance.colors.colSubtext
+                                        elide: Text.ElideRight
                                     }
                                 }
 
-                                StyledText {
-                                    Layout.fillWidth: true
-                                    text: tileBtn.modelData.shortLabel || tileBtn.modelData.label
-                                    font.pixelSize: 11
-                                    font.weight: tileBtn.isSelected ? Font.Bold : Font.Normal
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: tileBtn.isSelected
-                                        ? Appearance.colors.colOnSecondaryContainer
-                                        : Appearance.colors.colSubtext
-                                    elide: Text.ElideRight
+                                // Refined active indicator pill at bottom
+                                Rectangle {
+                                    visible: tileBtn.isSelected
+                                    anchors {
+                                        bottom: parent.bottom
+                                        bottomMargin: 3
+                                        horizontalCenter: parent.horizontalCenter
+                                    }
+                                    width: 26
+                                    height: 3
+                                    radius: 1.5
+                                    color: Appearance.colors.colPrimary
                                 }
                             }
                         }
                     }
                 }
 
-                // Clean separator
+                // Clean divider
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 1
@@ -275,7 +338,7 @@ ColumnLayout {
                         }
 
                         StyledText {
-                            text: Translation.tr("Click any icon below to apply it immediately:")
+                            text: Translation.tr("Click any icon below to apply immediately, or browse custom files from disk:")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colSubtext
                         }
@@ -306,7 +369,7 @@ ColumnLayout {
                     }
                 }
 
-                // Visual Icon Cards Flow (clean, soft selection, no harsh borders)
+                // Visual Icon Choice Tray
                 Flow {
                     id: visualIconsFlow
                     Layout.fillWidth: true
@@ -315,65 +378,82 @@ ColumnLayout {
                     // 1. "Default (Inherited)" Visual Tile
                     RippleButton {
                         id: defaultCard
-                        width: 82
-                        implicitHeight: 84
+                        width: 84
+                        implicitHeight: 86
                         readonly property bool isCurrent: !root.selectedActionIsOverridden
                         readonly property string iconSrc: SystemTheming.getCursorPreview(SystemTheming.currentCursorTheme, root.selectedActionKey)
 
-                        buttonRadius: Appearance.rounding.small
+                        buttonRadius: Appearance.rounding.normal
                         colBackground: defaultCard.isCurrent
-                            ? Appearance.colors.colSecondaryContainer
+                            ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
                             : Appearance.colors.colLayer2
                         colBackgroundHover: defaultCard.isCurrent
-                            ? Appearance.colors.colSecondaryContainerHover
+                            ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
                             : Appearance.colors.colLayer2Hover
 
                         onClicked: {
                             SystemTheming.resetCursorOverride(root.selectedActionKey)
                         }
 
-                        contentItem: ColumnLayout {
+                        contentItem: Item {
                             anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 2
 
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 4
 
-                                Image {
-                                    anchors.centerIn: parent
-                                    width: 38
-                                    height: 38
-                                    fillMode: Image.PreserveAspectFit
-                                    source: defaultCard.iconSrc
-                                    smooth: true
-                                    mipmap: true
-                                    cache: false
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+
+                                    Image {
+                                        anchors.centerIn: parent
+                                        width: 38
+                                        height: 38
+                                        fillMode: Image.PreserveAspectFit
+                                        source: defaultCard.iconSrc
+                                        smooth: true
+                                        mipmap: true
+                                        cache: false
+                                    }
+
+                                    MaterialSymbol {
+                                        visible: defaultCard.isCurrent
+                                        anchors { top: parent.top; right: parent.right }
+                                        text: "check_circle"
+                                        iconSize: 16
+                                        color: Appearance.colors.colPrimary
+                                    }
                                 }
 
-                                MaterialSymbol {
-                                    visible: defaultCard.isCurrent
-                                    anchors { top: parent.top; right: parent.right }
-                                    text: "check"
-                                    iconSize: 14
-                                    color: Appearance.colors.colPrimary
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: Translation.tr("Default")
+                                    font.pixelSize: 11
+                                    font.weight: defaultCard.isCurrent ? Font.Bold : Font.Normal
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: defaultCard.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                    elide: Text.ElideRight
                                 }
                             }
 
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: Translation.tr("Default")
-                                font.pixelSize: 11
-                                font.weight: defaultCard.isCurrent ? Font.Bold : Font.Normal
-                                horizontalAlignment: Text.AlignHCenter
-                                color: defaultCard.isCurrent ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
-                                elide: Text.ElideRight
+                            Rectangle {
+                                visible: defaultCard.isCurrent
+                                anchors {
+                                    bottom: parent.bottom
+                                    bottomMargin: 3
+                                    horizontalCenter: parent.horizontalCenter
+                                }
+                                width: 22
+                                height: 3
+                                radius: 1.5
+                                color: Appearance.colors.colPrimary
                             }
                         }
                     }
 
-                    // 2. Installed Theme Visual Tiles
+                    // 2. Installed Themes Visual Tiles
                     Repeater {
                         model: {
                             let themes = SystemTheming.cursorThemes.slice()
@@ -387,18 +467,18 @@ ColumnLayout {
                             id: themeCard
                             required property string modelData
 
-                            width: 82
-                            implicitHeight: 84
+                            width: 84
+                            implicitHeight: 86
 
                             readonly property bool isCurrent: root.selectedActionOverride === modelData
                             readonly property string iconSrc: SystemTheming.getCursorPreview(modelData, root.selectedActionKey)
 
-                            buttonRadius: Appearance.rounding.small
+                            buttonRadius: Appearance.rounding.normal
                             colBackground: themeCard.isCurrent
-                                ? Appearance.colors.colSecondaryContainer
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
                                 : Appearance.colors.colLayer2
                             colBackgroundHover: themeCard.isCurrent
-                                ? Appearance.colors.colSecondaryContainerHover
+                                ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
                                 : Appearance.colors.colLayer2Hover
 
                             onClicked: {
@@ -409,10 +489,89 @@ ColumnLayout {
                                 }
                             }
 
-                            contentItem: ColumnLayout {
+                            contentItem: Item {
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: 2
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 4
+
+                                    Item {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+
+                                        Image {
+                                            anchors.centerIn: parent
+                                            width: 38
+                                            height: 38
+                                            fillMode: Image.PreserveAspectFit
+                                            source: themeCard.iconSrc
+                                            smooth: true
+                                            mipmap: true
+                                            cache: false
+                                        }
+
+                                        MaterialSymbol {
+                                            visible: themeCard.isCurrent
+                                            anchors { top: parent.top; right: parent.right }
+                                            text: "check_circle"
+                                            iconSize: 16
+                                            color: Appearance.colors.colPrimary
+                                        }
+                                    }
+
+                                    StyledText {
+                                        Layout.fillWidth: true
+                                        text: themeCard.modelData
+                                        font.pixelSize: 11
+                                        font.weight: themeCard.isCurrent ? Font.Bold : Font.Normal
+                                        horizontalAlignment: Text.AlignHCenter
+                                        color: themeCard.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                Rectangle {
+                                    visible: themeCard.isCurrent
+                                    anchors {
+                                        bottom: parent.bottom
+                                        bottomMargin: 3
+                                        horizontalCenter: parent.horizontalCenter
+                                    }
+                                    width: 22
+                                    height: 3
+                                    radius: 1.5
+                                    color: Appearance.colors.colPrimary
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Custom File Visual Tile (visible when a custom disk file is active)
+                    RippleButton {
+                        id: customFileCard
+                        visible: root.selectedActionIsCustomFile
+                        width: 84
+                        implicitHeight: 86
+
+                        readonly property string iconSrc: SystemTheming.getCursorPreview("custom", root.selectedActionKey)
+
+                        buttonRadius: Appearance.rounding.normal
+                        colBackground: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
+                        colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
+
+                        onClicked: {
+                            root.customExplorerOpen = !root.customExplorerOpen
+                        }
+
+                        contentItem: Item {
+                            anchors.fill: parent
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 4
 
                                 Item {
                                     Layout.fillWidth: true
@@ -423,105 +582,65 @@ ColumnLayout {
                                         width: 38
                                         height: 38
                                         fillMode: Image.PreserveAspectFit
-                                        source: themeCard.iconSrc
+                                        source: customFileCard.iconSrc
                                         smooth: true
                                         mipmap: true
                                         cache: false
                                     }
 
                                     MaterialSymbol {
-                                        visible: themeCard.isCurrent
                                         anchors { top: parent.top; right: parent.right }
-                                        text: "check"
-                                        iconSize: 14
+                                        text: "check_circle"
+                                        iconSize: 16
                                         color: Appearance.colors.colPrimary
                                     }
                                 }
 
                                 StyledText {
                                     Layout.fillWidth: true
-                                    text: themeCard.modelData
+                                    text: root.customFileName
                                     font.pixelSize: 11
-                                    font.weight: themeCard.isCurrent ? Font.Bold : Font.Normal
+                                    font.weight: Font.Bold
                                     horizontalAlignment: Text.AlignHCenter
-                                    color: themeCard.isCurrent ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-                    }
-
-                    // 3. Custom File Visual Tile (visible when a custom disk file is active)
-                    RippleButton {
-                        id: customFileCard
-                        visible: root.selectedActionIsCustomFile
-                        width: 82
-                        implicitHeight: 84
-
-                        readonly property string iconSrc: SystemTheming.getCursorPreview("custom", root.selectedActionKey)
-
-                        buttonRadius: Appearance.rounding.small
-                        colBackground: Appearance.colors.colSecondaryContainer
-                        colBackgroundHover: Appearance.colors.colSecondaryContainerHover
-
-                        contentItem: ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 2
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-
-                                Image {
-                                    anchors.centerIn: parent
-                                    width: 38
-                                    height: 38
-                                    fillMode: Image.PreserveAspectFit
-                                    source: customFileCard.iconSrc
-                                    smooth: true
-                                    mipmap: true
-                                    cache: false
-                                }
-
-                                MaterialSymbol {
-                                    anchors { top: parent.top; right: parent.right }
-                                    text: "check"
-                                    iconSize: 14
                                     color: Appearance.colors.colPrimary
+                                    elide: Text.ElideMiddle
                                 }
                             }
 
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: root.customFileName
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                horizontalAlignment: Text.AlignHCenter
-                                color: Appearance.colors.colOnSecondaryContainer
-                                elide: Text.ElideMiddle
+                            Rectangle {
+                                anchors {
+                                    bottom: parent.bottom
+                                    bottomMargin: 3
+                                    horizontalCenter: parent.horizontalCenter
+                                }
+                                width: 22
+                                height: 3
+                                radius: 1.5
+                                color: Appearance.colors.colPrimary
                             }
                         }
                     }
 
-                    // 4. "+ Add Custom Icon from Disk" Button
+                    // 4. "+ Custom from Disk" Button (Toggles In-Panel Explorer)
                     RippleButton {
                         id: addFromDiskCard
-                        width: 82
-                        implicitHeight: 84
+                        width: 84
+                        implicitHeight: 86
 
-                        buttonRadius: Appearance.rounding.small
-                        colBackground: Appearance.colors.colLayer2
-                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        buttonRadius: Appearance.rounding.normal
+                        colBackground: root.customExplorerOpen
+                            ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.35)
+                            : Appearance.colors.colLayer2
+                        colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.55)
 
                         onClicked: {
-                            customCursorDialog.open()
+                            root.customExplorerOpen = !root.customExplorerOpen
                         }
 
                         contentItem: ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 2
+                            anchors.margins: 6
+                            spacing: 4
 
                             Item {
                                 Layout.fillWidth: true
@@ -529,7 +648,7 @@ ColumnLayout {
 
                                 MaterialSymbol {
                                     anchors.centerIn: parent
-                                    text: "add_photo_alternate"
+                                    text: root.customExplorerOpen ? "folder_open" : "add_photo_alternate"
                                     iconSize: 28
                                     color: Appearance.colors.colPrimary
                                 }
@@ -537,7 +656,7 @@ ColumnLayout {
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: Translation.tr("From Disk...")
+                                text: root.customExplorerOpen ? Translation.tr("Close") : Translation.tr("Custom...")
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignHCenter
@@ -547,11 +666,340 @@ ColumnLayout {
                         }
                     }
                 }
+
+                // ── 3. Embedded In-Panel Custom Icon Explorer ─────────────────────────
+                // Zero window collisions, immune to Hyprland priority conflicts!
+                ColumnLayout {
+                    id: customExplorerSection
+                    visible: root.customExplorerOpen
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 1
+                        color: Appearance.colors.colLayer0Border
+                        opacity: 0.25
+                    }
+
+                    // Quick Folder Selection Bar
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Browse:")
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            font.weight: Font.Medium
+                        }
+
+                        // Avatars Folder Tab
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            readonly property bool active: root.customExplorerFolder === (Directories.pictures + "/avtar")
+                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: root.customExplorerFolder = Directories.pictures + "/avtar"
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "face"
+                                    iconSize: 16
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Avatars")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Pictures Folder Tab
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            readonly property bool active: root.customExplorerFolder === Directories.pictures
+                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: root.customExplorerFolder = Directories.pictures
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "photo_library"
+                                    iconSize: 16
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Pictures")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Icons Folder Tab
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            readonly property bool active: root.customExplorerFolder === (Directories.home + "/.icons")
+                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: root.customExplorerFolder = Directories.home + "/.icons"
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "category"
+                                    iconSize: 16
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Icons")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Downloads Folder Tab
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            readonly property bool active: root.customExplorerFolder === Directories.downloads
+                            colBackground: active ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: root.customExplorerFolder = Directories.downloads
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "download"
+                                    iconSize: 16
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Downloads")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: parent.parent.active ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        // External File Manager launch (safely dismisses Settings so Dolphin gets 100% priority)
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.full
+                            colBackground: Appearance.colors.colLayer2
+                            colBackgroundHover: Appearance.colors.colLayer2Hover
+                            padding: 6
+                            onClicked: {
+                                GlobalStates.settingsOpen = false
+                                Quickshell.execDetached(["dolphin", FileUtils.trimFileProtocol(root.customExplorerFolder)])
+                            }
+                            contentItem: RowLayout {
+                                spacing: 4
+                                MaterialSymbol {
+                                    text: "open_in_new"
+                                    iconSize: 16
+                                    color: Appearance.colors.colSubtext
+                                }
+                                StyledText {
+                                    text: Translation.tr("Open Dolphin")
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    color: Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+                    }
+
+                    // Direct path entry field
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 34
+                            radius: Appearance.rounding.small
+                            color: Appearance.colors.colLayer2
+                            border.width: 1
+                            border.color: pathInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                MaterialSymbol {
+                                    text: "search"
+                                    iconSize: 18
+                                    color: Appearance.colors.colSubtext
+                                }
+
+                                TextInput {
+                                    id: pathInput
+                                    Layout.fillWidth: true
+                                    text: FileUtils.trimFileProtocol(root.customExplorerFolder)
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    color: Appearance.colors.colOnSecondaryContainer
+                                    clip: true
+                                    onAccepted: {
+                                        root.customExplorerFolder = text.trim()
+                                    }
+                                }
+                            }
+                        }
+
+                        RippleButton {
+                            buttonRadius: Appearance.rounding.small
+                            colBackground: Appearance.colors.colPrimaryContainer
+                            colBackgroundHover: Appearance.colors.colPrimary
+                            padding: 8
+                            onClicked: {
+                                const clean = FileUtils.trimFileProtocol(pathInput.text.trim())
+                                if (clean !== "") {
+                                    // If pointing directly to a file, apply it immediately
+                                    if (/\.(png|svg|xcursor|cur|jpg|jpeg|webp)$/i.test(clean)) {
+                                        SystemTheming.setCustomCursorFile(root.selectedActionKey, clean)
+                                    } else {
+                                        root.customExplorerFolder = clean
+                                    }
+                                }
+                            }
+                            contentItem: StyledText {
+                                text: Translation.tr("Apply")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: Font.DemiBold
+                                color: Appearance.colors.colOnPrimaryContainer
+                            }
+                        }
+                    }
+
+                    // Embedded Folder Model & Image Thumbnail Flow
+                    FolderListModel {
+                        id: customFolderModel
+                        folder: {
+                            const p = root.customExplorerFolder
+                            if (!p || p.trim() === "") return ""
+                            const trimmed = p.trim()
+                            return trimmed.startsWith("file://") ? trimmed : ("file://" + trimmed)
+                        }
+                        showDirs: false
+                        nameFilters: ["*.png", "*.svg", "*.xcursor", "*.cur", "*.jpg", "*.jpeg", "*.webp"]
+                    }
+
+                    // Thumbnail Flow
+                    Item {
+                        Layout.fillWidth: true
+                        implicitHeight: Math.max(76, customFolderModel.count === 0 ? 50 : explorerFlow.implicitHeight)
+
+                        // Empty State
+                        StyledText {
+                            visible: customFolderModel.count === 0
+                            anchors.centerIn: parent
+                            text: Translation.tr("No images or cursors found in this folder. Drop an image here or change path.")
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        Flow {
+                            id: explorerFlow
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            spacing: 8
+
+                            Repeater {
+                                model: customFolderModel
+                                delegate: RippleButton {
+                                    id: thumbItem
+                                    required property string fileName
+                                    required property string filePath
+
+                                    readonly property bool isCurrent: FileUtils.trimFileProtocol(thumbItem.filePath.toString()) === FileUtils.trimFileProtocol(root.selectedActionOverride)
+
+                                    width: 76
+                                    implicitHeight: 78
+                                    buttonRadius: Appearance.rounding.small
+                                    colBackground: thumbItem.isCurrent
+                                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.45)
+                                        : Appearance.colors.colLayer2
+                                    colBackgroundHover: thumbItem.isCurrent
+                                        ? ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.65)
+                                        : Appearance.colors.colLayer2Hover
+
+                                    onClicked: {
+                                        const clean = FileUtils.trimFileProtocol(thumbItem.filePath.toString())
+                                        SystemTheming.setCustomCursorFile(root.selectedActionKey, clean)
+                                    }
+
+                                    contentItem: Item {
+                                        anchors.fill: parent
+
+                                        ColumnLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 2
+
+                                            Item {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
+
+                                                Image {
+                                                    anchors.centerIn: parent
+                                                    width: 38
+                                                    height: 38
+                                                    fillMode: Image.PreserveAspectFit
+                                                    source: thumbItem.filePath
+                                                    smooth: true
+                                                    mipmap: true
+                                                    cache: false
+                                                }
+
+                                                MaterialSymbol {
+                                                    visible: thumbItem.isCurrent
+                                                    anchors { top: parent.top; right: parent.right }
+                                                    text: "check_circle"
+                                                    iconSize: 14
+                                                    color: Appearance.colors.colPrimary
+                                                }
+                                            }
+
+                                            StyledText {
+                                                Layout.fillWidth: true
+                                                text: thumbItem.fileName
+                                                font.pixelSize: 10
+                                                horizontalAlignment: Text.AlignHCenter
+                                                color: thumbItem.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                                                elide: Text.ElideMiddle
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            visible: thumbItem.isCurrent
+                                            anchors {
+                                                bottom: parent.bottom
+                                                bottomMargin: 2
+                                                horizontalCenter: parent.horizontalCenter
+                                            }
+                                            width: 20
+                                            height: 2.5
+                                            radius: 1.25
+                                            color: Appearance.colors.colPrimary
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    // ── 3. System Themes & Icons (GTK & Icon Themes) ───────────────────────────
+    // ── 4. System Themes & Icons (GTK & Icon Themes) ───────────────────────────
     ContentSubsection {
         title: Translation.tr("System Themes & Icons")
 
