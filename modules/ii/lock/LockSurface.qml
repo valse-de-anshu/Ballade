@@ -414,99 +414,22 @@ Item {
         }
     }
 
-    // Time, Date & Month Pill
+    // Time & Month pill (inline left)
     Toolbar {
-        id: dateIsland
+        id: timeIsland
         z: 100
         anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: mainIsland.top
-            bottomMargin: 14
+            right: leftIsland.left
+            top: mainIsland.top
+            bottom: mainIsland.bottom
+            rightMargin: 10
         }
         scale: root.toolbarScale
         opacity: root.toolbarOpacity
 
-        Row {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.leftMargin: 12
-            Layout.rightMargin: 12
-            spacing: 10
-
-            // Time with clock icon
-            Row {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-                MaterialSymbol {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "schedule"
-                    iconSize: 20
-                    color: Appearance.colors.colPrimary
-                }
-                StyledText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: DateTime.time
-                    font.pixelSize: Appearance.font.pixelSize.medium
-                    font.weight: Font.DemiBold
-                    color: Appearance.colors.colOnLayer0
-                }
-            }
-
-            // Dot divider
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "·"
-                font.pixelSize: Appearance.font.pixelSize.normal
-                color: Appearance.colors.colOutlineVariant || Appearance.colors.colSubtext
-                opacity: 0.5
-            }
-
-            // Calendar Date & Month
-            Row {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-                MaterialSymbol {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "calendar_today"
-                    iconSize: 18
-                    color: Appearance.colors.colOnSurfaceVariant
-                }
-                StyledText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Qt.locale().toString(DateTime.clock.date, "dddd, d MMMM")
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    font.weight: Font.Medium
-                    color: Appearance.colors.colOnLayer0
-                }
-            }
-
-            // Dot divider
-            StyledText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "·"
-                font.pixelSize: Appearance.font.pixelSize.normal
-                color: Appearance.colors.colOutlineVariant || Appearance.colors.colSubtext
-                opacity: 0.5
-            }
-
-            // Month in Year (e.g. Month 11 / 12)
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                implicitHeight: 24
-                implicitWidth: monthLabel.implicitWidth + 14
-                radius: 12
-                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.14)
-                border.width: 1
-                border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.32)
-
-                StyledText {
-                    id: monthLabel
-                    anchors.centerIn: parent
-                    text: Translation.tr("Month %1 / 12").arg(DateTime.clock.date.getMonth() + 1)
-                    font.pixelSize: Appearance.font.pixelSize.smallest
-                    font.weight: Font.SemiBold
-                    color: Appearance.colors.colPrimary
-                }
-            }
+        IconAndTextPair {
+            icon: "schedule"
+            text: DateTime.time + " · " + Translation.tr("Month %1 of 12").arg(DateTime.clock.date.getMonth() + 1)
         }
     }
 
@@ -741,6 +664,25 @@ Item {
             id: rebootButton
             text: "restart_alt"
             targetAction: LockContext.ActionEnum.Reboot
+        }
+    }
+
+    // Date & Month pill (inline right)
+    Toolbar {
+        id: dateIsland
+        z: 100
+        anchors {
+            left: rightIsland.right
+            top: mainIsland.top
+            bottom: mainIsland.bottom
+            leftMargin: 10
+        }
+        scale: root.toolbarScale
+        opacity: root.toolbarOpacity
+
+        IconAndTextPair {
+            icon: "calendar_today"
+            text: Qt.locale().toString(DateTime.clock.date, "dddd, d MMMM")
         }
     }
 
