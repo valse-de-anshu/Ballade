@@ -167,33 +167,21 @@ ContentPage {
                     ConfigSwitch {
                         id: lockCenteredSwitch
                         buttonIcon: "crop_square"
-                        text: Translation.tr("Enable centered wallpaper")
-                        checked: Config.options.background.centeredWallpaper
+                        text: Translation.tr("Enable centered wallpaper on lock screen")
+                        checked: Config.options.lock.centeredWallpaper.enable
                         onCheckedChanged: {
-                            if (Config.options.background.centeredWallpaper !== checked) {
-                                Config.options.background.centeredWallpaper = checked;
-                            }
-                        }
-                    }
-                    ConfigSwitch {
-                        id: lockOnlySwitch
-                        buttonIcon: "lock"
-                        text: Translation.tr("Show only when locked")
-                        checked: Config.options.background.centeredWallpaperOnlyWhenLocked
-                        enabled: Config.options.background.centeredWallpaper
-                        onCheckedChanged: {
-                            if (Config.options.background.centeredWallpaperOnlyWhenLocked !== checked) {
-                                Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            if (Config.options.lock.centeredWallpaper.enable !== checked) {
+                                Config.options.lock.centeredWallpaper.enable = checked;
                             }
                         }
                     }
                 }
 
                 GroupedList {
-                    visible: Config.options.background.centeredWallpaper
+                    visible: Config.options.lock.centeredWallpaper.enable
                     ConfigSelectionShapeArray {
                         id: lockShapeArray
-                        currentValue: Config.options.background.centeredWallpaperShape
+                        currentValue: Config.options.lock.centeredWallpaper.shape
                         shapeColor: Appearance.colors.colPrimary
                         backgroundColor: Appearance.colors.colLayer1
                         options: [
@@ -204,17 +192,17 @@ ContentPage {
                             "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
                         ]
                         onSelected: newValue => {
-                            Config.options.background.centeredWallpaperShape = newValue
+                            Config.options.lock.centeredWallpaper.shape = newValue
                         }
                     }
                 }
 
                 GroupedList {
-                    visible: Config.options.background.centeredWallpaper
+                    visible: Config.options.lock.centeredWallpaper.enable
                     ConfigSlider {
                         id: lockSizeSlider
                         text: Translation.tr("Size")
-                        value: Config.options.background.centeredWallpaperSize
+                        value: Config.options.lock.centeredWallpaper.size
                         usePercentTooltip: false
                         buttonIcon: "aspect_ratio"
                         from: 200
@@ -222,31 +210,26 @@ ContentPage {
                         stepSize: 10
                         stopIndicatorValues: [400, 800, 1200, 1600]
                         onMoved: {
-                            Config.options.background.centeredWallpaperSize = Math.round(value)
+                            Config.options.lock.centeredWallpaper.size = Math.round(value)
                         }
                     }
                 }
 
                 Connections {
-                    target: Config.options.background
-                    function onCenteredWallpaperChanged() {
-                        if (lockCenteredSwitch.checked !== Config.options.background.centeredWallpaper) {
-                            lockCenteredSwitch.checked = Config.options.background.centeredWallpaper;
+                    target: Config.options.lock.centeredWallpaper
+                    function onEnableChanged() {
+                        if (lockCenteredSwitch.checked !== Config.options.lock.centeredWallpaper.enable) {
+                            lockCenteredSwitch.checked = Config.options.lock.centeredWallpaper.enable;
                         }
                     }
-                    function onCenteredWallpaperOnlyWhenLockedChanged() {
-                        if (lockOnlySwitch.checked !== Config.options.background.centeredWallpaperOnlyWhenLocked) {
-                            lockOnlySwitch.checked = Config.options.background.centeredWallpaperOnlyWhenLocked;
+                    function onShapeChanged() {
+                        if (lockShapeArray.currentValue !== Config.options.lock.centeredWallpaper.shape) {
+                            lockShapeArray.currentValue = Config.options.lock.centeredWallpaper.shape;
                         }
                     }
-                    function onCenteredWallpaperShapeChanged() {
-                        if (lockShapeArray.currentValue !== Config.options.background.centeredWallpaperShape) {
-                            lockShapeArray.currentValue = Config.options.background.centeredWallpaperShape;
-                        }
-                    }
-                    function onCenteredWallpaperSizeChanged() {
-                        if (!lockSizeSlider.pressed && Math.round(lockSizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
-                            lockSizeSlider.value = Config.options.background.centeredWallpaperSize;
+                    function onSizeChanged() {
+                        if (!lockSizeSlider.pressed && Math.round(lockSizeSlider.value) !== Config.options.lock.centeredWallpaper.size) {
+                            lockSizeSlider.value = Config.options.lock.centeredWallpaper.size;
                         }
                     }
                 }

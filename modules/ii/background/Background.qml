@@ -96,7 +96,7 @@ Variants {
         property bool videoRevealed: false
 
         //centered Wallpaper
-        property bool centeredWallpaperEnabled: Config.options.background.centeredWallpaper && (!Config.options.background.centeredWallpaperOnlyWhenLocked || GlobalStates.screenLocked || GlobalStates.unlocking)
+        property bool centeredWallpaperEnabled: Config.options.background.centeredWallpaper && !Config.options.background.centeredWallpaperOnlyWhenLocked && !GlobalStates.screenLocked
         property int centeredWallpaperShape: getShapeFromName(Config.options.background.centeredWallpaperShape)
         property int centeredWallpaperSize: Config.options.background.centeredWallpaperSize
         property color centeredWallpaperColor: root.getColorFromName(Config.options.background.centeredWallpaperColor)

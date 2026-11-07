@@ -659,6 +659,12 @@ Singleton {
                     property bool requirePasswordToPower: false
                 }
                 property bool materialShapeChars: true
+                property JsonObject centeredWallpaper: JsonObject {
+                    property bool enable: false
+                    property string shape: "Cookie7Sided"
+                    property int size: 400
+                    property string color: "primaryContainer"
+                }
                 property JsonObject widgets: JsonObject {
                     property JsonObject clock: JsonObject {
                         property bool enable: true

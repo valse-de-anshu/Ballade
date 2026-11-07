@@ -118,25 +118,28 @@ Item {
 
         Loader {
             anchors.fill: parent
-            active: Config.options.background.centeredWallpaper || Config.options.background.centeredWallpaperOnlyWhenLocked
+            active: (Config.options.lock?.centeredWallpaper?.enable ?? false) || Config.options.background.centeredWallpaperOnlyWhenLocked
             visible: active
             sourceComponent: Item {
                 anchors.fill: parent
 
+                readonly property int shapeSize: Config.options.lock?.centeredWallpaper?.size ?? 400
+                readonly property string shapeName: Config.options.lock?.centeredWallpaper?.shape ?? "Cookie7Sided"
+
                 MaterialShape {
                     id: lockCenteredShape
                     anchors.centerIn: parent
-                    width: Config.options.background.centeredWallpaperSize
-                    height: Config.options.background.centeredWallpaperSize
+                    width: parent.shapeSize
+                    height: parent.shapeSize
                     color: "transparent"
-                    shape: root.getShapeFromName(Config.options.background.centeredWallpaperShape)
+                    shape: root.getShapeFromName(parent.shapeName)
 
                     layer.enabled: true
                     layer.effect: OpacityMask {
                         maskSource: MaterialShape {
-                            width: Config.options.background.centeredWallpaperSize
-                            height: Config.options.background.centeredWallpaperSize
-                            shape: root.getShapeFromName(Config.options.background.centeredWallpaperShape)
+                            width: parent.shapeSize
+                            height: parent.shapeSize
+                            shape: root.getShapeFromName(parent.shapeName)
                         }
                     }
 
