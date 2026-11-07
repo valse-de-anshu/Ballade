@@ -22,20 +22,17 @@ Item {
             .replace(/([0-9])([A-Za-z])/g, '$1 $2')
     }
 
+    StyledRectangularShadow {
+        target: bgRect
+    }
+
     Rectangle {
+        id: bgRect
         anchors.fill: parent
         radius: 20
         color: Qt.rgba(root.colLayer0Base.r, root.colLayer0Base.g, root.colLayer0Base.b, 0.22)
-        border.width: 0
-        border.color: "transparent"
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 0.6
-            shadowVerticalOffset: 4
-        }
+        border.width: 1
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.12)
     }
 
     ColumnLayout {

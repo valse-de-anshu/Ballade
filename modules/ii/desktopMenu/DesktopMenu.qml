@@ -107,6 +107,11 @@ Scope {
 
             readonly property color colLayer0Base: (Appearance.colors && Appearance.colors.colLayer0Base) ? Appearance.colors.colLayer0Base : Appearance.colors.colLayer0
 
+            // Context Menu Shadow
+            StyledRectangularShadow {
+                target: menuCard
+            }
+
             // Context Menu card
             Rectangle {
                 id: menuCard
@@ -121,18 +126,10 @@ Scope {
                 y: Math.min(Math.max(GlobalStates.desktopMenuY, 12), menuWindow.height - implicitHeight - 12)
                 radius: 20
                 color: Qt.rgba(menuWindow.colLayer0Base.r, menuWindow.colLayer0Base.g, menuWindow.colLayer0Base.b, 0.22)
-                border.width: 0
-                border.color: "transparent"
+                border.width: 1
+                border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.12)
                 focus: true
                 Keys.onEscapePressed: GlobalStates.desktopMenuOpen = false
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                    shadowBlur: 0.6
-                    shadowVerticalOffset: 4
-                }
 
                 scale: 0.92
                 opacity: 0

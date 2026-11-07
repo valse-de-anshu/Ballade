@@ -127,15 +127,126 @@ ContentPage {
                             }
                         }
                     }
+                    RippleButtonWithIcon {
+                        visible: Config.options.background.lockWall === ""
+                        Layout.fillWidth: true
+                        materialIcon: "wallpaper"
+                        mainText: Translation.tr("Choose custom lock screen wallpaper")
+                        onClicked: {
+                            GlobalStates.wallpaperSelectorTarget = "lockWall";
+                            GlobalStates.wallpaperSelectorOpen = true;
+                        }
+                    }
                     ConfigSwitch {
                         visible: Config.options.background.lockWall !== ""
                         buttonIcon: "image"
-                        text: Translation.tr("Custom lock screen wallpaper active")
+                        text: Translation.tr("Custom lock wallpaper: ") + (Config.options.background.lockWall.split("/").pop() || Translation.tr("Active"))
                         checked: Config.options.background.lockWall !== ""
                         onCheckedChanged: {
                             if (!checked) {
                                 Config.options.background.lockWall = "";
                             }
+                        }
+                    }
+                    RippleButtonWithIcon {
+                        visible: Config.options.background.lockWall !== ""
+                        Layout.fillWidth: true
+                        materialIcon: "restart_alt"
+                        mainText: Translation.tr("Reset to desktop wallpaper")
+                        onClicked: {
+                            Config.options.background.lockWall = "";
+                        }
+                    }
+                }
+            }
+
+            // ── Centered Wallpaper on Lock Screen ────────────────────────────
+            ContentSubsection {
+                title: Translation.tr("Centered Wallpaper")
+                GroupedList {
+                    ConfigSwitch {
+                        id: lockCenteredSwitch
+                        buttonIcon: "crop_square"
+                        text: Translation.tr("Enable centered wallpaper")
+                        checked: Config.options.background.centeredWallpaper
+                        onCheckedChanged: {
+                            if (Config.options.background.centeredWallpaper !== checked) {
+                                Config.options.background.centeredWallpaper = checked;
+                            }
+                        }
+                    }
+                    ConfigSwitch {
+                        id: lockOnlySwitch
+                        buttonIcon: "lock"
+                        text: Translation.tr("Show only when locked")
+                        checked: Config.options.background.centeredWallpaperOnlyWhenLocked
+                        enabled: Config.options.background.centeredWallpaper
+                        onCheckedChanged: {
+                            if (Config.options.background.centeredWallpaperOnlyWhenLocked !== checked) {
+                                Config.options.background.centeredWallpaperOnlyWhenLocked = checked;
+                            }
+                        }
+                    }
+                }
+
+                GroupedList {
+                    visible: Config.options.background.centeredWallpaper
+                    ConfigSelectionShapeArray {
+                        id: lockShapeArray
+                        currentValue: Config.options.background.centeredWallpaperShape
+                        shapeColor: Appearance.colors.colPrimary
+                        backgroundColor: Appearance.colors.colLayer1
+                        options: [
+                            "Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill",
+                            "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny",
+                            "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided",
+                            "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower",
+                            "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"
+                        ]
+                        onSelected: newValue => {
+                            Config.options.background.centeredWallpaperShape = newValue
+                        }
+                    }
+                }
+
+                GroupedList {
+                    visible: Config.options.background.centeredWallpaper
+                    ConfigSlider {
+                        id: lockSizeSlider
+                        text: Translation.tr("Size")
+                        value: Config.options.background.centeredWallpaperSize
+                        usePercentTooltip: false
+                        buttonIcon: "aspect_ratio"
+                        from: 200
+                        to: 1800
+                        stepSize: 10
+                        stopIndicatorValues: [400, 800, 1200, 1600]
+                        onMoved: {
+                            Config.options.background.centeredWallpaperSize = Math.round(value)
+                        }
+                    }
+                }
+
+                Connections {
+                    target: Config.options.background
+                    function onCenteredWallpaperChanged() {
+                        if (lockCenteredSwitch.checked !== Config.options.background.centeredWallpaper) {
+                            lockCenteredSwitch.checked = Config.options.background.centeredWallpaper;
+                        }
+                    }
+                    function onCenteredWallpaperOnlyWhenLockedChanged() {
+                        if (lockOnlySwitch.checked !== Config.options.background.centeredWallpaperOnlyWhenLocked) {
+                            lockOnlySwitch.checked = Config.options.background.centeredWallpaperOnlyWhenLocked;
+                        }
+                    }
+                    function onCenteredWallpaperShapeChanged() {
+                        if (lockShapeArray.currentValue !== Config.options.background.centeredWallpaperShape) {
+                            lockShapeArray.currentValue = Config.options.background.centeredWallpaperShape;
+                        }
+                    }
+                    function onCenteredWallpaperSizeChanged() {
+                        if (!lockSizeSlider.pressed && Math.round(lockSizeSlider.value) !== Config.options.background.centeredWallpaperSize) {
+                            lockSizeSlider.value = Config.options.background.centeredWallpaperSize;
                         }
                     }
                 }
@@ -176,30 +287,6 @@ ContentPage {
                         onValueChanged: { Config.options.lock.blur.extraZoom = value / 100 }
                     }
                 }
-            }
-        }
-
-        // ── 2. Desktop Widgets on Lock Screen ───────────────────────────────
-        ContentSection {
-            icon: "widgets"
-            shape: MaterialShape.Shape.Pill
-            title: Translation.tr("Desktop Widgets on Lock Screen")
-
-            GroupedList {
-                ConfigSwitch {
-                    buttonIcon: "widgets"
-                    text: Translation.tr("Display desktop widgets on lock screen")
-                    checked: Config.options.lock.showWidgets
-                    onCheckedChanged: { Config.options.lock.showWidgets = checked }
-                }
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                text: Translation.tr("Your desktop widgets appear seamlessly on your lock screen with identical positions, styles, and configurations as your home screen.")
-                font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.colors.colSubtext
-                wrapMode: Text.Wrap
             }
         }
     }

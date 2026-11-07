@@ -128,7 +128,7 @@ Item {
             0.12
         )
         border.width: 1
-        border.color: Appearance.colors.colLayer0Border
+        border.color: ColorUtils.applyAlpha(ColorUtils.mix(Appearance.colors.colPrimary, "#ffffff", 0.35), 0.12)
         radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 5
 
         ColumnLayout {

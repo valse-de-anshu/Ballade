@@ -118,7 +118,7 @@ Item {
 
         Loader {
             anchors.fill: parent
-            active: Config.options.background.centeredWallpaper
+            active: Config.options.background.centeredWallpaper || Config.options.background.centeredWallpaperOnlyWhenLocked
             visible: active
             sourceComponent: Item {
                 anchors.fill: parent
@@ -232,12 +232,12 @@ Item {
         id: lockWidgetCanvas
         z: 10
         anchors.fill: parent
-        visible: (Config.options.lock && Config.options.lock.showWidgets !== undefined) ? Config.options.lock.showWidgets : true
+        visible: true
         onPressed: mouse => root.forceFieldFocus()
 
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer && Config.options.lock.widgets.visualizer.enable)
-                    || (Config.options.background.widgets.visualizer && Config.options.background.widgets.visualizer.enable)))
+            shown: Boolean((Config.options.lock.widgets?.visualizer && Config.options.lock.widgets.visualizer.enable)
+                    || (Config.options.background.widgets?.visualizer && Config.options.background.widgets.visualizer.enable))
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer"
                 isLockWidget: true
@@ -250,8 +250,8 @@ Item {
         }
 
         FadeLoader {
-            shown: Boolean(Config.options.lock.showWidgets && ((Config.options.lock.widgets.visualizer2 && Config.options.lock.widgets.visualizer2.enable)
-                    || (Config.options.background.widgets.visualizer2 && Config.options.background.widgets.visualizer2.enable)))
+            shown: Boolean((Config.options.lock.widgets?.visualizer2 && Config.options.lock.widgets.visualizer2.enable)
+                    || (Config.options.background.widgets?.visualizer2 && Config.options.background.widgets.visualizer2.enable))
             sourceComponent: VisualizerWidget {
                 configEntryName: "visualizer2"
                 isLockWidget: true
@@ -410,6 +410,102 @@ Item {
                 scaledScreenWidth: root.width
                 scaledScreenHeight: root.height
                 wallpaperScale: 1
+            }
+        }
+    }
+
+    // Time, Date & Month Pill
+    Toolbar {
+        id: dateIsland
+        z: 100
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            bottom: mainIsland.top
+            bottomMargin: 14
+        }
+        scale: root.toolbarScale
+        opacity: root.toolbarOpacity
+
+        Row {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: 12
+            Layout.rightMargin: 12
+            spacing: 10
+
+            // Time with clock icon
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+                MaterialSymbol {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "schedule"
+                    iconSize: 20
+                    color: Appearance.colors.colPrimary
+                }
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: DateTime.time
+                    font.pixelSize: Appearance.font.pixelSize.medium
+                    font.weight: Font.DemiBold
+                    color: Appearance.colors.colOnLayer0
+                }
+            }
+
+            // Dot divider
+            StyledText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "·"
+                font.pixelSize: Appearance.font.pixelSize.normal
+                color: Appearance.colors.colOutlineVariant || Appearance.colors.colSubtext
+                opacity: 0.5
+            }
+
+            // Calendar Date & Month
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+                MaterialSymbol {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "calendar_today"
+                    iconSize: 18
+                    color: Appearance.colors.colOnSurfaceVariant
+                }
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Qt.locale().toString(DateTime.clock.date, "dddd, d MMMM")
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.Medium
+                    color: Appearance.colors.colOnLayer0
+                }
+            }
+
+            // Dot divider
+            StyledText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "·"
+                font.pixelSize: Appearance.font.pixelSize.normal
+                color: Appearance.colors.colOutlineVariant || Appearance.colors.colSubtext
+                opacity: 0.5
+            }
+
+            // Month in Year (e.g. Month 11 / 12)
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                implicitHeight: 24
+                implicitWidth: monthLabel.implicitWidth + 14
+                radius: 12
+                color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.14)
+                border.width: 1
+                border.color: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.32)
+
+                StyledText {
+                    id: monthLabel
+                    anchors.centerIn: parent
+                    text: Translation.tr("Month %1 / 12").arg(DateTime.clock.date.getMonth() + 1)
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    font.weight: Font.SemiBold
+                    color: Appearance.colors.colPrimary
+                }
             }
         }
     }

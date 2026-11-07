@@ -127,8 +127,8 @@ Rectangle {
             opacity: 0.85
             clip: true
 
-            border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.width: 0
+            border.color: "transparent"
 
             // Smooth full fill bar
             Rectangle {
@@ -146,19 +146,6 @@ Rectangle {
                     enabled: !quickSlider.pressed
                     NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
                 }
-            }
-
-            // Subtle secondary threshold indicator (e.g. for brightness/gamma at 0.3)
-            Rectangle {
-                id: dividerLine
-                visible: quickSlider.secondaryMaterialSymbol.length > 0
-                x: Math.round(trackBg.width * 0.3)
-                anchors.verticalCenter: parent.verticalCenter
-                width: 2
-                height: 14
-                radius: 1
-                color: quickSlider.visualPosition >= 0.3 ? Appearance.colors.colOnPrimary : Appearance.colors.colOutlineVariant
-                opacity: 0.4
             }
 
             // Left-aligned icon with adaptive contrast color
