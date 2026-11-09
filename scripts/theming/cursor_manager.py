@@ -35,14 +35,14 @@ ACTIONS = {
         'label': 'Grab (Open Hand)',
         'desc': 'Ready to drag an item or canvas',
         'icon': 'pan_tool',
-        'aliases': ['grab', 'openhand', 'hand1', 'pan_tool'],
+        'aliases': ['grab', 'openhand', 'hand1', 'pan_tool', '52b4a0c0e3e808350fc14999e3157d9f', '208530c24e1030e608f63d08640d3699'],
         'hotspot': (0.5, 0.5)
     },
     'grabbing': {
         'label': 'Grabbing (Closed Hand)',
         'desc': 'Actively dragging an item or window',
         'icon': 'drag_pan',
-        'aliases': ['grabbing', 'closedhand', 'dnd-none', 'dnd-move', 'dnd-copy', 'dnd-link', 'dnd-ask'],
+        'aliases': ['grabbing', 'closedhand', 'dnd-none', 'dnd-move', 'dnd-copy', 'dnd-link', 'dnd-ask', 'fcf21c00b30f7e3f83fe0dfd12e71cff', '9081237383d90e509aa00f00170e968f', '4498f0e0c1937ffe01fd06f973665830', '1081e37283d10acb16f81fe7720242b7', 'd064267244c4f708e0b380e810800080', '6407b0e94181790501f7223273b40824'],
         'hotspot': (0.5, 0.5)
     },
     'text': {
@@ -218,8 +218,9 @@ def ensure_theme_hyprcursors(theme_name):
         os.makedirs(os.path.join(tmp_work, 'compiled'), exist_ok=True)
         res = subprocess.run(['hyprcursor-util', '--extract', theme_root, '-o', os.path.join(tmp_work, 'extracted')],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        extracted_sub = os.path.join(tmp_work, 'extracted', f'extracted_{theme_name}')
-        if os.path.isdir(extracted_sub):
+        extracted_subdirs = [os.path.join(tmp_work, 'extracted', d) for d in os.listdir(os.path.join(tmp_work, 'extracted')) if d.startswith('extracted_')]
+        if extracted_subdirs and os.path.isdir(extracted_subdirs[0]):
+            extracted_sub = extracted_subdirs[0]
             subprocess.run(['hyprcursor-util', '--create', extracted_sub, '-o', os.path.join(tmp_work, 'compiled')],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             comp_hc = os.path.join(tmp_work, 'compiled', 'theme_Extracted Theme', 'hyprcursors')
@@ -564,6 +565,54 @@ def write_multi_frame_xcursor(frames, out_path, sizes=None):
     return True
 
 
+def write_hlc_from_frames(frames, out_hlc_path, action_key, aliases=None, sizes=None):
+    """
+    Creates a native Hyprcursor (.hlc zip) file from multi-frame RGBA images.
+    Includes proper meta.hl, all nominal sizes (24, 32, 48, 64), and action overrides.
+    """
+    if not frames:
+        return False
+    import zipfile
+    if sizes is None:
+        sizes = [24, 32, 48, 64]
+
+    info = ACTIONS.get(action_key, {})
+    hx_ratio, hy_ratio = info.get('hotspot', (0.5, 0.5))
+    if aliases is None:
+        aliases = info.get('aliases', [])
+
+    os.makedirs(os.path.dirname(out_hlc_path), exist_ok=True)
+    with zipfile.ZipFile(out_hlc_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+        meta_lines = [
+            'resize_algorithm = none',
+            f'hotspot_x = {hx_ratio:.2f}',
+            f'hotspot_y = {hy_ratio:.2f}',
+            ''
+        ]
+        img_idx = 0
+        orig_w, orig_h = frames[0][0].size
+        for sz in sizes:
+            scale_x = sz / float(orig_w) if orig_w > 0 else 1.0
+            scale_y = sz / float(orig_h) if orig_h > 0 else 1.0
+            for im, xhot, yhot, delay in frames:
+                fn = f"{action_key}_{img_idx:03d}.png"
+                img_idx += 1
+                resized = im.resize((sz, sz), Image.Resampling.LANCZOS)
+                buf = io.BytesIO()
+                resized.save(buf, format='PNG')
+                zf.writestr(fn, buf.getvalue())
+                d = int(delay) if delay and delay > 0 else 50
+                meta_lines.append(f'define_size = {sz}, {fn}, {d}')
+
+        meta_lines.append('')
+        for a in aliases:
+            if a != action_key:
+                meta_lines.append(f'define_override = {a}')
+
+        zf.writestr('meta.hl', '\n'.join(meta_lines) + '\n')
+    return True
+
+
 def import_windows_pack(src_path, theme_name=None):
     """
     Imports a Windows cursor pack directory (containing .ani, .cur, and/or install.inf)
@@ -877,6 +926,25 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                 preview_png = os.path.join(CACHE_DIR, 'custom', f"{action_key}.png")
                 extract_cursor_frame_to_png(custom_xcur, preview_png, target_size=48)
                 src_file = os.path.realpath(custom_xcur)
+                # Generate native Hyprcursor .hlc for this custom file!
+                custom_frames = extract_cursor_frames(custom_xcur)
+                if custom_frames:
+                    dst_hlc = os.path.join(hyprcursors_dir, f"{action_key}.hlc")
+                    if os.path.islink(dst_hlc) or os.path.exists(dst_hlc):
+                        try:
+                            os.remove(dst_hlc)
+                        except Exception:
+                            pass
+                    if write_hlc_from_frames(custom_frames, dst_hlc, action_key, aliases=aliases):
+                        for a in aliases:
+                            if a != action_key:
+                                dst_a = os.path.join(hyprcursors_dir, f"{a}.hlc")
+                                try:
+                                    if os.path.islink(dst_a) or os.path.exists(dst_a):
+                                        os.remove(dst_a)
+                                    os.symlink(f"{action_key}.hlc", dst_a)
+                                except Exception:
+                                    pass
             else:
                 continue
         else:
@@ -908,18 +976,53 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
             if not src_file:
                 continue
 
-            # Copy hyprcursor override (.hlc) if available
+            # Copy or generate hyprcursor override (.hlc)
             src_hc_dir = ensure_theme_hyprcursors(src_theme) or find_theme_hyprcursors_dir(src_theme)
+            src_hlc = None
             if src_hc_dir:
                 src_hlc = os.path.join(src_hc_dir, f"{src_action}.hlc")
                 if not os.path.exists(src_hlc):
                     src_hlc = os.path.join(src_hc_dir, f"{action_key}.hlc")
-                if os.path.exists(src_hlc):
+                if not os.path.exists(src_hlc):
+                    src_hlc = None
+
+            if src_hlc and os.path.exists(src_hlc):
+                dst_hlc = os.path.join(hyprcursors_dir, f"{action_key}.hlc")
+                try:
+                    if os.path.islink(dst_hlc) or os.path.exists(dst_hlc):
+                        os.remove(dst_hlc)
+                    shutil.copy2(src_hlc, dst_hlc)
+                except Exception:
+                    pass
+                for a in aliases:
+                    if a != action_key:
+                        dst_a = os.path.join(hyprcursors_dir, f"{a}.hlc")
+                        try:
+                            if os.path.islink(dst_a) or os.path.exists(dst_a):
+                                os.remove(dst_a)
+                            os.symlink(f"{action_key}.hlc", dst_a)
+                        except Exception:
+                            pass
+            elif src_file and os.path.exists(src_file):
+                # Fallback: convert Xcursor frames to native Hyprcursor .hlc
+                frames = extract_cursor_frames(src_file)
+                if frames:
                     dst_hlc = os.path.join(hyprcursors_dir, f"{action_key}.hlc")
                     try:
-                        shutil.copy2(src_hlc, dst_hlc)
+                        if os.path.islink(dst_hlc) or os.path.exists(dst_hlc):
+                            os.remove(dst_hlc)
                     except Exception:
                         pass
+                    if write_hlc_from_frames(frames, dst_hlc, action_key, aliases=aliases):
+                        for a in aliases:
+                            if a != action_key:
+                                dst_a = os.path.join(hyprcursors_dir, f"{a}.hlc")
+                                try:
+                                    if os.path.islink(dst_a) or os.path.exists(dst_a):
+                                        os.remove(dst_a)
+                                    os.symlink(f"{action_key}.hlc", dst_a)
+                                except Exception:
+                                    pass
 
         for a in aliases:
             dst = os.path.join(cursors_dir, a)
