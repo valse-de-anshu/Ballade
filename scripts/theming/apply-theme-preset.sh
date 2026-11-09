@@ -318,9 +318,9 @@ if pidof dolphin > /dev/null 2>&1; then
     pkill -x dolphin 2>/dev/null || true
 fi
 
-# Joplin: restart with new theme if running, otherwise do nothing
-python3 "$SCRIPT_DIR/restart-joplin.py" &
-disown
+# Joplin: close if running (no restart)
+flatpak kill net.cozic.joplin_desktop 2>/dev/null || true
+pkill -f "joplin-desktop" 2>/dev/null || true
 
 echo "[Theme Orchestrator] Successfully applied $PRESET_NAME preset."
 
