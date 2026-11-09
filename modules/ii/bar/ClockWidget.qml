@@ -8,13 +8,13 @@ Item {
     id: root
     property bool borderless: Config.options.bar.borderless
     property bool showDate: Config.options.bar.verbose
-    implicitWidth: rowLayout.implicitWidth + 8
+    implicitWidth: rowLayout.implicitWidth
     implicitHeight: Appearance.sizes.barHeight
 
     RowLayout {
         id: rowLayout
         anchors.centerIn: parent
-        spacing: 8
+        spacing: 6
 
         StyledText {
             font.pixelSize: Appearance.font.pixelSize.large

@@ -153,7 +153,7 @@ Item { // Bar content region
             bottom: barBackground.bottom
             horizontalCenter: barBackground.horizontalCenter
         }
-        spacing: 18
+        spacing: 14
 
         BarGroup {
             id: leftCenterGroup
@@ -197,7 +197,7 @@ Item { // Bar content region
         MouseArea {
             id: rightCenterGroup
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: Math.max(root.centerSideModuleWidth, rightCenterGroupContent.implicitWidth)
+            implicitWidth: rightCenterGroupContent.implicitWidth
             implicitHeight: rightCenterGroupContent.implicitHeight
 
             onPressed: {
@@ -207,27 +207,23 @@ Item { // Bar content region
             BarGroup {
                 id: rightCenterGroupContent
                 anchors.fill: parent
-                columnSpacing: 16
-                padding: 6
+                columnSpacing: 12
+                padding: 4
 
                 ClockWidget {
                     showDate: (Config.options.bar.verbose && root.useShortenedForm < 2)
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: false
-                    Layout.rightMargin: 4
                 }
 
                 UtilButtons {
                     visible: (Config.options.bar.verbose && root.useShortenedForm === 0)
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
                 }
 
                 BatteryIndicator {
                     visible: (root.useShortenedForm < 2 && Battery.available)
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: 4
                 }
             }
         }
