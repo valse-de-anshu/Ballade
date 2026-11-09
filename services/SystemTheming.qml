@@ -118,7 +118,7 @@ Singleton {
 
     function getCursorPreview(theme, action, animated = false) {
         const home = FileUtils.trimFileProtocol(Directories.home)
-        const ext = animated ? "gif" : "png"
+        const ext = animated ? "webp" : "png"
         if (!theme || theme === "Default" || theme === "") {
             theme = root.currentCursorTheme || "Shorekeeper"
         }
@@ -130,7 +130,7 @@ Singleton {
 
     function getOverridePreview(overrideValue, defaultActionKey, animated = false) {
         const home = FileUtils.trimFileProtocol(Directories.home)
-        const ext = animated ? "gif" : "png"
+        const ext = animated ? "webp" : "png"
         if (!overrideValue || overrideValue === "Default" || overrideValue === "") {
             const baseTheme = root.currentCursorTheme || "Shorekeeper"
             return `file://${home}/.cache/ballade/cursor_previews/${baseTheme}/${defaultActionKey}.${ext}`

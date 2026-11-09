@@ -337,49 +337,44 @@ def extract_cursor_frames(xcursor_path, target_size=48):
         return []
 
 
-def save_frames_to_png_and_gif(frames, png_out_path, gif_out_path):
-    """Saves first frame to PNG and all frames to animated GIF with transparent background."""
+def save_frames_to_previews(frames, png_out_path, webp_out_path):
+    """Saves first frame to PNG and all frames to animated WebP with full 32-bit RGBA transparency."""
     if not frames:
         return False
     os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
-    os.makedirs(os.path.dirname(gif_out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(webp_out_path), exist_ok=True)
 
-    # Save crisp static PNG
+    # 1. Save crisp static PNG
     frames[0][0].save(png_out_path, 'PNG')
 
-    # Convert frames for transparent GIF
-    gif_frames = []
-    delays = []
-    for im, d in frames:
-        alpha = im.split()[3]
-        p_img = im.convert('RGB').convert('P', palette=Image.Palette.ADAPTIVE, colors=255)
-        p_img.paste(255, Image.eval(alpha, lambda a: 255 if a <= 128 else 0))
-        gif_frames.append(p_img)
-        delays.append(d)
-
-    avg_delay = sum(delays) // len(delays) if delays else 67
-    gif_frames[0].save(
-        gif_out_path,
-        save_all=True,
-        append_images=gif_frames[1:],
-        duration=avg_delay,
-        loop=0,
-        disposal=2,
-        transparency=255
-    )
+    # 2. Save 32-bit lossless animated WebP (perfect alpha transparency, zero black borders)
+    try:
+        durations = [max(30, int(round(d))) for _, d in frames]
+        frames[0][0].save(
+            webp_out_path,
+            'WEBP',
+            save_all=True,
+            append_images=[f[0] for f in frames[1:]],
+            duration=durations,
+            loop=0,
+            lossless=True
+        )
+    except Exception as e:
+        print(f"Error saving WebP preview {webp_out_path}: {e}", file=sys.stderr)
+        return False
     return True
 
 
 def extract_cursor_frame_to_png(xcursor_path, png_out_path, target_size=48):
     """
     Parses Xcursor binary, .cur, or .ani, selects the sharpest image chunk closest to target_size,
-    un-premultiplies alpha, and writes a crisp high-res PNG. Also writes .gif alongside it.
+    un-premultiplies alpha, and writes a crisp high-res PNG. Also writes animated .webp alongside it.
     """
     frames = extract_cursor_frames(xcursor_path, target_size=target_size)
     if not frames:
         return False
-    gif_out_path = png_out_path[:-4] + '.gif' if png_out_path.endswith('.png') else png_out_path + '.gif'
-    return save_frames_to_png_and_gif(frames, png_out_path, gif_out_path)
+    webp_out_path = png_out_path[:-4] + '.webp' if png_out_path.endswith('.png') else png_out_path + '.webp'
+    return save_frames_to_previews(frames, png_out_path, webp_out_path)
 
 
 INF_ACTION_MAP = {
@@ -745,7 +740,7 @@ def create_xcursor_from_image(input_path, output_xcursor_path, action_key='defau
 
 
 def ensure_theme_previews(theme_name, force=False):
-    """Generates crisp 48px PNG and animated GIF previews for all 17 actions of a theme."""
+    """Generates crisp 48px PNG and animated WebP previews for all 17 actions of a theme."""
     cur_dir = find_theme_cursors_dir(theme_name)
     if not cur_dir:
         return {}
@@ -755,8 +750,8 @@ def ensure_theme_previews(theme_name, force=False):
     result = {}
     for action_key, info in ACTIONS.items():
         png_path = os.path.join(out_dir, f'{action_key}.png')
-        gif_path = os.path.join(out_dir, f'{action_key}.gif')
-        if not force and os.path.exists(png_path) and os.path.getsize(png_path) > 0 and os.path.exists(gif_path) and os.path.getsize(gif_path) > 0:
+        webp_path = os.path.join(out_dir, f'{action_key}.webp')
+        if not force and os.path.exists(png_path) and os.path.getsize(png_path) > 0 and os.path.exists(webp_path) and os.path.getsize(webp_path) > 0:
             result[action_key] = png_path
             continue
 
