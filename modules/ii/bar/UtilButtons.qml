@@ -11,13 +11,12 @@ import Quickshell.Services.UPower
 Item {
     id: root
     property bool borderless: Config.options.bar.borderless
-    implicitWidth: rowLayout.implicitWidth + rowLayout.spacing * 2
+    implicitWidth: rowLayout.implicitWidth + 8
     implicitHeight: rowLayout.implicitHeight
 
     RowLayout {
         id: rowLayout
-
-        spacing: 4
+        spacing: 10
         anchors.centerIn: parent
 
         Loader {
