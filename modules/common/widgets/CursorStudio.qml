@@ -244,13 +244,18 @@ ColumnLayout {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
 
-                                        Image {
+                                        AnimatedImage {
                                             id: tileImg
                                             anchors.centerIn: parent
                                             width: 40
                                             height: 40
                                             fillMode: Image.PreserveAspectFit
-                                            source: tileBtn.previewPath
+                                            source: tileBtn.hovered
+                                                ? (SystemTheming.cursorPreviewVersion, SystemTheming.getOverridePreview(tileBtn.tileOverride, tileBtn.tileKey, true))
+                                                : tileBtn.previewPath
+                                            playing: tileBtn.hovered
+                                            paused: !tileBtn.hovered
+                                            currentFrame: tileBtn.hovered ? currentFrame : 0
                                             smooth: true
                                             mipmap: true
                                             cache: false
@@ -407,12 +412,17 @@ ColumnLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
 
-                                    Image {
+                                    AnimatedImage {
                                         anchors.centerIn: parent
                                         width: 38
                                         height: 38
                                         fillMode: Image.PreserveAspectFit
-                                        source: defaultCard.iconSrc
+                                        source: defaultCard.hovered
+                                            ? (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(SystemTheming.currentCursorTheme, root.selectedActionKey, true))
+                                            : defaultCard.iconSrc
+                                        playing: defaultCard.hovered
+                                        paused: !defaultCard.hovered
+                                        currentFrame: defaultCard.hovered ? currentFrame : 0
                                         smooth: true
                                         mipmap: true
                                         cache: false
@@ -509,12 +519,17 @@ ColumnLayout {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
 
-                                        Image {
+                                        AnimatedImage {
                                             anchors.centerIn: parent
                                             width: 38
                                             height: 38
                                             fillMode: Image.PreserveAspectFit
-                                            source: themeCard.iconSrc
+                                            source: themeCard.hovered
+                                                ? (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(themeCard.modelData, root.selectedActionKey, true))
+                                                : themeCard.iconSrc
+                                            playing: themeCard.hovered
+                                            paused: !themeCard.hovered
+                                            currentFrame: themeCard.hovered ? currentFrame : 0
                                             smooth: true
                                             mipmap: true
                                             cache: false
@@ -585,12 +600,17 @@ ColumnLayout {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
 
-                                    Image {
+                                    AnimatedImage {
                                         anchors.centerIn: parent
                                         width: 38
                                         height: 38
                                         fillMode: Image.PreserveAspectFit
-                                        source: customFileCard.iconSrc
+                                        source: customFileCard.hovered
+                                            ? (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview("custom", root.selectedActionKey, true))
+                                            : customFileCard.iconSrc
+                                        playing: customFileCard.hovered
+                                        paused: !customFileCard.hovered
+                                        currentFrame: customFileCard.hovered ? currentFrame : 0
                                         smooth: true
                                         mipmap: true
                                         cache: false
@@ -831,12 +851,17 @@ ColumnLayout {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
 
-                                            Image {
+                                            AnimatedImage {
                                                 anchors.centerIn: parent
                                                 width: 38
                                                 height: 38
                                                 fillMode: Image.PreserveAspectFit
-                                                source: anyCursorBtn.iconSrc
+                                                source: anyCursorBtn.hovered
+                                                    ? (SystemTheming.cursorPreviewVersion, SystemTheming.getCursorPreview(root.anyCursorSourceTheme, anyCursorBtn.modelData.key, true))
+                                                    : anyCursorBtn.iconSrc
+                                                playing: anyCursorBtn.hovered
+                                                paused: !anyCursorBtn.hovered
+                                                currentFrame: anyCursorBtn.hovered ? currentFrame : 0
                                                 smooth: true
                                                 mipmap: true
                                                 cache: false

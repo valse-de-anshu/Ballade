@@ -34,11 +34,9 @@ if command -v xrdb >/dev/null 2>&1; then
     printf "Xcursor.theme: %s\nXcursor.size: %s\n" "$theme" "$size" | xrdb -merge 2>/dev/null || true
 fi
 
-# 5. Hyprland runtime apply (toggle to force compositor cursor reload)
+# 5. Hyprland runtime apply
 if command -v hyprctl >/dev/null 2>&1 && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
-    hyprctl setcursor default "$size" 2>/dev/null || true
     hyprctl setcursor "$theme" "$size" 2>/dev/null || true
-    hyprctl eval "hl.env('XCURSOR_THEME', '$theme'); hl.env('XCURSOR_SIZE', '$size'); hl.env('HYPRCURSOR_THEME', '$theme'); hl.env('HYPRCURSOR_SIZE', '$size')" 2>/dev/null || true
 fi
 
 # 6. Hyprland persistence in ~/.config/hypr/custom

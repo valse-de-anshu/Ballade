@@ -116,34 +116,36 @@ Singleton {
 
     property int cursorPreviewVersion: 1
 
-    function getCursorPreview(theme, action) {
+    function getCursorPreview(theme, action, animated = false) {
         const home = FileUtils.trimFileProtocol(Directories.home)
+        const ext = animated ? "gif" : "png"
         if (!theme || theme === "Default" || theme === "") {
-            theme = root.currentCursorTheme || "Gloomi_x"
+            theme = root.currentCursorTheme || "Shorekeeper"
         }
         if (typeof theme === "string" && (theme.startsWith("/") || theme.startsWith("file://") || theme === "custom")) {
-            return `file://${home}/.cache/ballade/cursor_previews/custom/${action}.png`
+            return `file://${home}/.cache/ballade/cursor_previews/custom/${action}.${ext}`
         }
-        return `file://${home}/.cache/ballade/cursor_previews/${theme}/${action}.png`
+        return `file://${home}/.cache/ballade/cursor_previews/${theme}/${action}.${ext}`
     }
 
-    function getOverridePreview(overrideValue, defaultActionKey) {
+    function getOverridePreview(overrideValue, defaultActionKey, animated = false) {
         const home = FileUtils.trimFileProtocol(Directories.home)
+        const ext = animated ? "gif" : "png"
         if (!overrideValue || overrideValue === "Default" || overrideValue === "") {
-            const baseTheme = root.currentCursorTheme || "Gloomi_x"
-            return `file://${home}/.cache/ballade/cursor_previews/${baseTheme}/${defaultActionKey}.png`
+            const baseTheme = root.currentCursorTheme || "Shorekeeper"
+            return `file://${home}/.cache/ballade/cursor_previews/${baseTheme}/${defaultActionKey}.${ext}`
         }
         if (typeof overrideValue === "string") {
             if (overrideValue.startsWith("/") || overrideValue.startsWith("file://") || overrideValue === "custom") {
-                return `file://${home}/.cache/ballade/cursor_previews/custom/${defaultActionKey}.png`
+                return `file://${home}/.cache/ballade/cursor_previews/custom/${defaultActionKey}.${ext}`
             }
             if (overrideValue.indexOf(":") !== -1) {
                 const parts = overrideValue.split(":")
-                return `file://${home}/.cache/ballade/cursor_previews/${parts[0]}/${parts[1]}.png`
+                return `file://${home}/.cache/ballade/cursor_previews/${parts[0]}/${parts[1]}.${ext}`
             }
-            return `file://${home}/.cache/ballade/cursor_previews/${overrideValue}/${defaultActionKey}.png`
+            return `file://${home}/.cache/ballade/cursor_previews/${overrideValue}/${defaultActionKey}.${ext}`
         }
-        return `file://${home}/.cache/ballade/cursor_previews/${root.currentCursorTheme || "Gloomi_x"}/${defaultActionKey}.png`
+        return `file://${home}/.cache/ballade/cursor_previews/${root.currentCursorTheme || "Shorekeeper"}/${defaultActionKey}.${ext}`
     }
 
     function setCustomCursorFile(actionKey, filePath) {

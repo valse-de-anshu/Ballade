@@ -170,10 +170,29 @@ def find_theme_hyprcursors_dir(theme_name):
     return None
 
 
+def link_hyprcursor_aliases(hc_dir):
+    """Creates symlinks for all client aliases in a hyprcursors directory so Hyprland finds them."""
+    if not os.path.isdir(hc_dir):
+        return
+    for action_key, info in ACTIONS.items():
+        src_hlc = os.path.join(hc_dir, f"{action_key}.hlc")
+        if not os.path.exists(src_hlc):
+            continue
+        for alias in info.get('aliases', []):
+            if alias != action_key:
+                dst = os.path.join(hc_dir, f"{alias}.hlc")
+                if not os.path.exists(dst) and not os.path.islink(dst):
+                    try:
+                        os.symlink(f"{action_key}.hlc", dst)
+                    except OSError:
+                        pass
+
+
 def ensure_theme_hyprcursors(theme_name):
     """Ensures a theme has compiled hyprcursors for native 60fps Hyprland animations."""
     hc_dir = find_theme_hyprcursors_dir(theme_name)
     if hc_dir and os.path.isdir(hc_dir) and os.listdir(hc_dir):
+        link_hyprcursor_aliases(hc_dir)
         return hc_dir
 
     cur_dir = find_theme_cursors_dir(theme_name)
@@ -189,6 +208,7 @@ def ensure_theme_hyprcursors(theme_name):
 
     dest_hc = os.path.join(dest_root, 'hyprcursors')
     if os.path.isdir(dest_hc) and os.listdir(dest_hc):
+        link_hyprcursor_aliases(dest_hc)
         return dest_hc
 
     tmp_work = os.path.expanduser(f'/tmp/hc_work_{theme_name}')
@@ -207,6 +227,7 @@ def ensure_theme_hyprcursors(theme_name):
                 os.makedirs(dest_hc, exist_ok=True)
                 for f in os.listdir(comp_hc):
                     shutil.copy2(os.path.join(comp_hc, f), os.path.join(dest_hc, f))
+                link_hyprcursor_aliases(dest_hc)
                 manifest_path = os.path.join(dest_root, 'manifest.hl')
                 if not os.path.exists(manifest_path):
                     with open(manifest_path, 'w') as mf:
@@ -240,92 +261,132 @@ def get_installed_themes():
     return sorted(list(found.values()))
 
 
-def extract_cursor_frame_to_png(xcursor_path, png_out_path, target_size=48):
+def extract_cursor_frames(xcursor_path, target_size=48):
     """
-    Parses Xcursor binary, .cur, or .ani, selects the sharpest image chunk closest to target_size,
-    un-premultiplies alpha, and writes a crisp high-res PNG.
+    Parses Xcursor binary, .cur, .ani, or standard image, extracting all frames
+    for the nominal size closest to target_size. Returns [(PIL.Image, delay_ms)].
     """
     try:
         with open(xcursor_path, 'rb') as f:
             magic = f.read(4)
             if magic != b'Xcur':
-                # Might be an .ani, .cur, or standard image file
                 f.seek(0)
                 data = f.read()
-                if data[:4] == b'RIFF' and data[8:12] == b'ACON':
-                    frames = parse_cur_or_ani_data(data)
-                    if frames:
-                        os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
-                        frames[0][0].save(png_out_path, 'PNG')
-                        return True
-                elif data[:4] == b'\x00\x00\x02\x00':
-                    frames = parse_cur_or_ani_data(data)
-                    if frames:
-                        os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
-                        frames[0][0].save(png_out_path, 'PNG')
-                        return True
+                if (data[:4] == b'RIFF' and data[8:12] == b'ACON') or data[:4] == b'\x00\x00\x02\x00':
+                    raw_frames = parse_cur_or_ani_data(data)
+                    if raw_frames:
+                        out = []
+                        for im, _, _, d in raw_frames:
+                            if im.size != (target_size, target_size):
+                                im = im.resize((target_size, target_size), Image.Resampling.LANCZOS)
+                            out.append((im, max(30, d if d > 0 else 67)))
+                        return out
                 try:
                     f.seek(0)
                     im = Image.open(f).convert('RGBA')
-                    os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
-                    im.save(png_out_path, 'PNG')
-                    return True
+                    if im.size != (target_size, target_size):
+                        im = im.resize((target_size, target_size), Image.Resampling.LANCZOS)
+                    return [(im, 100)]
                 except Exception:
-                    return False
+                    return []
 
             header = f.read(12)
             _, _, ntoc = struct.unpack('<III', header)
-            best_chunk = None
-            best_diff = 999999
-
+            entries = []
             for _ in range(ntoc):
                 t_type, subtype, t_pos = struct.unpack('<III', f.read(12))
                 if t_type == 0xfffd0002:  # XCURSOR_IMAGE_TYPE
-                    diff = abs(subtype - target_size)
-                    # Severely penalize tiny thumbnail sizes (<24px) when a larger size exists
-                    if subtype < 24 and target_size >= 24:
-                        diff += 100
-                    if diff < best_diff:
-                        best_diff = diff
-                        best_chunk = (t_pos, subtype)
+                    entries.append((subtype, t_pos))
 
-            if not best_chunk:
-                return False
+            if not entries:
+                return []
 
-            f.seek(best_chunk[0])
-            img_h = f.read(36)
-            _, _, _, _, w, h, _, _, _ = struct.unpack('<IIIIIIIII', img_h)
-            raw = f.read(w * h * 4)
-            if len(raw) != w * h * 4:
-                return False
+            sizes = sorted(list(set(e[0] for e in entries)))
+            best_size = min(sizes, key=lambda s: abs(s - target_size))
+            frame_entries = [e for e in entries if e[0] == best_size]
 
-            # Un-premultiply alpha so semi-transparent edges don't show dark fringes
-            arr = np.frombuffer(raw, dtype=np.uint8).reshape((h, w, 4)).copy()
-            b = arr[:, :, 0].astype(np.float32)
-            g = arr[:, :, 1].astype(np.float32)
-            r = arr[:, :, 2].astype(np.float32)
-            a = arr[:, :, 3].astype(np.float32)
+            frames = []
+            for sz, pos in frame_entries:
+                f.seek(pos)
+                img_h = f.read(36)
+                c_header = struct.unpack('<IIIIIIIII', img_h)
+                w, h, delay = c_header[4], c_header[5], c_header[8]
+                raw = f.read(w * h * 4)
+                if len(raw) != w * h * 4:
+                    continue
 
-            mask = a > 0
-            r[mask] = np.clip((r[mask] * 255.0) / a[mask], 0, 255)
-            g[mask] = np.clip((g[mask] * 255.0) / a[mask], 0, 255)
-            b[mask] = np.clip((b[mask] * 255.0) / a[mask], 0, 255)
+                arr = np.frombuffer(raw, dtype=np.uint8).reshape((h, w, 4)).copy()
+                b = arr[:, :, 0].astype(np.float32)
+                g = arr[:, :, 1].astype(np.float32)
+                r = arr[:, :, 2].astype(np.float32)
+                a = arr[:, :, 3].astype(np.float32)
 
-            rgba = np.stack([r, g, b, a], axis=-1).astype(np.uint8)
-            im = Image.fromarray(rgba, 'RGBA')
-            os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
-            im.save(png_out_path, 'PNG')
-            return True
+                mask = a > 0
+                r[mask] = np.clip((r[mask] * 255.0) / a[mask], 0, 255)
+                g[mask] = np.clip((g[mask] * 255.0) / a[mask], 0, 255)
+                b[mask] = np.clip((b[mask] * 255.0) / a[mask], 0, 255)
+
+                rgba = np.stack([r, g, b, a], axis=-1).astype(np.uint8)
+                im = Image.fromarray(rgba, 'RGBA')
+                if im.size != (target_size, target_size):
+                    im = im.resize((target_size, target_size), Image.Resampling.LANCZOS)
+                frames.append((im, max(30, delay if delay > 0 else 67)))
+            return frames
     except Exception as e:
-        print(f"Error extracting cursor frame {xcursor_path}: {e}", file=sys.stderr)
+        print(f"Error extracting cursor frames {xcursor_path}: {e}", file=sys.stderr)
+        return []
+
+
+def save_frames_to_png_and_gif(frames, png_out_path, gif_out_path):
+    """Saves first frame to PNG and all frames to animated GIF with transparent background."""
+    if not frames:
         return False
+    os.makedirs(os.path.dirname(png_out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(gif_out_path), exist_ok=True)
+
+    # Save crisp static PNG
+    frames[0][0].save(png_out_path, 'PNG')
+
+    # Convert frames for transparent GIF
+    gif_frames = []
+    delays = []
+    for im, d in frames:
+        alpha = im.split()[3]
+        p_img = im.convert('RGB').convert('P', palette=Image.Palette.ADAPTIVE, colors=255)
+        p_img.paste(255, Image.eval(alpha, lambda a: 255 if a <= 128 else 0))
+        gif_frames.append(p_img)
+        delays.append(d)
+
+    avg_delay = sum(delays) // len(delays) if delays else 67
+    gif_frames[0].save(
+        gif_out_path,
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=avg_delay,
+        loop=0,
+        disposal=2,
+        transparency=255
+    )
+    return True
+
+
+def extract_cursor_frame_to_png(xcursor_path, png_out_path, target_size=48):
+    """
+    Parses Xcursor binary, .cur, or .ani, selects the sharpest image chunk closest to target_size,
+    un-premultiplies alpha, and writes a crisp high-res PNG. Also writes .gif alongside it.
+    """
+    frames = extract_cursor_frames(xcursor_path, target_size=target_size)
+    if not frames:
+        return False
+    gif_out_path = png_out_path[:-4] + '.gif' if png_out_path.endswith('.png') else png_out_path + '.gif'
+    return save_frames_to_png_and_gif(frames, png_out_path, gif_out_path)
 
 
 INF_ACTION_MAP = {
     'pointer': 'default',
     'arrow': 'default',
     'link': 'pointer',
-    'hand': 'zoom-in',
+    'hand': 'pointer',
     'working': 'progress',
     'busy': 'wait',
     'wait': 'wait',
@@ -684,7 +745,7 @@ def create_xcursor_from_image(input_path, output_xcursor_path, action_key='defau
 
 
 def ensure_theme_previews(theme_name, force=False):
-    """Generates crisp 48px PNG previews for all 17 actions of a theme."""
+    """Generates crisp 48px PNG and animated GIF previews for all 17 actions of a theme."""
     cur_dir = find_theme_cursors_dir(theme_name)
     if not cur_dir:
         return {}
@@ -694,7 +755,8 @@ def ensure_theme_previews(theme_name, force=False):
     result = {}
     for action_key, info in ACTIONS.items():
         png_path = os.path.join(out_dir, f'{action_key}.png')
-        if not force and os.path.exists(png_path) and os.path.getsize(png_path) > 0:
+        gif_path = os.path.join(out_dir, f'{action_key}.gif')
+        if not force and os.path.exists(png_path) and os.path.getsize(png_path) > 0 and os.path.exists(gif_path) and os.path.getsize(gif_path) > 0:
             result[action_key] = png_path
             continue
 
@@ -754,11 +816,12 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
             'overrides_count': 0
         }
 
-    # Overrides active -> build Ballade-Custom
-    cursors_dir = os.path.join(CUSTOM_THEME_DIR, 'cursors')
-    hyprcursors_dir = os.path.join(CUSTOM_THEME_DIR, 'hyprcursors')
-    if os.path.exists(CUSTOM_THEME_DIR):
-        shutil.rmtree(CUSTOM_THEME_DIR, ignore_errors=True)
+    # Overrides active -> build Ballade-Custom safely using staging directory to prevent compositor crashes
+    staging_dir = os.path.expanduser('~/.icons/.Ballade-Custom.staging')
+    shutil.rmtree(staging_dir, ignore_errors=True)
+
+    cursors_dir = os.path.join(staging_dir, 'cursors')
+    hyprcursors_dir = os.path.join(staging_dir, 'hyprcursors')
     os.makedirs(cursors_dir, exist_ok=True)
     os.makedirs(hyprcursors_dir, exist_ok=True)
     os.makedirs(CUSTOM_CURSORS_DIR, exist_ok=True)
@@ -790,7 +853,7 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                     pass
 
     # manifest.hl for Hyprland native hyprcursor engine
-    manifest_path = os.path.join(CUSTOM_THEME_DIR, 'manifest.hl')
+    manifest_path = os.path.join(staging_dir, 'manifest.hl')
     with open(manifest_path, 'w') as f:
         f.write('name = Ballade-Custom\n')
         f.write('description = Custom composed cursor theme with per-action overrides\n')
@@ -798,7 +861,7 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
         f.write('cursors_directory = hyprcursors\n')
 
     # index.theme with inheritance
-    index_path = os.path.join(CUSTOM_THEME_DIR, 'index.theme')
+    index_path = os.path.join(staging_dir, 'index.theme')
     with open(index_path, 'w') as f:
         f.write('[Icon Theme]\n')
         f.write('Name=Ballade-Custom\n')
@@ -874,6 +937,20 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                 os.symlink(src_file, dst)
             except OSError:
                 pass
+
+    # Ensure all hyprcursor client aliases are linked for full Wayland app support!
+    link_hyprcursor_aliases(hyprcursors_dir)
+
+    # Atomic swap into ~/.icons/Ballade-Custom
+    backup_dir = os.path.expanduser('~/.icons/.Ballade-Custom.old')
+    shutil.rmtree(backup_dir, ignore_errors=True)
+    if os.path.exists(CUSTOM_THEME_DIR):
+        try:
+            os.rename(CUSTOM_THEME_DIR, backup_dir)
+        except OSError:
+            shutil.rmtree(CUSTOM_THEME_DIR, ignore_errors=True)
+    os.rename(staging_dir, CUSTOM_THEME_DIR)
+    shutil.rmtree(backup_dir, ignore_errors=True)
 
     # Apply Ballade-Custom live
     subprocess.run(['bash', set_script, 'Ballade-Custom', str(size)], check=False)

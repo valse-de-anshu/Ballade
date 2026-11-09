@@ -1,4 +1,4 @@
-## CAVA Configuration — Dynamic Ballade Theme (green)
+## CAVA Configuration — Dynamic Ballade Theme (blue)
 ## Source: MPD FIFO at /tmp/mpd.fifo
 
 [general]
@@ -26,14 +26,14 @@ continuous_rendering = 1
 
 [color]
 gradient = 1
-gradient_color_1 = '#18211e'
-gradient_color_2 = '#2b3339'
-gradient_color_3 = '#36a166'
-gradient_color_4 = '#5f9182'
-gradient_color_5 = '#7d9726'
-gradient_color_6 = '#83c092'
-gradient_color_7 = '#a7c080'
-gradient_color_8 = '#dbbc7f'
+gradient_color_1 = '#1a1b26'
+gradient_color_2 = '#24283b'
+gradient_color_3 = '#414868'
+gradient_color_4 = '#565f89'
+gradient_color_5 = '#7aa2f7'
+gradient_color_6 = '#7dcfff'
+gradient_color_7 = '#b4f9f8'
+gradient_color_8 = '#bb9af7'
 
 [smoothing]
 noise_reduction = 50
