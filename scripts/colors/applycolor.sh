@@ -173,11 +173,6 @@ if [ -f "$SCRIPT_DIR/../theming/apply-cava-theme.sh" ]; then
   bash "$SCRIPT_DIR/../theming/apply-cava-theme.sh" "$active_preset" >/dev/null 2>&1 &
 fi
 
-# Dolphin: close when switching themes so it opens with fresh colors
-if pidof dolphin > /dev/null 2>&1; then
-  pkill -x dolphin 2>/dev/null || true
-fi
-
 # Joplin: restart with new theme if running, otherwise do nothing
 python3 "$SCRIPT_DIR/../theming/restart-joplin.py" &
 disown
