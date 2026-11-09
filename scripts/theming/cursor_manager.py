@@ -158,6 +158,67 @@ def find_theme_cursors_dir(theme_name):
     return None
 
 
+def find_theme_hyprcursors_dir(theme_name):
+    """Finds the 'hyprcursors' folder for a given theme name."""
+    for base in SEARCH_PATHS:
+        p = os.path.join(base, theme_name, 'hyprcursors')
+        if os.path.isdir(p):
+            return p
+    cache_p = os.path.expanduser(f'~/.cache/ballade/hyprcursors/{theme_name}/hyprcursors')
+    if os.path.isdir(cache_p):
+        return cache_p
+    return None
+
+
+def ensure_theme_hyprcursors(theme_name):
+    """Ensures a theme has compiled hyprcursors for native 60fps Hyprland animations."""
+    hc_dir = find_theme_hyprcursors_dir(theme_name)
+    if hc_dir and os.path.isdir(hc_dir) and os.listdir(hc_dir):
+        return hc_dir
+
+    cur_dir = find_theme_cursors_dir(theme_name)
+    if not cur_dir:
+        return None
+    theme_root = os.path.dirname(cur_dir)
+
+    # Determine destination directory for hyprcursors
+    if os.access(theme_root, os.W_OK):
+        dest_root = theme_root
+    else:
+        dest_root = os.path.expanduser(f'~/.cache/ballade/hyprcursors/{theme_name}')
+
+    dest_hc = os.path.join(dest_root, 'hyprcursors')
+    if os.path.isdir(dest_hc) and os.listdir(dest_hc):
+        return dest_hc
+
+    tmp_work = os.path.expanduser(f'/tmp/hc_work_{theme_name}')
+    try:
+        shutil.rmtree(tmp_work, ignore_errors=True)
+        os.makedirs(os.path.join(tmp_work, 'extracted'), exist_ok=True)
+        os.makedirs(os.path.join(tmp_work, 'compiled'), exist_ok=True)
+        res = subprocess.run(['hyprcursor-util', '--extract', theme_root, '-o', os.path.join(tmp_work, 'extracted')],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        extracted_sub = os.path.join(tmp_work, 'extracted', f'extracted_{theme_name}')
+        if os.path.isdir(extracted_sub):
+            subprocess.run(['hyprcursor-util', '--create', extracted_sub, '-o', os.path.join(tmp_work, 'compiled')],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            comp_hc = os.path.join(tmp_work, 'compiled', 'theme_Extracted Theme', 'hyprcursors')
+            if os.path.isdir(comp_hc) and os.listdir(comp_hc):
+                os.makedirs(dest_hc, exist_ok=True)
+                for f in os.listdir(comp_hc):
+                    shutil.copy2(os.path.join(comp_hc, f), os.path.join(dest_hc, f))
+                manifest_path = os.path.join(dest_root, 'manifest.hl')
+                if not os.path.exists(manifest_path):
+                    with open(manifest_path, 'w') as mf:
+                        mf.write(f'name = {theme_name}\ndescription = {theme_name} cursor theme\nversion = 0.1\ncursors_directory = hyprcursors\n')
+                return dest_hc
+    except Exception as e:
+        print(f"Error compiling hyprcursors for {theme_name}: {e}", file=sys.stderr)
+    finally:
+        shutil.rmtree(tmp_work, ignore_errors=True)
+    return None
+
+
 def get_installed_themes():
     """Lists all valid cursor themes found on the system, deduplicated by realpath."""
     found = {}
@@ -695,9 +756,11 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
 
     # Overrides active -> build Ballade-Custom
     cursors_dir = os.path.join(CUSTOM_THEME_DIR, 'cursors')
+    hyprcursors_dir = os.path.join(CUSTOM_THEME_DIR, 'hyprcursors')
     if os.path.exists(CUSTOM_THEME_DIR):
         shutil.rmtree(CUSTOM_THEME_DIR, ignore_errors=True)
     os.makedirs(cursors_dir, exist_ok=True)
+    os.makedirs(hyprcursors_dir, exist_ok=True)
     os.makedirs(CUSTOM_CURSORS_DIR, exist_ok=True)
 
     # 1. Populate ALL cursors from base theme first, so Ballade-Custom is a 100% complete theme!
@@ -715,6 +778,24 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
                     os.symlink(real_target, dst_entry)
             except OSError:
                 pass
+
+    # 1b. Populate hyprcursors from base theme if available (ensures full animation in Hyprland)
+    base_hc_dir = ensure_theme_hyprcursors(base_theme) or find_theme_hyprcursors_dir(base_theme)
+    if base_hc_dir and os.path.isdir(base_hc_dir):
+        for entry in os.listdir(base_hc_dir):
+            if entry.endswith('.hlc'):
+                try:
+                    shutil.copy2(os.path.join(base_hc_dir, entry), os.path.join(hyprcursors_dir, entry))
+                except Exception:
+                    pass
+
+    # manifest.hl for Hyprland native hyprcursor engine
+    manifest_path = os.path.join(CUSTOM_THEME_DIR, 'manifest.hl')
+    with open(manifest_path, 'w') as f:
+        f.write('name = Ballade-Custom\n')
+        f.write('description = Custom composed cursor theme with per-action overrides\n')
+        f.write('version = 0.1\n')
+        f.write('cursors_directory = hyprcursors\n')
 
     # index.theme with inheritance
     index_path = os.path.join(CUSTOM_THEME_DIR, 'index.theme')
@@ -768,6 +849,19 @@ def build_and_apply_custom_theme(base_theme, size=24, overrides=None):
 
             if not src_file:
                 continue
+
+            # Copy hyprcursor override (.hlc) if available
+            src_hc_dir = ensure_theme_hyprcursors(src_theme) or find_theme_hyprcursors_dir(src_theme)
+            if src_hc_dir:
+                src_hlc = os.path.join(src_hc_dir, f"{src_action}.hlc")
+                if not os.path.exists(src_hlc):
+                    src_hlc = os.path.join(src_hc_dir, f"{action_key}.hlc")
+                if os.path.exists(src_hlc):
+                    dst_hlc = os.path.join(hyprcursors_dir, f"{action_key}.hlc")
+                    try:
+                        shutil.copy2(src_hlc, dst_hlc)
+                    except Exception:
+                        pass
 
         for a in aliases:
             dst = os.path.join(cursors_dir, a)

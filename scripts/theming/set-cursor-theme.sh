@@ -46,6 +46,16 @@ for env_file in "$HOME/.config/hypr/custom/env.lua"; do
     if [ -f "$env_file" ]; then
         sed -i -E "s|hl\.env\(\"XCURSOR_THEME\", \".*\"|hl.env(\"XCURSOR_THEME\", \"$theme\"|" "$env_file"
         sed -i -E "s|hl\.env\(\"XCURSOR_SIZE\", \".*\"|hl.env(\"XCURSOR_SIZE\", \"$size\"|" "$env_file"
+        if grep -q 'hl.env("HYPRCURSOR_THEME"' "$env_file"; then
+            sed -i -E "s|hl\.env\(\"HYPRCURSOR_THEME\", \".*\"|hl.env(\"HYPRCURSOR_THEME\", \"$theme\"|" "$env_file"
+        else
+            sed -i -E "/hl\.env\(\"XCURSOR_THEME\"/a hl.env(\"HYPRCURSOR_THEME\", \"$theme\")" "$env_file"
+        fi
+        if grep -q 'hl.env("HYPRCURSOR_SIZE"' "$env_file"; then
+            sed -i -E "s|hl\.env\(\"HYPRCURSOR_SIZE\", \".*\"|hl.env(\"HYPRCURSOR_SIZE\", \"$size\"|" "$env_file"
+        else
+            sed -i -E "/hl\.env\(\"XCURSOR_SIZE\"/a hl.env(\"HYPRCURSOR_SIZE\", \"$size\")" "$env_file"
+        fi
     fi
 done
 
@@ -62,6 +72,16 @@ BALLADE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 if [ -f "$BALLADE_DIR/hyprland-custom/env.lua" ]; then
     sed -i -E "s|hl\.env\(\"XCURSOR_THEME\", \".*\"|hl.env(\"XCURSOR_THEME\", \"$theme\"|" "$BALLADE_DIR/hyprland-custom/env.lua"
     sed -i -E "s|hl\.env\(\"XCURSOR_SIZE\", \".*\"|hl.env(\"XCURSOR_SIZE\", \"$size\"|" "$BALLADE_DIR/hyprland-custom/env.lua"
+    if grep -q 'hl.env("HYPRCURSOR_THEME"' "$BALLADE_DIR/hyprland-custom/env.lua"; then
+        sed -i -E "s|hl\.env\(\"HYPRCURSOR_THEME\", \".*\"|hl.env(\"HYPRCURSOR_THEME\", \"$theme\"|" "$BALLADE_DIR/hyprland-custom/env.lua"
+    else
+        sed -i -E "/hl\.env\(\"XCURSOR_THEME\"/a hl.env(\"HYPRCURSOR_THEME\", \"$theme\")" "$BALLADE_DIR/hyprland-custom/env.lua"
+    fi
+    if grep -q 'hl.env("HYPRCURSOR_SIZE"' "$BALLADE_DIR/hyprland-custom/env.lua"; then
+        sed -i -E "s|hl\.env\(\"HYPRCURSOR_SIZE\", \".*\"|hl.env(\"HYPRCURSOR_SIZE\", \"$size\"|" "$BALLADE_DIR/hyprland-custom/env.lua"
+    else
+        sed -i -E "/hl\.env\(\"XCURSOR_SIZE\"/a hl.env(\"HYPRCURSOR_SIZE\", \"$size\")" "$BALLADE_DIR/hyprland-custom/env.lua"
+    fi
 fi
 
 if [ -f "$BALLADE_DIR/hyprland-custom/execs.lua" ]; then

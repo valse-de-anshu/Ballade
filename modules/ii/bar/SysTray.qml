@@ -43,19 +43,36 @@ Item {
     }
 
     function closeOverflowMenu() {
+        root.trayOverflowOpen = false;
         focusGrab.active = false;
+        if (root.activeMenu) {
+            root.activeMenu.close();
+            root.activeMenu = null;
+        }
     }
 
     onTrayOverflowOpenChanged: {
         if (root.trayOverflowOpen) {
             root.grabFocus();
+        } else {
+            root.releaseFocus();
+            if (root.activeMenu) {
+                root.activeMenu.close();
+                root.activeMenu = null;
+            }
         }
     }
 
     HyprlandFocusGrab {
         id: focusGrab
         active: false
-        windows: [trayOverflowLayout.QsWindow?.window, root.activeMenu]
+        windows: {
+            const list = [];
+            if (root.QsWindow?.window) list.push(root.QsWindow.window);
+            if (overflowPopup.item) list.push(overflowPopup.item);
+            if (root.activeMenu) list.push(root.activeMenu);
+            return list;
+        }
         onCleared: {
             root.trayOverflowOpen = false;
             if (root.activeMenu) {
