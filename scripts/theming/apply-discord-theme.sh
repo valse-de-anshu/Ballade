@@ -58,51 +58,44 @@ if wall_path and os.path.exists(wall_path):
     try:
         with Image.open(wall_path) as img:
             img = img.convert('RGB')
-            img.thumbnail((1600, 900), Image.Resampling.LANCZOS)
+            img.thumbnail((960, 540), Image.Resampling.LANCZOS)
             buf = io.BytesIO()
-            img.save(buf, format='JPEG', quality=80)
+            img.save(buf, format='JPEG', quality=65)
             b64_str = base64.b64encode(buf.getvalue()).decode('utf-8')
             b64_uri = f'data:image/jpeg;base64,{b64_str}'
     except Exception as e:
         print(f'Error encoding image: {e}', file=sys.stderr)
 
-template_path = os.path.expanduser('~/Downloads/DiscordPlus.theme.css')
-if not os.path.exists(template_path):
-    template_path = os.path.expanduser('~/.config/vesktop/themes/DiscordPlus.theme.css')
-if not os.path.exists(template_path):
-    template_path = os.path.expanduser('~/.config/Vencord/themes/DiscordPlus.theme.css')
-if not os.path.exists(template_path):
-    repo_fallback = os.path.join(config_dir, 'dotfiles/vencord/DiscordPlus.theme.css')
-    if os.path.exists(repo_fallback):
-        template_path = repo_fallback
-
-if os.path.exists(template_path):
-    with open(template_path, 'r') as f:
-        template = f.read()
-else:
-    template = \"\"\"/**
+template = \"\"\"/**
  * @name Discord+
+ * @author PlusInsta
  * @version 3.4.1
+ * @description A sleek, customizable Discord theme synced with QuickShell.
+ * @source https://github.com/PlusInsta/discord-plus
  */
 @import url('https://plusinsta.github.io/discord-plus/src/DiscordPlus-source.theme.css');
+
 .theme-dark {
   --dplus-backdrop: url('');
-  --dplus-accent-color-hue: 320;
+  --dplus-accent-color-hue: 270;
   --dplus-accent-color-saturation: 60%;
-  --dplus-accent-color-lightness: 31%;
+  --dplus-accent-color-lightness: 40%;
   --dplus-foreground-color-hue-base: 210;
   --dplus-foreground-color-hue-links: 197;
   --dplus-foreground-color-saturation-amount: 1;
   --dplus-foreground-color-lightness-amount: 1;
-  --dplus-background-color-hue: 320;
+  --dplus-background-color-hue: 270;
   --dplus-background-color-saturation-amount: 1;
   --dplus-background-color-lightness-amount: 1;
   --dplus-background-color-alpha: 0.8;
+  --dplus-icon-avatar-chat: 40px;
+  --dplus-spacing-ui: 4px;
+  --dplus-spacing-app: 4px;
 }
 \"\"\"
 
 # Update backdrop
-updated = re.sub(r'--dplus-backdrop:\s*url\([^)]+\);', f'--dplus-backdrop: url(\"{b64_uri}\");', template)
+updated = re.sub(r'--dplus-backdrop:\s*url\([^)]*\);', f'--dplus-backdrop: url(\"{b64_uri}\");', template)
 
 # Update accent HSL
 updated = re.sub(r'--dplus-accent-color-hue:\s*\d+;', f'--dplus-accent-color-hue: {p[\"hue\"]};', updated)
@@ -210,7 +203,7 @@ for d in target_dirs:
     with open(os.path.join(d, 'DiscordPlus.theme.css'), 'w') as f:
         f.write(full_css)
 
-# Target QuickCSS paths
+# Clean QuickCSS paths to avoid duplicate theme injection
 quick_css_paths = [
     os.path.expanduser('~/.config/Vencord/settings/quickCss.css'),
     os.path.expanduser('~/.config/vesktop/settings/quickCss.css'),
@@ -220,10 +213,11 @@ quick_css_paths = [
 for qp in quick_css_paths:
     try:
         os.makedirs(os.path.dirname(qp), exist_ok=True)
-        with open(qp, 'w') as f:
-            f.write(full_css)
+        if not os.path.exists(qp):
+            with open(qp, 'w') as f:
+                f.write('')
     except Exception as e:
-        print(f'Error writing quickCss to {qp}: {e}', file=sys.stderr)
+        print(f'Error initializing quickCss at {qp}: {e}', file=sys.stderr)
 
 # Target Vencord/Vesktop settings.json configs
 v_settings_paths = [
@@ -237,7 +231,7 @@ for v_path in v_settings_paths:
         try:
             with open(v_path, 'r') as f:
                 v_data = json.load(f)
-            v_data['useQuickCss'] = True
+            v_data['useQuickCss'] = False
             enabled = v_data.get('enabledThemes', [])
             if 'DiscordPlus.theme.css' not in enabled:
                 enabled.append('DiscordPlus.theme.css')

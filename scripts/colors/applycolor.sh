@@ -173,9 +173,6 @@ if [ -f "$SCRIPT_DIR/../theming/apply-cava-theme.sh" ]; then
   bash "$SCRIPT_DIR/../theming/apply-cava-theme.sh" "$active_preset" >/dev/null 2>&1 &
 fi
 
-# Joplin: restart with new theme if running, otherwise do nothing
-python3 "$SCRIPT_DIR/../theming/restart-joplin.py" &
-disown
 
 # Notify Quickshell to reload material colors immediately
 qs -c "$QUICKSHELL_CONFIG_NAME" ipc call theme reapplyTheme >/dev/null 2>&1 || true
