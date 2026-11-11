@@ -63,6 +63,7 @@ Singleton {
         onTriggered: {
             if (!getWorkspaces.running) getWorkspaces.running = true;
             if (!getActiveWorkspace.running) getActiveWorkspace.running = true;
+            if (!getMonitors.running) getMonitors.running = true;
         }
     }
 
