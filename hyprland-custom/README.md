@@ -58,7 +58,7 @@ graph TD
 ```
 
 ## 📦 Current Custom Setup Summary
-- **Safety Mode / Boss Key (Windows Win+D Equivalent)**: `Super + D` overrides the default window maximize. Instantly pauses all active media (YouTube, Spotify, mpv), mutes audio, unpins Picture-in-Picture windows, and shifts to clean safe workspace 10. Pressing `Super + D` again returns smoothly to your previous workspace and restores previous state. Configured via `custom/safety.conf`.
+- **Safety Mode / Boss Key (Windows Win+D Equivalent)**: `Super + D` overrides the default window maximize. Instantly pauses all active media (YouTube, Spotify, mpv), mutes audio, unpins Picture-in-Picture windows, and shifts to clean safe workspace 11. Pressing `Super + D` again returns smoothly to your previous workspace and restores previous state. Configured via `custom/safety.conf`.
 - **Compact Window Toggle**: `Super + Alt + Space` toggles any window between normal tiling and a centered compact float (`1200x800`).
 - **No Auto-Floating on Open**: Windows open normally tiled by default.
 - **Frosted Glass Transparency**: Preserved in `custom/rules.lua`.

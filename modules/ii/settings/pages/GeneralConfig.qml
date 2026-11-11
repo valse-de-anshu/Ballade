@@ -383,7 +383,7 @@ ContentPage {
             NoticeBox {
                 Layout.fillWidth: true
                 materialIcon: "security"
-                text: Translation.tr("Boss Key (Win + D / Super + D): Instantly shifts to safe workspace 10, pauses media/YouTube, mutes audio, and hides all windows. Press Super + D again to return to where you were.")
+                text: Translation.tr("Boss Key (Win + D / Super + D): Instantly shifts to safe workspace 11, pauses media/YouTube, mutes audio, and hides all windows. Press Super + D again to return to where you were.")
             }
 
             GroupedList {

@@ -8,7 +8,7 @@
 # 3. Mutes system audio sink to prevent audio/notification leakage.
 # 4. Closes active QuickShell drawers, search popups, and clipboard menus.
 # 5. Unpins floating/Picture-in-Picture windows so they don't follow to safe space.
-# 6. Switches immediately to the configured SAFE_WORKSPACE (Default: 10).
+# 6. Switches immediately to the configured SAFE_WORKSPACE (Default: 11).
 # 7. When toggled again, returns to original workspace, re-pins windows & unmutes!
 # ==============================================================================
 
@@ -18,7 +18,7 @@ STATE_FILE="/tmp/ballade_safety_state.json"
 CONFIG_FILE="$HOME/.config/hypr/custom/safety.conf"
 
 # Default settings
-SAFE_WORKSPACE="10"
+SAFE_WORKSPACE="11"
 PAUSE_MEDIA="true"
 MUTE_AUDIO="true"
 CLOSE_OVERLAYS="true"
