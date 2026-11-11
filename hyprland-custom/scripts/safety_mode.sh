@@ -8,7 +8,8 @@
 # 3. Closes active QuickShell drawers, search popups, and clipboard menus.
 # 4. Unpins floating/Picture-in-Picture windows so they don't follow to safe space.
 # 5. Switches immediately to the configured SAFE_WORKSPACE (Default: 11).
-# 6. When toggled again, returns to original workspace, re-pins windows!
+# 6. Opens Settings automatically so you have a natural alibi / explanation!
+# 7. When toggled again, closes settings, returns to original workspace, re-pins windows!
 # ==============================================================================
 
 set -eo pipefail
@@ -22,6 +23,8 @@ PAUSE_MEDIA="true"
 MUTE_AUDIO="false"
 CLOSE_OVERLAYS="true"
 UNPIN_WINDOWS="true"
+OPEN_SETTINGS="true"
+SETTINGS_APP="ballade"
 SAFE_APP_CMD=""
 
 if [ -f "$CONFIG_FILE" ]; then
@@ -51,10 +54,15 @@ if [ "$IS_IN_SAFE_MODE" = "true" ]; then
     PREV_FOCUS=$(jq -r '.prev_focus // empty' "$STATE_FILE" 2>/dev/null || echo "")
     PINNED_ADDRS=$(jq -r '.pinned_addresses[]? // empty' "$STATE_FILE" 2>/dev/null || true)
 
-    # 1. Switch back to previous workspace
+    # 1. Close settings when returning to normal work
+    if [ "$OPEN_SETTINGS" = "true" ]; then
+        qs -c ballade ipc call settings close >/dev/null 2>&1 || true
+    fi
+
+    # 2. Switch back to previous workspace
     hyprctl dispatch "hl.dsp.focus({ workspace = $PREV_WS })" >/dev/null 2>&1
 
-    # 2. Re-pin previously unpinned windows
+    # 3. Re-pin previously unpinned windows
     if [ -n "$PINNED_ADDRS" ]; then
         for addr in $PINNED_ADDRS; do
             if [ -n "$addr" ] && [ "$addr" != "null" ]; then
@@ -64,12 +72,12 @@ if [ "$IS_IN_SAFE_MODE" = "true" ]; then
         done
     fi
 
-    # 3. Restore focused window if known
+    # 4. Restore focused window if known
     if [ -n "$PREV_FOCUS" ] && [ "$PREV_FOCUS" != "null" ]; then
         hyprctl dispatch "hl.dsp.focus({ address = '$PREV_FOCUS' })" >/dev/null 2>&1 || true
     fi
 
-    # 4. Unmute audio if muted by us (silently suppressing the OSD banner)
+    # 5. Unmute audio if muted by us (silently suppressing the OSD banner)
     if [ "$MUTED_BY_US" = "true" ]; then
         qs -c ballade ipc call osdVolume setSuppressed true >/dev/null 2>&1 || true
         wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 >/dev/null 2>&1 || true
@@ -77,7 +85,7 @@ if [ "$IS_IN_SAFE_MODE" = "true" ]; then
         (sleep 0.5 && qs -c ballade ipc call osdVolume setSuppressed false >/dev/null 2>&1) &
     fi
 
-    # 5. Clean up state
+    # 6. Clean up state
     rm -f "$STATE_FILE"
 
 else
@@ -124,14 +132,16 @@ else
         (sleep 0.5 && qs -c ballade ipc call osdVolume setSuppressed false >/dev/null 2>&1) &
     fi
 
-    # 5. Close any open QuickShell overlays/menus/OSDs
+    # 5. Close any open QuickShell overlays/menus/OSDs (except settings if we're opening it)
     if [ "$CLOSE_OVERLAYS" = "true" ]; then
         qs -c ballade ipc call osdVolume close >/dev/null 2>&1 || true
         qs -c ballade ipc call sidebarLeft close >/dev/null 2>&1 || true
         qs -c ballade ipc call sidebarRight close >/dev/null 2>&1 || true
         qs -c ballade ipc call search close >/dev/null 2>&1 || true
         qs -c ballade ipc call clipboard close >/dev/null 2>&1 || true
-        qs -c ballade ipc call settings close >/dev/null 2>&1 || true
+        if [ "$OPEN_SETTINGS" != "true" ]; then
+            qs -c ballade ipc call settings close >/dev/null 2>&1 || true
+        fi
         qs -c ballade ipc call session close >/dev/null 2>&1 || true
         qs -c ballade ipc call wallpaperSelector close >/dev/null 2>&1 || true
     fi
@@ -149,7 +159,23 @@ else
     # 7. Switch to Safe Workspace
     hyprctl dispatch "hl.dsp.focus({ workspace = $SAFE_WORKSPACE })" >/dev/null 2>&1
 
-    # 8. If SAFE_APP_CMD is specified and workspace is empty, launch it
+    # 8. Open Settings automatically so you have a natural alibi / explanation!
+    if [ "$OPEN_SETTINGS" = "true" ]; then
+        if [[ "$SETTINGS_APP" =~ ^ballade(:.*)?$ ]]; then
+            PAGE="${SETTINGS_APP#ballade:}"
+            if [ -n "$PAGE" ] && [ "$PAGE" != "ballade" ]; then
+                qs -c ballade ipc call settings openPage "$PAGE" >/dev/null 2>&1 || true
+            else
+                qs -c ballade ipc call settings open >/dev/null 2>&1 || true
+            fi
+        elif [ "$SETTINGS_APP" = "systemsettings" ]; then
+            systemsettings >/dev/null 2>&1 &
+        else
+            qs -c ballade ipc call settings open >/dev/null 2>&1 || true
+        fi
+    fi
+
+    # 9. If SAFE_APP_CMD is specified and workspace is empty, launch it
     if [ -n "$SAFE_APP_CMD" ]; then
         WIN_COUNT=$(hyprctl workspaces -j 2>/dev/null | jq --arg safe_ws "$SAFE_WORKSPACE" '[.[] | select((.id | tostring) == $safe_ws or .name == $safe_ws) | .windows] | first // 0')
         if [ "$WIN_COUNT" -eq 0 ]; then
