@@ -90,6 +90,7 @@ Ballade ships a configured **micro** terminal editor setup in `dotfiles/micro/`:
   - Runs in the background on Hyprland startup via `hyprland-custom/execs.lua`.
   - Monitors paired mobile devices and triggers network discovery every 30 seconds if a device disconnects, ensuring automatic re-pairing without manual reconnects.
 * **Quick Keybindings**:
+  - `SUPER + D`: Safety Mode / Boss Key (Windows `Win + D` equivalent) — immediately hides all open windows, pauses active media (YouTube, Spotify, mpv), mutes audio, unpins Picture-in-Picture windows, and shifts to clean safe workspace 10. Pressing `SUPER + D` again returns seamlessly to your previous workspace.
   - `SUPER + I`: Toggle QuickShell Settings Hub.
   - `SUPER + ALT + Space`: Compact centered window focus mode.
   - `ALT + S`: Gwenview Snip & Annotate.

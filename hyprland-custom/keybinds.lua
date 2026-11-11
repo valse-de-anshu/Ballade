@@ -30,3 +30,10 @@ hl.bind("XF86Display", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggl
 hl.bind("SUPER + F10", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (Super+F10)" })
 hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/toggle_refresh_rate.sh"), { description = "Display: Toggle refresh rate (Super+Alt+R)" })
 
+-- Safety System / Boss Key (Windows Win+D Equivalent)
+-- Overrides the default window maximize on Super+D and shifts immediately to safe workspace 10,
+-- pauses active media/YouTube, mutes audio, and hides all windows. Press Super+D again to return.
+hl.unbind("SUPER + D")
+hl.bind("SUPER + D", hl.dsp.exec_cmd("bash ~/.config/hypr/custom/scripts/safety_mode.sh"), { description = "Safety: Boss key / Show safe desktop (Win+D)" })
+
+
