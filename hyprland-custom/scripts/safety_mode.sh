@@ -5,11 +5,10 @@
 # When triggered:
 # 1. Remembers current workspace and focused window.
 # 2. Immediately pauses all active media playback (YouTube, mpv, Spotify, etc.).
-# 3. Mutes system audio sink to prevent audio/notification leakage.
-# 4. Closes active QuickShell drawers, search popups, and clipboard menus.
-# 5. Unpins floating/Picture-in-Picture windows so they don't follow to safe space.
-# 6. Switches immediately to the configured SAFE_WORKSPACE (Default: 11).
-# 7. When toggled again, returns to original workspace, re-pins windows & unmutes!
+# 3. Closes active QuickShell drawers, search popups, and clipboard menus.
+# 4. Unpins floating/Picture-in-Picture windows so they don't follow to safe space.
+# 5. Switches immediately to the configured SAFE_WORKSPACE (Default: 11).
+# 6. When toggled again, returns to original workspace, re-pins windows!
 # ==============================================================================
 
 set -eo pipefail
@@ -20,7 +19,7 @@ CONFIG_FILE="$HOME/.config/hypr/custom/safety.conf"
 # Default settings
 SAFE_WORKSPACE="11"
 PAUSE_MEDIA="true"
-MUTE_AUDIO="true"
+MUTE_AUDIO="false"
 CLOSE_OVERLAYS="true"
 UNPIN_WINDOWS="true"
 SAFE_APP_CMD=""
@@ -70,9 +69,12 @@ if [ "$IS_IN_SAFE_MODE" = "true" ]; then
         hyprctl dispatch "hl.dsp.focus({ address = '$PREV_FOCUS' })" >/dev/null 2>&1 || true
     fi
 
-    # 4. Unmute audio if muted by us
+    # 4. Unmute audio if muted by us (silently suppressing the OSD banner)
     if [ "$MUTED_BY_US" = "true" ]; then
+        qs -c ballade ipc call osdVolume setSuppressed true >/dev/null 2>&1 || true
         wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 >/dev/null 2>&1 || true
+        qs -c ballade ipc call osdVolume close >/dev/null 2>&1 || true
+        (sleep 0.5 && qs -c ballade ipc call osdVolume setSuppressed false >/dev/null 2>&1) &
     fi
 
     # 5. Clean up state
@@ -104,23 +106,27 @@ else
         done
     fi
 
-    # 3. Pause media immediately
+    # 3. Pause media immediately (pauses YouTube, Spotify, mpv without volume banners)
     if [ "$PAUSE_MEDIA" = "true" ]; then
         playerctl -a pause >/dev/null 2>&1 || true
     fi
 
-    # 4. Mute audio
+    # 4. Mute audio if configured (silently suppressing the OSD banner)
     MUTED_BY_US=false
     if [ "$MUTE_AUDIO" = "true" ]; then
+        qs -c ballade ipc call osdVolume setSuppressed true >/dev/null 2>&1 || true
         IS_MUTED=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -i "MUTED" || true)
         if [ -z "$IS_MUTED" ]; then
             wpctl set-mute @DEFAULT_AUDIO_SINK@ 1 >/dev/null 2>&1 || true
             MUTED_BY_US=true
         fi
+        qs -c ballade ipc call osdVolume close >/dev/null 2>&1 || true
+        (sleep 0.5 && qs -c ballade ipc call osdVolume setSuppressed false >/dev/null 2>&1) &
     fi
 
-    # 5. Close any open QuickShell overlays/menus
+    # 5. Close any open QuickShell overlays/menus/OSDs
     if [ "$CLOSE_OVERLAYS" = "true" ]; then
+        qs -c ballade ipc call osdVolume close >/dev/null 2>&1 || true
         qs -c ballade ipc call sidebarLeft close >/dev/null 2>&1 || true
         qs -c ballade ipc call sidebarRight close >/dev/null 2>&1 || true
         qs -c ballade ipc call search close >/dev/null 2>&1 || true

@@ -18,6 +18,7 @@ Singleton {
     property bool osdBrightnessOpen: false
     property bool settingsOpen: false
     property bool osdVolumeOpen: false
+    property bool suppressVolumeOsd: false
     property bool oskOpen: false
     property bool overlayOpen: false
     property bool overviewOpen: false

@@ -32,6 +32,8 @@ Scope {
     ]
 
     function triggerOsd() {
+        if (GlobalStates.suppressVolumeOsd)
+            return;
         GlobalStates.osdVolumeOpen = true;
         osdTimeout.restart();
     }
@@ -214,8 +216,19 @@ Scope {
             GlobalStates.osdVolumeOpen = false;
         }
 
+        function close() {
+            GlobalStates.osdVolumeOpen = false;
+        }
+
         function toggle() {
             GlobalStates.osdVolumeOpen = !GlobalStates.osdVolumeOpen;
+        }
+
+        function setSuppressed(suppressed: bool) {
+            GlobalStates.suppressVolumeOsd = suppressed;
+            if (suppressed) {
+                GlobalStates.osdVolumeOpen = false;
+            }
         }
     }
     GlobalShortcut {
